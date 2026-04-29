@@ -7,6 +7,9 @@ var is_selecting: bool = false
 var selection_start: Vector2 = Vector2.ZERO
 var selected_units: Array = []
 
+# A 键攻击移动模式
+var attack_move_mode: bool = false
+
 # 节点引用
 @onready var camera: Camera2D = $Camera2D
 @onready var selection_box: ColorRect = $SelectionBox
@@ -14,12 +17,11 @@ var selected_units: Array = []
 @onready var player_units_node: Node2D = $PlayerUnits
 @onready var enemy_units_node: Node2D = $EnemyUnits
 @onready var result_label: Label = $ResultLabel
-
-# 摄像机控制
-var camera_speed: float = 400.0
+@onready var attack_move_indicator: Label = $AttackMoveIndicator
 
 func _ready() -> void:
 	result_label.visible = false
+	attack_move_indicator.visible = false
 	_spawn_units()
 	await get_tree().process_frame
 
@@ -66,8 +68,7 @@ func _on_unit_died(unit: CharacterBody2D) -> void:
 	if selected_units.has(unit):
 		selected_units.erase(unit)
 
-func _process(delta: float) -> void:
-	_camera_control(delta)
+func _process(_delta: float) -> void:
 	_check_victory()
 
 	if is_selecting:
@@ -79,17 +80,7 @@ func _process(delta: float) -> void:
 	else:
 		selection_box.visible = false
 
-func _camera_control(delta: float) -> void:
-	var input := Vector2.ZERO
-	if Input.is_key_pressed(KEY_D) or Input.is_action_pressed("ui_right"):
-		input.x += 1
-	if Input.is_key_pressed(KEY_A) or Input.is_action_pressed("ui_left"):
-		input.x -= 1
-	if Input.is_key_pressed(KEY_S) or Input.is_action_pressed("ui_down"):
-		input.y += 1
-	if Input.is_key_pressed(KEY_W) or Input.is_action_pressed("ui_up"):
-		input.y -= 1
-	camera.position += input.normalized() * camera_speed * delta / camera.zoom.x
+	attack_move_indicator.visible = attack_move_mode
 
 func _check_victory() -> void:
 	if result_label.visible:
@@ -113,16 +104,41 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if event.pressed:
-				is_selecting = true
-				selection_start = get_global_mouse_position()
+				if attack_move_mode:
+					# A 模式下左键 = 攻击移动
+					_do_attack_move(get_global_mouse_position())
+					attack_move_mode = false
+				else:
+					is_selecting = true
+					selection_start = get_global_mouse_position()
 			else:
-				is_selecting = false
-				_selection_released()
+				if is_selecting:
+					is_selecting = false
+					_selection_released()
 		elif event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+			attack_move_mode = false
 			_right_click()
 	elif event is InputEventKey and event.pressed:
-		if event.keycode == KEY_R:
-			get_tree().reload_current_scene()
+		match event.keycode:
+			KEY_A:
+				if not selected_units.is_empty():
+					attack_move_mode = true
+			KEY_S:
+				_stop_selected()
+			KEY_R:
+				get_tree().reload_current_scene()
+
+func _do_attack_move(click_pos: Vector2) -> void:
+	if selected_units.is_empty():
+		return
+	var count := selected_units.size()
+	for i in range(count):
+		var offset := _formation_offset(i, count)
+		selected_units[i].call("attack_move_to", click_pos + offset)
+
+func _stop_selected() -> void:
+	for unit in selected_units:
+		unit.call("stop")
 
 func _selection_released() -> void:
 	var end_pos := get_global_mouse_position()

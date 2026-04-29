@@ -1,7 +1,7 @@
 extends CharacterBody2D
 class_name Unit
 
-enum UnitState { IDLE, MOVE, ATTACK, DEAD }
+enum UnitState { IDLE, MOVE, ATTACK_MOVE, ATTACK, DEAD }
 enum UnitType { SOLDIER, ARCHER }
 enum Team { PLAYER, ENEMY }
 
@@ -19,6 +19,8 @@ var state: UnitState = UnitState.IDLE
 var attack_target: Unit = null
 var attack_timer: float = 0.0
 var selected: bool = false
+var attack_move_target: Vector2 = Vector2.ZERO
+var attack_move_scan_range: float = 150.0
 
 @onready var nav_agent: NavigationAgent2D = $NavigationAgent2D
 @onready var selection_ring: CanvasItem = $SelectionRing
@@ -68,6 +70,8 @@ func _physics_process(delta: float) -> void:
 	match state:
 		UnitState.MOVE:
 			_move_process()
+		UnitState.ATTACK_MOVE:
+			_attack_move_process(delta)
 		UnitState.ATTACK:
 			_attack_process(delta)
 
@@ -87,7 +91,12 @@ func _move_process() -> void:
 func _attack_process(delta: float) -> void:
 	if attack_target == null or attack_target.state == UnitState.DEAD:
 		attack_target = null
-		state = UnitState.IDLE
+		# 如果之前是攻击移动，继续移动
+		if attack_move_target != Vector2.ZERO:
+			nav_agent.target_position = attack_move_target
+			state = UnitState.ATTACK_MOVE
+		else:
+			state = UnitState.IDLE
 		return
 
 	var dist := global_position.distance_to(attack_target.global_position)
@@ -100,6 +109,34 @@ func _attack_process(delta: float) -> void:
 		if attack_timer <= 0.0:
 			_perform_attack()
 			attack_timer = attack_cooldown
+
+func _attack_move_process(delta: float) -> void:
+	# 扫描附近敌人
+	var enemy_group := "enemy_units" if team == Team.PLAYER else "player_units"
+	var closest: Unit = null
+	var closest_dist: float = INF
+	for u in get_tree().get_nodes_in_group(enemy_group):
+		var candidate := u as Unit
+		if candidate == null or candidate.state == UnitState.DEAD:
+			continue
+		var d := global_position.distance_to(candidate.global_position)
+		if d < attack_move_scan_range and d < closest_dist:
+			closest = candidate
+			closest_dist = d
+
+	if closest != null:
+		attack_target = closest
+		nav_agent.target_position = closest.global_position
+		state = UnitState.ATTACK
+		# 攻击完后回到攻击移动的逻辑在 _attack_process 中处理
+		return
+
+	# 没有敌人，继续移动
+	if nav_agent.is_navigation_finished():
+		state = UnitState.IDLE
+		return
+	var next_pos := nav_agent.get_next_path_position()
+	velocity = global_position.direction_to(next_pos) * move_speed
 
 func _perform_attack() -> void:
 	if attack_target and attack_target.state != UnitState.DEAD:
@@ -125,8 +162,22 @@ func die() -> void:
 
 func move_to(target_pos: Vector2) -> void:
 	attack_target = null
+	attack_move_target = Vector2.ZERO
 	nav_agent.target_position = target_pos
 	state = UnitState.MOVE
+
+func attack_move_to(target_pos: Vector2) -> void:
+	attack_target = null
+	attack_move_target = target_pos
+	nav_agent.target_position = target_pos
+	state = UnitState.ATTACK_MOVE
+
+func stop() -> void:
+	attack_target = null
+	attack_move_target = Vector2.ZERO
+	velocity = Vector2.ZERO
+	nav_agent.target_position = global_position
+	state = UnitState.IDLE
 
 func command_attack(target: Unit) -> void:
 	attack_target = target
