@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3 uid="uid://bxarrow001"]
+
+[ext_resource type="Script" path="res://scripts/arrow.gd" id="arrow_script"]
+
+[node name="Arrow" type="Node2D"]
+script = ExtResource("arrow_script")
+
+[node name="ArrowSprite" type="ColorRect" parent="."]
+offset_left = -8.0
+offset_top = -2.0
+offset_right = 8.0
+offset_bottom = 2.0
+color = Color(0.8, 0.6, 0.2, 1)

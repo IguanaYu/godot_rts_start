@@ -27,6 +27,7 @@ var attack_move_scan_range: float = 150.0
 @onready var hp_bar: ProgressBar = $HPBar
 @onready var body_visual: ColorRect = $BodyVisual
 @onready var type_label: Label = $BodyVisual/TypeLabel
+@onready var aggro_line: Line2D = $AggroLine
 
 signal died(unit: Unit)
 
@@ -79,6 +80,7 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 
 	attack_timer = max(0.0, attack_timer - delta)
+	_update_aggro_line()
 
 func _move_process() -> void:
 	if nav_agent.is_navigation_finished():
@@ -140,10 +142,20 @@ func _attack_move_process(delta: float) -> void:
 
 func _perform_attack() -> void:
 	if attack_target and attack_target.state != UnitState.DEAD:
-		attack_target.take_damage(attack_damage)
+		if unit_type == UnitType.ARCHER:
+			_spawn_arrow(attack_target)
+		else:
+			attack_target.take_damage(attack_damage)
 		var tween := create_tween()
 		tween.tween_property(body_visual, "scale", Vector2(1.3, 1.3), 0.1)
 		tween.tween_property(body_visual, "scale", Vector2(1.0, 1.0), 0.1)
+
+func _spawn_arrow(target: Unit) -> void:
+	var arrow_scene := load("res://scenes/arrow.tscn")
+	var arrow: Node2D = arrow_scene.instantiate()
+	get_tree().current_scene.add_child(arrow)
+	arrow.setup(global_position, target.global_position)
+	arrow.on_hit = func(): target.take_damage(attack_damage)
 
 func take_damage(amount: int) -> void:
 	if state == UnitState.DEAD:
@@ -196,3 +208,14 @@ func _update_hp_bar() -> void:
 	if hp_bar:
 		hp_bar.max_value = max_hp
 		hp_bar.value = hp
+
+func _update_aggro_line() -> void:
+	if state == UnitState.DEAD or aggro_line == null:
+		return
+	if attack_target != null and attack_target.state != UnitState.DEAD:
+		aggro_line.visible = true
+		aggro_line.clear_points()
+		aggro_line.add_point(Vector2.ZERO)
+		aggro_line.add_point(attack_target.global_position - global_position)
+	else:
+		aggro_line.visible = false

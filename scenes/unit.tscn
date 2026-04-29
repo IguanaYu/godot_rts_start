@@ -48,3 +48,8 @@ show_percentage = false
 [node name="NavigationAgent2D" type="NavigationAgent2D" parent="."]
 avoidance_enabled = true
 radius = 16.0
+
+[node name="AggroLine" type="Line2D" parent="."]
+visible = false
+width = 2.0
+default_color = Color(1, 0.3, 0.3, 0.7)
