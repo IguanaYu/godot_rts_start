@@ -1,0 +1,121 @@
+extends Node2D
+
+const UnitScript := preload("res://scripts/unit.gd")
+
+enum AIState { PATROL, CHASE, ATTACK }
+
+@export var patrol_radius: float = 150.0
+@export var vision_range: float = 250.0
+
+var ai_state: AIState = AIState.PATROL
+var patrol_center: Vector2
+var patrol_target: Vector2
+var patrol_wait_timer: float = 0.0
+var chase_target: CharacterBody2D = null
+
+var unit: CharacterBody2D
+
+func _ready() -> void:
+	unit = get_parent() as CharacterBody2D
+	patrol_center = unit.global_position
+	_pick_new_patrol_point()
+
+func _physics_process(delta: float) -> void:
+	if unit.get("state") == UnitScript.UnitState.DEAD:
+		return
+
+	# 如果单位正在攻击且目标已死，回到巡逻
+	if unit.get("state") == UnitScript.UnitState.ATTACK:
+		var target = unit.get("attack_target")
+		if target == null or target.get("state") == UnitScript.UnitState.DEAD:
+			ai_state = AIState.PATROL
+			_pick_new_patrol_point()
+			unit.set("state", UnitScript.UnitState.IDLE)
+		return
+
+	# 如果单位正在被外部指令移动中，AI 不干预
+	if unit.get("state") == UnitScript.UnitState.MOVE:
+		return
+
+	match ai_state:
+		AIState.PATROL:
+			_patrol_process(delta)
+		AIState.CHASE:
+			_chase_process()
+		AIState.ATTACK:
+			_attack_process()
+
+	_scan_for_enemies()
+
+func _patrol_process(delta: float) -> void:
+	if patrol_wait_timer > 0:
+		patrol_wait_timer -= delta
+		return
+
+	var dist: float = unit.global_position.distance_to(patrol_target)
+	if dist < 10.0:
+		patrol_wait_timer = randf_range(1.0, 3.0)
+		_pick_new_patrol_point()
+	else:
+		unit.call("move_to", patrol_target)
+
+func _chase_process() -> void:
+	if _is_target_invalid():
+		chase_target = null
+		ai_state = AIState.PATROL
+		_pick_new_patrol_point()
+		return
+
+	var dist: float = unit.global_position.distance_to(chase_target.global_position)
+	var atk_range: float = unit.get("attack_range")
+	if dist <= atk_range:
+		ai_state = AIState.ATTACK
+		unit.call("command_attack", chase_target)
+	else:
+		unit.call("move_to", chase_target.global_position)
+
+func _attack_process() -> void:
+	if _is_target_invalid():
+		chase_target = null
+		ai_state = AIState.PATROL
+		_pick_new_patrol_point()
+		return
+	var current_target = unit.get("attack_target")
+	if current_target != chase_target:
+		unit.call("command_attack", chase_target)
+
+func _is_target_invalid() -> bool:
+	return chase_target == null or chase_target.get("state") == UnitScript.UnitState.DEAD
+
+func _scan_for_enemies() -> void:
+	if ai_state == AIState.ATTACK:
+		return
+
+	var all_units := get_tree().get_nodes_in_group("player_units")
+	var closest: CharacterBody2D = null
+	var closest_dist: float = INF
+
+	for u in all_units:
+		if not u is CharacterBody2D:
+			continue
+		if u.get("state") == UnitScript.UnitState.DEAD:
+			continue
+		var d: float = unit.global_position.distance_to(u.global_position)
+		if d < vision_range and d < closest_dist:
+			closest = u
+			closest_dist = d
+
+	if closest != null:
+		chase_target = closest
+		ai_state = AIState.CHASE
+
+func _pick_new_patrol_point() -> void:
+	var angle := randf() * TAU
+	var radius := randf() * patrol_radius
+	patrol_target = patrol_center + Vector2(cos(angle), sin(angle)) * radius
+
+func on_attacked(attacker: CharacterBody2D) -> void:
+	if ai_state == AIState.ATTACK:
+		return
+	chase_target = attacker
+	ai_state = AIState.CHASE
