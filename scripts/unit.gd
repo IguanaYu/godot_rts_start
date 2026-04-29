@@ -16,11 +16,11 @@ var attack_cooldown: float
 var move_speed: float
 
 var state: UnitState = UnitState.IDLE
-var attack_target: Unit = null
+var attack_target = null
 var attack_timer: float = 0.0
 var selected: bool = false
 var attack_move_target: Vector2 = Vector2.ZERO
-var attack_move_scan_range: float = 150.0
+var attack_move_scan_range: float = 300.0
 
 @onready var nav_agent: NavigationAgent2D = $NavigationAgent2D
 @onready var selection_ring: CanvasItem = $SelectionRing
@@ -91,7 +91,7 @@ func _move_process() -> void:
 	velocity = direction * move_speed
 
 func _attack_process(delta: float) -> void:
-	if attack_target == null or attack_target.state == UnitState.DEAD:
+	if attack_target == null or attack_target.is_dead():
 		attack_target = null
 		# 如果之前是攻击移动，继续移动
 		if attack_move_target != Vector2.ZERO:
@@ -113,24 +113,32 @@ func _attack_process(delta: float) -> void:
 			attack_timer = attack_cooldown
 
 func _attack_move_process(delta: float) -> void:
-	# 扫描附近敌人
+	# 扫描附近敌方单位
 	var enemy_group := "enemy_units" if team == Team.PLAYER else "player_units"
-	var closest: Unit = null
+	var enemy_building_group := "enemy_buildings" if team == Team.PLAYER else "player_buildings"
+	var closest = null
 	var closest_dist: float = INF
 	for u in get_tree().get_nodes_in_group(enemy_group):
-		var candidate := u as Unit
-		if candidate == null or candidate.state == UnitState.DEAD:
+		if u.is_dead():
 			continue
-		var d := global_position.distance_to(candidate.global_position)
+		var d := global_position.distance_to(u.global_position)
 		if d < attack_move_scan_range and d < closest_dist:
-			closest = candidate
+			closest = u
+			closest_dist = d
+
+	# 也扫描敌方建筑
+	for b in get_tree().get_nodes_in_group(enemy_building_group):
+		if not b.has_method("is_dead") or b.is_dead():
+			continue
+		var d := global_position.distance_to(b.global_position)
+		if d < attack_move_scan_range and d < closest_dist:
+			closest = b
 			closest_dist = d
 
 	if closest != null:
 		attack_target = closest
 		nav_agent.target_position = closest.global_position
 		state = UnitState.ATTACK
-		# 攻击完后回到攻击移动的逻辑在 _attack_process 中处理
 		return
 
 	# 没有敌人，继续移动
@@ -141,7 +149,7 @@ func _attack_move_process(delta: float) -> void:
 	velocity = global_position.direction_to(next_pos) * move_speed
 
 func _perform_attack() -> void:
-	if attack_target and attack_target.state != UnitState.DEAD:
+	if attack_target and not attack_target.is_dead():
 		if unit_type == UnitType.ARCHER:
 			_spawn_arrow(attack_target)
 		else:
@@ -150,12 +158,13 @@ func _perform_attack() -> void:
 		tween.tween_property(body_visual, "scale", Vector2(1.3, 1.3), 0.1)
 		tween.tween_property(body_visual, "scale", Vector2(1.0, 1.0), 0.1)
 
-func _spawn_arrow(target: Unit) -> void:
+func _spawn_arrow(target) -> void:
 	var arrow_scene := load("res://scenes/arrow.tscn")
 	var arrow: Node2D = arrow_scene.instantiate()
 	get_tree().current_scene.add_child(arrow)
 	arrow.setup(global_position, target.global_position)
-	arrow.on_hit = func(): target.take_damage(attack_damage)
+	arrow.hit_target = target
+	arrow.hit_damage = attack_damage
 
 func take_damage(amount: int) -> void:
 	if state == UnitState.DEAD:
@@ -191,7 +200,7 @@ func stop() -> void:
 	nav_agent.target_position = global_position
 	state = UnitState.IDLE
 
-func command_attack(target: Unit) -> void:
+func command_attack(target) -> void:
 	attack_target = target
 	nav_agent.target_position = target.global_position
 	state = UnitState.ATTACK
@@ -212,10 +221,13 @@ func _update_hp_bar() -> void:
 func _update_aggro_line() -> void:
 	if state == UnitState.DEAD or aggro_line == null:
 		return
-	if attack_target != null and attack_target.state != UnitState.DEAD:
+	if attack_target != null and not attack_target.is_dead():
 		aggro_line.visible = true
 		aggro_line.clear_points()
 		aggro_line.add_point(Vector2.ZERO)
 		aggro_line.add_point(attack_target.global_position - global_position)
 	else:
 		aggro_line.visible = false
+
+func is_dead() -> bool:
+	return state == UnitState.DEAD

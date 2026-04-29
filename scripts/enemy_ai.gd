@@ -11,7 +11,7 @@ var ai_state: AIState = AIState.PATROL
 var patrol_center: Vector2
 var patrol_target: Vector2
 var patrol_wait_timer: float = 0.0
-var chase_target: CharacterBody2D = null
+var chase_target = null
 
 var unit: CharacterBody2D
 
@@ -27,10 +27,14 @@ func _physics_process(delta: float) -> void:
 	# 如果单位正在攻击且目标已死，回到巡逻
 	if unit.get("state") == UnitScript.UnitState.ATTACK:
 		var target = unit.get("attack_target")
-		if target == null or target.get("state") == UnitScript.UnitState.DEAD:
+		if target == null or target.is_dead():
 			ai_state = AIState.PATROL
 			_pick_new_patrol_point()
 			unit.set("state", UnitScript.UnitState.IDLE)
+		return
+
+	# 如果单位正在攻击移动中，AI 不干预
+	if unit.get("state") == UnitScript.UnitState.ATTACK_MOVE:
 		return
 
 	# 如果单位正在被外部指令移动中，AI 不干预
@@ -45,7 +49,7 @@ func _physics_process(delta: float) -> void:
 		AIState.ATTACK:
 			_attack_process()
 
-	_scan_for_enemies()
+	_scan_for_targets()
 
 func _patrol_process(delta: float) -> void:
 	if patrol_wait_timer > 0:
@@ -85,24 +89,33 @@ func _attack_process() -> void:
 		unit.call("command_attack", chase_target)
 
 func _is_target_invalid() -> bool:
-	return chase_target == null or chase_target.get("state") == UnitScript.UnitState.DEAD
+	return chase_target == null or not is_instance_valid(chase_target) or chase_target.is_dead()
 
-func _scan_for_enemies() -> void:
+func _scan_for_targets() -> void:
 	if ai_state == AIState.ATTACK:
 		return
 
-	var all_units := get_tree().get_nodes_in_group("player_units")
-	var closest: CharacterBody2D = null
+	var closest = null
 	var closest_dist: float = INF
 
-	for u in all_units:
-		if not u is CharacterBody2D:
+	# 扫描玩家单位
+	for u in get_tree().get_nodes_in_group("player_units"):
+		if not (u is CharacterBody2D):
 			continue
-		if u.get("state") == UnitScript.UnitState.DEAD:
+		if u.is_dead():
 			continue
 		var d: float = unit.global_position.distance_to(u.global_position)
 		if d < vision_range and d < closest_dist:
 			closest = u
+			closest_dist = d
+
+	# 扫描玩家建筑
+	for b in get_tree().get_nodes_in_group("player_buildings"):
+		if not b.has_method("is_dead") or b.is_dead():
+			continue
+		var d: float = unit.global_position.distance_to(b.global_position)
+		if d < vision_range and d < closest_dist:
+			closest = b
 			closest_dist = d
 
 	if closest != null:
@@ -114,7 +127,7 @@ func _pick_new_patrol_point() -> void:
 	var radius := randf() * patrol_radius
 	patrol_target = patrol_center + Vector2(cos(angle), sin(angle)) * radius
 
-func on_attacked(attacker: CharacterBody2D) -> void:
+func on_attacked(attacker) -> void:
 	if ai_state == AIState.ATTACK:
 		return
 	chase_target = attacker

@@ -17,20 +17,25 @@ offset_bottom = 1200.0
 color = Color(0.35, 0.55, 0.25, 1)
 
 [node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
-position = Vector2(0, 0)
 navigation_polygon = SubResource("NavPoly_1")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(500, 350)
-zoom = Vector2(1, 1)
 
 [node name="PlayerUnits" type="Node2D" parent="."]
 
 [node name="EnemyUnits" type="Node2D" parent="."]
 
+[node name="Buildings" type="Node2D" parent="."]
+
 [node name="SelectionBox" type="ColorRect" parent="."]
 visible = false
 color = Color(0.4, 0.7, 1, 0.25)
+mouse_filter = 2
+
+[node name="PreviewRect" type="ColorRect" parent="."]
+visible = false
+color = Color(0, 1, 0, 0.3)
 mouse_filter = 2
 
 [node name="ResultLabel" type="Label" parent="."]
