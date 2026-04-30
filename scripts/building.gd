@@ -23,8 +23,7 @@ signal died(building)
 
 @onready var static_body: StaticBody2D = $StaticBody2D
 @onready var collision_shape: CollisionShape2D = $StaticBody2D/CollisionShape2D
-@onready var body_visual: ColorRect = $BodyVisual
-@onready var type_label: Label = $BodyVisual/TypeLabel
+@onready var body_sprite: Sprite2D = $BodySprite
 @onready var hp_bar: ProgressBar = $HPBar
 @onready var aggro_line: Line2D = $AggroLine
 
@@ -37,7 +36,7 @@ func _setup_stats() -> void:
 	match building_type:
 		BuildingType.WALL:
 			max_hp = 300
-			grid_size = Vector2i(2, 1)
+			grid_size = Vector2i(1, 1)
 		BuildingType.TOWER:
 			max_hp = 150
 			grid_size = Vector2i(1, 1)
@@ -46,16 +45,16 @@ func _setup_stats() -> void:
 func _setup_visuals() -> void:
 	var pixel_size := Vector2(grid_size.x * 64, grid_size.y * 64)
 
-	# 视觉
-	body_visual.size = pixel_size
-	body_visual.position = -pixel_size / 2.0
-
+	# 贴图
+	var color_dir := "blue" if team == Team.PLAYER else "red"
 	if building_type == BuildingType.WALL:
-		body_visual.color = Color(0.5, 0.5, 0.55) if team == Team.PLAYER else Color(0.6, 0.35, 0.35)
-		type_label.text = "W"
+		var tex := load("res://assets/buildings/%s_house/House1.png" % color_dir)
+		if tex and body_sprite:
+			body_sprite.texture = tex
 	else:
-		body_visual.color = Color(0.6, 0.4, 0.2) if team == Team.PLAYER else Color(0.7, 0.3, 0.2)
-		type_label.text = "T"
+		var tex := load("res://assets/buildings/%s_tower/Tower.png" % color_dir)
+		if tex and body_sprite:
+			body_sprite.texture = tex
 
 	# 碰撞
 	var shape := RectangleShape2D.new()

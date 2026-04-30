@@ -59,7 +59,7 @@ func _create_ui() -> void:
 	panel.add_child(hbox)
 
 	var buttons_data := [
-		{"mode": PlaceMode.WALL, "text": "Wall[1]", "key": KEY_1},
+		{"mode": PlaceMode.WALL, "text": "House[1]", "key": KEY_1},
 		{"mode": PlaceMode.TOWER, "text": "Tower[2]", "key": KEY_2},
 		{"mode": PlaceMode.SOLDIER, "text": "Soldier[3]", "key": KEY_3},
 		{"mode": PlaceMode.ARCHER, "text": "Archer[4]", "key": KEY_4},
@@ -155,7 +155,7 @@ func _place_building(type: int, team: int, gpos: Vector2i) -> void:
 	# 获取建筑网格大小
 	var gsize: Vector2i
 	if type == BuildingScript.BuildingType.WALL:
-		gsize = Vector2i(2, 1)
+		gsize = Vector2i(1, 1)
 	else:
 		gsize = Vector2i(1, 1)
 
@@ -263,7 +263,7 @@ func _update_preview() -> void:
 	var gpos := snap_to_grid(mouse_pos)
 	var gsize: Vector2i
 	if place_mode == PlaceMode.WALL:
-		gsize = Vector2i(2, 1)
+		gsize = Vector2i(1, 1)
 	else:
 		gsize = Vector2i(1, 1)
 
@@ -351,7 +351,7 @@ func _do_place(click_pos: Vector2) -> void:
 	match place_mode:
 		PlaceMode.WALL:
 			var gpos := snap_to_grid(click_pos)
-			if is_grid_free(gpos, Vector2i(2, 1)):
+			if is_grid_free(gpos, Vector2i(1, 1)):
 				_place_building(BuildingScript.BuildingType.WALL, BuildingScript.Team.PLAYER, gpos)
 		PlaceMode.TOWER:
 			var gpos := snap_to_grid(click_pos)
