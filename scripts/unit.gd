@@ -25,8 +25,7 @@ var attack_move_scan_range: float = 300.0
 @onready var nav_agent: NavigationAgent2D = $NavigationAgent2D
 @onready var selection_ring: CanvasItem = $SelectionRing
 @onready var hp_bar: ProgressBar = $HPBar
-@onready var body_visual: ColorRect = $BodyVisual
-@onready var type_label: Label = $BodyVisual/TypeLabel
+@onready var body_sprite: Sprite2D = $BodySprite
 @onready var aggro_line: Line2D = $AggroLine
 
 signal died(unit: Unit)
@@ -54,13 +53,13 @@ func _setup_stats() -> void:
 	hp = max_hp
 
 func _setup_visuals() -> void:
-	var color: Color
-	if team == Team.PLAYER:
-		color = Color(0.2, 0.5, 1.0)
-	else:
-		color = Color(1.0, 0.2, 0.2)
-	body_visual.color = color
-	type_label.text = "S" if unit_type == UnitType.SOLDIER else "A"
+	var color_dir := "blue" if team == Team.PLAYER else "red"
+	var unit_name := "warrior" if unit_type == UnitType.SOLDIER else "archer"
+	var cap_name := "Warrior" if unit_type == UnitType.SOLDIER else "Archer"
+	var path := "res://assets/units/%s_%s/%s_Idle.png" % [color_dir, unit_name, cap_name]
+	var tex := load(path)
+	if tex and body_sprite:
+		body_sprite.texture = tex
 
 func _physics_process(delta: float) -> void:
 	if state == UnitState.DEAD:
@@ -155,8 +154,8 @@ func _perform_attack() -> void:
 		else:
 			attack_target.take_damage(attack_damage)
 		var tween := create_tween()
-		tween.tween_property(body_visual, "scale", Vector2(1.3, 1.3), 0.1)
-		tween.tween_property(body_visual, "scale", Vector2(1.0, 1.0), 0.1)
+		tween.tween_property(body_sprite, "scale", Vector2(0.35, 0.35), 0.1)
+		tween.tween_property(body_sprite, "scale", Vector2(0.3, 0.3), 0.1)
 
 func _spawn_arrow(target) -> void:
 	var arrow_scene := load("res://scenes/arrow.tscn")
