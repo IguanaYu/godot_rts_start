@@ -1,6 +1,6 @@
 extends Node2D
 
-enum BuildingType { WALL, TOWER }
+enum BuildingType { WALL, TOWER, CASTLE, BARRACKS }
 enum Team { PLAYER, ENEMY }
 
 @export var building_type: BuildingType = BuildingType.WALL
@@ -40,6 +40,12 @@ func _setup_stats() -> void:
 		BuildingType.TOWER:
 			max_hp = 150
 			grid_size = Vector2i(1, 1)
+		BuildingType.CASTLE:
+			max_hp = 500
+			grid_size = Vector2i(3, 3)
+		BuildingType.BARRACKS:
+			max_hp = 250
+			grid_size = Vector2i(2, 2)
 	hp = max_hp
 
 func _setup_visuals() -> void:
@@ -47,12 +53,18 @@ func _setup_visuals() -> void:
 
 	# 贴图
 	var color_dir := "blue" if team == Team.PLAYER else "red"
-	if building_type == BuildingType.WALL:
-		var tex := load("res://assets/buildings/%s_house/House1.png" % color_dir)
-		if tex and body_sprite:
-			body_sprite.texture = tex
-	else:
-		var tex := load("res://assets/buildings/%s_tower/Tower.png" % color_dir)
+	var tex_path := ""
+	match building_type:
+		BuildingType.WALL:
+			tex_path = "res://assets/buildings/%s_house/House1.png" % color_dir
+		BuildingType.TOWER:
+			tex_path = "res://assets/buildings/%s_tower/Tower.png" % color_dir
+		BuildingType.CASTLE:
+			tex_path = "res://assets/buildings/%s_castle/Castle.png" % color_dir
+		BuildingType.BARRACKS:
+			tex_path = "res://assets/buildings/%s_barracks/Barracks.png" % color_dir
+	if tex_path != "":
+		var tex := load(tex_path)
 		if tex and body_sprite:
 			body_sprite.texture = tex
 
@@ -61,11 +73,14 @@ func _setup_visuals() -> void:
 	shape.size = pixel_size
 	collision_shape.shape = shape
 
-	# 血条位置
+	# 血条位置（基于贴图实际高度）
+	var sprite_height: float = pixel_size.y
+	if body_sprite.texture:
+		sprite_height = body_sprite.texture.get_height() * body_sprite.scale.y
 	hp_bar.offset_left = -pixel_size.x / 2.0
 	hp_bar.offset_right = pixel_size.x / 2.0
-	hp_bar.offset_top = -pixel_size.y / 2.0 - 12.0
-	hp_bar.offset_bottom = -pixel_size.y / 2.0 - 4.0
+	hp_bar.offset_top = -sprite_height / 2.0 - 8.0
+	hp_bar.offset_bottom = -sprite_height / 2.0
 
 func is_dead() -> bool:
 	return _is_dead

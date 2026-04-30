@@ -5,7 +5,7 @@ const BuildingScript := preload("res://scripts/building.gd")
 const GRID_SIZE := 64
 const NAV_BOUNDS := [Vector2(-500, -500), Vector2(1500, -500), Vector2(1500, 1200), Vector2(-500, 1200)]
 
-enum PlaceMode { NONE, WALL, TOWER, SOLDIER, ARCHER }
+enum PlaceMode { NONE, WALL, TOWER, CASTLE, BARRACKS, SOLDIER, ARCHER }
 
 # 框选
 var is_selecting: bool = false
@@ -63,6 +63,8 @@ func _create_ui() -> void:
 		{"mode": PlaceMode.TOWER, "text": "Tower[2]", "key": KEY_2},
 		{"mode": PlaceMode.SOLDIER, "text": "Soldier[3]", "key": KEY_3},
 		{"mode": PlaceMode.ARCHER, "text": "Archer[4]", "key": KEY_4},
+		{"mode": PlaceMode.CASTLE, "text": "Castle[5]", "key": KEY_5},
+		{"mode": PlaceMode.BARRACKS, "text": "Barracks[6]", "key": KEY_6},
 	]
 
 	for data in buttons_data:
@@ -121,8 +123,14 @@ func _spawn_initial() -> void:
 		ai.set_script(load("res://scripts/enemy_ai.gd"))
 		unit.add_child(ai)
 
-	# 敌方初始建筑：1 个箭塔 + 2 个围墙
-	_place_building(BuildingScript.BuildingType.TOWER, BuildingScript.Team.ENEMY, Vector2i(14, 4))
+	# 玩家初始建筑
+	_place_building(BuildingScript.BuildingType.CASTLE, BuildingScript.Team.PLAYER, Vector2i(1, 2))
+	_place_building(BuildingScript.BuildingType.BARRACKS, BuildingScript.Team.PLAYER, Vector2i(5, 3))
+
+	# 敌方初始建筑：城堡 + 兵营 + 箭塔 + 围墙
+	_place_building(BuildingScript.BuildingType.CASTLE, BuildingScript.Team.ENEMY, Vector2i(12, 2))
+	_place_building(BuildingScript.BuildingType.BARRACKS, BuildingScript.Team.ENEMY, Vector2i(10, 3))
+	_place_building(BuildingScript.BuildingType.TOWER, BuildingScript.Team.ENEMY, Vector2i(15, 4))
 	_place_building(BuildingScript.BuildingType.WALL, BuildingScript.Team.ENEMY, Vector2i(11, 4))
 	_place_building(BuildingScript.BuildingType.WALL, BuildingScript.Team.ENEMY, Vector2i(11, 6))
 
@@ -154,10 +162,15 @@ func _place_building(type: int, team: int, gpos: Vector2i) -> void:
 
 	# 获取建筑网格大小
 	var gsize: Vector2i
-	if type == BuildingScript.BuildingType.WALL:
-		gsize = Vector2i(1, 1)
-	else:
-		gsize = Vector2i(1, 1)
+	match type:
+		BuildingScript.BuildingType.WALL:
+			gsize = Vector2i(1, 1)
+		BuildingScript.BuildingType.TOWER:
+			gsize = Vector2i(1, 1)
+		BuildingScript.BuildingType.CASTLE:
+			gsize = Vector2i(3, 3)
+		BuildingScript.BuildingType.BARRACKS:
+			gsize = Vector2i(2, 2)
 
 	# 中心需要偏移（WALL 是 2x1，中心在两个格子中间）
 	if gsize.x > 1 or gsize.y > 1:
@@ -262,10 +275,17 @@ func _update_preview() -> void:
 	var mouse_pos := get_global_mouse_position()
 	var gpos := snap_to_grid(mouse_pos)
 	var gsize: Vector2i
-	if place_mode == PlaceMode.WALL:
-		gsize = Vector2i(1, 1)
-	else:
-		gsize = Vector2i(1, 1)
+	match place_mode:
+		PlaceMode.WALL:
+			gsize = Vector2i(1, 1)
+		PlaceMode.TOWER:
+			gsize = Vector2i(1, 1)
+		PlaceMode.CASTLE:
+			gsize = Vector2i(3, 3)
+		PlaceMode.BARRACKS:
+			gsize = Vector2i(2, 2)
+		_:
+			gsize = Vector2i(1, 1)
 
 	var world_pos := grid_to_world(gpos)
 	if gsize.x > 1 or gsize.y > 1:
@@ -277,7 +297,13 @@ func _update_preview() -> void:
 	preview_rect.size = Vector2(gsize.x * GRID_SIZE, gsize.y * GRID_SIZE)
 	preview_rect.color = Color(0, 1, 0, 0.3) if can_place else Color(1, 0, 0, 0.3)
 
-	var type_name := "Wall" if place_mode == PlaceMode.WALL else "Tower"
+	var type_name := ""
+	match place_mode:
+		PlaceMode.WALL: type_name = "Wall"
+		PlaceMode.TOWER: type_name = "Tower"
+		PlaceMode.CASTLE: type_name = "Castle"
+		PlaceMode.BARRACKS: type_name = "Barracks"
+		_: type_name = "Building"
 	place_mode_label.text = "Place " + type_name + " (Esc cancel)"
 	place_mode_label.visible = true
 
@@ -285,19 +311,26 @@ func _check_victory() -> void:
 	if result_label.visible:
 		return
 
-	var player_alive := get_tree().get_nodes_in_group("player_units").filter(
-		func(u): return not u.is_dead() if u.has_method("is_dead") else false
-	)
-	var enemy_alive := get_tree().get_nodes_in_group("enemy_units").filter(
-		func(u): return not u.is_dead() if u.has_method("is_dead") else false
-	)
+	# 检查玩家城堡是否存活
+	var player_castle_alive := false
+	for b in get_tree().get_nodes_in_group("player_buildings"):
+		if b.has_method("is_dead") and not b.is_dead():
+			if b.building_type == BuildingScript.BuildingType.CASTLE:
+				player_castle_alive = true
+				break
 
-	if enemy_alive.is_empty() and get_tree().get_nodes_in_group("enemy_buildings").filter(
-		func(b): return not b.is_dead() if b.has_method("is_dead") else false
-	).is_empty():
+	# 检查敌方城堡是否存活
+	var enemy_castle_alive := false
+	for b in get_tree().get_nodes_in_group("enemy_buildings"):
+		if b.has_method("is_dead") and not b.is_dead():
+			if b.building_type == BuildingScript.BuildingType.CASTLE:
+				enemy_castle_alive = true
+				break
+
+	if not enemy_castle_alive:
 		result_label.text = "Victory!"
 		result_label.visible = true
-	elif player_alive.is_empty():
+	elif not player_castle_alive:
 		result_label.text = "Defeat!"
 		result_label.visible = true
 
@@ -341,6 +374,10 @@ func _input(event: InputEvent) -> void:
 				_enter_place_mode(PlaceMode.SOLDIER)
 			KEY_4:
 				_enter_place_mode(PlaceMode.ARCHER)
+			KEY_5:
+				_enter_place_mode(PlaceMode.CASTLE)
+			KEY_6:
+				_enter_place_mode(PlaceMode.BARRACKS)
 			KEY_ESCAPE:
 				place_mode = PlaceMode.NONE
 				attack_move_mode = false
@@ -365,6 +402,14 @@ func _do_place(click_pos: Vector2) -> void:
 			var unit := _create_unit(UnitScript.UnitType.ARCHER, UnitScript.Team.PLAYER, click_pos)
 			player_units_node.add_child(unit)
 			unit.add_to_group("player_units")
+		PlaceMode.CASTLE:
+			var gpos := snap_to_grid(click_pos)
+			if is_grid_free(gpos, Vector2i(3, 3)):
+				_place_building(BuildingScript.BuildingType.CASTLE, BuildingScript.Team.PLAYER, gpos)
+		PlaceMode.BARRACKS:
+			var gpos := snap_to_grid(click_pos)
+			if is_grid_free(gpos, Vector2i(2, 2)):
+				_place_building(BuildingScript.BuildingType.BARRACKS, BuildingScript.Team.PLAYER, gpos)
 
 # --- 攻击移动 ---
 
