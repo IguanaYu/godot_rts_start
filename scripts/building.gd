@@ -11,6 +11,7 @@ var max_hp: int
 var grid_size: Vector2i = Vector2i(1, 1)
 var grid_pos: Vector2i = Vector2i.ZERO
 var _is_dead: bool = false
+var _shadow: Sprite2D = null
 
 # 箭塔攻击
 var attack_target = null
@@ -81,6 +82,29 @@ func _setup_visuals() -> void:
 	hp_bar.offset_right = pixel_size.x / 2.0
 	hp_bar.offset_top = -sprite_height / 2.0 - 8.0
 	hp_bar.offset_bottom = -sprite_height / 2.0
+
+	# 创建脚底影子
+	_shadow = Sprite2D.new()
+	var shadow_w := int(pixel_size.x * 1.2)
+	var shadow_h := int(pixel_size.y * 0.6)
+	var img := Image.create(shadow_w, shadow_h, false, Image.FORMAT_RGBA8)
+	for x in range(shadow_w):
+		for y in range(shadow_h):
+			var dx := (float(x) - shadow_w / 2.0) / (shadow_w / 2.0)
+			var dy := (float(y) - shadow_h / 2.0) / (shadow_h / 2.0)
+			if dx * dx + dy * dy <= 1.0:
+				img.set_pixel(x, y, Color(0, 0, 0, 0.35))
+	_shadow.texture = ImageTexture.create_from_image(img)
+	_shadow.z_index = 0
+	add_child(_shadow)
+	move_child(_shadow, 0)
+
+	# 贴图上移，形成站立效果
+	var lift: float = sprite_height * 0.15
+	body_sprite.position.y = -lift
+	# HPBar 跟随上移
+	hp_bar.offset_top += lift
+	hp_bar.offset_bottom += lift
 
 func is_dead() -> bool:
 	return _is_dead

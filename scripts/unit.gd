@@ -41,6 +41,7 @@ var _frames_idle: int = 6
 var _frames_run: int = 6
 var _frames_attack: int = 6
 var _is_attacking: bool = false
+var _shadow: Sprite2D = null
 
 signal died(unit: Unit)
 
@@ -78,6 +79,27 @@ func _setup_visuals() -> void:
 	_frames_run = _tex_run.get_width() / 192 if _tex_run else 6
 	_frames_attack = _tex_attack.get_width() / 192 if _tex_attack else 6
 	_set_anim("idle")
+
+	# 创建脚底影子
+	_shadow = Sprite2D.new()
+	var shadow_size := Vector2i(32, 16)
+	var img := Image.create(shadow_size.x, shadow_size.y, false, Image.FORMAT_RGBA8)
+	for x in range(shadow_size.x):
+		for y in range(shadow_size.y):
+			var dx := (float(x) - shadow_size.x / 2.0) / (shadow_size.x / 2.0)
+			var dy := (float(y) - shadow_size.y / 2.0) / (shadow_size.y / 2.0)
+			if dx * dx + dy * dy <= 1.0:
+				img.set_pixel(x, y, Color(0, 0, 0, 0.4))
+	_shadow.texture = ImageTexture.create_from_image(img)
+	_shadow.z_index = 0
+	add_child(_shadow)
+	move_child(_shadow, 0)
+
+	# 贴图上移，形成站立效果
+	body_sprite.position.y = -20
+	# HPBar 跟随上移
+	hp_bar.offset_top += 20
+	hp_bar.offset_bottom += 20
 
 func _set_anim(anim_name: String) -> void:
 	if anim_name == _anim_state:
