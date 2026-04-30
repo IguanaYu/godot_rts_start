@@ -28,6 +28,20 @@ var attack_move_scan_range: float = 300.0
 @onready var body_sprite: Sprite2D = $BodySprite
 @onready var aggro_line: Line2D = $AggroLine
 
+# 动画
+var _anim_state: String = ""
+var _anim_frame: int = 0
+var _anim_timer: float = 0.0
+var _anim_fps: float = 8.0
+var _tex_idle: Texture2D = null
+var _tex_run: Texture2D = null
+var _tex_attack: Texture2D = null
+var _anim_total_frames: int = 6
+var _frames_idle: int = 6
+var _frames_run: int = 6
+var _frames_attack: int = 6
+var _is_attacking: bool = false
+
 signal died(unit: Unit)
 
 func _ready() -> void:
@@ -55,11 +69,72 @@ func _setup_stats() -> void:
 func _setup_visuals() -> void:
 	var color_dir := "blue" if team == Team.PLAYER else "red"
 	var unit_name := "warrior" if unit_type == UnitType.SOLDIER else "archer"
-	var cap_name := "Warrior" if unit_type == UnitType.SOLDIER else "Archer"
-	var path := "res://assets/units/%s_%s/%s_Idle.png" % [color_dir, unit_name, cap_name]
-	var tex := load(path)
-	if tex and body_sprite:
+	var base := "res://assets/units/%s_%s" % [color_dir, unit_name]
+
+	_tex_idle = load(base + "/Warrior_Idle.png" if unit_type == UnitType.SOLDIER else base + "/Archer_Idle.png")
+	_tex_run = load(base + "/Warrior_Run.png" if unit_type == UnitType.SOLDIER else base + "/Archer_Run.png")
+	_tex_attack = load(base + "/Warrior_Attack1.png" if unit_type == UnitType.SOLDIER else base + "/Archer_Shoot.png")
+	_frames_idle = _tex_idle.get_width() / 192 if _tex_idle else 6
+	_frames_run = _tex_run.get_width() / 192 if _tex_run else 6
+	_frames_attack = _tex_attack.get_width() / 192 if _tex_attack else 6
+	_set_anim("idle")
+
+func _set_anim(anim_name: String) -> void:
+	if anim_name == _anim_state:
+		return
+	_anim_state = anim_name
+	_anim_frame = 0
+	_anim_timer = 0.0
+	var tex: Texture2D = null
+	match anim_name:
+		"idle":
+			tex = _tex_idle
+			_anim_fps = 8.0
+			_anim_total_frames = _frames_idle
+		"run":
+			tex = _tex_run
+			_anim_fps = 10.0
+			_anim_total_frames = _frames_run
+		"attack":
+			tex = _tex_attack
+			_anim_fps = 12.0
+			_anim_total_frames = _frames_attack
+	if tex:
 		body_sprite.texture = tex
+		body_sprite.hframes = _anim_total_frames
+		body_sprite.frame = 0
+		body_sprite.visible = true
+
+func _update_animation() -> void:
+	if body_sprite.texture == null:
+		return
+	_anim_timer += get_physics_process_delta_time()
+	var frame_duration := 1.0 / _anim_fps
+	if _anim_timer >= frame_duration:
+		_anim_timer -= frame_duration
+		_anim_frame += 1
+		if _anim_frame >= _anim_total_frames:
+			if _anim_state == "attack":
+				_anim_frame = _anim_total_frames - 1
+			else:
+				_anim_frame = 0
+		body_sprite.frame = _anim_frame
+
+	var target_anim := "idle"
+	if state == UnitState.MOVE or state == UnitState.ATTACK_MOVE:
+		target_anim = "run" if velocity.length_squared() > 1.0 else "idle"
+	elif state == UnitState.ATTACK:
+		if velocity.length_squared() > 1.0:
+			target_anim = "run"
+		elif _is_attacking:
+			if _anim_frame >= _anim_total_frames - 1:
+				_is_attacking = false
+				target_anim = "idle"
+			else:
+				target_anim = "attack"
+		else:
+			target_anim = "idle"
+	_set_anim(target_anim)
 
 func _physics_process(delta: float) -> void:
 	if state == UnitState.DEAD:
@@ -80,6 +155,7 @@ func _physics_process(delta: float) -> void:
 
 	attack_timer = max(0.0, attack_timer - delta)
 	_update_aggro_line()
+	_update_animation()
 
 func _move_process() -> void:
 	if nav_agent.is_navigation_finished():
@@ -149,13 +225,13 @@ func _attack_move_process(delta: float) -> void:
 
 func _perform_attack() -> void:
 	if attack_target and not attack_target.is_dead():
+		_is_attacking = true
+		_set_anim("")
+		_set_anim("attack")
 		if unit_type == UnitType.ARCHER:
 			_spawn_arrow(attack_target)
 		else:
 			attack_target.take_damage(attack_damage)
-		var tween := create_tween()
-		tween.tween_property(body_sprite, "scale", Vector2(0.35, 0.35), 0.1)
-		tween.tween_property(body_sprite, "scale", Vector2(0.3, 0.3), 0.1)
 
 func _spawn_arrow(target) -> void:
 	var arrow_scene := load("res://scenes/arrow.tscn")
@@ -195,6 +271,7 @@ func attack_move_to(target_pos: Vector2) -> void:
 func stop() -> void:
 	attack_target = null
 	attack_move_target = Vector2.ZERO
+	_is_attacking = false
 	velocity = Vector2.ZERO
 	nav_agent.target_position = global_position
 	state = UnitState.IDLE
