@@ -177,7 +177,13 @@ func _attack_process(delta: float) -> void:
 		return
 
 	var dist := global_position.distance_to(attack_target.global_position)
-	if dist > attack_range:
+	# 建筑有碰撞体，需要加上碰撞半径才能实际到达攻击范围
+	var effective_attack_range := attack_range
+	if attack_target.has_method("get_rect"):
+		var brect: Rect2 = attack_target.get_rect()
+		var building_radius: float = max(brect.size.x, brect.size.y) / 2.0
+		effective_attack_range = attack_range + building_radius
+	if dist > effective_attack_range:
 		nav_agent.target_position = attack_target.global_position
 		if not nav_agent.is_navigation_finished():
 			var next_pos := nav_agent.get_next_path_position()
