@@ -34,6 +34,7 @@ var grid_size: Vector2i = Vector2i(1, 1)
 var grid_pos: Vector2i = Vector2i.ZERO
 var _is_dead: bool = false
 var _shadow: Sprite2D = null
+const JellyEffect := preload("res://scripts/jelly_effect.gd")
 
 # 建造系统
 var build_time: float = 5.0
@@ -272,6 +273,7 @@ func _tower_process(delta: float) -> void:
 		attack_timer = attack_cooldown
 
 func _spawn_arrow(target) -> void:
+	JellyEffect.play(body_sprite, Vector2(sprite_scale_x, sprite_scale_y))
 	var arrow_scene := load("res://scenes/arrow.tscn")
 	var arrow: Node2D = arrow_scene.instantiate()
 	get_tree().current_scene.add_child(arrow)
