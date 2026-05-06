@@ -1,21 +1,24 @@
-[gd_scene load_steps=2 format=3 uid="uid://bxunit0001"]
+[gd_scene format=3 uid="uid://bxunit0001"]
 
-[ext_resource type="Script" path="res://scripts/unit.gd" id="unit_script"]
+[ext_resource type="Texture2D" uid="uid://uwmjnao0x165" path="res://assets/units/blue_warrior/Warrior_Idle.png" id="2_k673f"]
+[ext_resource type="Script" uid="uid://fjmqlor3rasr" path="res://scripts/unit.gd" id="unit_script"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1"]
 radius = 16.0
 
-[node name="Unit" type="CharacterBody2D"]
+[node name="Unit" type="CharacterBody2D" unique_id=460682109]
 script = ExtResource("unit_script")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1301662309]
 shape = SubResource("CircleShape2D_1")
 
-[node name="BodySprite" type="Sprite2D" parent="."]
+[node name="BodySprite" type="Sprite2D" parent="." unique_id=640436808]
+position = Vector2(0, -20)
 scale = Vector2(0.3, 0.3)
-hframes = 6
+texture = ExtResource("2_k673f")
+hframes = 8
 
-[node name="SelectionRing" type="ColorRect" parent="."]
+[node name="SelectionRing" type="ColorRect" parent="." unique_id=1867120877]
 visible = false
 offset_left = -20.0
 offset_top = -20.0
@@ -23,20 +26,19 @@ offset_right = 20.0
 offset_bottom = 20.0
 color = Color(0, 1, 0.3, 0.35)
 
-[node name="HPBar" type="ProgressBar" parent="."]
+[node name="HPBar" type="ProgressBar" parent="." unique_id=43602349]
 offset_left = -18.0
 offset_top = -28.0
 offset_right = 18.0
 offset_bottom = -20.0
-max_value = 100.0
 value = 100.0
 show_percentage = false
 
-[node name="NavigationAgent2D" type="NavigationAgent2D" parent="."]
+[node name="NavigationAgent2D" type="NavigationAgent2D" parent="." unique_id=2129303765]
 avoidance_enabled = true
 radius = 16.0
 
-[node name="AggroLine" type="Line2D" parent="."]
+[node name="AggroLine" type="Line2D" parent="." unique_id=1137931396]
 visible = false
 width = 2.0
 default_color = Color(1, 0.3, 0.3, 0.7)

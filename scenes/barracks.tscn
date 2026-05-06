@@ -5,10 +5,14 @@
 
 [node name="Barracks" unique_id=759152347 instance=ExtResource("base")]
 building_type = 3
-shadow_scale_x = 1.1
-shadow_scale_y = 0.9
-sprite_lift_ratio = 0.18
+shadow_scale_x = 1.2
+shadow_scale_y = 0.6
+shadow_alpha = 0.5
+shadow_offset_y = 30.0
+sprite_scale_x = 0.7
+sprite_scale_y = 0.7
 
 [node name="BodySprite" parent="." index="2" unique_id=356943588]
-position = Vector2(0, -18.432001)
+position = Vector2(0, -26.88)
+scale = Vector2(0.7, 0.7)
 texture = ExtResource("2_lery3")
