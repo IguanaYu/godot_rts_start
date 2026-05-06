@@ -35,6 +35,12 @@ var grid_pos: Vector2i = Vector2i.ZERO
 var _is_dead: bool = false
 var _shadow: Sprite2D = null
 
+# 建造系统
+var build_time: float = 5.0
+var build_progress: float = 0.0
+var is_constructed: bool = true
+var build_bar: ProgressBar = null
+
 # 箭塔攻击
 var attack_target = null
 var attack_damage: float = 12.0
@@ -216,6 +222,14 @@ func _process(delta: float) -> void:
 		return
 	if _is_dead:
 		return
+	# 建造倒计时
+	if not is_constructed:
+		build_progress += delta
+		if build_bar:
+			build_bar.value = build_progress
+		if build_progress >= build_time:
+			_finish_construction()
+		return
 	if building_type == BuildingType.TOWER:
 		_tower_process(delta)
 
@@ -286,3 +300,41 @@ func _update_hp_bar() -> void:
 	if hp_bar:
 		hp_bar.max_value = max_hp
 		hp_bar.value = hp
+
+func start_construction(duration: float = 5.0) -> void:
+	build_time = duration
+	build_progress = 0.0
+	is_constructed = false
+	body_sprite.modulate.a = 0.5
+	_create_build_bar()
+
+func _create_build_bar() -> void:
+	build_bar = ProgressBar.new()
+	build_bar.max_value = build_time
+	build_bar.value = 0.0
+	build_bar.show_percentage = false
+
+	var pixel_size := Vector2(grid_size.x * 64, grid_size.y * 64)
+	build_bar.offset_left = -pixel_size.x / 2.0
+	build_bar.offset_right = pixel_size.x / 2.0
+	build_bar.offset_top = hp_bar.offset_top - 10.0
+	build_bar.offset_bottom = hp_bar.offset_top - 2.0
+
+	var bg_style := StyleBoxFlat.new()
+	bg_style.bg_color = Color(0.2, 0.2, 0.2, 0.8)
+	bg_style.set_corner_radius_all(2)
+	build_bar.add_theme_stylebox_override("background", bg_style)
+
+	var fill_style := StyleBoxFlat.new()
+	fill_style.bg_color = Color(1.0, 0.85, 0.0)
+	fill_style.set_corner_radius_all(2)
+	build_bar.add_theme_stylebox_override("fill", fill_style)
+
+	add_child(build_bar)
+
+func _finish_construction() -> void:
+	is_constructed = true
+	body_sprite.modulate.a = 1.0
+	if build_bar:
+		build_bar.queue_free()
+		build_bar = null

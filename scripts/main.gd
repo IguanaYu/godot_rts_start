@@ -7,6 +7,15 @@ const NAV_BOUNDS := [Vector2(-500, -500), Vector2(1500, -500), Vector2(1500, 120
 
 enum PlaceMode { NONE, WALL, TOWER, CASTLE, BARRACKS, SOLDIER, ARCHER }
 
+const COSTS := {
+	PlaceMode.WALL: 50,
+	PlaceMode.TOWER: 150,
+	PlaceMode.SOLDIER: 100,
+	PlaceMode.ARCHER: 120,
+	PlaceMode.CASTLE: 500,
+	PlaceMode.BARRACKS: 300,
+}
+
 # 框选
 var is_selecting: bool = false
 var selection_start: Vector2 = Vector2.ZERO
@@ -39,6 +48,8 @@ var occupied_cells: Dictionary = {}  # Vector2i -> Building
 # UI 引用
 var ui_buttons: Dictionary = {}
 var place_mode_label: Label
+var gold: int = 10000
+var gold_label: Label
 
 func _ready() -> void:
 	result_label.visible = false
@@ -88,27 +99,30 @@ func _create_ui() -> void:
 	add_child(canvas)
 
 	var panel := PanelContainer.new()
-	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-	panel.position = Vector2(340, 10)
-	panel.size = Vector2(600, 50)
+	panel.anchor_left = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_top = 0.0
+	panel.anchor_bottom = 0.0
+	panel.offset_top = 10.0
+	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 
 	var hbox := HBoxContainer.new()
 	hbox.add_theme_constant_override("separation", 10)
 	panel.add_child(hbox)
 
 	var buttons_data := [
-		{"mode": PlaceMode.WALL, "text": "House[1]", "key": KEY_1},
-		{"mode": PlaceMode.TOWER, "text": "Tower[2]", "key": KEY_2},
-		{"mode": PlaceMode.SOLDIER, "text": "Soldier[3]", "key": KEY_3},
-		{"mode": PlaceMode.ARCHER, "text": "Archer[4]", "key": KEY_4},
-		{"mode": PlaceMode.CASTLE, "text": "Castle[5]", "key": KEY_5},
-		{"mode": PlaceMode.BARRACKS, "text": "Barracks[6]", "key": KEY_6},
+		{"mode": PlaceMode.WALL, "text": "Wall[1] $50", "key": KEY_1},
+		{"mode": PlaceMode.TOWER, "text": "Tower[2] $150", "key": KEY_2},
+		{"mode": PlaceMode.SOLDIER, "text": "Soldier[3] $100", "key": KEY_3},
+		{"mode": PlaceMode.ARCHER, "text": "Archer[4] $120", "key": KEY_4},
+		{"mode": PlaceMode.CASTLE, "text": "Castle[5] $500", "key": KEY_5},
+		{"mode": PlaceMode.BARRACKS, "text": "Barracks[6] $300", "key": KEY_6},
 	]
 
 	for data in buttons_data:
 		var btn := Button.new()
 		btn.text = data.text
-		btn.custom_minimum_size = Vector2(120, 36)
+		btn.custom_minimum_size = Vector2(135, 36)
 		btn.pressed.connect(func(): _enter_place_mode(data.mode))
 		hbox.add_child(btn)
 		ui_buttons[data.mode] = btn
@@ -117,12 +131,38 @@ func _create_ui() -> void:
 
 	# 放置模式提示
 	place_mode_label = Label.new()
-	place_mode_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-	place_mode_label.position = Vector2(340, 65)
+	place_mode_label.anchor_left = 0.5
+	place_mode_label.anchor_right = 0.5
+	place_mode_label.anchor_top = 0.0
+	place_mode_label.anchor_bottom = 0.0
+	place_mode_label.offset_top = 65.0
+	place_mode_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	place_mode_label.add_theme_font_size_override("font_size", 18)
 	place_mode_label.add_theme_color_override("font_color", Color(1, 0.9, 0.3))
 	place_mode_label.visible = false
 	canvas.add_child(place_mode_label)
+
+	# 金币显示
+	gold_label = Label.new()
+	gold_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	gold_label.offset_left = 10.0
+	gold_label.offset_top = 10.0
+	gold_label.add_theme_font_size_override("font_size", 22)
+	gold_label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
+	_update_gold_display()
+	canvas.add_child(gold_label)
+
+func _update_gold_display() -> void:
+	if gold_label:
+		gold_label.text = "Gold: %d" % gold
+	_update_button_affordability()
+
+func _update_button_affordability() -> void:
+	for mode in ui_buttons:
+		var btn: Button = ui_buttons[mode]
+		var cost: int = COSTS.get(mode, 0)
+		btn.disabled = gold < cost
+		btn.modulate.a = 0.5 if gold < cost else 1.0
 
 func _enter_place_mode(mode: PlaceMode) -> void:
 	if place_mode == mode:
@@ -190,7 +230,7 @@ func is_grid_free(gpos: Vector2i, size: Vector2i) -> bool:
 
 # --- 建筑 ---
 
-func _place_building(type: int, team: int, gpos: Vector2i) -> void:
+func _place_building(type: int, team: int, gpos: Vector2i) -> Node2D:
 	var scene_path := "res://scenes/building.tscn"
 	match type:
 		BuildingScript.BuildingType.WALL: scene_path = "res://scenes/wall.tscn"
@@ -232,6 +272,7 @@ func _place_building(type: int, team: int, gpos: Vector2i) -> void:
 			occupied_cells[Vector2i(gpos.x + dx, gpos.y + dy)] = building
 
 	_rebuild_navigation()
+	return building
 
 func _on_building_died(building: Node2D) -> void:
 	var gpos: Vector2i = building.get("grid_pos")
@@ -348,7 +389,8 @@ func _update_preview() -> void:
 		PlaceMode.CASTLE: type_name = "Castle"
 		PlaceMode.BARRACKS: type_name = "Barracks"
 		_: type_name = "Building"
-	place_mode_label.text = "Place " + type_name + " (Esc cancel)"
+	var cost_preview: int = COSTS.get(place_mode, 0)
+	place_mode_label.text = "Place %s $%d (Esc cancel)" % [type_name, cost_preview]
 	place_mode_label.visible = true
 
 func _check_victory() -> void:
@@ -433,31 +475,50 @@ func _input(event: InputEvent) -> void:
 # --- 放置 ---
 
 func _do_place(click_pos: Vector2) -> void:
+	var cost: int = COSTS.get(place_mode, 0)
+	if gold < cost:
+		return
+
+	var placed := false
 	match place_mode:
 		PlaceMode.WALL:
 			var gpos := snap_to_grid(click_pos)
 			if is_grid_free(gpos, Vector2i(1, 1)):
-				_place_building(BuildingScript.BuildingType.WALL, BuildingScript.Team.PLAYER, gpos)
+				var b = _place_building(BuildingScript.BuildingType.WALL, BuildingScript.Team.PLAYER, gpos)
+				b.start_construction()
+				placed = true
 		PlaceMode.TOWER:
 			var gpos := snap_to_grid(click_pos)
 			if is_grid_free(gpos, Vector2i(1, 1)):
-				_place_building(BuildingScript.BuildingType.TOWER, BuildingScript.Team.PLAYER, gpos)
+				var b = _place_building(BuildingScript.BuildingType.TOWER, BuildingScript.Team.PLAYER, gpos)
+				b.start_construction()
+				placed = true
 		PlaceMode.SOLDIER:
 			var unit := _create_unit(UnitScript.UnitType.SOLDIER, UnitScript.Team.PLAYER, click_pos)
 			player_units_node.add_child(unit)
 			unit.add_to_group("player_units")
+			placed = true
 		PlaceMode.ARCHER:
 			var unit := _create_unit(UnitScript.UnitType.ARCHER, UnitScript.Team.PLAYER, click_pos)
 			player_units_node.add_child(unit)
 			unit.add_to_group("player_units")
+			placed = true
 		PlaceMode.CASTLE:
 			var gpos := snap_to_grid(click_pos)
 			if is_grid_free(gpos, Vector2i(3, 3)):
-				_place_building(BuildingScript.BuildingType.CASTLE, BuildingScript.Team.PLAYER, gpos)
+				var b = _place_building(BuildingScript.BuildingType.CASTLE, BuildingScript.Team.PLAYER, gpos)
+				b.start_construction()
+				placed = true
 		PlaceMode.BARRACKS:
 			var gpos := snap_to_grid(click_pos)
 			if is_grid_free(gpos, Vector2i(2, 2)):
-				_place_building(BuildingScript.BuildingType.BARRACKS, BuildingScript.Team.PLAYER, gpos)
+				var b = _place_building(BuildingScript.BuildingType.BARRACKS, BuildingScript.Team.PLAYER, gpos)
+				b.start_construction()
+				placed = true
+
+	if placed:
+		gold -= cost
+		_update_gold_display()
 
 # --- 攻击移动 ---
 
