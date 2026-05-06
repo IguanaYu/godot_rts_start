@@ -1,9 +1,14 @@
-[gd_scene format=3 uid="uid://barracks0001"]
+[gd_scene format=3 uid="uid://dhyxequcxurbh"]
 
+[ext_resource type="Texture2D" uid="uid://vqewokkrry6i" path="res://assets/buildings/blue_barracks/Barracks.png" id="2_lery3"]
 [ext_resource type="PackedScene" uid="uid://bxbld0001" path="res://scenes/building.tscn" id="base"]
 
-[node name="Barracks" instance=ExtResource("base")]
+[node name="Barracks" unique_id=759152347 instance=ExtResource("base")]
 building_type = 3
-shadow_scale_x = 0.8
-shadow_scale_y = 0.4
+shadow_scale_x = 1.1
+shadow_scale_y = 0.9
 sprite_lift_ratio = 0.18
+
+[node name="BodySprite" parent="." index="2" unique_id=356943588]
+position = Vector2(0, -18.432001)
+texture = ExtResource("2_lery3")

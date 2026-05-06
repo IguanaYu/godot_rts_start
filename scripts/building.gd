@@ -1,14 +1,32 @@
+@tool
 extends Node2D
 
 enum BuildingType { WALL, TOWER, CASTLE, BARRACKS }
 enum Team { PLAYER, ENEMY }
 
-@export var building_type: BuildingType = BuildingType.WALL
+@export var building_type: BuildingType = BuildingType.WALL:
+	set(v): building_type = v; _refresh_editor()
 @export var team: Team = Team.PLAYER
-@export var shadow_scale_x: float = 0.85
-@export var shadow_scale_y: float = 0.45
-@export var shadow_alpha: float = 0.35
-@export var sprite_lift_ratio: float = 0.15
+@export var shadow_scale_x: float = 0.85:
+	set(v): shadow_scale_x = v; _refresh_editor()
+@export var shadow_scale_y: float = 0.45:
+	set(v): shadow_scale_y = v; _refresh_editor()
+@export var shadow_alpha: float = 0.35:
+	set(v): shadow_alpha = v; _refresh_editor()
+@export var shadow_offset_x: float = 0.0:
+	set(v): shadow_offset_x = v; _refresh_editor()
+@export var shadow_offset_y: float = 0.0:
+	set(v): shadow_offset_y = v; _refresh_editor()
+@export var sprite_scale_x: float = 0.4:
+	set(v): sprite_scale_x = v; _refresh_editor()
+@export var sprite_scale_y: float = 0.4:
+	set(v): sprite_scale_y = v; _refresh_editor()
+@export var sprite_lift_ratio: float = 0.15:
+	set(v): sprite_lift_ratio = v; _refresh_editor()
+@export var sprite_offset_x: float = 0.0:
+	set(v): sprite_offset_x = v; _refresh_editor()
+@export var sprite_offset_y: float = 0.0:
+	set(v): sprite_offset_y = v; _refresh_editor()
 
 var hp: int
 var max_hp: int
@@ -34,41 +52,68 @@ signal died(building)
 
 func _ready() -> void:
 	_setup_stats()
-	_setup_visuals()
-	_update_hp_bar()
+	if Engine.is_editor_hint():
+		_setup_editor_visuals()
+	else:
+		_setup_visuals()
+		_update_hp_bar()
 
 func _setup_stats() -> void:
 	match building_type:
 		BuildingType.WALL:
 			max_hp = 300
 			grid_size = Vector2i(1, 1)
-			shadow_scale_x = 0.85
-			shadow_scale_y = 0.45
-			sprite_lift_ratio = 0.12
 		BuildingType.TOWER:
 			max_hp = 150
 			grid_size = Vector2i(1, 1)
-			shadow_scale_x = 0.85
-			shadow_scale_y = 0.45
-			sprite_lift_ratio = 0.18
 		BuildingType.CASTLE:
 			max_hp = 500
 			grid_size = Vector2i(3, 3)
-			shadow_scale_x = 0.7
-			shadow_scale_y = 0.4
-			sprite_lift_ratio = 0.18
 		BuildingType.BARRACKS:
 			max_hp = 250
 			grid_size = Vector2i(2, 2)
-			shadow_scale_x = 0.8
-			shadow_scale_y = 0.4
-			sprite_lift_ratio = 0.18
 	hp = max_hp
+
+func _setup_editor_visuals() -> void:
+	_setup_texture()
+	_rebuild_shadow()
+	_apply_sprite_position()
 
 func _setup_visuals() -> void:
 	var pixel_size := Vector2(grid_size.x * 64, grid_size.y * 64)
 
 	# 贴图
+	_setup_texture()
+
+	# 碰撞
+	var shape := RectangleShape2D.new()
+	shape.size = pixel_size
+	collision_shape.shape = shape
+
+	# 血条位置
+	var sprite_height: float = pixel_size.y
+	if body_sprite.texture:
+		sprite_height = body_sprite.texture.get_height() * body_sprite.scale.y
+	hp_bar.offset_left = -pixel_size.x / 2.0
+	hp_bar.offset_right = pixel_size.x / 2.0
+	hp_bar.offset_top = -sprite_height / 2.0 - 8.0
+	hp_bar.offset_bottom = -sprite_height / 2.0
+
+	# 影子
+	_rebuild_shadow()
+
+	# 贴图上移
+	_apply_sprite_position()
+
+	# HPBar 跟随上移
+	var sprite_height_final: float = pixel_size.y
+	if body_sprite.texture:
+		sprite_height_final = body_sprite.texture.get_height() * body_sprite.scale.y
+	var lift: float = sprite_height_final * sprite_lift_ratio
+	hp_bar.offset_top += lift + sprite_offset_y
+	hp_bar.offset_bottom += lift + sprite_offset_y
+
+func _setup_texture() -> void:
 	var color_dir := "blue" if team == Team.PLAYER else "red"
 	var tex_path := ""
 	match building_type:
@@ -85,24 +130,21 @@ func _setup_visuals() -> void:
 		if tex and body_sprite:
 			body_sprite.texture = tex
 
-	# 碰撞
-	var shape := RectangleShape2D.new()
-	shape.size = pixel_size
-	collision_shape.shape = shape
+func _rebuild_shadow() -> void:
+	if not is_node_ready():
+		return
 
-	# 血条位置（基于贴图实际高度）
-	var sprite_height: float = pixel_size.y
-	if body_sprite.texture:
-		sprite_height = body_sprite.texture.get_height() * body_sprite.scale.y
-	hp_bar.offset_left = -pixel_size.x / 2.0
-	hp_bar.offset_right = pixel_size.x / 2.0
-	hp_bar.offset_top = -sprite_height / 2.0 - 8.0
-	hp_bar.offset_bottom = -sprite_height / 2.0
+	# 移除旧阴影
+	if _shadow and is_instance_valid(_shadow):
+		_shadow.queue_free()
+		_shadow = null
 
-	# 创建脚底影子
-	_shadow = Sprite2D.new()
+	var pixel_size := Vector2(grid_size.x * 64, grid_size.y * 64)
 	var shadow_w := int(pixel_size.x * shadow_scale_x)
 	var shadow_h := int(pixel_size.y * shadow_scale_y)
+	if shadow_w <= 0 or shadow_h <= 0:
+		return
+
 	var img := Image.create(shadow_w, shadow_h, false, Image.FORMAT_RGBA8)
 	for x in range(shadow_w):
 		for y in range(shadow_h):
@@ -110,17 +152,57 @@ func _setup_visuals() -> void:
 			var dy := (float(y) - shadow_h / 2.0) / (shadow_h / 2.0)
 			if dx * dx + dy * dy <= 1.0:
 				img.set_pixel(x, y, Color(0, 0, 0, shadow_alpha))
+
+	_shadow = Sprite2D.new()
 	_shadow.texture = ImageTexture.create_from_image(img)
 	_shadow.z_index = 0
+	_shadow.position = Vector2(shadow_offset_x, shadow_offset_y)
 	add_child(_shadow)
 	move_child(_shadow, 0)
 
-	# 贴图上移，形成站立效果
+func _apply_sprite_position() -> void:
+	if not is_node_ready() or not body_sprite or not body_sprite.texture:
+		return
+
+	var sprite_height: float = body_sprite.texture.get_height() * sprite_scale_y
+	body_sprite.scale = Vector2(sprite_scale_x, sprite_scale_y)
 	var lift: float = sprite_height * sprite_lift_ratio
-	body_sprite.position.y = -lift
-	# HPBar 跟随上移
-	hp_bar.offset_top += lift
-	hp_bar.offset_bottom += lift
+	body_sprite.position.x = sprite_offset_x
+	body_sprite.position.y = -lift + sprite_offset_y
+
+func _refresh_editor() -> void:
+	if not Engine.is_editor_hint():
+		return
+	if not is_node_ready():
+		return
+
+	_setup_stats()
+	_setup_texture()
+	_rebuild_shadow()
+	_apply_sprite_position()
+	queue_redraw()
+
+func _draw() -> void:
+	if not Engine.is_editor_hint():
+		return
+
+	var cell := 64
+	var pixel_size := Vector2(grid_size.x * cell, grid_size.y * cell)
+	var origin := -pixel_size / 2.0
+
+	# 高亮填充建筑占用的格子
+	draw_rect(Rect2(origin, pixel_size), Color(0.3, 0.6, 1.0, 0.15))
+
+	# 画格子线
+	for x in range(grid_size.x + 1):
+		var x_pos := origin.x + x * cell
+		draw_line(Vector2(x_pos, origin.y), Vector2(x_pos, origin.y + pixel_size.y), Color(1, 1, 1, 0.5), 1.0)
+	for y in range(grid_size.y + 1):
+		var y_pos := origin.y + y * cell
+		draw_line(Vector2(origin.x, y_pos), Vector2(origin.x + pixel_size.x, y_pos), Color(1, 1, 1, 0.5), 1.0)
+
+	# 碰撞边界（红色）
+	draw_rect(Rect2(origin, pixel_size), Color(1, 0, 0, 0.6), false, 2.0)
 
 func is_dead() -> bool:
 	return _is_dead
@@ -130,6 +212,8 @@ func get_rect() -> Rect2:
 	return Rect2(global_position - pixel_size / 2.0, pixel_size)
 
 func _process(delta: float) -> void:
+	if Engine.is_editor_hint():
+		return
 	if _is_dead:
 		return
 	if building_type == BuildingType.TOWER:
@@ -182,6 +266,8 @@ func _spawn_arrow(target) -> void:
 	arrow.hit_damage = int(attack_damage)
 
 func take_damage(amount: int) -> void:
+	if Engine.is_editor_hint():
+		return
 	if _is_dead:
 		return
 	hp = max(0, hp - amount)
