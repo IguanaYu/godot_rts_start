@@ -18,6 +18,10 @@ var attack_move_mode: bool = false
 # 放置模式
 var place_mode: PlaceMode = PlaceMode.NONE
 
+# 网格显示
+var show_grid: bool = false
+var grid_overlay = null
+
 # 网格占用
 var occupied_cells: Dictionary = {}  # Vector2i -> Building
 
@@ -42,7 +46,41 @@ func _ready() -> void:
 	preview_rect.visible = false
 	_create_ui()
 	_spawn_initial()
+	_create_grid()
 	await get_tree().process_frame
+
+
+func _create_grid() -> void:
+	var container := Node2D.new()
+	container.name = "GridOverlay"
+	container.z_index = 1
+	container.visible = false
+	add_child(container)
+	move_child(container, 1)
+	var start_x := -500
+	var start_y := -500
+	var end_x := 1500
+	var end_y := 1200
+	var color := Color(1, 1, 1, 0.2)
+	var x := start_x
+	while x <= end_x:
+		var line := Line2D.new()
+		line.width = 1.0
+		line.default_color = color
+		line.add_point(Vector2(x, start_y))
+		line.add_point(Vector2(x, end_y))
+		container.add_child(line)
+		x += GRID_SIZE
+	var y := start_y
+	while y <= end_y:
+		var line := Line2D.new()
+		line.width = 1.0
+		line.default_color = color
+		line.add_point(Vector2(start_x, y))
+		line.add_point(Vector2(end_x, y))
+		container.add_child(line)
+		y += GRID_SIZE
+	grid_overlay = container
 
 func _create_ui() -> void:
 	var canvas := CanvasLayer.new()
@@ -384,6 +422,10 @@ func _input(event: InputEvent) -> void:
 				_enter_place_mode(PlaceMode.CASTLE)
 			KEY_6:
 				_enter_place_mode(PlaceMode.BARRACKS)
+			KEY_G:
+				show_grid = not show_grid
+				if grid_overlay:
+					grid_overlay.visible = show_grid
 			KEY_ESCAPE:
 				place_mode = PlaceMode.NONE
 				attack_move_mode = false

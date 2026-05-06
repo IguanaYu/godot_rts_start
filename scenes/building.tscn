@@ -1,27 +1,26 @@
-[gd_scene load_steps=2 format=3 uid="uid://bxbld0001"]
+[gd_scene format=3 uid="uid://bxbld0001"]
 
-[ext_resource type="Script" path="res://scripts/building.gd" id="bld_script"]
+[ext_resource type="Script" uid="uid://brxgc8ols7de3" path="res://scripts/building.gd" id="bld_script"]
 
-[node name="Building" type="Node2D"]
+[node name="Building" type="Node2D" unique_id=90714510]
 script = ExtResource("bld_script")
 
-[node name="StaticBody2D" type="StaticBody2D" parent="."]
+[node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=1842188918]
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D" unique_id=1519303474]
 
-[node name="BodySprite" type="Sprite2D" parent="."]
+[node name="BodySprite" type="Sprite2D" parent="." unique_id=356943588]
 scale = Vector2(0.4, 0.4)
 
-[node name="HPBar" type="ProgressBar" parent="."]
+[node name="HPBar" type="ProgressBar" parent="." unique_id=1713624921]
 offset_left = -32.0
 offset_top = -44.0
 offset_right = 32.0
 offset_bottom = -36.0
-max_value = 100.0
 value = 100.0
 show_percentage = false
 
-[node name="AggroLine" type="Line2D" parent="."]
+[node name="AggroLine" type="Line2D" parent="." unique_id=1219533136]
 visible = false
 width = 2.0
 default_color = Color(1, 0.3, 0.3, 0.7)
