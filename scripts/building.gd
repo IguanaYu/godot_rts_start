@@ -80,14 +80,15 @@ func _setup_editor_visuals() -> void:
 	_apply_sprite_position()
 
 func _setup_visuals() -> void:
-	var pixel_size := Vector2(grid_size.x * 64, grid_size.y * 64)
+	var pixel_size := Vector2(grid_size.x * Iso.TILE_W, grid_size.y * Iso.TILE_H)
 
 	# 贴图
 	_setup_texture()
 
-	# 碰撞
+	# 碰撞 — 使用菱形包围盒
+	var rect := get_rect()
 	var shape := RectangleShape2D.new()
-	shape.size = pixel_size
+	shape.size = rect.size
 	collision_shape.shape = shape
 
 	# 血条位置
@@ -139,7 +140,7 @@ func _rebuild_shadow() -> void:
 		_shadow.queue_free()
 		_shadow = null
 
-	var pixel_size := Vector2(grid_size.x * 64, grid_size.y * 64)
+	var pixel_size := Vector2(grid_size.x * Iso.TILE_W, grid_size.y * Iso.TILE_H)
 	var shadow_w := int(pixel_size.x * shadow_scale_x)
 	var shadow_h := int(pixel_size.y * shadow_scale_y)
 	if shadow_w <= 0 or shadow_h <= 0:
@@ -208,8 +209,21 @@ func is_dead() -> bool:
 	return _is_dead
 
 func get_rect() -> Rect2:
-	var pixel_size := Vector2(grid_size.x * 64, grid_size.y * 64)
-	return Rect2(global_position - pixel_size / 2.0, pixel_size)
+	var diamond := Iso.building_diamond(grid_pos.x, grid_pos.y, grid_size.x, grid_size.y)
+	var min_x := INF
+	var min_y := INF
+	var max_x := -INF
+	var max_y := -INF
+	for pt in diamond:
+		min_x = min(min_x, pt.x)
+		min_y = min(min_y, pt.y)
+		max_x = max(max_x, pt.x)
+		max_y = max(max_y, pt.y)
+	return Rect2(min_x, min_y, max_x - min_x, max_y - min_y)
+
+func has_point(pos: Vector2) -> bool:
+	# 使用菱形包围盒做点击检测（足够精确且兼容性好）
+	return get_rect().has_point(pos)
 
 func _process(delta: float) -> void:
 	if Engine.is_editor_hint():

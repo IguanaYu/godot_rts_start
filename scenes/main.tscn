@@ -3,24 +3,17 @@
 [ext_resource type="Script" path="res://scripts/main.gd" id="main_script"]
 
 [sub_resource type="NavigationPolygon" id="NavPoly_1"]
-vertices = PackedVector2Array(-500, -500, 1500, -500, 1500, 1200, -500, 1200)
+vertices = PackedVector2Array(32, 0, 672, 320, 160, 608, -480, 256)
 polygons = [PackedInt32Array(0, 1, 2, 3)]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("main_script")
 
-[node name="Ground" type="ColorRect" parent="."]
-offset_left = -500.0
-offset_top = -500.0
-offset_right = 1500.0
-offset_bottom = 1200.0
-color = Color(0.35, 0.55, 0.25, 1)
-
 [node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
 navigation_polygon = SubResource("NavPoly_1")
 
 [node name="Camera2D" type="Camera2D" parent="."]
-position = Vector2(500, 350)
+position = Vector2(96, 304)
 
 [node name="PlayerUnits" type="Node2D" parent="."]
 
@@ -33,10 +26,9 @@ visible = false
 color = Color(0.4, 0.7, 1, 0.25)
 mouse_filter = 2
 
-[node name="PreviewRect" type="ColorRect" parent="."]
+[node name="PreviewPoly" type="Polygon2D" parent="."]
 visible = false
 color = Color(0, 1, 0, 0.3)
-mouse_filter = 2
 
 [node name="ResultLabel" type="Label" parent="."]
 offset_left = 350.0

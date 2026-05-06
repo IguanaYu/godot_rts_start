@@ -2,8 +2,9 @@ extends Node2D
 
 const UnitScript := preload("res://scripts/unit.gd")
 const BuildingScript := preload("res://scripts/building.gd")
-const GRID_SIZE := 64
-const NAV_BOUNDS := [Vector2(-500, -500), Vector2(1500, -500), Vector2(1500, 1200), Vector2(-500, 1200)]
+
+const GRID_COLS := 20
+const GRID_ROWS := 16
 
 enum PlaceMode { NONE, WALL, TOWER, CASTLE, BARRACKS, SOLDIER, ARCHER }
 
@@ -33,7 +34,7 @@ var occupied_cells: Dictionary = {}  # Vector2i -> Building
 @onready var buildings_node: Node2D = $Buildings
 @onready var result_label: Label = $ResultLabel
 @onready var attack_move_indicator: Label = $AttackMoveIndicator
-@onready var preview_rect: ColorRect = $PreviewRect
+@onready var preview_poly: Polygon2D = $PreviewPoly
 @onready var nav_region: NavigationRegion2D = $NavigationRegion2D
 
 # UI 引用
@@ -43,12 +44,57 @@ var place_mode_label: Label
 func _ready() -> void:
 	result_label.visible = false
 	attack_move_indicator.visible = false
-	preview_rect.visible = false
+	preview_poly.visible = false
+
+	# 创建菱形地面
+	_create_ground()
+
 	_create_ui()
 	_spawn_initial()
 	_create_grid()
+
+	# Y-Sort 深度排序
+	player_units_node.y_sort_enabled = true
+	enemy_units_node.y_sort_enabled = true
+	buildings_node.y_sort_enabled = true
+
+	# 相机居中
+	camera.position = grid_to_world(Vector2i(GRID_COLS / 2, GRID_ROWS / 2))
+
 	await get_tree().process_frame
 
+
+func _create_ground() -> void:
+	var ground := Polygon2D.new()
+	ground.name = "Ground"
+	ground.polygon = Iso.building_diamond(0, 0, GRID_COLS, GRID_ROWS)
+	ground.color = Color(0.35, 0.55, 0.25, 1)
+	ground.z_index = -1
+	add_child(ground)
+	move_child(ground, 0)
+
+
+# --- 坐标转换 ---
+
+func grid_to_world(gpos: Vector2i) -> Vector2:
+	return Iso.grid_to_world(gpos.x, gpos.y)
+
+func snap_to_grid(pos: Vector2) -> Vector2i:
+	return Iso.snap_to_grid(pos)
+
+
+# --- 网格工具 ---
+
+func is_grid_free(gpos: Vector2i, size: Vector2i) -> bool:
+	for dx in range(size.x):
+		for dy in range(size.y):
+			var cell := Vector2i(gpos.x + dx, gpos.y + dy)
+			if cell in occupied_cells:
+				return false
+	return true
+
+
+# --- 网格显示 ---
 
 func _create_grid() -> void:
 	var container := Node2D.new()
@@ -57,30 +103,30 @@ func _create_grid() -> void:
 	container.visible = false
 	add_child(container)
 	move_child(container, 1)
-	var start_x := -500
-	var start_y := -500
-	var end_x := 1500
-	var end_y := 1200
 	var color := Color(1, 1, 1, 0.2)
-	var x := start_x
-	while x <= end_x:
+
+	# 沿 gx 轴的线（constant gx, varying gy）
+	for gx in range(GRID_COLS + 1):
 		var line := Line2D.new()
 		line.width = 1.0
 		line.default_color = color
-		line.add_point(Vector2(x, start_y))
-		line.add_point(Vector2(x, end_y))
+		line.add_point(Iso.grid_to_world(gx, 0))
+		line.add_point(Iso.grid_to_world(gx, GRID_ROWS))
 		container.add_child(line)
-		x += GRID_SIZE
-	var y := start_y
-	while y <= end_y:
+
+	# 沿 gy 轴的线（constant gy, varying gx）
+	for gy in range(GRID_ROWS + 1):
 		var line := Line2D.new()
 		line.width = 1.0
 		line.default_color = color
-		line.add_point(Vector2(start_x, y))
-		line.add_point(Vector2(end_x, y))
+		line.add_point(Iso.grid_to_world(0, gy))
+		line.add_point(Iso.grid_to_world(GRID_COLS, gy))
 		container.add_child(line)
-		y += GRID_SIZE
+
 	grid_overlay = container
+
+
+# --- UI ---
 
 func _create_ui() -> void:
 	var canvas := CanvasLayer.new()
@@ -131,62 +177,52 @@ func _enter_place_mode(mode: PlaceMode) -> void:
 		place_mode = mode
 	attack_move_mode = false
 
+
+# --- 初始生成 ---
+
 func _spawn_initial() -> void:
 	# 玩家单位
 	var player_spawns := [
-		{"type": UnitScript.UnitType.SOLDIER, "pos": Vector2(200, 200)},
-		{"type": UnitScript.UnitType.SOLDIER, "pos": Vector2(200, 280)},
-		{"type": UnitScript.UnitType.SOLDIER, "pos": Vector2(200, 360)},
-		{"type": UnitScript.UnitType.ARCHER, "pos": Vector2(150, 240)},
-		{"type": UnitScript.UnitType.ARCHER, "pos": Vector2(150, 320)},
+		{"type": UnitScript.UnitType.SOLDIER, "gpos": Vector2i(2, 4)},
+		{"type": UnitScript.UnitType.SOLDIER, "gpos": Vector2i(2, 5)},
+		{"type": UnitScript.UnitType.SOLDIER, "gpos": Vector2i(3, 4)},
+		{"type": UnitScript.UnitType.ARCHER,  "gpos": Vector2i(1, 4)},
+		{"type": UnitScript.UnitType.ARCHER,  "gpos": Vector2i(1, 5)},
 	]
 	for spawn in player_spawns:
-		var unit := _create_unit(spawn.type, UnitScript.Team.PLAYER, spawn.pos)
+		var pos := grid_to_world(spawn.gpos)
+		var unit := _create_unit(spawn.type, UnitScript.Team.PLAYER, pos)
 		player_units_node.add_child(unit)
 		unit.add_to_group("player_units")
 
 	# 敌方单位
 	var enemy_spawns := [
-		{"type": UnitScript.UnitType.SOLDIER, "pos": Vector2(900, 200)},
-		{"type": UnitScript.UnitType.SOLDIER, "pos": Vector2(900, 280)},
-		{"type": UnitScript.UnitType.SOLDIER, "pos": Vector2(900, 360)},
-		{"type": UnitScript.UnitType.ARCHER, "pos": Vector2(950, 240)},
-		{"type": UnitScript.UnitType.ARCHER, "pos": Vector2(950, 320)},
+		{"type": UnitScript.UnitType.SOLDIER, "gpos": Vector2i(15, 7)},
+		{"type": UnitScript.UnitType.SOLDIER, "gpos": Vector2i(15, 8)},
+		{"type": UnitScript.UnitType.SOLDIER, "gpos": Vector2i(16, 7)},
+		{"type": UnitScript.UnitType.ARCHER,  "gpos": Vector2i(14, 7)},
+		{"type": UnitScript.UnitType.ARCHER,  "gpos": Vector2i(14, 8)},
 	]
 	for spawn in enemy_spawns:
-		var unit := _create_unit(spawn.type, UnitScript.Team.ENEMY, spawn.pos)
+		var pos := grid_to_world(spawn.gpos)
+		var unit := _create_unit(spawn.type, UnitScript.Team.ENEMY, pos)
 		enemy_units_node.add_child(unit)
 		unit.add_to_group("enemy_units")
 		var ai := Node2D.new()
 		ai.set_script(load("res://scripts/enemy_ai.gd"))
 		unit.add_child(ai)
 
-	# 玩家初始建筑
-	_place_building(BuildingScript.BuildingType.CASTLE, BuildingScript.Team.PLAYER, Vector2i(1, 2))
-	_place_building(BuildingScript.BuildingType.BARRACKS, BuildingScript.Team.PLAYER, Vector2i(5, 3))
+	# 玩家建筑
+	_place_building(BuildingScript.BuildingType.CASTLE,   BuildingScript.Team.PLAYER, Vector2i(1, 1))
+	_place_building(BuildingScript.BuildingType.BARRACKS, BuildingScript.Team.PLAYER, Vector2i(4, 3))
 
-	# 敌方初始建筑：城堡 + 兵营 + 箭塔 + 围墙
-	_place_building(BuildingScript.BuildingType.CASTLE, BuildingScript.Team.ENEMY, Vector2i(12, 2))
-	_place_building(BuildingScript.BuildingType.BARRACKS, BuildingScript.Team.ENEMY, Vector2i(10, 3))
-	_place_building(BuildingScript.BuildingType.TOWER, BuildingScript.Team.ENEMY, Vector2i(15, 4))
-	_place_building(BuildingScript.BuildingType.WALL, BuildingScript.Team.ENEMY, Vector2i(11, 4))
-	_place_building(BuildingScript.BuildingType.WALL, BuildingScript.Team.ENEMY, Vector2i(11, 6))
+	# 敌方建筑
+	_place_building(BuildingScript.BuildingType.CASTLE,   BuildingScript.Team.ENEMY, Vector2i(14, 9))
+	_place_building(BuildingScript.BuildingType.BARRACKS, BuildingScript.Team.ENEMY, Vector2i(12, 7))
+	_place_building(BuildingScript.BuildingType.TOWER,    BuildingScript.Team.ENEMY, Vector2i(17, 10))
+	_place_building(BuildingScript.BuildingType.WALL,     BuildingScript.Team.ENEMY, Vector2i(13, 9))
+	_place_building(BuildingScript.BuildingType.WALL,     BuildingScript.Team.ENEMY, Vector2i(13, 10))
 
-# --- 网格工具 ---
-
-func snap_to_grid(pos: Vector2) -> Vector2i:
-	return Vector2i(floori(pos.x / GRID_SIZE), floori(pos.y / GRID_SIZE))
-
-func grid_to_world(gpos: Vector2i) -> Vector2:
-	return Vector2(gpos.x * GRID_SIZE + GRID_SIZE / 2.0, gpos.y * GRID_SIZE + GRID_SIZE / 2.0)
-
-func is_grid_free(gpos: Vector2i, size: Vector2i) -> bool:
-	for dx in range(size.x):
-		for dy in range(size.y):
-			var cell := Vector2i(gpos.x + dx, gpos.y + dy)
-			if cell in occupied_cells:
-				return false
-	return true
 
 # --- 建筑 ---
 
@@ -199,7 +235,6 @@ func _place_building(type: int, team: int, gpos: Vector2i) -> void:
 		BuildingScript.BuildingType.BARRACKS: scene_path = "res://scenes/barracks.tscn"
 	var building_scene := load(scene_path)
 	var building: Node2D = building_scene.instantiate()
-	# building_type 已在场景中设置
 	building.set("team", team)
 	building.set("grid_pos", gpos)
 	building.position = grid_to_world(gpos)
@@ -216,9 +251,8 @@ func _place_building(type: int, team: int, gpos: Vector2i) -> void:
 		BuildingScript.BuildingType.BARRACKS:
 			gsize = Vector2i(2, 2)
 
-	# 中心需要偏移（WALL 是 2x1，中心在两个格子中间）
-	if gsize.x > 1 or gsize.y > 1:
-		building.position += Vector2((gsize.x - 1) * GRID_SIZE / 2.0, (gsize.y - 1) * GRID_SIZE / 2.0)
+	# 多格建筑中心偏移（等距）
+	building.position += Iso.building_center_offset(gsize.x, gsize.y)
 
 	buildings_node.add_child(building)
 	var team_str := "player_buildings" if team == BuildingScript.Team.PLAYER else "enemy_buildings"
@@ -244,27 +278,25 @@ func _on_building_died(building: Node2D) -> void:
 func _rebuild_navigation() -> void:
 	var source_geom := NavigationMeshSourceGeometryData2D.new()
 
+	# 可行走区域：整个地图菱形
 	var traversable: Array = []
-	traversable.append(PackedVector2Array(NAV_BOUNDS))
+	traversable.append(Iso.building_diamond(0, 0, GRID_COLS, GRID_ROWS))
 	source_geom.traversable_outlines = traversable
 
+	# 建筑障碍：每个建筑用菱形轮廓
 	var obstructions: Array = []
-	var margin := 0.5
 	for building in get_tree().get_nodes_in_group("buildings"):
 		if building.is_dead():
 			continue
-		var rect: Rect2 = building.get_rect()
-		obstructions.append(PackedVector2Array([
-			rect.position + Vector2(margin, margin),
-			Vector2(rect.end.x - margin, rect.position.y + margin),
-			rect.end - Vector2(margin, margin),
-			Vector2(rect.position.x + margin, rect.end.y - margin)
-		]))
+		var b_gpos: Vector2i = building.get("grid_pos")
+		var b_gsize: Vector2i = building.get("grid_size")
+		obstructions.append(Iso.building_diamond(b_gpos.x, b_gpos.y, b_gsize.x, b_gsize.y))
 	source_geom.obstruction_outlines = obstructions
 
 	var nav_poly := NavigationPolygon.new()
 	NavigationServer2D.bake_from_source_geometry_data(nav_poly, source_geom)
 	nav_region.navigation_polygon = nav_poly
+
 
 # --- 单位创建 ---
 
@@ -280,6 +312,7 @@ func _create_unit(type: int, team: int, pos: Vector2) -> CharacterBody2D:
 func _on_unit_died(unit: CharacterBody2D) -> void:
 	if selected_units.has(unit):
 		selected_units.erase(unit)
+
 
 # --- 每帧更新 ---
 
@@ -303,7 +336,7 @@ func _process(_delta: float) -> void:
 
 func _update_preview() -> void:
 	if place_mode == PlaceMode.NONE or place_mode == PlaceMode.SOLDIER or place_mode == PlaceMode.ARCHER:
-		preview_rect.visible = false
+		preview_poly.visible = false
 		if place_mode_label:
 			if place_mode == PlaceMode.SOLDIER:
 				place_mode_label.text = "Click to place Soldier"
@@ -315,7 +348,7 @@ func _update_preview() -> void:
 				place_mode_label.visible = false
 		return
 
-	# 建筑预览
+	# 建筑预览（菱形）
 	var mouse_pos := get_global_mouse_position()
 	var gpos := snap_to_grid(mouse_pos)
 	var gsize: Vector2i
@@ -331,15 +364,10 @@ func _update_preview() -> void:
 		_:
 			gsize = Vector2i(1, 1)
 
-	var world_pos := grid_to_world(gpos)
-	if gsize.x > 1 or gsize.y > 1:
-		world_pos += Vector2((gsize.x - 1) * GRID_SIZE / 2.0, (gsize.y - 1) * GRID_SIZE / 2.0)
-
 	var can_place := is_grid_free(gpos, gsize)
-	preview_rect.visible = true
-	preview_rect.position = world_pos - Vector2(gsize.x * GRID_SIZE / 2.0, gsize.y * GRID_SIZE / 2.0)
-	preview_rect.size = Vector2(gsize.x * GRID_SIZE, gsize.y * GRID_SIZE)
-	preview_rect.color = Color(0, 1, 0, 0.3) if can_place else Color(1, 0, 0, 0.3)
+	preview_poly.visible = true
+	preview_poly.polygon = Iso.building_diamond(gpos.x, gpos.y, gsize.x, gsize.y)
+	preview_poly.color = Color(0, 1, 0, 0.3) if can_place else Color(1, 0, 0, 0.3)
 
 	var type_name := ""
 	match place_mode:
@@ -377,6 +405,7 @@ func _check_victory() -> void:
 	elif not player_castle_alive:
 		result_label.text = "Defeat!"
 		result_label.visible = true
+
 
 # --- 输入处理 ---
 
@@ -430,6 +459,7 @@ func _input(event: InputEvent) -> void:
 				place_mode = PlaceMode.NONE
 				attack_move_mode = false
 
+
 # --- 放置 ---
 
 func _do_place(click_pos: Vector2) -> void:
@@ -458,6 +488,7 @@ func _do_place(click_pos: Vector2) -> void:
 			var gpos := snap_to_grid(click_pos)
 			if is_grid_free(gpos, Vector2i(2, 2)):
 				_place_building(BuildingScript.BuildingType.BARRACKS, BuildingScript.Team.PLAYER, gpos)
+
 
 # --- 攻击移动 ---
 
@@ -491,16 +522,17 @@ func _find_enemy_at(pos: Vector2):
 				sprite_pos = u.get_node("BodySprite").global_position
 			if sprite_pos.distance_to(pos) < 25.0:
 				return u
-	# 再查敌方建筑
+	# 再查敌方建筑（使用菱形点击检测）
 	for b in get_tree().get_nodes_in_group("enemy_buildings"):
 		if b.has_method("is_dead") and not b.is_dead():
-			if b.get_rect().has_point(pos):
+			if b.has_method("has_point") and b.has_point(pos):
 				return b
 	return null
 
 func _stop_selected() -> void:
 	for unit in selected_units:
 		unit.call("stop")
+
 
 # --- 选择 ---
 
@@ -521,6 +553,7 @@ func _selection_released() -> void:
 			if rect.has_point(sel_pos):
 				u.call("set_selected", true)
 				selected_units.append(u)
+
 
 # --- 右键命令 ---
 
@@ -546,6 +579,7 @@ func _right_click() -> void:
 	for i in range(count):
 		var offset := _formation_offset(i, count)
 		selected_units[i].call("move_to", click_pos + offset)
+
 
 # --- 工具 ---
 
