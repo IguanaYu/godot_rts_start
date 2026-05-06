@@ -153,9 +153,15 @@ func is_grid_free(gpos: Vector2i, size: Vector2i) -> bool:
 # --- 建筑 ---
 
 func _place_building(type: int, team: int, gpos: Vector2i) -> void:
-	var building_scene := load("res://scenes/building.tscn")
+	var scene_path := "res://scenes/building.tscn"
+	match type:
+		BuildingScript.BuildingType.WALL: scene_path = "res://scenes/wall.tscn"
+		BuildingScript.BuildingType.TOWER: scene_path = "res://scenes/tower.tscn"
+		BuildingScript.BuildingType.CASTLE: scene_path = "res://scenes/castle.tscn"
+		BuildingScript.BuildingType.BARRACKS: scene_path = "res://scenes/barracks.tscn"
+	var building_scene := load(scene_path)
 	var building: Node2D = building_scene.instantiate()
-	building.set("building_type", type)
+	# building_type 已在场景中设置
 	building.set("team", team)
 	building.set("grid_pos", gpos)
 	building.position = grid_to_world(gpos)
@@ -438,7 +444,10 @@ func _find_enemy_at(pos: Vector2):
 	# 先查敌方单位
 	for u in get_tree().get_nodes_in_group("enemy_units"):
 		if u is CharacterBody2D and not u.is_dead():
-			if u.global_position.distance_to(pos) < 20.0:
+			var sprite_pos: Vector2 = u.global_position
+			if u.has_node("BodySprite"):
+				sprite_pos = u.get_node("BodySprite").global_position
+			if sprite_pos.distance_to(pos) < 25.0:
 				return u
 	# 再查敌方建筑
 	for b in get_tree().get_nodes_in_group("enemy_buildings"):
@@ -464,7 +473,10 @@ func _selection_released() -> void:
 
 	for u in get_tree().get_nodes_in_group("player_units"):
 		if u is CharacterBody2D and not u.is_dead():
-			if rect.has_point(u.global_position):
+			var sel_pos: Vector2 = u.global_position
+			if u.has_node("BodySprite"):
+					sel_pos = u.get_node("BodySprite").global_position
+			if rect.has_point(sel_pos):
 				u.call("set_selected", true)
 				selected_units.append(u)
 

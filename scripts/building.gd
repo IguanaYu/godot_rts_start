@@ -5,6 +5,10 @@ enum Team { PLAYER, ENEMY }
 
 @export var building_type: BuildingType = BuildingType.WALL
 @export var team: Team = Team.PLAYER
+@export var shadow_scale_x: float = 0.85
+@export var shadow_scale_y: float = 0.45
+@export var shadow_alpha: float = 0.35
+@export var sprite_lift_ratio: float = 0.15
 
 var hp: int
 var max_hp: int
@@ -38,15 +42,27 @@ func _setup_stats() -> void:
 		BuildingType.WALL:
 			max_hp = 300
 			grid_size = Vector2i(1, 1)
+			shadow_scale_x = 0.85
+			shadow_scale_y = 0.45
+			sprite_lift_ratio = 0.12
 		BuildingType.TOWER:
 			max_hp = 150
 			grid_size = Vector2i(1, 1)
+			shadow_scale_x = 0.85
+			shadow_scale_y = 0.45
+			sprite_lift_ratio = 0.18
 		BuildingType.CASTLE:
 			max_hp = 500
 			grid_size = Vector2i(3, 3)
+			shadow_scale_x = 0.7
+			shadow_scale_y = 0.4
+			sprite_lift_ratio = 0.18
 		BuildingType.BARRACKS:
 			max_hp = 250
 			grid_size = Vector2i(2, 2)
+			shadow_scale_x = 0.8
+			shadow_scale_y = 0.4
+			sprite_lift_ratio = 0.18
 	hp = max_hp
 
 func _setup_visuals() -> void:
@@ -85,22 +101,22 @@ func _setup_visuals() -> void:
 
 	# 创建脚底影子
 	_shadow = Sprite2D.new()
-	var shadow_w := int(pixel_size.x * 1.2)
-	var shadow_h := int(pixel_size.y * 0.6)
+	var shadow_w := int(pixel_size.x * shadow_scale_x)
+	var shadow_h := int(pixel_size.y * shadow_scale_y)
 	var img := Image.create(shadow_w, shadow_h, false, Image.FORMAT_RGBA8)
 	for x in range(shadow_w):
 		for y in range(shadow_h):
 			var dx := (float(x) - shadow_w / 2.0) / (shadow_w / 2.0)
 			var dy := (float(y) - shadow_h / 2.0) / (shadow_h / 2.0)
 			if dx * dx + dy * dy <= 1.0:
-				img.set_pixel(x, y, Color(0, 0, 0, 0.35))
+				img.set_pixel(x, y, Color(0, 0, 0, shadow_alpha))
 	_shadow.texture = ImageTexture.create_from_image(img)
 	_shadow.z_index = 0
 	add_child(_shadow)
 	move_child(_shadow, 0)
 
 	# 贴图上移，形成站立效果
-	var lift: float = sprite_height * 0.15
+	var lift: float = sprite_height * sprite_lift_ratio
 	body_sprite.position.y = -lift
 	# HPBar 跟随上移
 	hp_bar.offset_top += lift

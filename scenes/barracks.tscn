@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://barracks0001"]
+
+[ext_resource type="PackedScene" uid="uid://bxbld0001" path="res://scenes/building.tscn" id="base"]
+
+[node name="Barracks" instance=ExtResource("base")]
+building_type = 3
+shadow_scale_x = 0.8
+shadow_scale_y = 0.4
+sprite_lift_ratio = 0.18

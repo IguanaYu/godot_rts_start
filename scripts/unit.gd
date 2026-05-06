@@ -7,6 +7,10 @@ enum Team { PLAYER, ENEMY }
 
 @export var unit_type: UnitType = UnitType.SOLDIER
 @export var team: Team = Team.PLAYER
+@export var sprite_lift: float = 20.0
+@export var shadow_width: int = 28
+@export var shadow_height: int = 12
+@export var shadow_alpha: float = 0.4
 
 var max_hp: int
 var hp: int
@@ -82,24 +86,24 @@ func _setup_visuals() -> void:
 
 	# 创建脚底影子
 	_shadow = Sprite2D.new()
-	var shadow_size := Vector2i(32, 16)
+	var shadow_size := Vector2i(shadow_width, shadow_height)
 	var img := Image.create(shadow_size.x, shadow_size.y, false, Image.FORMAT_RGBA8)
 	for x in range(shadow_size.x):
 		for y in range(shadow_size.y):
 			var dx := (float(x) - shadow_size.x / 2.0) / (shadow_size.x / 2.0)
 			var dy := (float(y) - shadow_size.y / 2.0) / (shadow_size.y / 2.0)
 			if dx * dx + dy * dy <= 1.0:
-				img.set_pixel(x, y, Color(0, 0, 0, 0.4))
+				img.set_pixel(x, y, Color(0, 0, 0, shadow_alpha))
 	_shadow.texture = ImageTexture.create_from_image(img)
 	_shadow.z_index = 0
 	add_child(_shadow)
 	move_child(_shadow, 0)
 
 	# 贴图上移，形成站立效果
-	body_sprite.position.y = -20
+	body_sprite.position.y = -sprite_lift
 	# HPBar 跟随上移
-	hp_bar.offset_top += 20
-	hp_bar.offset_bottom += 20
+	hp_bar.offset_top += sprite_lift
+	hp_bar.offset_bottom += sprite_lift
 
 func _set_anim(anim_name: String) -> void:
 	if anim_name == _anim_state:
@@ -203,8 +207,8 @@ func _attack_process(delta: float) -> void:
 	var effective_attack_range := attack_range
 	if attack_target.has_method("get_rect"):
 		var brect: Rect2 = attack_target.get_rect()
-		var building_radius: float = max(brect.size.x, brect.size.y) / 2.0
-		effective_attack_range = attack_range + building_radius
+		var building_radius: float = min(brect.size.x, brect.size.y) / 2.0
+		effective_attack_range = attack_range + building_radius * 0.5
 	if dist > effective_attack_range:
 		nav_agent.target_position = attack_target.global_position
 		if not nav_agent.is_navigation_finished():

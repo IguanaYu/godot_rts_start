@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://castle0001"]
+
+[ext_resource type="PackedScene" uid="uid://bxbld0001" path="res://scenes/building.tscn" id="base"]
+
+[node name="Castle" instance=ExtResource("base")]
+building_type = 2
+shadow_scale_x = 0.7
+shadow_scale_y = 0.4
+sprite_lift_ratio = 0.18
