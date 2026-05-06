@@ -1,3 +1,4 @@
+@tool
 extends CharacterBody2D
 class_name Unit
 
@@ -5,12 +6,29 @@ enum UnitState { IDLE, MOVE, ATTACK_MOVE, ATTACK, DEAD }
 enum UnitType { SOLDIER, ARCHER }
 enum Team { PLAYER, ENEMY }
 
-@export var unit_type: UnitType = UnitType.SOLDIER
+@export var unit_type: UnitType = UnitType.SOLDIER:
+	set(v): unit_type = v; _refresh_editor()
 @export var team: Team = Team.PLAYER
-@export var sprite_lift: float = 20.0
-@export var shadow_width: int = 28
-@export var shadow_height: int = 12
-@export var shadow_alpha: float = 0.4
+@export var sprite_lift: float = 20.0:
+	set(v): sprite_lift = v; _refresh_editor()
+@export var shadow_width: int = 28:
+	set(v): shadow_width = v; _refresh_editor()
+@export var shadow_height: int = 12:
+	set(v): shadow_height = v; _refresh_editor()
+@export var shadow_alpha: float = 0.4:
+	set(v): shadow_alpha = v; _refresh_editor()
+@export var shadow_offset_x: float = 0.0:
+	set(v): shadow_offset_x = v; _refresh_editor()
+@export var shadow_offset_y: float = 0.0:
+	set(v): shadow_offset_y = v; _refresh_editor()
+@export var sprite_scale_x: float = 0.3:
+	set(v): sprite_scale_x = v; _refresh_editor()
+@export var sprite_scale_y: float = 0.3:
+	set(v): sprite_scale_y = v; _refresh_editor()
+@export var sprite_offset_x: float = 0.0:
+	set(v): sprite_offset_x = v; _refresh_editor()
+@export var sprite_offset_y: float = 0.0:
+	set(v): sprite_offset_y = v; _refresh_editor()
 
 var max_hp: int
 var hp: int
@@ -51,9 +69,12 @@ signal died(unit: Unit)
 
 func _ready() -> void:
 	_setup_stats()
-	_setup_visuals()
-	_update_selection_ring()
-	_update_hp_bar()
+	if Engine.is_editor_hint():
+		_setup_editor_visuals()
+	else:
+		_setup_visuals()
+		_update_selection_ring()
+		_update_hp_bar()
 
 func _setup_stats() -> void:
 	match unit_type:
@@ -71,7 +92,25 @@ func _setup_stats() -> void:
 			move_speed = 80.0
 	hp = max_hp
 
+func _setup_editor_visuals() -> void:
+	_setup_texture()
+	_rebuild_shadow()
+	_apply_sprite_position()
+
 func _setup_visuals() -> void:
+	_setup_texture()
+
+	# 创建脚底影子
+	_rebuild_shadow()
+
+	# 贴图上移
+	_apply_sprite_position()
+
+	# HPBar 跟随上移
+	hp_bar.offset_top += sprite_lift + sprite_offset_y
+	hp_bar.offset_bottom += sprite_lift + sprite_offset_y
+
+func _setup_texture() -> void:
 	var color_dir := "blue" if team == Team.PLAYER else "red"
 	var unit_name := "warrior" if unit_type == UnitType.SOLDIER else "archer"
 	var base := "res://assets/units/%s_%s" % [color_dir, unit_name]
@@ -82,28 +121,85 @@ func _setup_visuals() -> void:
 	_frames_idle = _tex_idle.get_width() / 192 if _tex_idle else 6
 	_frames_run = _tex_run.get_width() / 192 if _tex_run else 6
 	_frames_attack = _tex_attack.get_width() / 192 if _tex_attack else 6
-	_set_anim("idle")
 
-	# 创建脚底影子
-	_shadow = Sprite2D.new()
-	var shadow_size := Vector2i(shadow_width, shadow_height)
-	var img := Image.create(shadow_size.x, shadow_size.y, false, Image.FORMAT_RGBA8)
-	for x in range(shadow_size.x):
-		for y in range(shadow_size.y):
-			var dx := (float(x) - shadow_size.x / 2.0) / (shadow_size.x / 2.0)
-			var dy := (float(y) - shadow_size.y / 2.0) / (shadow_size.y / 2.0)
+	if not Engine.is_editor_hint():
+		_set_anim("idle")
+	else:
+		# 编辑器里只显示 idle 第一帧
+		if _tex_idle:
+			body_sprite.texture = _tex_idle
+			body_sprite.hframes = _frames_idle
+			body_sprite.frame = 0
+
+func _rebuild_shadow() -> void:
+	if not is_node_ready():
+		return
+
+	# 移除旧阴影
+	if _shadow and is_instance_valid(_shadow):
+		_shadow.queue_free()
+		_shadow = null
+
+	if shadow_width <= 0 or shadow_height <= 0:
+		return
+
+	var img := Image.create(shadow_width, shadow_height, false, Image.FORMAT_RGBA8)
+	for x in range(shadow_width):
+		for y in range(shadow_height):
+			var dx := (float(x) - shadow_width / 2.0) / (shadow_width / 2.0)
+			var dy := (float(y) - shadow_height / 2.0) / (shadow_height / 2.0)
 			if dx * dx + dy * dy <= 1.0:
 				img.set_pixel(x, y, Color(0, 0, 0, shadow_alpha))
+
+	_shadow = Sprite2D.new()
 	_shadow.texture = ImageTexture.create_from_image(img)
 	_shadow.z_index = 0
+	_shadow.position = Vector2(shadow_offset_x, shadow_offset_y)
 	add_child(_shadow)
 	move_child(_shadow, 0)
 
-	# 贴图上移，形成站立效果
-	body_sprite.position.y = -sprite_lift
-	# HPBar 跟随上移
-	hp_bar.offset_top += sprite_lift
-	hp_bar.offset_bottom += sprite_lift
+func _apply_sprite_position() -> void:
+	if not is_node_ready() or not body_sprite:
+		return
+	body_sprite.scale = Vector2(sprite_scale_x, sprite_scale_y)
+	body_sprite.position.x = sprite_offset_x
+	body_sprite.position.y = -sprite_lift + sprite_offset_y
+
+func _refresh_editor() -> void:
+	if not Engine.is_editor_hint():
+		return
+	if not is_node_ready():
+		return
+
+	_setup_stats()
+	_setup_texture()
+	_rebuild_shadow()
+	_apply_sprite_position()
+	queue_redraw()
+
+func _draw() -> void:
+	if not Engine.is_editor_hint():
+		return
+
+	var cell := 64
+
+	# 64x64 参考格子线
+	var origin := Vector2(-cell / 2.0, -cell / 2.0)
+	draw_rect(Rect2(origin, Vector2(cell, cell)), Color(1, 1, 1, 0.3), false, 1.0)
+
+	# 碰撞圆（红色）
+	draw_arc(Vector2.ZERO, 16.0, 0.0, TAU, 32, Color(1, 0, 0, 0.6), 1.0)
+
+	# 阴影范围椭圆（黄色）
+	var sw := float(shadow_width) / 2.0
+	var sh := float(shadow_height) / 2.0
+	var points := 32
+	for i in range(points):
+		var a1 := i * TAU / points
+		var a2 := (i + 1) * TAU / points
+		var p1 := Vector2(cos(a1) * sw + shadow_offset_x, sin(a1) * sh + shadow_offset_y)
+		var p2 := Vector2(cos(a2) * sw + shadow_offset_x, sin(a2) * sh + shadow_offset_y)
+		draw_line(p1, p2, Color(1, 1, 0, 0.6), 1.0)
 
 func _set_anim(anim_name: String) -> void:
 	if anim_name == _anim_state:
@@ -163,6 +259,8 @@ func _update_animation() -> void:
 	_set_anim(target_anim)
 
 func _physics_process(delta: float) -> void:
+	if Engine.is_editor_hint():
+		return
 	if state == UnitState.DEAD:
 		return
 
@@ -274,6 +372,8 @@ func _spawn_arrow(target) -> void:
 	arrow.hit_damage = attack_damage
 
 func take_damage(amount: int) -> void:
+	if Engine.is_editor_hint():
+		return
 	if state == UnitState.DEAD:
 		return
 	hp = max(0, hp - amount)

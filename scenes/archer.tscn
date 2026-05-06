@@ -1,0 +1,16 @@
+[gd_scene format=3 uid="uid://e5by4tc82spk"]
+
+[ext_resource type="Texture2D" uid="uid://n2yxiptxgrlt" path="res://assets/units/blue_archer/Archer_Idle.png" id="2_b0l3x"]
+[ext_resource type="PackedScene" uid="uid://bxunit0001" path="res://scenes/unit.tscn" id="base"]
+
+[node name="Archer" unique_id=113123254 instance=ExtResource("base")]
+unit_type = 1
+sprite_scale_x = 0.6
+sprite_scale_y = 0.6
+sprite_offset_y = 9.0
+
+[node name="BodySprite" parent="." index="2" unique_id=640436808]
+position = Vector2(0, -11)
+scale = Vector2(0.6, 0.6)
+texture = ExtResource("2_b0l3x")
+hframes = 6

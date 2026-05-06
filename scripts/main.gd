@@ -269,9 +269,9 @@ func _rebuild_navigation() -> void:
 # --- 单位创建 ---
 
 func _create_unit(type: int, team: int, pos: Vector2) -> CharacterBody2D:
-	var unit_scene := load("res://scenes/unit.tscn")
+	var scene_path := "res://scenes/soldier.tscn" if type == 0 else "res://scenes/archer.tscn"
+	var unit_scene := load(scene_path)
 	var unit: CharacterBody2D = unit_scene.instantiate()
-	unit.set("unit_type", type)
 	unit.set("team", team)
 	unit.position = pos
 	unit.connect("died", _on_unit_died)
