@@ -1,0 +1,16 @@
+[gd_scene format=3 uid="uid://bxmonk001"]
+
+[ext_resource type="Texture2D" uid="uid://cxu763vgva6ga" path="res://assets/units/blue_monk/Idle.png" id="2_monk"]
+[ext_resource type="PackedScene" uid="uid://bxunit0001" path="res://scenes/unit.tscn" id="base"]
+
+[node name="Monk" instance=ExtResource("base")]
+unit_type = 3
+sprite_scale_x = 0.5
+sprite_scale_y = 0.5
+sprite_offset_y = 10.0
+
+[node name="BodySprite" parent="." index="2"]
+position = Vector2(0, -10)
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("2_monk")
+hframes = 6

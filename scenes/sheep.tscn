@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://bxsheep001"]
+
+[ext_resource type="Texture2D" uid="uid://mdlvexetsnjd" path="res://assets/environment/sheep/Sheep_Idle.png" id="1_sheep"]
+[ext_resource type="Script" path="res://scripts/sheep.gd" id="sheep_script"]
+[ext_resource type="PackedScene" uid="uid://bxneutral01" path="res://scenes/neutral.tscn" id="base"]
+
+[node name="Sheep" instance=ExtResource("base")]
+script = ExtResource("sheep_script")
+sprite_scale_x = 0.5
+sprite_scale_y = 0.5
+sprite_lift = 15.0
+shadow_width = 16
+shadow_height = 6
+
+[node name="Sprite" parent="." index="0"]
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("1_sheep")
+hframes = 6

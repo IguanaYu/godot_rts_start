@@ -1,7 +1,7 @@
 @tool
 extends Node2D
 
-enum BuildingType { WALL, TOWER, CASTLE, BARRACKS }
+enum BuildingType { WALL, TOWER, CASTLE, BARRACKS, MONASTERY, ARCHERY }
 enum Team { PLAYER, ENEMY }
 
 @export var building_type: BuildingType = BuildingType.WALL:
@@ -79,6 +79,12 @@ func _setup_stats() -> void:
 		BuildingType.BARRACKS:
 			max_hp = 250
 			grid_size = Vector2i(2, 2)
+		BuildingType.MONASTERY:
+			max_hp = 400
+			grid_size = Vector2i(2, 2)
+		BuildingType.ARCHERY:
+			max_hp = 200
+			grid_size = Vector2i(2, 2)
 	hp = max_hp
 
 func _setup_editor_visuals() -> void:
@@ -132,6 +138,10 @@ func _setup_texture() -> void:
 			tex_path = "res://assets/buildings/%s_castle/Castle.png" % color_dir
 		BuildingType.BARRACKS:
 			tex_path = "res://assets/buildings/%s_barracks/Barracks.png" % color_dir
+		BuildingType.MONASTERY:
+			tex_path = "res://assets/buildings/%s_monastery/Monastery.png" % color_dir
+		BuildingType.ARCHERY:
+			tex_path = "res://assets/buildings/%s_archery/Archery.png" % color_dir
 	if tex_path != "":
 		var tex := load(tex_path)
 		if tex and body_sprite:
@@ -206,7 +216,7 @@ func _draw() -> void:
 		draw_line(Vector2(x_pos, origin.y), Vector2(x_pos, origin.y + pixel_size.y), Color(1, 1, 1, 0.5), 1.0)
 	for y in range(grid_size.y + 1):
 		var y_pos := origin.y + y * cell
-		draw_line(Vector2(origin.x, y_pos), Vector2(origin.x + pixel_size.x, y_pos), Color(1, 1, 1, 0.5), 1.0)
+		draw_line(Vector2(origin.x, y_pos), Vector2(origin.x + y_pos, y_pos), Color(1, 1, 1, 0.5), 1.0)
 
 	# 碰撞边界（红色）
 	draw_rect(Rect2(origin, pixel_size), Color(1, 0, 0, 0.6), false, 2.0)
@@ -294,6 +304,14 @@ func take_damage(amount: int) -> void:
 func die() -> void:
 	_is_dead = true
 	died.emit(self)
+	# 生成爆炸特效
+	var explosion_scene := load("res://scenes/explosion.tscn")
+	var explosion: Node2D = explosion_scene.instantiate()
+	get_tree().current_scene.add_child(explosion)
+	explosion.global_position = global_position
+	var max_dim := maxf(float(grid_size.x), float(grid_size.y))
+	explosion.scale = Vector2(max_dim, max_dim)
+	# 缩小+删除动画
 	var tween := create_tween()
 	tween.tween_property(self, "scale", Vector2.ZERO, 0.3)
 	tween.tween_callback(queue_free)

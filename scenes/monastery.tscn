@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://bxmonastery01"]
+
+[ext_resource type="Texture2D" uid="uid://crry62451h0qp" path="res://assets/buildings/blue_monastery/Monastery.png" id="2_mon"]
+[ext_resource type="PackedScene" uid="uid://bxbld0001" path="res://scenes/building.tscn" id="base"]
+
+[node name="Monastery" instance=ExtResource("base")]
+building_type = 4
+shadow_scale_x = 1.2
+shadow_scale_y = 0.6
+shadow_alpha = 0.5
+shadow_offset_y = 30.0
+sprite_scale_x = 0.7
+sprite_scale_y = 0.7
+
+[node name="BodySprite" parent="." index="2"]
+position = Vector2(0, -26.88)
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("2_mon")

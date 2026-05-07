@@ -5,7 +5,7 @@ const BuildingScript := preload("res://scripts/building.gd")
 const GRID_SIZE := 64
 const NAV_BOUNDS := [Vector2(-500, -500), Vector2(1500, -500), Vector2(1500, 1200), Vector2(-500, 1200)]
 
-enum PlaceMode { NONE, WALL, TOWER, CASTLE, BARRACKS, SOLDIER, ARCHER }
+enum PlaceMode { NONE, WALL, TOWER, CASTLE, BARRACKS, SOLDIER, ARCHER, MONASTERY, ARCHERY_RANGE, LANCER, MONK_UNIT }
 
 const COSTS := {
 	PlaceMode.WALL: 50,
@@ -14,6 +14,10 @@ const COSTS := {
 	PlaceMode.ARCHER: 120,
 	PlaceMode.CASTLE: 500,
 	PlaceMode.BARRACKS: 300,
+	PlaceMode.MONASTERY: 350,
+	PlaceMode.ARCHERY_RANGE: 250,
+	PlaceMode.LANCER: 150,
+	PlaceMode.MONK_UNIT: 80,
 }
 
 # 框选
@@ -70,6 +74,7 @@ func _ready() -> void:
 	_create_ui()
 	_spawn_initial()
 	_create_grid()
+	_spawn_environment()
 
 	# 相机平滑设置
 	camera.position_smoothing_enabled = true
@@ -134,6 +139,10 @@ func _create_ui() -> void:
 		{"mode": PlaceMode.ARCHER, "text": "Archer[4] $120", "key": KEY_4},
 		{"mode": PlaceMode.CASTLE, "text": "Castle[5] $500", "key": KEY_5},
 		{"mode": PlaceMode.BARRACKS, "text": "Barracks[6] $300", "key": KEY_6},
+		{"mode": PlaceMode.MONASTERY, "text": "Monastery[7] $350", "key": KEY_7},
+		{"mode": PlaceMode.ARCHERY_RANGE, "text": "Archery[8] $250", "key": KEY_8},
+		{"mode": PlaceMode.LANCER, "text": "Lancer[9] $150", "key": KEY_9},
+		{"mode": PlaceMode.MONK_UNIT, "text": "Monk[0] $80", "key": KEY_0},
 	]
 
 	for data in buttons_data:
@@ -229,6 +238,66 @@ func _spawn_initial() -> void:
 	_place_building(BuildingScript.BuildingType.WALL, BuildingScript.Team.ENEMY, Vector2i(11, 4))
 	_place_building(BuildingScript.BuildingType.WALL, BuildingScript.Team.ENEMY, Vector2i(11, 6))
 
+# --- 环境装饰 ---
+
+func _spawn_environment() -> void:
+	var env_node := Node2D.new()
+	env_node.name = "Environment"
+	env_node.z_index = 1
+	add_child(env_node)
+	move_child(env_node, 1)
+
+	# 树木
+	var tree_scene := load("res://scenes/tree.tscn")
+	var tree_textures := [
+		"res://assets/environment/trees/Tree1.png",
+		"res://assets/environment/trees/Tree2.png",
+		"res://assets/environment/trees/Tree3.png",
+		"res://assets/environment/trees/Tree4.png",
+	]
+	for i in range(15):
+		var tree: Node2D = tree_scene.instantiate()
+		var pos := Vector2(randf_range(-400, 1400), randf_range(-400, 1100))
+		tree.position = pos
+		tree.get_node("Sprite").texture = load(tree_textures[i % 4])
+		tree.get_node("Sprite").frame = randi() % 8
+		env_node.add_child(tree)
+
+	# 岩石
+	var rock_scene := load("res://scenes/rock.tscn")
+	var rock_textures := [
+		"res://assets/environment/rocks/Rock1.png",
+		"res://assets/environment/rocks/Rock2.png",
+		"res://assets/environment/rocks/Rock3.png",
+		"res://assets/environment/rocks/Rock4.png",
+	]
+	for i in range(10):
+		var rock: Node2D = rock_scene.instantiate()
+		rock.position = Vector2(randf_range(-400, 1400), randf_range(-400, 1100))
+		rock.get_node("Sprite").texture = load(rock_textures[i % 4])
+		env_node.add_child(rock)
+
+	# 灌木
+	var bush_scene := load("res://scenes/bush.tscn")
+	var bush_textures := [
+		"res://assets/environment/bushes/Bushe1.png",
+		"res://assets/environment/bushes/Bushe2.png",
+		"res://assets/environment/bushes/Bushe3.png",
+		"res://assets/environment/bushes/Bushe4.png",
+	]
+	for i in range(12):
+		var bush: Node2D = bush_scene.instantiate()
+		bush.position = Vector2(randf_range(-400, 1400), randf_range(-400, 1100))
+		bush.get_node("Sprite").texture = load(bush_textures[i % 4])
+		env_node.add_child(bush)
+
+	# 羊
+	var sheep_scene := load("res://scenes/sheep.tscn")
+	for i in range(5):
+		var sheep: Node2D = sheep_scene.instantiate()
+		sheep.position = Vector2(randf_range(-200, 1200), randf_range(-200, 1000))
+		env_node.add_child(sheep)
+
 # --- 网格工具 ---
 
 func snap_to_grid(pos: Vector2) -> Vector2i:
@@ -254,6 +323,8 @@ func _place_building(type: int, team: int, gpos: Vector2i) -> Node2D:
 		BuildingScript.BuildingType.TOWER: scene_path = "res://scenes/tower.tscn"
 		BuildingScript.BuildingType.CASTLE: scene_path = "res://scenes/castle.tscn"
 		BuildingScript.BuildingType.BARRACKS: scene_path = "res://scenes/barracks.tscn"
+		BuildingScript.BuildingType.MONASTERY: scene_path = "res://scenes/monastery.tscn"
+		BuildingScript.BuildingType.ARCHERY: scene_path = "res://scenes/archery_building.tscn"
 	var building_scene := load(scene_path)
 	var building: Node2D = building_scene.instantiate()
 	# building_type 已在场景中设置
@@ -272,8 +343,12 @@ func _place_building(type: int, team: int, gpos: Vector2i) -> Node2D:
 			gsize = Vector2i(3, 3)
 		BuildingScript.BuildingType.BARRACKS:
 			gsize = Vector2i(2, 2)
+		BuildingScript.BuildingType.MONASTERY:
+			gsize = Vector2i(2, 2)
+		BuildingScript.BuildingType.ARCHERY:
+			gsize = Vector2i(2, 2)
 
-	# 中心需要偏移（WALL 是 2x1，中心在两个格子中间）
+	# 中心需要偏移
 	if gsize.x > 1 or gsize.y > 1:
 		building.position += Vector2((gsize.x - 1) * GRID_SIZE / 2.0, (gsize.y - 1) * GRID_SIZE / 2.0)
 
@@ -327,7 +402,12 @@ func _rebuild_navigation() -> void:
 # --- 单位创建 ---
 
 func _create_unit(type: int, team: int, pos: Vector2) -> CharacterBody2D:
-	var scene_path := "res://scenes/soldier.tscn" if type == 0 else "res://scenes/archer.tscn"
+	var scene_path := "res://scenes/soldier.tscn"
+	match type:
+		UnitScript.UnitType.SOLDIER: scene_path = "res://scenes/soldier.tscn"
+		UnitScript.UnitType.ARCHER: scene_path = "res://scenes/archer.tscn"
+		UnitScript.UnitType.LANCER: scene_path = "res://scenes/lancer.tscn"
+		UnitScript.UnitType.MONK: scene_path = "res://scenes/monk.tscn"
 	var unit_scene := load(scene_path)
 	var unit: CharacterBody2D = unit_scene.instantiate()
 	unit.set("team", team)
@@ -422,17 +502,24 @@ func _clamp_camera() -> void:
 	camera.position.y = clampf(camera.position.y, min_y, max_y)
 
 func _update_preview() -> void:
-	if place_mode == PlaceMode.NONE or place_mode == PlaceMode.SOLDIER or place_mode == PlaceMode.ARCHER:
+	# 单位类型 — 只显示提示文字
+	if place_mode == PlaceMode.SOLDIER or place_mode == PlaceMode.ARCHER or place_mode == PlaceMode.LANCER or place_mode == PlaceMode.MONK_UNIT:
 		preview_rect.visible = false
 		if place_mode_label:
-			if place_mode == PlaceMode.SOLDIER:
-				place_mode_label.text = "Click to place Soldier"
-				place_mode_label.visible = true
-			elif place_mode == PlaceMode.ARCHER:
-				place_mode_label.text = "Click to place Archer"
-				place_mode_label.visible = true
-			else:
-				place_mode_label.visible = false
+			var unit_name := ""
+			match place_mode:
+				PlaceMode.SOLDIER: unit_name = "Soldier"
+				PlaceMode.ARCHER: unit_name = "Archer"
+				PlaceMode.LANCER: unit_name = "Lancer"
+				PlaceMode.MONK_UNIT: unit_name = "Monk"
+			place_mode_label.text = "Click to place %s" % unit_name
+			place_mode_label.visible = true
+		return
+
+	if place_mode == PlaceMode.NONE:
+		preview_rect.visible = false
+		if place_mode_label:
+			place_mode_label.visible = false
 		return
 
 	# 建筑预览
@@ -447,6 +534,10 @@ func _update_preview() -> void:
 		PlaceMode.CASTLE:
 			gsize = Vector2i(3, 3)
 		PlaceMode.BARRACKS:
+			gsize = Vector2i(2, 2)
+		PlaceMode.MONASTERY:
+			gsize = Vector2i(2, 2)
+		PlaceMode.ARCHERY_RANGE:
 			gsize = Vector2i(2, 2)
 		_:
 			gsize = Vector2i(1, 1)
@@ -467,6 +558,8 @@ func _update_preview() -> void:
 		PlaceMode.TOWER: type_name = "Tower"
 		PlaceMode.CASTLE: type_name = "Castle"
 		PlaceMode.BARRACKS: type_name = "Barracks"
+		PlaceMode.MONASTERY: type_name = "Monastery"
+		PlaceMode.ARCHERY_RANGE: type_name = "Archery"
 		_: type_name = "Building"
 	var cost_preview: int = COSTS.get(place_mode, 0)
 	place_mode_label.text = "Place %s $%d (Esc cancel)" % [type_name, cost_preview]
@@ -558,6 +651,14 @@ func _input(event: InputEvent) -> void:
 				_enter_place_mode(PlaceMode.CASTLE)
 			KEY_6:
 				_enter_place_mode(PlaceMode.BARRACKS)
+			KEY_7:
+				_enter_place_mode(PlaceMode.MONASTERY)
+			KEY_8:
+				_enter_place_mode(PlaceMode.ARCHERY_RANGE)
+			KEY_9:
+				_enter_place_mode(PlaceMode.LANCER)
+			KEY_0:
+				_enter_place_mode(PlaceMode.MONK_UNIT)
 			KEY_G:
 				show_grid = not show_grid
 				if grid_overlay:
@@ -609,6 +710,28 @@ func _do_place(click_pos: Vector2) -> void:
 				var b = _place_building(BuildingScript.BuildingType.BARRACKS, BuildingScript.Team.PLAYER, gpos)
 				b.start_construction()
 				placed = true
+		PlaceMode.MONASTERY:
+			var gpos := snap_to_grid(click_pos)
+			if is_grid_free(gpos, Vector2i(2, 2)):
+				var b = _place_building(BuildingScript.BuildingType.MONASTERY, BuildingScript.Team.PLAYER, gpos)
+				b.start_construction()
+				placed = true
+		PlaceMode.ARCHERY_RANGE:
+			var gpos := snap_to_grid(click_pos)
+			if is_grid_free(gpos, Vector2i(2, 2)):
+				var b = _place_building(BuildingScript.BuildingType.ARCHERY, BuildingScript.Team.PLAYER, gpos)
+				b.start_construction()
+				placed = true
+		PlaceMode.LANCER:
+			var unit := _create_unit(UnitScript.UnitType.LANCER, UnitScript.Team.PLAYER, click_pos)
+			player_units_node.add_child(unit)
+			unit.add_to_group("player_units")
+			placed = true
+		PlaceMode.MONK_UNIT:
+			var unit := _create_unit(UnitScript.UnitType.MONK, UnitScript.Team.PLAYER, click_pos)
+			player_units_node.add_child(unit)
+			unit.add_to_group("player_units")
+			placed = true
 
 	if placed:
 		gold -= cost

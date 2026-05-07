@@ -3,7 +3,7 @@ extends CharacterBody2D
 class_name Unit
 
 enum UnitState { IDLE, MOVE, ATTACK_MOVE, ATTACK, DEAD }
-enum UnitType { SOLDIER, ARCHER }
+enum UnitType { SOLDIER, ARCHER, LANCER, MONK }
 enum Team { PLAYER, ENEMY }
 
 @export var unit_type: UnitType = UnitType.SOLDIER:
@@ -90,6 +90,18 @@ func _setup_stats() -> void:
 			attack_range = 200.0
 			attack_cooldown = 1.2
 			move_speed = 80.0
+		UnitType.LANCER:
+			max_hp = 180
+			attack_damage = 12
+			attack_range = 45.0
+			attack_cooldown = 1.0
+			move_speed = 70.0
+		UnitType.MONK:
+			max_hp = 50
+			attack_damage = 0
+			attack_range = 0.0
+			attack_cooldown = 999.0
+			move_speed = 90.0
 	hp = max_hp
 
 func _setup_editor_visuals() -> void:
@@ -112,12 +124,28 @@ func _setup_visuals() -> void:
 
 func _setup_texture() -> void:
 	var color_dir := "blue" if team == Team.PLAYER else "red"
-	var unit_name := "warrior" if unit_type == UnitType.SOLDIER else "archer"
-	var base := "res://assets/units/%s_%s" % [color_dir, unit_name]
+	match unit_type:
+		UnitType.SOLDIER:
+			var base := "res://assets/units/%s_warrior" % color_dir
+			_tex_idle = load(base + "/Warrior_Idle.png")
+			_tex_run = load(base + "/Warrior_Run.png")
+			_tex_attack = load(base + "/Warrior_Attack1.png")
+		UnitType.ARCHER:
+			var base := "res://assets/units/%s_archer" % color_dir
+			_tex_idle = load(base + "/Archer_Idle.png")
+			_tex_run = load(base + "/Archer_Run.png")
+			_tex_attack = load(base + "/Archer_Shoot.png")
+		UnitType.LANCER:
+			var base := "res://assets/units/%s_lancer" % color_dir
+			_tex_idle = load(base + "/Lancer_Idle.png")
+			_tex_run = load(base + "/Lancer_Run.png")
+			_tex_attack = load(base + "/Lancer_DownRight_Attack.png")
+		UnitType.MONK:
+			var base := "res://assets/units/%s_monk" % color_dir
+			_tex_idle = load(base + "/Idle.png")
+			_tex_run = load(base + "/Run.png")
+			_tex_attack = null
 
-	_tex_idle = load(base + "/Warrior_Idle.png" if unit_type == UnitType.SOLDIER else base + "/Archer_Idle.png")
-	_tex_run = load(base + "/Warrior_Run.png" if unit_type == UnitType.SOLDIER else base + "/Archer_Run.png")
-	_tex_attack = load(base + "/Warrior_Attack1.png" if unit_type == UnitType.SOLDIER else base + "/Archer_Shoot.png")
 	_frames_idle = _tex_idle.get_width() / 192 if _tex_idle else 6
 	_frames_run = _tex_run.get_width() / 192 if _tex_run else 6
 	_frames_attack = _tex_attack.get_width() / 192 if _tex_attack else 6
@@ -125,7 +153,6 @@ func _setup_texture() -> void:
 	if not Engine.is_editor_hint():
 		_set_anim("idle")
 	else:
-		# 编辑器里只显示 idle 第一帧
 		if _tex_idle:
 			body_sprite.texture = _tex_idle
 			body_sprite.hframes = _frames_idle
@@ -290,6 +317,10 @@ func _move_process() -> void:
 	velocity = direction * move_speed
 
 func _attack_process(delta: float) -> void:
+	# Monk不攻击，站着不动
+	if unit_type == UnitType.MONK:
+		return
+
 	if attack_target == null or attack_target.is_dead():
 		attack_target = null
 		# 如果之前是攻击移动，继续移动
@@ -355,6 +386,8 @@ func _attack_move_process(delta: float) -> void:
 
 func _perform_attack() -> void:
 	if attack_target and not attack_target.is_dead():
+		if unit_type == UnitType.MONK:
+			return
 		_is_attacking = true
 		_set_anim("")
 		_set_anim("attack")

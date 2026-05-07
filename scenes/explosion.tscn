@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://bxexplo01"]
+
+[ext_resource type="Texture2D" uid="uid://ykdbnibgyhiu" path="res://assets/effects/Explosion_01.png" id="1_exp"]
+[ext_resource type="Script" path="res://scripts/explosion.gd" id="exp_script"]
+
+[node name="Explosion" type="Node2D"]
+script = ExtResource("exp_script")
+
+[node name="Sprite" type="Sprite2D" parent="."]
+scale = Vector2(0.8, 0.8)
+texture = ExtResource("1_exp")
+hframes = 8

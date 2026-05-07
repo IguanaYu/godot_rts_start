@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://bxneutral01"]
+
+[ext_resource type="Script" path="res://scripts/neutral.gd" id="neu_script"]
+
+[node name="Neutral" type="Node2D"]
+script = ExtResource("neu_script")
+
+[node name="Sprite" type="Sprite2D" parent="."]
