@@ -51,6 +51,18 @@ var place_mode_label: Label
 var gold: int = 10000
 var gold_label: Label
 
+# === 相机控制 ===
+var camera_speed: float = 600.0
+var edge_margin: float = 30.0
+var zoom_step: float = 0.15
+var min_zoom: float = 0.4
+var max_zoom: float = 2.0
+var map_bounds := Rect2(-500, -500, 2000, 1700)
+
+var _mid_dragging: bool = false
+var _mid_drag_start_mouse := Vector2.ZERO
+var _mid_drag_start_cam := Vector2.ZERO
+
 func _ready() -> void:
 	result_label.visible = false
 	attack_move_indicator.visible = false
@@ -58,6 +70,11 @@ func _ready() -> void:
 	_create_ui()
 	_spawn_initial()
 	_create_grid()
+
+	# 相机平滑设置
+	camera.position_smoothing_enabled = true
+	camera.position_smoothing_speed = 10.0
+
 	await get_tree().process_frame
 
 
@@ -324,7 +341,8 @@ func _on_unit_died(unit: CharacterBody2D) -> void:
 
 # --- 每帧更新 ---
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_process_camera(delta)
 	_check_victory()
 
 	# 框选矩形
@@ -341,6 +359,67 @@ func _process(_delta: float) -> void:
 
 	# 放置预览
 	_update_preview()
+
+func _process_camera(delta: float) -> void:
+	var move_dir := Vector2.ZERO
+	var viewport_size := get_viewport().get_visible_rect().size
+
+	# --- 边缘滚动 ---
+	var mouse_pos := get_viewport().get_mouse_position()
+	if mouse_pos.x < edge_margin:
+		move_dir.x -= 1.0
+	elif mouse_pos.x > viewport_size.x - edge_margin:
+		move_dir.x += 1.0
+	if mouse_pos.y < edge_margin:
+		move_dir.y -= 1.0
+	elif mouse_pos.y > viewport_size.y - edge_margin:
+		move_dir.y += 1.0
+
+	# --- 方向键滚动 ---
+	if Input.is_key_pressed(KEY_UP):
+		move_dir.y -= 1.0
+	if Input.is_key_pressed(KEY_DOWN):
+		move_dir.y += 1.0
+	if Input.is_key_pressed(KEY_LEFT):
+		move_dir.x -= 1.0
+	if Input.is_key_pressed(KEY_RIGHT):
+		move_dir.x += 1.0
+
+	# --- 应用移动 ---
+	if move_dir != Vector2.ZERO:
+		move_dir = move_dir.normalized()
+		var current_zoom := camera.zoom.x
+		camera.position += move_dir * camera_speed * delta / current_zoom
+
+	# --- 中键拖拽 ---
+	if _mid_dragging:
+		var mouse_delta := get_viewport().get_mouse_position() - _mid_drag_start_mouse
+		var current_zoom := camera.zoom.x
+		camera.position = _mid_drag_start_cam - mouse_delta / current_zoom
+
+	# --- 边界约束 ---
+	_clamp_camera()
+
+func _clamp_camera() -> void:
+	var viewport_size := get_viewport().get_visible_rect().size
+	var current_zoom := camera.zoom.x
+	var half_w := viewport_size.x / 2.0 / current_zoom
+	var half_h := viewport_size.y / 2.0 / current_zoom
+
+	var min_x := map_bounds.position.x + half_w
+	var max_x := map_bounds.end.x - half_w
+	var min_y := map_bounds.position.y + half_h
+	var max_y := map_bounds.end.y - half_h
+
+	if min_x > max_x:
+		min_x = (map_bounds.position.x + map_bounds.end.x) / 2.0
+		max_x = min_x
+	if min_y > max_y:
+		min_y = (map_bounds.position.y + map_bounds.end.y) / 2.0
+		max_y = min_y
+
+	camera.position.x = clampf(camera.position.x, min_x, max_x)
+	camera.position.y = clampf(camera.position.y, min_y, max_y)
 
 func _update_preview() -> void:
 	if place_mode == PlaceMode.NONE or place_mode == PlaceMode.SOLDIER or place_mode == PlaceMode.ARCHER:
@@ -442,6 +521,21 @@ func _input(event: InputEvent) -> void:
 			attack_move_mode = false
 			place_mode = PlaceMode.NONE
 			_right_click()
+		elif event.button_index == MOUSE_BUTTON_MIDDLE:
+			if event.pressed:
+				_mid_dragging = true
+				_mid_drag_start_mouse = get_viewport().get_mouse_position()
+				_mid_drag_start_cam = camera.position
+			else:
+				_mid_dragging = false
+		elif event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
+			var new_zoom := clampf(camera.zoom.x + zoom_step, min_zoom, max_zoom)
+			camera.zoom = Vector2(new_zoom, new_zoom)
+			_clamp_camera()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
+			var new_zoom := clampf(camera.zoom.x - zoom_step, min_zoom, max_zoom)
+			camera.zoom = Vector2(new_zoom, new_zoom)
+			_clamp_camera()
 	elif event is InputEventKey and event.pressed:
 		match event.keycode:
 			KEY_A:
