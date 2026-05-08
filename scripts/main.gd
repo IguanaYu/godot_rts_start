@@ -383,16 +383,16 @@ func _rebuild_navigation() -> void:
 	source_geom.traversable_outlines = traversable
 
 	var obstructions: Array = []
-	var margin := 0.5
+	var margin := 20.0
 	for building in get_tree().get_nodes_in_group("buildings"):
 		if building.is_dead():
 			continue
 		var rect: Rect2 = building.get_rect()
 		obstructions.append(PackedVector2Array([
-			rect.position + Vector2(margin, margin),
-			Vector2(rect.end.x - margin, rect.position.y + margin),
-			rect.end - Vector2(margin, margin),
-			Vector2(rect.position.x + margin, rect.end.y - margin)
+			rect.position - Vector2(margin, margin),
+			Vector2(rect.end.x + margin, rect.position.y - margin),
+			rect.end + Vector2(margin, margin),
+			Vector2(rect.position.x - margin, rect.end.y + margin)
 		]))
 	source_geom.obstruction_outlines = obstructions
 
