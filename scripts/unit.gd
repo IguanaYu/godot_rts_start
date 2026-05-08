@@ -302,7 +302,10 @@ func _physics_process(delta: float) -> void:
 			_attack_process(delta)
 
 	if velocity.length_squared() > 1.0:
+		var prev_pos := global_position
 		move_and_slide()
+		if global_position.distance_squared_to(prev_pos) < 0.5:
+			velocity = Vector2.ZERO
 
 	attack_timer = max(0.0, attack_timer - delta)
 	_update_aggro_line()
