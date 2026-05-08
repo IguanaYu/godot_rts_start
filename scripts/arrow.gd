@@ -7,6 +7,7 @@ var arc_height: float = 40.0
 var progress: float = 0.0
 var hit_target = null
 var hit_damage: int = 0
+var shooter = null
 
 @onready var sprite: ColorRect = $ArrowSprite
 
@@ -28,7 +29,7 @@ func _process(delta: float) -> void:
 	progress += speed * delta / total_dist
 	if progress >= 1.0:
 		if hit_target != null and is_instance_valid(hit_target) and not hit_target.is_dead():
-			hit_target.take_damage(hit_damage)
+			hit_target.take_damage(hit_damage, shooter)
 		queue_free()
 		return
 

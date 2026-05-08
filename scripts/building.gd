@@ -290,16 +290,29 @@ func _spawn_arrow(target) -> void:
 	arrow.setup(global_position, target.global_position)
 	arrow.hit_target = target
 	arrow.hit_damage = int(attack_damage)
+	arrow.shooter = self
 
-func take_damage(amount: int) -> void:
+func take_damage(amount: int, attacker = null) -> void:
 	if Engine.is_editor_hint():
 		return
 	if _is_dead:
 		return
 	hp = max(0, hp - amount)
 	_update_hp_bar()
+	if attacker and team == Team.ENEMY:
+		_alert_nearby_enemies(attacker)
 	if hp <= 0:
 		die()
+
+func _alert_nearby_enemies(attacker) -> void:
+	var alert_range := 500.0
+	for u in get_tree().get_nodes_in_group("enemy_units"):
+		if u.is_dead():
+			continue
+		if global_position.distance_to(u.global_position) <= alert_range:
+			var ai = u.get_node_or_null("EnemyAI")
+			if ai and ai.has_method("on_attacked"):
+				ai.on_attacked(attacker)
 
 func die() -> void:
 	_is_dead = true

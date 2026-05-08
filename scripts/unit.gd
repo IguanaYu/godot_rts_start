@@ -394,7 +394,7 @@ func _perform_attack() -> void:
 		if unit_type == UnitType.ARCHER:
 			_spawn_arrow(attack_target)
 		else:
-			attack_target.take_damage(attack_damage)
+			attack_target.take_damage(attack_damage, self)
 
 func _spawn_arrow(target) -> void:
 	var arrow_scene := load("res://scenes/arrow.tscn")
@@ -403,16 +403,34 @@ func _spawn_arrow(target) -> void:
 	arrow.setup(global_position, target.global_position)
 	arrow.hit_target = target
 	arrow.hit_damage = attack_damage
+	arrow.shooter = self
 
-func take_damage(amount: int) -> void:
+func take_damage(amount: int, attacker = null) -> void:
 	if Engine.is_editor_hint():
 		return
 	if state == UnitState.DEAD:
 		return
 	hp = max(0, hp - amount)
 	_update_hp_bar()
+	if attacker and team == Team.ENEMY:
+		_alert_enemy_response(attacker)
 	if hp <= 0:
 		die()
+
+func _alert_enemy_response(attacker) -> void:
+	# 通知自身AI
+	var ai = get_node_or_null("EnemyAI")
+	if ai and ai.has_method("on_attacked"):
+		ai.on_attacked(attacker)
+	# 广播给附近友军
+	var alert_range := 400.0
+	for u in get_tree().get_nodes_in_group("enemy_units"):
+		if u == self or u.is_dead():
+			continue
+		if global_position.distance_to(u.global_position) <= alert_range:
+			var ally_ai = u.get_node_or_null("EnemyAI")
+			if ally_ai and ally_ai.has_method("on_attacked"):
+				ally_ai.on_attacked(attacker)
 
 func die() -> void:
 	state = UnitState.DEAD

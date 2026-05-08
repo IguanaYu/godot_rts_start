@@ -132,3 +132,6 @@ func on_attacked(attacker) -> void:
 		return
 	chase_target = attacker
 	ai_state = AIState.CHASE
+	# 打断当前巡逻移动，让AI立即接管
+	if unit.get("state") == UnitScript.UnitState.MOVE:
+		unit.set("state", UnitScript.UnitState.IDLE)

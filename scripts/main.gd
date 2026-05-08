@@ -224,6 +224,7 @@ func _spawn_initial() -> void:
 		enemy_units_node.add_child(unit)
 		unit.add_to_group("enemy_units")
 		var ai := Node2D.new()
+		ai.name = "EnemyAI"
 		ai.set_script(load("res://scripts/enemy_ai.gd"))
 		unit.add_child(ai)
 
