@@ -1,0 +1,24 @@
+class_name MapConfig
+extends Resource
+
+@export var map_name: String = ""
+@export var map_bounds: Rect2 = Rect2(-500, -500, 2000, 1700)
+@export var nav_bounds: Array[Vector2] = [Vector2(-500, -500), Vector2(1500, -500), Vector2(1500, 1200), Vector2(-500, 1200)]
+@export var initial_gold: int = 10000
+@export var camera_start: Vector2 = Vector2(500, 350)
+
+# Player initial data
+@export var player_units: Array[Dictionary] = []
+@export var player_buildings: Array[Dictionary] = []
+
+# Enemy initial data
+@export var enemy_units: Array[Dictionary] = []
+@export var enemy_buildings: Array[Dictionary] = []
+
+# Environment counts
+@export var environment: Dictionary = {"trees": 15, "rocks": 10, "bushes": 12, "sheep": 5}
+
+# Available PlaceMode items for this map
+@export var available_items: Array[int] = []
+
+@export var map_description: String = ""

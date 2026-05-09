@@ -2,8 +2,17 @@ extends Node2D
 
 const UnitScript := preload("res://scripts/unit.gd")
 const BuildingScript := preload("res://scripts/building.gd")
+const MapConfigScript := preload("res://scripts/map_config.gd")
 const GRID_SIZE := 64
-const NAV_BOUNDS := [Vector2(-500, -500), Vector2(1500, -500), Vector2(1500, 1200), Vector2(-500, 1200)]
+
+# Map configuration - set in scene or loaded from config
+@export var map_config: MapConfigScript = null
+
+# Victory condition node reference
+var victory_condition: VictoryCondition = null
+
+# Fallback defaults if no config loaded
+var NAV_BOUNDS := [Vector2(-500, -500), Vector2(1500, -500), Vector2(1500, 1200), Vector2(-500, 1200)]
 
 enum PlaceMode { NONE, WALL, TOWER, CASTLE, BARRACKS, SOLDIER, ARCHER, MONASTERY, ARCHERY_RANGE, LANCER, MONK_UNIT }
 
@@ -55,6 +64,9 @@ var place_mode_label: Label
 var gold: int = 10000
 var gold_label: Label
 
+# Dynamic key mapping (filled in _ready based on available_items)
+var key_to_mode: Dictionary = {}
+
 # === 相机控制 ===
 var camera_speed: float = 600.0
 var edge_margin: float = 30.0
@@ -71,16 +83,48 @@ func _ready() -> void:
 	result_label.visible = false
 	attack_move_indicator.visible = false
 	preview_rect.visible = false
+
+	# Load map config if set
+	_load_from_config()
+
 	_create_ui()
-	_spawn_initial()
+	_spawn_from_config()
 	_create_grid()
 	_spawn_environment()
+
+	# Setup victory condition
+	_setup_victory_condition()
 
 	# 相机平滑设置
 	camera.position_smoothing_enabled = true
 	camera.position_smoothing_speed = 10.0
 
+	# Set camera start position
+	if map_config != null:
+		camera.position = map_config.camera_start
+
 	await get_tree().process_frame
+
+func _load_from_config() -> void:
+	if map_config == null:
+		return
+
+	# Update constants from config
+	NAV_BOUNDS = map_config.nav_bounds
+	map_bounds = map_config.map_bounds
+	gold = map_config.initial_gold
+
+func _setup_victory_condition() -> void:
+	# Find VictoryCondition child node
+	for child in get_children():
+		if child is VictoryCondition:
+			victory_condition = child
+			victory_condition.game_ended.connect(_on_game_ended)
+			break
+
+func _on_game_ended(result: String) -> void:
+	result_label.text = "Victory!" if result == "victory" else "Defeat!"
+	result_label.visible = true
 
 
 func _create_grid() -> void:
@@ -90,10 +134,14 @@ func _create_grid() -> void:
 	container.visible = false
 	add_child(container)
 	move_child(container, 1)
-	var start_x := -500
-	var start_y := -500
-	var end_x := 1500
-	var end_y := 1200
+
+	# Get bounds from config or use defaults
+	var bounds: Rect2 = map_bounds
+	var start_x := bounds.position.x
+	var start_y := bounds.position.y
+	var end_x := bounds.end.x
+	var end_y := bounds.end.y
+
 	var color := Color(1, 1, 1, 0.2)
 	var x := start_x
 	while x <= end_x:
@@ -132,26 +180,66 @@ func _create_ui() -> void:
 	hbox.add_theme_constant_override("separation", 10)
 	panel.add_child(hbox)
 
-	var buttons_data := [
-		{"mode": PlaceMode.WALL, "text": "Wall[1] $50", "key": KEY_1},
-		{"mode": PlaceMode.TOWER, "text": "Tower[2] $150", "key": KEY_2},
-		{"mode": PlaceMode.SOLDIER, "text": "Soldier[3] $100", "key": KEY_3},
-		{"mode": PlaceMode.ARCHER, "text": "Archer[4] $120", "key": KEY_4},
-		{"mode": PlaceMode.CASTLE, "text": "Castle[5] $500", "key": KEY_5},
-		{"mode": PlaceMode.BARRACKS, "text": "Barracks[6] $300", "key": KEY_6},
-		{"mode": PlaceMode.MONASTERY, "text": "Monastery[7] $350", "key": KEY_7},
-		{"mode": PlaceMode.ARCHERY_RANGE, "text": "Archery[8] $250", "key": KEY_8},
-		{"mode": PlaceMode.LANCER, "text": "Lancer[9] $150", "key": KEY_9},
-		{"mode": PlaceMode.MONK_UNIT, "text": "Monk[0] $80", "key": KEY_0},
-	]
+	# Get available items from config or use all
+	var available_items: Array[int]
+	if map_config != null and not map_config.available_items.is_empty():
+		available_items = map_config.available_items
+	else:
+		# Default: all items
+		available_items = [
+			PlaceMode.WALL, PlaceMode.TOWER, PlaceMode.SOLDIER, PlaceMode.ARCHER,
+			PlaceMode.CASTLE, PlaceMode.BARRACKS, PlaceMode.MONASTERY,
+			PlaceMode.ARCHERY_RANGE, PlaceMode.LANCER, PlaceMode.MONK_UNIT
+		]
 
-	for data in buttons_data:
+	# Key mapping
+	var key_mapping := {
+		PlaceMode.WALL: KEY_1,
+		PlaceMode.TOWER: KEY_2,
+		PlaceMode.SOLDIER: KEY_3,
+		PlaceMode.ARCHER: KEY_4,
+		PlaceMode.CASTLE: KEY_5,
+		PlaceMode.BARRACKS: KEY_6,
+		PlaceMode.MONASTERY: KEY_7,
+		PlaceMode.ARCHERY_RANGE: KEY_8,
+		PlaceMode.LANCER: KEY_9,
+		PlaceMode.MONK_UNIT: KEY_0,
+	}
+
+	var key_names := {
+		PlaceMode.WALL: "1", PlaceMode.TOWER: "2", PlaceMode.SOLDIER: "3",
+		PlaceMode.ARCHER: "4", PlaceMode.CASTLE: "5", PlaceMode.BARRACKS: "6",
+		PlaceMode.MONASTERY: "7", PlaceMode.ARCHERY_RANGE: "8", PlaceMode.LANCER: "9",
+		PlaceMode.MONK_UNIT: "0"
+	}
+
+	var mode_names := {
+		PlaceMode.WALL: "Wall", PlaceMode.TOWER: "Tower", PlaceMode.SOLDIER: "Soldier",
+		PlaceMode.ARCHER: "Archer", PlaceMode.CASTLE: "Castle", PlaceMode.BARRACKS: "Barracks",
+		PlaceMode.MONASTERY: "Monastery", PlaceMode.ARCHERY_RANGE: "Archery",
+		PlaceMode.LANCER: "Lancer", PlaceMode.MONK_UNIT: "Monk"
+	}
+
+	# Generate buttons dynamically
+	var key_index := 0
+	var key_list := [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0]
+
+	for mode in available_items:
+		var cost: int = COSTS.get(mode, 0)
+		var mode_name: String = mode_names.get(mode, "Unknown")
+		var key_key: Key = key_list[key_index] if key_index < key_list.size() else KEY_0
+
 		var btn := Button.new()
-		btn.text = data.text
+		btn.text = "%s[%d] $%d" % [mode_name, (key_index + 1) % 10, cost]
 		btn.custom_minimum_size = Vector2(135, 36)
-		btn.pressed.connect(func(): _enter_place_mode(data.mode))
+		btn.pressed.connect(func(): _enter_place_mode(mode))
 		hbox.add_child(btn)
-		ui_buttons[data.mode] = btn
+		ui_buttons[mode] = btn
+
+		# Build key mapping
+		key_to_mode[key_key] = mode
+
+		key_index += 1
 
 	canvas.add_child(panel)
 
@@ -239,6 +327,37 @@ func _spawn_initial() -> void:
 	_place_building(BuildingScript.BuildingType.WALL, BuildingScript.Team.ENEMY, Vector2i(11, 4))
 	_place_building(BuildingScript.BuildingType.WALL, BuildingScript.Team.ENEMY, Vector2i(11, 6))
 
+# Spawn units and buildings from config
+func _spawn_from_config() -> void:
+	if map_config == null:
+		# Fallback to old hardcoded spawn
+		_spawn_initial()
+		return
+
+	# Spawn player units
+	for spawn in map_config.player_units:
+		var unit := _create_unit(spawn.type, UnitScript.Team.PLAYER, spawn.pos)
+		player_units_node.add_child(unit)
+		unit.add_to_group("player_units")
+
+	# Spawn enemy units
+	for spawn in map_config.enemy_units:
+		var unit := _create_unit(spawn.type, UnitScript.Team.ENEMY, spawn.pos)
+		enemy_units_node.add_child(unit)
+		unit.add_to_group("enemy_units")
+		var ai := Node2D.new()
+		ai.name = "EnemyAI"
+		ai.set_script(load("res://scripts/enemy_ai.gd"))
+		unit.add_child(ai)
+
+	# Spawn player buildings
+	for spawn in map_config.player_buildings:
+		_place_building(spawn.type, BuildingScript.Team.PLAYER, spawn.grid_pos)
+
+	# Spawn enemy buildings
+	for spawn in map_config.enemy_buildings:
+		_place_building(spawn.type, BuildingScript.Team.ENEMY, spawn.grid_pos)
+
 # --- 环境装饰 ---
 
 func _spawn_environment() -> void:
@@ -248,6 +367,25 @@ func _spawn_environment() -> void:
 	add_child(env_node)
 	move_child(env_node, 1)
 
+	# Dynamic spawn range from map_bounds
+	var spawn_min_x: float = map_bounds.position.x + 100
+	var spawn_max_x: float = map_bounds.end.x - 100
+	var spawn_min_y: float = map_bounds.position.y + 100
+	var spawn_max_y: float = map_bounds.end.y - 100
+
+	# Get environment counts from config or use defaults
+	var tree_count := 15
+	var rock_count := 10
+	var bush_count := 12
+	var sheep_count := 5
+
+	if map_config != null:
+		var env := map_config.environment
+		tree_count = env.get("trees", 15)
+		rock_count = env.get("rocks", 10)
+		bush_count = env.get("bushes", 12)
+		sheep_count = env.get("sheep", 5)
+
 	# 树木
 	var tree_scene := load("res://scenes/tree.tscn")
 	var tree_textures := [
@@ -256,9 +394,9 @@ func _spawn_environment() -> void:
 		"res://assets/environment/trees/Tree3.png",
 		"res://assets/environment/trees/Tree4.png",
 	]
-	for i in range(15):
+	for i in range(tree_count):
 		var tree: Node2D = tree_scene.instantiate()
-		var pos := Vector2(randf_range(-400, 1400), randf_range(-400, 1100))
+		var pos := Vector2(randf_range(spawn_min_x, spawn_max_x), randf_range(spawn_min_y, spawn_max_y))
 		tree.position = pos
 		tree.get_node("Sprite").texture = load(tree_textures[i % 4])
 		tree.get_node("Sprite").frame = randi() % 8
@@ -272,9 +410,9 @@ func _spawn_environment() -> void:
 		"res://assets/environment/rocks/Rock3.png",
 		"res://assets/environment/rocks/Rock4.png",
 	]
-	for i in range(10):
+	for i in range(rock_count):
 		var rock: Node2D = rock_scene.instantiate()
-		rock.position = Vector2(randf_range(-400, 1400), randf_range(-400, 1100))
+		rock.position = Vector2(randf_range(spawn_min_x, spawn_max_x), randf_range(spawn_min_y, spawn_max_y))
 		rock.get_node("Sprite").texture = load(rock_textures[i % 4])
 		env_node.add_child(rock)
 
@@ -286,17 +424,17 @@ func _spawn_environment() -> void:
 		"res://assets/environment/bushes/Bushe3.png",
 		"res://assets/environment/bushes/Bushe4.png",
 	]
-	for i in range(12):
+	for i in range(bush_count):
 		var bush: Node2D = bush_scene.instantiate()
-		bush.position = Vector2(randf_range(-400, 1400), randf_range(-400, 1100))
+		bush.position = Vector2(randf_range(spawn_min_x, spawn_max_x), randf_range(spawn_min_y, spawn_max_y))
 		bush.get_node("Sprite").texture = load(bush_textures[i % 4])
 		env_node.add_child(bush)
 
 	# 羊
 	var sheep_scene := load("res://scenes/sheep.tscn")
-	for i in range(5):
+	for i in range(sheep_count):
 		var sheep: Node2D = sheep_scene.instantiate()
-		sheep.position = Vector2(randf_range(-200, 1200), randf_range(-200, 1000))
+		sheep.position = Vector2(randf_range(spawn_min_x, spawn_max_x), randf_range(spawn_min_y, spawn_max_y))
 		env_node.add_child(sheep)
 
 # --- 网格工具 ---
@@ -570,6 +708,20 @@ func _check_victory() -> void:
 	if result_label.visible:
 		return
 
+	# Use victory_condition if available
+	if victory_condition != null:
+		var result := victory_condition.check()
+		if result == 1:
+			result_label.text = "Victory!"
+			result_label.visible = true
+		elif result == 2:
+			result_label.text = "Defeat!"
+			result_label.visible = true
+	else:
+		# Fallback to old hardcoded check
+		_fallback_check_victory()
+
+func _fallback_check_victory() -> void:
 	# 检查玩家城堡是否存活
 	var player_castle_alive := false
 	for b in get_tree().get_nodes_in_group("player_buildings"):
@@ -640,26 +792,9 @@ func _input(event: InputEvent) -> void:
 				_stop_selected()
 			KEY_R:
 				get_tree().reload_current_scene()
-			KEY_1:
-				_enter_place_mode(PlaceMode.WALL)
-			KEY_2:
-				_enter_place_mode(PlaceMode.TOWER)
-			KEY_3:
-				_enter_place_mode(PlaceMode.SOLDIER)
-			KEY_4:
-				_enter_place_mode(PlaceMode.ARCHER)
-			KEY_5:
-				_enter_place_mode(PlaceMode.CASTLE)
-			KEY_6:
-				_enter_place_mode(PlaceMode.BARRACKS)
-			KEY_7:
-				_enter_place_mode(PlaceMode.MONASTERY)
-			KEY_8:
-				_enter_place_mode(PlaceMode.ARCHERY_RANGE)
-			KEY_9:
-				_enter_place_mode(PlaceMode.LANCER)
-			KEY_0:
-				_enter_place_mode(PlaceMode.MONK_UNIT)
+			KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0:
+				if key_to_mode.has(event.keycode):
+					_enter_place_mode(key_to_mode[event.keycode])
 			KEY_G:
 				show_grid = not show_grid
 				if grid_overlay:
@@ -844,3 +979,42 @@ func _get_selection_rect(start: Vector2, end: Vector2) -> Rect2:
 	var pos := Vector2(min(start.x, end.x), min(start.y, end.y))
 	var size := Vector2(abs(end.x - start.x), abs(end.y - start.y))
 	return Rect2(pos, size)
+
+# === Public methods for WaveManager, CapturePoint, etc. ===
+
+func spawn_enemy_wave(units: Array, wave_attack: bool = false, wave_target: Vector2 = Vector2.ZERO) -> void:
+	for unit_data in units:
+		var type: int = unit_data.get("type", 0)
+		var pos: Vector2 = unit_data.get("pos", Vector2.ZERO)
+		spawn_enemy_unit(type, pos, wave_attack, wave_target)
+
+func spawn_enemy_unit(type: int, pos: Vector2, wave_attack: bool = false, wave_target: Vector2 = Vector2.ZERO) -> void:
+	var unit := _create_unit(type, UnitScript.Team.ENEMY, pos)
+	enemy_units_node.add_child(unit)
+	unit.add_to_group("enemy_units")
+	var ai := Node2D.new()
+	ai.name = "EnemyAI"
+	ai.set_script(load("res://scripts/enemy_ai.gd"))
+	unit.add_child(ai)
+	if wave_attack and wave_target != Vector2.ZERO:
+		# Need to wait one frame for AI _ready to run
+		await get_tree().process_frame
+		ai.start_wave_attack(wave_target)
+
+func add_gold(amount: int) -> void:
+	gold += amount
+	_update_gold_display()
+
+func spawn_unit_near(type: int, pos: Vector2, team: int) -> void:
+	var offset := Vector2(randf_range(-50, 50), randf_range(-50, 50))
+	var unit := _create_unit(type, team, pos + offset)
+	if team == UnitScript.Team.PLAYER:
+		player_units_node.add_child(unit)
+		unit.add_to_group("player_units")
+	else:
+		enemy_units_node.add_child(unit)
+		unit.add_to_group("enemy_units")
+		var ai := Node2D.new()
+		ai.name = "EnemyAI"
+		ai.set_script(load("res://scripts/enemy_ai.gd"))
+		unit.add_child(ai)
