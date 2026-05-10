@@ -1,0 +1,94 @@
+[gd_scene load_steps=5 format=3 uid="uid://map1scene0001"]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="main_script"]
+[ext_resource type="Resource" path="res://resources/map1_config.tres" id="map1_config"]
+[ext_resource type="Script" path="res://scripts/victory_blitz.gd" id="victory_blitz"]
+[ext_resource type="Script" path="res://scripts/capture_point.gd" id="capture_point"]
+
+[sub_resource type="NavigationPolygon" id="NavPoly_1"]
+vertices = PackedVector2Array(-100, -100, 2100, -100, 2100, 500, -100, 500)
+polygons = [PackedInt32Array(0, 1, 2, 3)]
+
+[node name="Map1" type="Node2D"]
+script = ExtResource("main_script")
+map_config = ExtResource("map1_config")
+
+[node name="Ground" type="ColorRect" parent="."]
+offset_left = -100.0
+offset_top = -100.0
+offset_right = 2100.0
+offset_bottom = 500.0
+color = Color(0.35, 0.55, 0.25, 1)
+
+[node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
+navigation_polygon = SubResource("NavPoly_1")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+
+[node name="PlayerUnits" type="Node2D" parent="."]
+
+[node name="EnemyUnits" type="Node2D" parent="."]
+
+[node name="Buildings" type="Node2D" parent="."]
+
+[node name="SelectionBox" type="ColorRect" parent="."]
+visible = false
+color = Color(0.4, 0.7, 1, 0.25)
+mouse_filter = 2
+
+[node name="PreviewRect" type="ColorRect" parent="."]
+visible = false
+color = Color(0, 1, 0, 0.3)
+mouse_filter = 2
+
+[node name="ResultLabel" type="Label" parent="."]
+offset_left = 350.0
+offset_top = 300.0
+offset_right = 650.0
+offset_bottom = 400.0
+theme_override_font_sizes/font_size = 48
+horizontal_alignment = 1
+vertical_alignment = 1
+text = ""
+
+[node name="AttackMoveIndicator" type="Label" parent="."]
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 200.0
+offset_bottom = 40.0
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+theme_override_font_sizes/font_size = 20
+text = "Attack Move (Click)"
+visible = false
+
+[node name="VictoryBlitz" type="Node" parent="."]
+script = ExtResource("victory_blitz")
+capture_points = [NodePath("../CapturePoint1"), NodePath("../CapturePoint2"), NodePath("../CapturePoint3")]
+activation_radius = 200.0
+
+[node name="CapturePoint1" type="Area2D" parent="."]
+position = Vector2(500, 200)
+script = ExtResource("capture_point")
+capture_radius = 80.0
+trigger_on_start = false
+reward_type = 1
+capture_speed = 50.0
+reward_units = Array[Dictionary]( [{"type": 0, "count": 2}] )
+
+[node name="CapturePoint2" type="Area2D" parent="."]
+position = Vector2(1000, 200)
+script = ExtResource("capture_point")
+capture_radius = 80.0
+trigger_on_start = false
+reward_type = 1
+capture_speed = 50.0
+reward_units = Array[Dictionary]( [{"type": 0, "count": 1}, {"type": 1, "count": 1}] )
+
+[node name="CapturePoint3" type="Area2D" parent="."]
+position = Vector2(1550, 200)
+script = ExtResource("capture_point")
+capture_radius = 80.0
+trigger_on_start = false
+reward_type = 1
+capture_speed = 50.0
+reward_units = Array[Dictionary]( [{"type": 0, "count": 2}, {"type": 1, "count": 1}] )

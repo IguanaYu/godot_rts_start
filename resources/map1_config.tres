@@ -1,0 +1,47 @@
+[gd_resource type="Resource" script_class="MapConfig" load_steps=2 format=3 uid="uid://m1c2n3o4p5q6r"]
+
+[ext_resource type="Script" path="res://scripts/map_config.gd" id="1_cfg12"]
+
+[resource]
+script = ExtResource("1_cfg12")
+map_name = "Blitz"
+map_bounds = Rect2(-100, -100, 2200, 600)
+nav_bounds = Array[Vector2]([Vector2(-100, -100), Vector2(2100, -100), Vector2(2100, 500), Vector2(-100, 500)])
+initial_gold = 0
+camera_start = Vector2(100, 200)
+
+player_units = Array[Dictionary]( [
+	{"type": 0, "pos": Vector2(0, 170)},
+	{"type": 0, "pos": Vector2(0, 200)},
+	{"type": 0, "pos": Vector2(0, 230)},
+	{"type": 1, "pos": Vector2(-30, 185)},
+	{"type": 1, "pos": Vector2(-30, 215)}
+] )
+
+player_buildings = Array[Dictionary]( [] )
+
+enemy_units = Array[Dictionary]( [
+	{"type": 0, "pos": Vector2(460, 170)},
+	{"type": 0, "pos": Vector2(540, 230)},
+	{"type": 0, "pos": Vector2(960, 150)},
+	{"type": 0, "pos": Vector2(1040, 250)},
+	{"type": 0, "pos": Vector2(1020, 200)},
+	{"type": 1, "pos": Vector2(980, 220)},
+	{"type": 0, "pos": Vector2(1510, 150)},
+	{"type": 0, "pos": Vector2(1530, 250)},
+	{"type": 0, "pos": Vector2(1570, 180)},
+	{"type": 1, "pos": Vector2(1500, 220)},
+	{"type": 1, "pos": Vector2(1560, 240)}
+] )
+
+enemy_buildings = Array[Dictionary]( [
+	{"type": 1, "grid_pos": Vector2i(23, 2)},
+	{"type": 0, "grid_pos": Vector2i(22, 1)},
+	{"type": 0, "grid_pos": Vector2i(22, 3)}
+] )
+
+environment = {"trees": 6, "rocks": 4, "bushes": 3, "sheep": 0}
+
+available_items = Array[int]( [] )
+
+map_description = "Capture all 3 strongpoints! No base, no gold - fight smart!"

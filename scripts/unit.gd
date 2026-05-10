@@ -493,3 +493,8 @@ func _update_aggro_line() -> void:
 
 func is_dead() -> bool:
 	return state == UnitState.DEAD
+
+func heal(amount: int) -> void:
+	if state == UnitState.DEAD:
+		return
+	hp = mini(hp + amount, max_hp)

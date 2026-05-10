@@ -29,10 +29,7 @@ signal captured(team: int)
 signal capture_progress_changed(team: int, progress: float)
 
 func _ready() -> void:
-	body_entered.connect(_on_body_entered)
-	body_exited.connect(_on_body_exited)
-
-	# Setup collision
+	# Setup collision for body detection
 	var collision := CollisionShape2D.new()
 	var shape := CircleShape2D.new()
 	shape.radius = capture_radius
@@ -44,13 +41,15 @@ func _ready() -> void:
 
 	if trigger_on_start:
 		activate()
+	else:
+		visible = false
 
 func _setup_visual() -> void:
 	var sprite := ColorRect.new()
 	sprite.name = "CaptureRing"
 	sprite.size = Vector2(capture_radius * 2, capture_radius * 2)
 	sprite.position = Vector2(-capture_radius, -capture_radius)
-	sprite.color = Color(1, 1, 1, 0.1)
+	sprite.color = Color(1, 1, 1, 0.15)
 	sprite.z_index = 5
 	add_child(sprite)
 
@@ -72,16 +71,16 @@ func _process(delta: float) -> void:
 	var player_count := 0
 	var enemy_count := 0
 
-	for body in get_overlapping_bodies():
-		if not body is CharacterBody2D:
-			continue
-		if body.has_method("is_dead") and body.is_dead():
-			continue
-		if body.has_method("get"):
-			var team = body.get("team")
-			if team == UnitScript.Team.PLAYER:
+	# Use distance-based detection instead of get_overlapping_bodies()
+	# to avoid Area2D collision layer issues
+	for u in get_tree().get_nodes_in_group("player_units"):
+		if u is CharacterBody2D and not u.is_dead():
+			if u.global_position.distance_to(global_position) <= capture_radius:
 				player_count += 1
-			elif team == UnitScript.Team.ENEMY:
+
+	for u in get_tree().get_nodes_in_group("enemy_units"):
+		if u is CharacterBody2D and not u.is_dead():
+			if u.global_position.distance_to(global_position) <= capture_radius:
 				enemy_count += 1
 
 	# Determine dominant team
@@ -108,6 +107,7 @@ func _process(delta: float) -> void:
 			captured_by = capturing_team
 			captured.emit(captured_by)
 			_grant_reward()
+			deactivate()
 	else:
 		if captured_by == -1:
 			capture_progress = max(0.0, capture_progress - capture_speed * delta * 0.5)
@@ -129,12 +129,6 @@ func _grant_reward() -> void:
 						game_controller.call("spawn_unit_near", type, global_position, captured_by)
 		RewardType.CUSTOM:
 			pass
-
-func _on_body_entered(body: Node2D) -> void:
-	pass
-
-func _on_body_exited(body: Node2D) -> void:
-	pass
 
 func get_capture_progress() -> float:
 	return capture_progress

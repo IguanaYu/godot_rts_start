@@ -94,6 +94,7 @@ func _ready() -> void:
 
 	# Setup victory condition
 	_setup_victory_condition()
+	_setup_capture_points()
 
 	# 相机平滑设置
 	camera.position_smoothing_enabled = true
@@ -125,6 +126,11 @@ func _setup_victory_condition() -> void:
 func _on_game_ended(result: String) -> void:
 	result_label.text = "Victory!" if result == "victory" else "Defeat!"
 	result_label.visible = true
+
+func _setup_capture_points() -> void:
+	for child in get_children():
+		if child is CapturePoint:
+			child.set_game_controller(self)
 
 
 func _create_grid() -> void:
