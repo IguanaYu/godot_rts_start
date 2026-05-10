@@ -67,6 +67,10 @@ var gold_label: Label
 # Dynamic key mapping (filled in _ready based on available_items)
 var key_to_mode: Dictionary = {}
 
+# 暂停菜单
+var pause_menu_open: bool = false
+var pause_canvas: CanvasLayer
+
 # === 相机控制 ===
 var camera_speed: float = 600.0
 var edge_margin: float = 30.0
@@ -88,6 +92,7 @@ func _ready() -> void:
 	_load_from_config()
 
 	_create_ui()
+	_create_pause_menu()
 	_spawn_from_config()
 	_create_grid()
 	_spawn_environment()
@@ -292,6 +297,98 @@ func _update_button_affordability() -> void:
 		var cost: int = COSTS.get(mode, 0)
 		btn.disabled = gold < cost
 		btn.modulate.a = 0.5 if gold < cost else 1.0
+
+func _create_pause_menu() -> void:
+	pause_canvas = CanvasLayer.new()
+	pause_canvas.layer = 100
+	pause_canvas.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(pause_canvas)
+
+	var overlay := ColorRect.new()
+	overlay.anchor_left = 0.0
+	overlay.anchor_right = 1.0
+	overlay.anchor_top = 0.0
+	overlay.anchor_bottom = 1.0
+	overlay.color = Color(0, 0, 0, 0.6)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	pause_canvas.add_child(overlay)
+
+	# ESC input handler (runs while paused)
+	var input_handler := Control.new()
+	input_handler.set_script(load("res://scripts/pause_input_handler.gd"))
+	input_handler.main_node = self
+	input_handler.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	input_handler.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pause_canvas.add_child(input_handler)
+
+	var panel_bg := ColorRect.new()
+	panel_bg.anchor_left = 0.5
+	panel_bg.anchor_right = 0.5
+	panel_bg.anchor_top = 0.5
+	panel_bg.anchor_bottom = 0.5
+	panel_bg.offset_left = -120.0
+	panel_bg.offset_right = 120.0
+	panel_bg.offset_top = -140.0
+	panel_bg.offset_bottom = 140.0
+	panel_bg.color = Color(0.1, 0.1, 0.15, 0.95)
+	overlay.add_child(panel_bg)
+
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(center)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 10)
+	center.add_child(vbox)
+
+	var title := Label.new()
+	title.text = "PAUSED"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 28)
+	vbox.add_child(title)
+
+	var btn_data := [
+		["Resume", _close_pause_menu],
+		["Restart", _on_pause_restart],
+		["Level Select", _on_pause_level_select],
+		["Quit Game", _on_pause_quit],
+	]
+	for data in btn_data:
+		var btn := Button.new()
+		btn.text = data[0]
+		btn.custom_minimum_size = Vector2(200, 40)
+		btn.pressed.connect(data[1])
+		vbox.add_child(btn)
+
+	var hint := Label.new()
+	hint.text = "Press ESC to resume"
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.add_theme_font_size_override("font_size", 14)
+	hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+	vbox.add_child(hint)
+
+	pause_canvas.visible = false
+
+func _open_pause_menu() -> void:
+	pause_menu_open = true
+	pause_canvas.visible = true
+	get_tree().paused = true
+
+func _close_pause_menu() -> void:
+	pause_menu_open = false
+	pause_canvas.visible = false
+	get_tree().paused = false
+
+func _on_pause_restart() -> void:
+	get_tree().paused = false
+	get_tree().reload_current_scene()
+
+func _on_pause_level_select() -> void:
+	get_tree().paused = false
+	get_tree().change_scene_to_file("res://scenes/level_select.tscn")
+
+func _on_pause_quit() -> void:
+	get_tree().quit()
 
 func _enter_place_mode(mode: PlaceMode) -> void:
 	if place_mode == mode:
@@ -802,6 +899,21 @@ func _check_wave_cleared() -> void:
 # --- 输入处理 ---
 
 func _input(event: InputEvent) -> void:
+	# ESC handling for pause menu
+	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		if pause_menu_open:
+			_close_pause_menu()
+			return
+		elif place_mode != PlaceMode.NONE or attack_move_mode:
+			place_mode = PlaceMode.NONE
+			attack_move_mode = false
+			return
+		else:
+			_open_pause_menu()
+			return
+	# Block input while paused
+	if get_tree().paused:
+		return
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if event.pressed:
@@ -855,9 +967,6 @@ func _input(event: InputEvent) -> void:
 				show_grid = not show_grid
 				if grid_overlay:
 					grid_overlay.visible = show_grid
-			KEY_ESCAPE:
-				place_mode = PlaceMode.NONE
-				attack_move_mode = false
 
 # --- 放置 ---
 
