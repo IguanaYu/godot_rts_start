@@ -146,9 +146,12 @@ func _setup_texture() -> void:
 			_tex_run = load(base + "/Run.png")
 			_tex_attack = null
 
-	_frames_idle = _tex_idle.get_width() / 192 if _tex_idle else 6
-	_frames_run = _tex_run.get_width() / 192 if _tex_run else 6
-	_frames_attack = _tex_attack.get_width() / 192 if _tex_attack else 6
+	var frame_w := 192
+	if unit_type == UnitType.LANCER:
+		frame_w = 320
+	_frames_idle = _tex_idle.get_width() / frame_w if _tex_idle else 6
+	_frames_run = _tex_run.get_width() / frame_w if _tex_run else 6
+	_frames_attack = _tex_attack.get_width() / frame_w if _tex_attack else 6
 
 	if not Engine.is_editor_hint():
 		_set_anim("idle")
