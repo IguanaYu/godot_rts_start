@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="MapConfig" load_steps=2 format=3 uid="uid://m3c4n5o6p7q8r"]
+
+[ext_resource type="Script" path="res://scripts/map_config.gd" id="1_cfg34"]
+
+[resource]
+script = ExtResource("1_cfg34")
+map_name = "Tower Defense"
+map_bounds = Rect2(-500, -500, 2000, 1700)
+nav_bounds = Array[Vector2]([Vector2(-500, -500), Vector2(1500, -500), Vector2(1500, 1200), Vector2(-500, 1200)])
+initial_gold = 6000
+camera_start = Vector2(200, 350)
+
+player_units = Array[Dictionary]( [
+	{"type": 0, "pos": Vector2(100, 200)},
+	{"type": 0, "pos": Vector2(100, 280)},
+	{"type": 0, "pos": Vector2(100, 360)},
+	{"type": 1, "pos": Vector2(50, 240)},
+	{"type": 1, "pos": Vector2(50, 320)}
+] )
+
+player_buildings = Array[Dictionary]( [
+	{"type": 2, "grid_pos": Vector2i(1, 2)},
+	{"type": 3, "grid_pos": Vector2i(5, 3)},
+	{"type": 5, "grid_pos": Vector2i(5, 1)},
+	{"type": 1, "grid_pos": Vector2i(7, 2)}
+] )
+
+enemy_units = Array[Dictionary]( [] )
+
+enemy_buildings = Array[Dictionary]( [] )
+
+environment = {"trees": 10, "rocks": 8, "bushes": 6, "sheep": 3}
+
+available_items = Array[int]( [1, 2, 5, 6, 9] )
+
+map_description = "Survive 3 waves of enemy attacks! Build defenses and hold your ground."

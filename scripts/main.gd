@@ -95,6 +95,7 @@ func _ready() -> void:
 	# Setup victory condition
 	_setup_victory_condition()
 	_setup_capture_points()
+	_setup_wave_manager()
 
 	# 相机平滑设置
 	camera.position_smoothing_enabled = true
@@ -131,6 +132,14 @@ func _setup_capture_points() -> void:
 	for child in get_children():
 		if child is CapturePoint:
 			child.set_game_controller(self)
+
+func _setup_wave_manager() -> void:
+	for child in get_children():
+		if child is WaveManager:
+			child.set_game_controller(self)
+			child.wave_started.connect(func(_n): _wave_clear_notified = false)
+			child.start_waves()
+			break
 
 
 func _create_grid() -> void:
@@ -566,9 +575,13 @@ func _on_unit_died(unit: CharacterBody2D) -> void:
 
 # --- 每帧更新 ---
 
+var _wave_clear_notified: bool = false
+var _wc_debug_timer: float = 0.0
+
 func _process(delta: float) -> void:
 	_process_camera(delta)
 	_check_victory()
+	_check_wave_cleared()
 
 	# 框选矩形
 	if is_selecting:
@@ -750,6 +763,41 @@ func _fallback_check_victory() -> void:
 	elif not player_castle_alive:
 		result_label.text = "Defeat!"
 		result_label.visible = true
+
+func _check_wave_cleared() -> void:
+	var wm: Node = null
+	for child in get_children():
+		if child is WaveManager:
+			wm = child
+			break
+	if wm == null:
+		return
+	if not wm.wave_active:
+		_wc_debug_timer += 0.016
+		if _wc_debug_timer > 5.0:
+			_wc_debug_timer = 0.0
+			var enemy_count := 0
+			for u in get_tree().get_nodes_in_group("enemy_units"):
+				if u is CharacterBody2D and not u.is_dead():
+					enemy_count += 1
+			print("_check_wave_cleared: wave_active=false enemies=", enemy_count)
+		return
+	# Check if all enemy units are dead
+	var enemy_count := 0
+	for u in get_tree().get_nodes_in_group("enemy_units"):
+		if u is CharacterBody2D and not u.is_dead():
+			enemy_count += 1
+	if enemy_count > 0:
+		_wc_debug_timer += 0.016
+		if _wc_debug_timer > 5.0:
+			_wc_debug_timer = 0.0
+			print("_check_wave_cleared: wave_active=true enemies=", enemy_count)
+		return
+	# All dead -- notify wave manager
+	if not _wave_clear_notified:
+		_wave_clear_notified = true
+		print("_check_wave_cleared: ALL CLEAR! notifying wave manager")
+		wm.on_wave_cleared()
 
 # --- 输入处理 ---
 
@@ -1003,9 +1051,8 @@ func spawn_enemy_unit(type: int, pos: Vector2, wave_attack: bool = false, wave_t
 	ai.set_script(load("res://scripts/enemy_ai.gd"))
 	unit.add_child(ai)
 	if wave_attack and wave_target != Vector2.ZERO:
-		# Need to wait one frame for AI _ready to run
-		await get_tree().process_frame
-		ai.start_wave_attack(wave_target)
+		# Use call_deferred to let AI _ready run first
+		ai.call_deferred("start_wave_attack", wave_target)
 
 func add_gold(amount: int) -> void:
 	gold += amount

@@ -9,17 +9,12 @@ extends Node
 
 var current_wave: int = -1
 var wave_active: bool = false
-var wave_timer: Timer = null
 var game_controller: Node2D = null
+var _countdown: float = 0.0
+var _waiting: bool = false
 
 signal wave_started(wave_number: int)
 signal all_waves_completed
-
-func _ready() -> void:
-	wave_timer = Timer.new()
-	wave_timer.one_shot = true
-	wave_timer.timeout.connect(_on_wave_timer_timeout)
-	add_child(wave_timer)
 
 func set_game_controller(gc: Node2D) -> void:
 	game_controller = gc
@@ -39,11 +34,25 @@ func _start_next_wave() -> void:
 
 	var wave_data: Dictionary = waves[current_wave]
 	var delay: float = wave_data.get("delay", 0.0)
-
-	wave_timer.start(delay)
+	_countdown = delay
+	_waiting = true
 	wave_started.emit(current_wave)
 
-func _on_wave_timer_timeout() -> void:
+var _dbg: float = 0.0
+
+func _process(delta: float) -> void:
+	_dbg += delta
+	if _dbg > 5.0:
+		_dbg = 0.0
+		print("WaveManager _process: waiting=", _waiting, " countdown=", _countdown, " current_wave=", current_wave)
+	if not _waiting:
+		return
+	_countdown -= delta
+	if _countdown <= 0.0:
+		_waiting = false
+		_on_countdown_finished()
+
+func _on_countdown_finished() -> void:
 	if current_wave < 0 or current_wave >= waves.size():
 		return
 
@@ -66,14 +75,22 @@ func on_wave_cleared() -> void:
 
 	wave_active = false
 
+	# Read post_clear_delay from current wave, then advance to next wave
 	var post_delay: float = 0.0
 	if current_wave >= 0 and current_wave < waves.size():
 		post_delay = waves[current_wave].get("post_clear_delay", 0.0)
 
-	if post_delay > 0:
-		wave_timer.start(post_delay)
-	else:
-		_start_next_wave()
+	# Advance to next wave
+	current_wave += 1
+	if current_wave >= waves.size():
+		all_waves_completed.emit()
+		return
+
+	# Start countdown for next wave
+	var next_delay: float = post_delay if post_delay > 0 else waves[current_wave].get("delay", 0.0)
+	_countdown = next_delay
+	_waiting = true
+	wave_started.emit(current_wave)
 
 func get_current_wave_number() -> int:
 	return current_wave

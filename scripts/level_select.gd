@@ -4,9 +4,19 @@ var level_buttons: Array[Button] = []
 
 var levels := [
 	{
+		"name": "Map 1: Blitz",
+		"desc": "No base, no gold. Capture strongpoints to reinforce and push forward!",
+		"scene": "res://scenes/maps/map_1.tscn"
+	},
+	{
 		"name": "Map 2: Basic Attack",
 		"desc": "Build your base, train your army, and destroy the enemy castle!",
 		"scene": "res://scenes/maps/map_2.tscn"
+	},
+	{
+		"name": "Map 3: Tower Defense",
+		"desc": "Survive 3 waves of enemy attacks! Build defenses and hold your ground.",
+		"scene": "res://scenes/maps/map_3.tscn"
 	},
 ]
 
