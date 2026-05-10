@@ -2,7 +2,7 @@
 extends CharacterBody2D
 class_name Unit
 
-enum UnitState { IDLE, MOVE, ATTACK_MOVE, ATTACK, DEAD }
+enum UnitState { GUARD, HOLD_POSITION, MOVE, ATTACK_MOVE, ATTACK, DEAD }
 enum UnitType { SOLDIER, ARCHER, LANCER, MONK }
 enum Team { PLAYER, ENEMY }
 
@@ -37,12 +37,13 @@ var attack_range: float
 var attack_cooldown: float
 var move_speed: float
 
-var state: UnitState = UnitState.IDLE
+var state: UnitState = UnitState.GUARD
 var attack_target = null
 var attack_timer: float = 0.0
 var selected: bool = false
 var attack_move_target: Vector2 = Vector2.ZERO
 var attack_move_scan_range: float = 300.0
+var hold_position_mode: bool = false
 
 @onready var nav_agent: NavigationAgent2D = $NavigationAgent2D
 @onready var selection_ring: CanvasItem = $SelectionRing
@@ -64,6 +65,7 @@ var _frames_run: int = 6
 var _frames_attack: int = 6
 var _is_attacking: bool = false
 var _shadow: Sprite2D = null
+var _state_indicator: ColorRect = null
 
 signal died(unit: Unit)
 
@@ -121,6 +123,13 @@ func _setup_visuals() -> void:
 	# HPBar 跟随上移
 	hp_bar.offset_top += sprite_lift + sprite_offset_y
 	hp_bar.offset_bottom += sprite_lift + sprite_offset_y
+
+	# 创建头顶状态指示小圆点
+	_state_indicator = ColorRect.new()
+	_state_indicator.size = Vector2(8, 8)
+	_state_indicator.position = Vector2(-4, hp_bar.offset_top - 12)
+	_state_indicator.visible = false
+	add_child(_state_indicator)
 
 func _setup_texture() -> void:
 	var color_dir := "blue" if team == Team.PLAYER else "red"
@@ -297,6 +306,10 @@ func _physics_process(delta: float) -> void:
 	velocity = Vector2.ZERO
 
 	match state:
+		UnitState.GUARD:
+			_guard_process(delta)
+		UnitState.HOLD_POSITION:
+			_hold_position_process(delta)
 		UnitState.MOVE:
 			_move_process()
 		UnitState.ATTACK_MOVE:
@@ -313,10 +326,12 @@ func _physics_process(delta: float) -> void:
 	attack_timer = max(0.0, attack_timer - delta)
 	_update_aggro_line()
 	_update_animation()
+	_update_state_indicator()
 
 func _move_process() -> void:
 	if nav_agent.is_navigation_finished():
-		state = UnitState.IDLE
+		state = UnitState.GUARD
+		hold_position_mode = false
 		return
 	var next_pos := nav_agent.get_next_path_position()
 	var direction := global_position.direction_to(next_pos)
@@ -329,12 +344,15 @@ func _attack_process(delta: float) -> void:
 
 	if attack_target == null or attack_target.is_dead():
 		attack_target = null
-		# 如果之前是攻击移动，继续移动
-		if attack_move_target != Vector2.ZERO:
+		_is_attacking = false
+		if hold_position_mode:
+			state = UnitState.HOLD_POSITION
+		elif attack_move_target != Vector2.ZERO:
 			nav_agent.target_position = attack_move_target
 			state = UnitState.ATTACK_MOVE
 		else:
-			state = UnitState.IDLE
+			state = UnitState.GUARD
+			hold_position_mode = false
 		return
 
 	var dist := global_position.distance_to(attack_target.global_position)
@@ -345,6 +363,12 @@ func _attack_process(delta: float) -> void:
 		var building_radius: float = min(brect.size.x, brect.size.y) / 2.0
 		effective_attack_range = attack_range + building_radius * 0.5
 	if dist > effective_attack_range:
+		if hold_position_mode:
+			# 不追击，丢弃目标回到原地
+			attack_target = null
+			_is_attacking = false
+			state = UnitState.HOLD_POSITION
+			return
 		nav_agent.target_position = attack_target.global_position
 		if not nav_agent.is_navigation_finished():
 			var next_pos := nav_agent.get_next_path_position()
@@ -355,27 +379,7 @@ func _attack_process(delta: float) -> void:
 			attack_timer = attack_cooldown
 
 func _attack_move_process(delta: float) -> void:
-	# 扫描附近敌方单位
-	var enemy_group := "enemy_units" if team == Team.PLAYER else "player_units"
-	var enemy_building_group := "enemy_buildings" if team == Team.PLAYER else "player_buildings"
-	var closest = null
-	var closest_dist: float = INF
-	for u in get_tree().get_nodes_in_group(enemy_group):
-		if u.is_dead():
-			continue
-		var d := global_position.distance_to(u.global_position)
-		if d < attack_move_scan_range and d < closest_dist:
-			closest = u
-			closest_dist = d
-
-	# 也扫描敌方建筑
-	for b in get_tree().get_nodes_in_group(enemy_building_group):
-		if not b.has_method("is_dead") or b.is_dead():
-			continue
-		var d := global_position.distance_to(b.global_position)
-		if d < attack_move_scan_range and d < closest_dist:
-			closest = b
-			closest_dist = d
+	var closest = _find_closest_enemy_in_range(attack_move_scan_range)
 
 	if closest != null:
 		attack_target = closest
@@ -385,10 +389,53 @@ func _attack_move_process(delta: float) -> void:
 
 	# 没有敌人，继续移动
 	if nav_agent.is_navigation_finished():
-		state = UnitState.IDLE
+		state = UnitState.GUARD
+		hold_position_mode = false
 		return
 	var next_pos := nav_agent.get_next_path_position()
 	velocity = global_position.direction_to(next_pos) * move_speed
+
+func _find_closest_enemy_in_range(scan_range: float):
+	var enemy_group := "enemy_units" if team == Team.PLAYER else "player_units"
+	var enemy_building_group := "enemy_buildings" if team == Team.PLAYER else "player_buildings"
+	var closest = null
+	var closest_dist: float = INF
+	for u in get_tree().get_nodes_in_group(enemy_group):
+		if u.is_dead():
+			continue
+		var d := global_position.distance_to(u.global_position)
+		if d < scan_range and d < closest_dist:
+			closest = u
+			closest_dist = d
+	for b in get_tree().get_nodes_in_group(enemy_building_group):
+		if not b.has_method("is_dead") or b.is_dead():
+			continue
+		var d := global_position.distance_to(b.global_position)
+		if d < scan_range and d < closest_dist:
+			closest = b
+			closest_dist = d
+	return closest
+
+func _guard_process(delta: float) -> void:
+	var closest = _find_closest_enemy_in_range(attack_move_scan_range)
+	if closest != null:
+		attack_target = closest
+		nav_agent.target_position = closest.global_position
+		state = UnitState.ATTACK
+		hold_position_mode = false
+
+func _hold_position_process(delta: float) -> void:
+	var closest = _find_closest_enemy_in_range(attack_move_scan_range)
+	if closest != null:
+		var dist := global_position.distance_to(closest.global_position)
+		var effective_range := attack_range
+		if closest.has_method("get_rect"):
+			var brect: Rect2 = closest.get_rect()
+			effective_range = attack_range + min(brect.size.x, brect.size.y) / 2.0 * 0.5
+		if dist <= effective_range:
+			attack_target = closest
+			state = UnitState.ATTACK
+			hold_position_mode = true
 
 func _perform_attack() -> void:
 	if attack_target and not attack_target.is_dead():
@@ -418,10 +465,43 @@ func take_damage(amount: int, attacker = null) -> void:
 		return
 	hp = max(0, hp - amount)
 	_update_hp_bar()
-	if attacker and team == Team.ENEMY:
-		_alert_enemy_response(attacker)
+	if attacker:
+		if team == Team.ENEMY:
+			_alert_enemy_response(attacker)
+		elif team == Team.PLAYER:
+			_player_retaliate(attacker)
 	if hp <= 0:
 		die()
+
+func _player_retaliate(attacker) -> void:
+	# 已经在攻击有效目标时不切换
+	if state == UnitState.ATTACK and attack_target != null and not attack_target.is_dead():
+		return
+	# 验证攻击者仍存活
+	if attacker == null or not is_instance_valid(attacker) or attacker.is_dead():
+		return
+
+	attack_target = attacker
+	nav_agent.target_position = attacker.global_position
+
+	if state == UnitState.HOLD_POSITION:
+		state = UnitState.ATTACK
+		hold_position_mode = true
+	else:
+		state = UnitState.ATTACK
+		hold_position_mode = false
+
+	# 通知附近友军
+	_alert_nearby_allies(attacker)
+
+func _alert_nearby_allies(attacker) -> void:
+	var alert_range := 400.0
+	var ally_group := "player_units" if team == Team.PLAYER else "enemy_units"
+	for u in get_tree().get_nodes_in_group(ally_group):
+		if u == self or u.is_dead():
+			continue
+		if global_position.distance_to(u.global_position) <= alert_range:
+			u._player_retaliate(attacker)
 
 func _alert_enemy_response(attacker) -> void:
 	# 通知自身AI
@@ -448,12 +528,14 @@ func die() -> void:
 func move_to(target_pos: Vector2) -> void:
 	attack_target = null
 	attack_move_target = Vector2.ZERO
+	hold_position_mode = false
 	nav_agent.target_position = target_pos
 	state = UnitState.MOVE
 
 func attack_move_to(target_pos: Vector2) -> void:
 	attack_target = null
 	attack_move_target = target_pos
+	hold_position_mode = false
 	nav_agent.target_position = target_pos
 	state = UnitState.ATTACK_MOVE
 
@@ -461,12 +543,23 @@ func stop() -> void:
 	attack_target = null
 	attack_move_target = Vector2.ZERO
 	_is_attacking = false
+	hold_position_mode = false
 	velocity = Vector2.ZERO
 	nav_agent.target_position = global_position
-	state = UnitState.IDLE
+	state = UnitState.GUARD
+
+func hold_position() -> void:
+	attack_target = null
+	attack_move_target = Vector2.ZERO
+	_is_attacking = false
+	hold_position_mode = true
+	velocity = Vector2.ZERO
+	nav_agent.target_position = global_position
+	state = UnitState.HOLD_POSITION
 
 func command_attack(target) -> void:
 	attack_target = target
+	hold_position_mode = false
 	nav_agent.target_position = target.global_position
 	state = UnitState.ATTACK
 
@@ -477,11 +570,28 @@ func set_selected(value: bool) -> void:
 func _update_selection_ring() -> void:
 	if selection_ring:
 		selection_ring.visible = selected
+	_update_state_indicator()
 
 func _update_hp_bar() -> void:
 	if hp_bar:
 		hp_bar.max_value = max_hp
 		hp_bar.value = hp
+
+func _update_state_indicator() -> void:
+	if _state_indicator == null:
+		return
+	_state_indicator.visible = selected and team == Team.PLAYER
+	if not _state_indicator.visible:
+		return
+	match state:
+		UnitState.GUARD:
+			_state_indicator.color = Color("#4CAF50")
+		UnitState.HOLD_POSITION:
+			_state_indicator.color = Color("#FFC107")
+		UnitState.ATTACK:
+			_state_indicator.color = Color("#F44336")
+		UnitState.MOVE, UnitState.ATTACK_MOVE:
+			_state_indicator.color = Color("#2196F3")
 
 func _update_aggro_line() -> void:
 	if state == UnitState.DEAD or aggro_line == null:

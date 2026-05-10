@@ -30,7 +30,7 @@ func _physics_process(delta: float) -> void:
 	if unit.get("state") == UnitScript.UnitState.ATTACK:
 		var target = unit.get("attack_target")
 		if target == null or target.is_dead():
-			unit.set("state", UnitScript.UnitState.IDLE)
+			unit.set("state", UnitScript.UnitState.GUARD)
 			if previous_state == AIState.WAVE_ATTACK:
 				ai_state = AIState.WAVE_ATTACK
 				unit.call("attack_move_to", wave_target)
@@ -113,7 +113,7 @@ func _attack_process() -> void:
 
 func _wave_attack_process() -> void:
 	# If idle, resume moving toward wave target
-	if unit.get("state") == UnitScript.UnitState.IDLE:
+	if unit.get("state") == UnitScript.UnitState.GUARD:
 		var dist_to_target := unit.global_position.distance_to(wave_target)
 		if dist_to_target < 50.0:
 			ai_state = AIState.PATROL
@@ -176,4 +176,4 @@ func on_attacked(attacker) -> void:
 	ai_state = AIState.CHASE
 	# 打断当前巡逻移动，让AI立即接管
 	if unit.get("state") == UnitScript.UnitState.MOVE:
-		unit.set("state", UnitScript.UnitState.IDLE)
+		unit.set("state", UnitScript.UnitState.GUARD)

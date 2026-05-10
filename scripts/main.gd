@@ -844,6 +844,8 @@ func _input(event: InputEvent) -> void:
 					place_mode = PlaceMode.NONE
 			KEY_S:
 				_stop_selected()
+			KEY_H:
+				_hold_position_selected()
 			KEY_R:
 				get_tree().reload_current_scene()
 			KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0:
@@ -969,6 +971,10 @@ func _find_enemy_at(pos: Vector2):
 func _stop_selected() -> void:
 	for unit in selected_units:
 		unit.call("stop")
+
+func _hold_position_selected() -> void:
+	for unit in selected_units:
+		unit.call("hold_position")
 
 # --- 选择 ---
 
