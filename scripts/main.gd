@@ -756,6 +756,29 @@ func _clamp_camera() -> void:
 	camera.position.x = clampf(camera.position.x, min_x, max_x)
 	camera.position.y = clampf(camera.position.y, min_y, max_y)
 
+## 获取基地位置，按优先级查找: Castle > Barracks > Tower > 任意玩家建筑 > 地图中心
+func _get_base_position() -> Vector2:
+	var buildings := get_tree().get_nodes_in_group("player_buildings")
+	if buildings.is_empty():
+		return map_bounds.position + map_bounds.size / 2.0
+
+	var priority_order := [
+		BuildingScript.BuildingType.CASTLE,
+		BuildingScript.BuildingType.BARRACKS,
+		BuildingScript.BuildingType.TOWER,
+	]
+	for preferred_type in priority_order:
+		for building in buildings:
+			if building.building_type == preferred_type:
+				return building.position
+
+	return buildings[0].position
+
+## 空格键回到基地
+func _jump_to_base() -> void:
+	camera.position = _get_base_position()
+	_clamp_camera()
+
 func _update_preview() -> void:
 	# 单位类型 — 只显示提示文字
 	if place_mode == PlaceMode.SOLDIER or place_mode == PlaceMode.ARCHER or place_mode == PlaceMode.LANCER or place_mode == PlaceMode.MONK_UNIT:
@@ -967,6 +990,10 @@ func _input(event: InputEvent) -> void:
 				show_grid = not show_grid
 				if grid_overlay:
 					grid_overlay.visible = show_grid
+			KEY_SPACE:
+				if place_mode != PlaceMode.NONE:
+					place_mode = PlaceMode.NONE
+				_jump_to_base()
 
 # --- 放置 ---
 
