@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://map4scene0001"]
+[gd_scene format=3 uid="uid://oii05mvpfeqq"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="main_script"]
 [ext_resource type="Resource" path="res://resources/map4_config.tres" id="map4_config"]
