@@ -18,6 +18,11 @@ var levels := [
 		"desc": "Survive 3 waves of enemy attacks! Build defenses and hold your ground.",
 		"scene": "res://scenes/maps/map_3.tscn"
 	},
+	{
+		"name": "Map 4: Expand & Defend",
+		"desc": "Capture 4 neutral camps while defending against waves of enemies!",
+		"scene": "res://scenes/maps/map_4.tscn"
+	},
 ]
 
 func _ready() -> void:

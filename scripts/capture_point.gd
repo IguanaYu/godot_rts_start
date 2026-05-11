@@ -114,12 +114,16 @@ func _process(delta: float) -> void:
 
 func _grant_reward() -> void:
 	if game_controller == null:
+		print("CapturePoint: grant_reward FAILED - game_controller is null!")
 		return
 
 	match reward_type:
 		RewardType.GOLD:
 			if game_controller.has_method("add_gold"):
 				game_controller.call("add_gold", reward_gold)
+				print("CapturePoint: granted ", reward_gold, " gold!")
+			else:
+				print("CapturePoint: game_controller has no add_gold method!")
 		RewardType.UNITS:
 			if game_controller.has_method("spawn_unit_near"):
 				for unit_data in reward_units:

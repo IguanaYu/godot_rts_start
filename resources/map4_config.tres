@@ -1,0 +1,55 @@
+[gd_resource type="Resource" script_class="MapConfig" load_steps=2 format=3 uid="uid://m4c5n6o7p8q9r"]
+
+[ext_resource type="Script" path="res://scripts/map_config.gd" id="1_cfg45"]
+
+[resource]
+script = ExtResource("1_cfg45")
+map_name = "Expand & Defend"
+map_bounds = Rect2(-500, -500, 2500, 2200)
+nav_bounds = Array[Vector2]([Vector2(-500, -500), Vector2(2000, -500), Vector2(2000, 1700), Vector2(-500, 1700)])
+initial_gold = 8000
+camera_start = Vector2(500, 600)
+
+player_units = Array[Dictionary]( [
+	{"type": 0, "pos": Vector2(420, 520)},
+	{"type": 0, "pos": Vector2(420, 580)},
+	{"type": 0, "pos": Vector2(420, 640)},
+	{"type": 1, "pos": Vector2(360, 550)},
+	{"type": 1, "pos": Vector2(360, 610)}
+] )
+
+player_buildings = Array[Dictionary]( [
+	{"type": 2, "grid_pos": Vector2i(7, 8)},
+	{"type": 3, "grid_pos": Vector2i(11, 10)}
+] )
+
+enemy_units = Array[Dictionary]( [
+	{"type": 0, "pos": Vector2(340, -250)},
+	{"type": 0, "pos": Vector2(460, -250)},
+	{"type": 1, "pos": Vector2(400, -300)},
+	{"type": 0, "pos": Vector2(1140, -250)},
+	{"type": 0, "pos": Vector2(1260, -250)},
+	{"type": 1, "pos": Vector2(1200, -300)},
+	{"type": 0, "pos": Vector2(-160, 750)},
+	{"type": 0, "pos": Vector2(-40, 750)},
+	{"type": 1, "pos": Vector2(-100, 700)},
+	{"type": 1, "pos": Vector2(-100, 850)},
+	{"type": 0, "pos": Vector2(1140, 850)},
+	{"type": 0, "pos": Vector2(1260, 850)},
+	{"type": 1, "pos": Vector2(1200, 800)},
+	{"type": 1, "pos": Vector2(1200, 950)},
+	{"type": 2, "pos": Vector2(1200, 900)}
+] )
+
+enemy_buildings = Array[Dictionary]( [
+	{"type": 1, "grid_pos": Vector2i(5, -5)},
+	{"type": 1, "grid_pos": Vector2i(20, -5)},
+	{"type": 1, "grid_pos": Vector2i(-5, 11)},
+	{"type": 1, "grid_pos": Vector2i(20, 13)}
+] )
+
+environment = {"trees": 20, "rocks": 12, "bushes": 15, "sheep": 6}
+
+available_items = Array[int]( [1, 2, 4, 8, 5, 6, 9] )
+
+map_description = "Capture 4 neutral camps across the map while defending against waves of enemies!"

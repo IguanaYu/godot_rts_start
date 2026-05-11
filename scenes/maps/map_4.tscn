@@ -1,0 +1,196 @@
+[gd_scene load_steps=7 format=3 uid="uid://map4scene0001"]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="main_script"]
+[ext_resource type="Resource" path="res://resources/map4_config.tres" id="map4_config"]
+[ext_resource type="Script" path="res://scripts/victory_expand_defense.gd" id="victory_expand"]
+[ext_resource type="Script" path="res://scripts/wave_manager.gd" id="wave_manager"]
+[ext_resource type="Script" path="res://scripts/capture_point.gd" id="capture_point"]
+
+[sub_resource type="NavigationPolygon" id="NavPoly_1"]
+vertices = PackedVector2Array(-500, -500, 2000, -500, 2000, 1700, -500, 1700)
+polygons = [PackedInt32Array(0, 1, 2, 3)]
+
+[node name="Map4" type="Node2D"]
+script = ExtResource("main_script")
+map_config = ExtResource("map4_config")
+
+[node name="Ground" type="ColorRect" parent="."]
+offset_left = -500.0
+offset_top = -500.0
+offset_right = 2000.0
+offset_bottom = 1700.0
+color = Color(0.35, 0.55, 0.25, 1)
+
+[node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
+navigation_polygon = SubResource("NavPoly_1")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+
+[node name="PlayerUnits" type="Node2D" parent="."]
+
+[node name="EnemyUnits" type="Node2D" parent="."]
+
+[node name="Buildings" type="Node2D" parent="."]
+
+[node name="SelectionBox" type="ColorRect" parent="."]
+visible = false
+color = Color(0.4, 0.7, 1, 0.25)
+mouse_filter = 2
+
+[node name="PreviewRect" type="ColorRect" parent="."]
+visible = false
+color = Color(0, 1, 0, 0.3)
+mouse_filter = 2
+
+[node name="ResultLabel" type="Label" parent="."]
+offset_left = 350.0
+offset_top = 500.0
+offset_right = 650.0
+offset_bottom = 600.0
+theme_override_font_sizes/font_size = 48
+horizontal_alignment = 1
+vertical_alignment = 1
+text = ""
+
+[node name="AttackMoveIndicator" type="Label" parent="."]
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 200.0
+offset_bottom = 40.0
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+theme_override_font_sizes/font_size = 20
+text = "Attack Move (Click)"
+visible = false
+
+[node name="WaveManager" type="Node" parent="."]
+script = ExtResource("wave_manager")
+clear_then_next = false
+waves = Array[Dictionary]( [
+	{
+		"delay": 45.0,
+		"wave_attack": true,
+		"wave_target": Vector2(500, 600),
+		"units": Array[Dictionary]( [
+			{"type": 0, "pos": Vector2(1850, 0)},
+			{"type": 0, "pos": Vector2(1850, 100)},
+			{"type": 0, "pos": Vector2(1850, 200)},
+			{"type": 1, "pos": Vector2(1900, 50)},
+			{"type": 1, "pos": Vector2(1900, 150)}
+		] )
+	},
+	{
+		"delay": 90.0,
+		"wave_attack": true,
+		"wave_target": Vector2(500, 600),
+		"units": Array[Dictionary]( [
+			{"type": 0, "pos": Vector2(1850, -100)},
+			{"type": 0, "pos": Vector2(1850, 0)},
+			{"type": 0, "pos": Vector2(1850, 100)},
+			{"type": 0, "pos": Vector2(1850, 200)},
+			{"type": 1, "pos": Vector2(1900, -50)},
+			{"type": 1, "pos": Vector2(1900, 50)},
+			{"type": 1, "pos": Vector2(1900, 150)}
+		] )
+	},
+	{
+		"delay": 120.0,
+		"wave_attack": true,
+		"wave_target": Vector2(500, 600),
+		"units": Array[Dictionary]( [
+			{"type": 0, "pos": Vector2(1850, -200)},
+			{"type": 0, "pos": Vector2(1850, -100)},
+			{"type": 0, "pos": Vector2(1850, 0)},
+			{"type": 0, "pos": Vector2(1850, 100)},
+			{"type": 0, "pos": Vector2(1850, 200)},
+			{"type": 1, "pos": Vector2(1900, -150)},
+			{"type": 1, "pos": Vector2(1900, -50)},
+			{"type": 1, "pos": Vector2(1900, 50)},
+			{"type": 1, "pos": Vector2(1900, 150)},
+			{"type": 2, "pos": Vector2(1875, 250)}
+		] )
+	},
+	{
+		"delay": 150.0,
+		"wave_attack": true,
+		"wave_target": Vector2(500, 600),
+		"units": Array[Dictionary]( [
+			{"type": 0, "pos": Vector2(1850, -300)},
+			{"type": 0, "pos": Vector2(1850, -200)},
+			{"type": 0, "pos": Vector2(1850, -100)},
+			{"type": 0, "pos": Vector2(1850, 0)},
+			{"type": 0, "pos": Vector2(1850, 100)},
+			{"type": 0, "pos": Vector2(1850, 200)},
+			{"type": 1, "pos": Vector2(1900, -250)},
+			{"type": 1, "pos": Vector2(1900, -150)},
+			{"type": 1, "pos": Vector2(1900, -50)},
+			{"type": 1, "pos": Vector2(1900, 50)},
+			{"type": 2, "pos": Vector2(1875, 150)},
+			{"type": 2, "pos": Vector2(1875, 250)}
+		] )
+	},
+	{
+		"delay": 180.0,
+		"wave_attack": true,
+		"wave_target": Vector2(500, 600),
+		"units": Array[Dictionary]( [
+			{"type": 0, "pos": Vector2(1850, -400)},
+			{"type": 0, "pos": Vector2(1850, -300)},
+			{"type": 0, "pos": Vector2(1850, -200)},
+			{"type": 0, "pos": Vector2(1850, -100)},
+			{"type": 0, "pos": Vector2(1850, 0)},
+			{"type": 0, "pos": Vector2(1850, 100)},
+			{"type": 0, "pos": Vector2(1850, 200)},
+			{"type": 0, "pos": Vector2(1850, 300)},
+			{"type": 1, "pos": Vector2(1900, -350)},
+			{"type": 1, "pos": Vector2(1900, -250)},
+			{"type": 1, "pos": Vector2(1900, -150)},
+			{"type": 1, "pos": Vector2(1900, -50)},
+			{"type": 1, "pos": Vector2(1900, 50)},
+			{"type": 2, "pos": Vector2(1875, 150)},
+			{"type": 2, "pos": Vector2(1875, 250)},
+			{"type": 2, "pos": Vector2(1875, 350)}
+		] )
+	}
+] )
+
+[node name="VictoryExpandDefense" type="Node" parent="."]
+script = ExtResource("victory_expand")
+wave_manager_path = NodePath("../WaveManager")
+capture_points = [NodePath("../CapturePointNW"), NodePath("../CapturePointNE"), NodePath("../CapturePointSW"), NodePath("../CapturePointSE")]
+activation_radius = 250.0
+
+[node name="CapturePointNW" type="Area2D" parent="."]
+position = Vector2(400, -200)
+script = ExtResource("capture_point")
+capture_radius = 100.0
+trigger_on_start = false
+reward_type = 0
+reward_gold = 600
+capture_speed = 30.0
+
+[node name="CapturePointNE" type="Area2D" parent="."]
+position = Vector2(1200, -200)
+script = ExtResource("capture_point")
+capture_radius = 100.0
+trigger_on_start = false
+reward_type = 0
+reward_gold = 600
+capture_speed = 30.0
+
+[node name="CapturePointSW" type="Area2D" parent="."]
+position = Vector2(-100, 800)
+script = ExtResource("capture_point")
+capture_radius = 100.0
+trigger_on_start = false
+reward_type = 0
+reward_gold = 800
+capture_speed = 30.0
+
+[node name="CapturePointSE" type="Area2D" parent="."]
+position = Vector2(1200, 900)
+script = ExtResource("capture_point")
+capture_radius = 100.0
+trigger_on_start = false
+reward_type = 0
+reward_gold = 1000
+capture_speed = 30.0
