@@ -23,9 +23,14 @@
 - 导航目标从建筑中心改为最近边缘，距离也改为到边缘距离
 - 不改建筑碰撞和导航 margin
 
-## 4. 波次倒计时 + 方向箭头 [可直接执行]
-- 修改 `scripts/wave_manager.gd`：添加 countdown_updated 和 wave_spawning 信号
-- 修改 `scripts/main.gd`：顶部倒计时 Label + 屏幕边缘方向箭头
+## 4. 波次倒计时 [可直接执行]
+- 修改 `scripts/wave_manager.gd`：添加 `countdown_updated(wave_number, remaining, total_waves)` 信号，在 `_process()` 中每帧发射
+- 修改 `scripts/main.gd`：
+  - 新增 `wave_countdown_label` 变量（居中红色 Label，在建筑按钮栏下方）
+  - 修改 `_setup_wave_manager()` 连接 `countdown_updated` 和 `all_waves_completed` 信号
+  - `_on_countdown_updated()`：显示 "Wave X/Y incoming in: Zs"，最后5秒变亮红
+  - `_on_all_waves_completed()`：隐藏倒计时
+- 箭头功能待后续设计
 
 ## 5. 漂浮奖励数字 [可直接执行]
 - 新建 `scripts/floating_text.gd`

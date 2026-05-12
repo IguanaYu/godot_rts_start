@@ -70,6 +70,7 @@ var ui_buttons: Dictionary = {}
 var place_mode_label: Label
 var gold: int = 10000
 var gold_label: Label
+var wave_countdown_label: Label
 
 # Dynamic key mapping (filled in _ready based on available_items)
 var key_to_mode: Dictionary = {}
@@ -155,9 +156,33 @@ func _setup_wave_manager() -> void:
 	for child in get_children():
 		if child is WaveManager:
 			child.set_game_controller(self)
-			child.wave_started.connect(func(_n): _wave_clear_notified = false)
+			child.wave_started.connect(_on_wave_started)
+			child.countdown_updated.connect(_on_countdown_updated)
+			child.all_waves_completed.connect(_on_all_waves_completed)
 			child.start_waves()
 			break
+
+
+func _on_wave_started(_wave_number: int) -> void:
+	_wave_clear_notified = false
+
+
+func _on_countdown_updated(wave_number: int, remaining: float, total: int) -> void:
+	if wave_countdown_label == null:
+		return
+	var display_wave := wave_number + 1
+	var secs := ceili(remaining)
+	wave_countdown_label.text = "Wave %d/%d incoming in: %ds" % [display_wave, total, secs]
+	wave_countdown_label.visible = true
+	if remaining <= 5.0:
+		wave_countdown_label.add_theme_color_override("font_color", Color(1, 0.1, 0.1))
+	else:
+		wave_countdown_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
+
+
+func _on_all_waves_completed() -> void:
+	if wave_countdown_label:
+		wave_countdown_label.visible = false
 
 
 func _create_grid() -> void:
@@ -298,6 +323,20 @@ func _create_ui() -> void:
 	gold_label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
 	_update_gold_display()
 	canvas.add_child(gold_label)
+
+	# 波次倒计时
+	wave_countdown_label = Label.new()
+	wave_countdown_label.anchor_left = 0.5
+	wave_countdown_label.anchor_right = 0.5
+	wave_countdown_label.anchor_top = 0.0
+	wave_countdown_label.anchor_bottom = 0.0
+	wave_countdown_label.offset_top = 55.0
+	wave_countdown_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	wave_countdown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	wave_countdown_label.add_theme_font_size_override("font_size", 20)
+	wave_countdown_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
+	wave_countdown_label.visible = false
+	canvas.add_child(wave_countdown_label)
 
 func _update_gold_display() -> void:
 	if gold_label:
