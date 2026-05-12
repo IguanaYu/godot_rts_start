@@ -1270,6 +1270,12 @@ func add_gold(amount: int) -> void:
 	gold += amount
 	_update_gold_display()
 
+func show_floating_text(text: String, color: Color, world_pos: Vector2) -> void:
+	var ft := Node2D.new()
+	ft.set_script(load("res://scripts/floating_text.gd"))
+	add_child(ft)
+	ft.setup(text, color, world_pos)
+
 func spawn_unit_near(type: int, pos: Vector2, team: int) -> void:
 	var offset := Vector2(randf_range(-50, 50), randf_range(-50, 50))
 	var unit := _create_unit(type, team, pos + offset)
