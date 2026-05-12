@@ -43,6 +43,7 @@ var cursor_manager: Node = null
 # 点击特效场景
 const MoveClickEffectScene := preload("res://scenes/move_click_effect.tscn")
 const AttackClickEffectScene := preload("res://scenes/attack_click_effect.tscn")
+const DustEffectScene := preload("res://scenes/dust_effect.tscn")
 
 # 放置模式
 var place_mode: PlaceMode = PlaceMode.NONE
@@ -1076,11 +1077,13 @@ func _do_place(click_pos: Vector2) -> void:
 			var unit := _create_unit(UnitScript.UnitType.SOLDIER, UnitScript.Team.PLAYER, click_pos)
 			player_units_node.add_child(unit)
 			unit.add_to_group("player_units")
+			_spawn_dust_effect(click_pos)
 			placed = true
 		PlaceMode.ARCHER:
 			var unit := _create_unit(UnitScript.UnitType.ARCHER, UnitScript.Team.PLAYER, click_pos)
 			player_units_node.add_child(unit)
 			unit.add_to_group("player_units")
+			_spawn_dust_effect(click_pos)
 			placed = true
 		PlaceMode.CASTLE:
 			var gpos := snap_to_grid(click_pos)
@@ -1110,11 +1113,13 @@ func _do_place(click_pos: Vector2) -> void:
 			var unit := _create_unit(UnitScript.UnitType.LANCER, UnitScript.Team.PLAYER, click_pos)
 			player_units_node.add_child(unit)
 			unit.add_to_group("player_units")
+			_spawn_dust_effect(click_pos)
 			placed = true
 		PlaceMode.MONK_UNIT:
 			var unit := _create_unit(UnitScript.UnitType.MONK, UnitScript.Team.PLAYER, click_pos)
 			player_units_node.add_child(unit)
 			unit.add_to_group("player_units")
+			_spawn_dust_effect(click_pos)
 			placed = true
 
 	if placed:
@@ -1174,6 +1179,11 @@ func _hold_position_selected() -> void:
 
 func _spawn_click_effect(scene: PackedScene, pos: Vector2) -> void:
 	var effect: Node2D = scene.instantiate()
+	get_tree().current_scene.add_child(effect)
+	effect.global_position = pos
+
+func _spawn_dust_effect(pos: Vector2) -> void:
+	var effect: Node2D = DustEffectScene.instantiate()
 	get_tree().current_scene.add_child(effect)
 	effect.global_position = pos
 
@@ -1257,6 +1267,7 @@ func spawn_enemy_wave(units: Array, wave_attack: bool = false, wave_target: Vect
 func spawn_enemy_unit(type: int, pos: Vector2, wave_attack: bool = false, wave_target: Vector2 = Vector2.ZERO) -> void:
 	var unit := _create_unit(type, UnitScript.Team.ENEMY, pos)
 	enemy_units_node.add_child(unit)
+	_spawn_dust_effect(pos)
 	unit.add_to_group("enemy_units")
 	var ai := Node2D.new()
 	ai.name = "EnemyAI"
@@ -1282,8 +1293,10 @@ func spawn_unit_near(type: int, pos: Vector2, team: int) -> void:
 	if team == UnitScript.Team.PLAYER:
 		player_units_node.add_child(unit)
 		unit.add_to_group("player_units")
+		_spawn_dust_effect(pos + offset)
 	else:
 		enemy_units_node.add_child(unit)
+		_spawn_dust_effect(pos + offset)
 		unit.add_to_group("enemy_units")
 		var ai := Node2D.new()
 		ai.name = "EnemyAI"

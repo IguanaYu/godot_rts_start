@@ -6,6 +6,8 @@ enum UnitState { GUARD, HOLD_POSITION, MOVE, ATTACK_MOVE, ATTACK, DEAD }
 enum UnitType { SOLDIER, ARCHER, LANCER, MONK }
 enum Team { PLAYER, ENEMY }
 
+const HealEffectScene := preload("res://scenes/heal_effect.tscn")
+
 @export var unit_type: UnitType = UnitType.SOLDIER:
 	set(v): unit_type = v; _refresh_editor()
 @export var team: Team = Team.PLAYER
@@ -611,3 +613,7 @@ func heal(amount: int) -> void:
 	if state == UnitState.DEAD:
 		return
 	hp = mini(hp + amount, max_hp)
+	_update_hp_bar()
+	var effect: Node2D = HealEffectScene.instantiate()
+	get_tree().current_scene.add_child(effect)
+	effect.global_position = global_position
