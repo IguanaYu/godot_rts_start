@@ -37,6 +37,13 @@ var selected_units: Array = []
 # 攻击移动
 var attack_move_mode: bool = false
 
+# 自定义光标管理器
+var cursor_manager: Node = null
+
+# 点击特效场景
+const MoveClickEffectScene := preload("res://scenes/move_click_effect.tscn")
+const AttackClickEffectScene := preload("res://scenes/attack_click_effect.tscn")
+
 # 放置模式
 var place_mode: PlaceMode = PlaceMode.NONE
 
@@ -87,6 +94,12 @@ func _ready() -> void:
 	result_label.visible = false
 	attack_move_indicator.visible = false
 	preview_rect.visible = false
+
+	# 初始化光标管理器
+	var CursorManagerScene := preload("res://scenes/cursor_manager.tscn")
+	cursor_manager = CursorManagerScene.instantiate()
+	add_child(cursor_manager)
+
 
 	# Load map config if set
 	_load_from_config()
@@ -930,6 +943,7 @@ func _input(event: InputEvent) -> void:
 		elif place_mode != PlaceMode.NONE or attack_move_mode:
 			place_mode = PlaceMode.NONE
 			attack_move_mode = false
+			_set_attack_cursor(false)
 			return
 		else:
 			_open_pause_menu()
@@ -943,6 +957,7 @@ func _input(event: InputEvent) -> void:
 				if attack_move_mode:
 					_do_attack_move(get_global_mouse_position())
 					attack_move_mode = false
+					_set_attack_cursor(false)
 				elif place_mode != PlaceMode.NONE:
 					_do_place(get_global_mouse_position())
 				else:
@@ -955,6 +970,7 @@ func _input(event: InputEvent) -> void:
 		elif event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 			attack_move_mode = false
 			place_mode = PlaceMode.NONE
+			_set_attack_cursor(false)
 			_right_click()
 		elif event.button_index == MOUSE_BUTTON_MIDDLE:
 			if event.pressed:
@@ -977,6 +993,7 @@ func _input(event: InputEvent) -> void:
 				if not selected_units.is_empty():
 					attack_move_mode = true
 					place_mode = PlaceMode.NONE
+					_set_attack_cursor(true)
 			KEY_S:
 				_stop_selected()
 			KEY_H:
@@ -1080,6 +1097,7 @@ func _do_attack_move(click_pos: Vector2) -> void:
 			for ai in target.get_children():
 				if ai.has_method("on_attacked") and selected_units.size() > 0:
 					ai.on_attacked(selected_units[0])
+		_spawn_click_effect(AttackClickEffectScene, click_pos)
 		return
 
 	# 没点到敌人 → 普通攻击移动
@@ -1087,6 +1105,7 @@ func _do_attack_move(click_pos: Vector2) -> void:
 	for i in range(count):
 		var offset := _formation_offset(i, count)
 		selected_units[i].call("attack_move_to", click_pos + offset)
+	_spawn_click_effect(AttackClickEffectScene, click_pos)
 
 func _find_enemy_at(pos: Vector2):
 	# 先查敌方单位
@@ -1111,6 +1130,16 @@ func _stop_selected() -> void:
 func _hold_position_selected() -> void:
 	for unit in selected_units:
 		unit.call("hold_position")
+
+# --- 点击特效与光标 ---
+
+func _spawn_click_effect(scene: PackedScene, pos: Vector2) -> void:
+	var effect: Node2D = scene.instantiate()
+	get_tree().current_scene.add_child(effect)
+	effect.global_position = pos
+
+func _set_attack_cursor(is_attack: bool) -> void:
+	cursor_manager.set_attack(is_attack)
 
 # --- 选择 ---
 
@@ -1149,6 +1178,7 @@ func _right_click() -> void:
 			for ai in target.get_children():
 				if ai.has_method("on_attacked"):
 					ai.on_attacked(selected_units[0])
+		_spawn_click_effect(AttackClickEffectScene, click_pos)
 		return
 
 	# 移动
@@ -1156,6 +1186,7 @@ func _right_click() -> void:
 	for i in range(count):
 		var offset := _formation_offset(i, count)
 		selected_units[i].call("move_to", click_pos + offset)
+	_spawn_click_effect(MoveClickEffectScene, click_pos)
 
 # --- 工具 ---
 

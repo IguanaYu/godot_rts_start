@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_05.png" id="1_sword"]
+[ext_resource type="Script" path="res://scripts/click_effect.gd" id="2_script"]
+
+[node name="AttackClickEffect" type="Node2D"]
+z_index = 10
+type = 1
+script = ExtResource("2_script")
+
+[node name="Sprite" type="Sprite2D" parent="."]
+scale = Vector2(1.5, 1.5)
+texture = ExtResource("1_sword")
