@@ -26,15 +26,15 @@ func setup(text: String, color: Color, world_pos: Vector2) -> void:
 
 	var tween := create_tween()
 	tween.set_parallel(true)
-	# 0-0.2s: 弹出放大
-	tween.tween_property(self, "scale", Vector2(1.3, 1.3), 0.2)\
+	# 0-0.3s: 弹出放大
+	tween.tween_property(self, "scale", Vector2(1.3, 1.3), 0.3)\
 		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-	# 0-1.0s: 向上漂浮
-	tween.tween_property(self, "position:y", position.y - 60, 1.0)\
+	# 0-2.0s: 向上漂浮
+	tween.tween_property(self, "position:y", position.y - 80, 2.0)\
 		.set_ease(Tween.EASE_OUT)
-	# 0.2s后: 缩回 + 淡出
+	# 0.3s后: 缩回 + 淡出
 	tween.chain().set_parallel(true)
-	tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.3)
-	tween.tween_property(_label, "modulate:a", 0.0, 0.6)
+	tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.5)
+	tween.tween_property(_label, "modulate:a", 0.0, 1.2)
 	# 结束清理
 	tween.chain().tween_callback(queue_free)
