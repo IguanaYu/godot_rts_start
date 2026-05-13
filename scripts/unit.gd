@@ -2,7 +2,7 @@
 extends CharacterBody2D
 class_name Unit
 
-enum UnitState { GUARD, HOLD_POSITION, MOVE, ATTACK_MOVE, ATTACK, DEAD }
+enum UnitState { GUARD, HOLD_POSITION, MOVE, ATTACK_MOVE, ATTACK, HEAL, DEAD }
 enum UnitType { SOLDIER, ARCHER, LANCER, MONK }
 enum Team { PLAYER, ENEMY }
 
@@ -46,6 +46,14 @@ var selected: bool = false
 var attack_move_target: Vector2 = Vector2.ZERO
 var attack_move_scan_range: float = 300.0
 var hold_position_mode: bool = false
+
+# Monk 治疗系统
+var heal_target = null
+var heal_range: float = 120.0
+var heal_amount: int = 8
+var heal_cooldown: float = 1.0
+var heal_scan_range: float = 250.0
+var _is_healing: bool = false
 
 @onready var nav_agent: NavigationAgent2D = $NavigationAgent2D
 @onready var selection_ring: CanvasItem = $SelectionRing
@@ -106,6 +114,10 @@ func _setup_stats() -> void:
 			attack_range = 0.0
 			attack_cooldown = 999.0
 			move_speed = 90.0
+			heal_range = 120.0
+			heal_amount = 8
+			heal_cooldown = 1.0
+			heal_scan_range = 250.0
 	hp = max_hp
 
 func _setup_editor_visuals() -> void:
@@ -297,6 +309,11 @@ func _update_animation() -> void:
 				target_anim = "attack"
 		else:
 			target_anim = "idle"
+	elif state == UnitState.HEAL:
+		if velocity.length_squared() > 1.0:
+			target_anim = "run"
+		else:
+			target_anim = "idle"
 	_set_anim(target_anim)
 
 func _physics_process(delta: float) -> void:
@@ -318,6 +335,8 @@ func _physics_process(delta: float) -> void:
 			_attack_move_process(delta)
 		UnitState.ATTACK:
 			_attack_process(delta)
+		UnitState.HEAL:
+			_heal_process(delta)
 
 	if velocity.length_squared() > 1.0:
 		var prev_pos := global_position
@@ -381,6 +400,21 @@ func _attack_process(delta: float) -> void:
 			attack_timer = attack_cooldown
 
 func _attack_move_process(delta: float) -> void:
+	# Monk 攻击移动时优先治疗
+	if unit_type == UnitType.MONK:
+		var wounded = _find_wounded_ally(heal_scan_range)
+		if wounded != null:
+			heal_target = wounded
+			nav_agent.target_position = wounded.global_position
+			state = UnitState.HEAL
+			return
+		if nav_agent.is_navigation_finished():
+			state = UnitState.GUARD
+			return
+		var next_pos := nav_agent.get_next_path_position()
+		velocity = global_position.direction_to(next_pos) * move_speed
+		return
+
 	var closest = _find_closest_enemy_in_range(attack_move_scan_range)
 
 	if closest != null:
@@ -418,7 +452,51 @@ func _find_closest_enemy_in_range(scan_range: float):
 			closest_dist = d
 	return closest
 
+func _find_wounded_ally(scan_range: float):
+	var ally_group := "player_units" if team == Team.PLAYER else "enemy_units"
+	var closest = null
+	var closest_dist: float = INF
+	for u in get_tree().get_nodes_in_group(ally_group):
+		if u == self:
+			continue
+		if u.is_dead():
+			continue
+		if u.hp >= u.max_hp:
+			continue
+		var d := global_position.distance_to(u.global_position)
+		if d < scan_range and d < closest_dist:
+			closest = u
+			closest_dist = d
+	return closest
+
+func _heal_process(delta: float) -> void:
+	if heal_target == null or heal_target.is_dead() or heal_target.hp >= heal_target.max_hp:
+		heal_target = null
+		_is_healing = false
+		state = UnitState.GUARD
+		return
+	var dist := global_position.distance_to(heal_target.global_position)
+	if dist > heal_range:
+		nav_agent.target_position = heal_target.global_position
+		if not nav_agent.is_navigation_finished():
+			var next_pos := nav_agent.get_next_path_position()
+			velocity = global_position.direction_to(next_pos) * move_speed
+	else:
+		if attack_timer <= 0.0:
+			heal_target.heal(heal_amount)
+			attack_timer = heal_cooldown
+			_is_healing = true
+
 func _guard_process(delta: float) -> void:
+	# Monk 优先寻找受伤友军
+	if unit_type == UnitType.MONK:
+		var wounded = _find_wounded_ally(heal_scan_range)
+		if wounded != null:
+			heal_target = wounded
+			nav_agent.target_position = wounded.global_position
+			state = UnitState.HEAL
+		return
+
 	var closest = _find_closest_enemy_in_range(attack_move_scan_range)
 	if closest != null:
 		attack_target = closest
@@ -531,6 +609,8 @@ func move_to(target_pos: Vector2) -> void:
 	attack_target = null
 	attack_move_target = Vector2.ZERO
 	hold_position_mode = false
+	heal_target = null
+	_is_healing = false
 	nav_agent.target_position = target_pos
 	state = UnitState.MOVE
 
@@ -538,6 +618,8 @@ func attack_move_to(target_pos: Vector2) -> void:
 	attack_target = null
 	attack_move_target = target_pos
 	hold_position_mode = false
+	heal_target = null
+	_is_healing = false
 	nav_agent.target_position = target_pos
 	state = UnitState.ATTACK_MOVE
 
@@ -546,6 +628,8 @@ func stop() -> void:
 	attack_move_target = Vector2.ZERO
 	_is_attacking = false
 	hold_position_mode = false
+	heal_target = null
+	_is_healing = false
 	velocity = Vector2.ZERO
 	nav_agent.target_position = global_position
 	state = UnitState.GUARD
@@ -555,6 +639,8 @@ func hold_position() -> void:
 	attack_move_target = Vector2.ZERO
 	_is_attacking = false
 	hold_position_mode = true
+	heal_target = null
+	_is_healing = false
 	velocity = Vector2.ZERO
 	nav_agent.target_position = global_position
 	state = UnitState.HOLD_POSITION
@@ -562,6 +648,8 @@ func hold_position() -> void:
 func command_attack(target) -> void:
 	attack_target = target
 	hold_position_mode = false
+	heal_target = null
+	_is_healing = false
 	nav_agent.target_position = target.global_position
 	state = UnitState.ATTACK
 
@@ -594,11 +682,19 @@ func _update_state_indicator() -> void:
 			_state_indicator.color = Color("#F44336")
 		UnitState.MOVE, UnitState.ATTACK_MOVE:
 			_state_indicator.color = Color("#2196F3")
+		UnitState.HEAL:
+			_state_indicator.color = Color("#4CAF50")
 
 func _update_aggro_line() -> void:
 	if state == UnitState.DEAD or aggro_line == null:
 		return
-	if attack_target != null and not attack_target.is_dead():
+	# 治疗目标也显示连线
+	if heal_target != null and is_instance_valid(heal_target) and not heal_target.is_dead():
+		aggro_line.visible = true
+		aggro_line.clear_points()
+		aggro_line.add_point(Vector2.ZERO)
+		aggro_line.add_point(heal_target.global_position - global_position)
+	elif attack_target != null and not attack_target.is_dead():
 		aggro_line.visible = true
 		aggro_line.clear_points()
 		aggro_line.add_point(Vector2.ZERO)
