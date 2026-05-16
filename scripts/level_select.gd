@@ -1,6 +1,7 @@
 extends Control
 
 var level_buttons: Array[Button] = []
+var cursor_manager: Node = null
 
 var levels := [
 	{
@@ -26,6 +27,11 @@ var levels := [
 ]
 
 func _ready() -> void:
+	# 自定义光标
+	var CursorManagerScene := preload("res://scenes/cursor_manager.tscn")
+	cursor_manager = CursorManagerScene.instantiate()
+	add_child(cursor_manager)
+
 	# Title
 	var title := Label.new()
 	title.text = "Select Level"
