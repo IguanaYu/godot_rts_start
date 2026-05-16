@@ -1,379 +1,446 @@
-# 多地图关卡系统实施计划
+# RTS 项目整体代码重构计划
+
+> 2026-05-16 制定的重构计划。上一版（多地图关卡系统）已全部实施完毕。
 
 ## Context
-当前项目是一个 Godot 4.6 的 2D RTS 游戏，只有单张地图，所有逻辑硬编码在 `main.gd`（847行）中。目标是实现 5 张不同玩法的地图 + 选关界面 + AI 扩展 + 占领点系统。
+
+项目共有 23 个 GDScript 文件，3717 行代码。核心问题是：
+- main.gd（1305行）和 unit.gd（770行）都是"上帝对象"
+- 健康系统、影子渲染、动画播放等逻辑在 unit/building/neutral 之间重复实现
+- 大量硬编码的数值、路径、颜色散落各处
+- 目录结构扁平，30+ 场景文件和 25+ 脚本文件没有分组
+
+重构目标：让每个文件职责清晰、消除重复代码、目录结构合理。
 
 ---
 
-## 实施顺序（按用户优先级）
+## 一、当前项目全貌
 
-### 第一阶段：架构重构（前置工作，所有地图依赖）
-### 第二阶段：图2 基础进攻
-### 第三阶段：图1 闪击战 + 图3 基础防守
-### 第四阶段：选关页面
-### 第五阶段：图4 复杂防守 + 图5 复杂进攻
-### 第六阶段：测试 & 小发布
-
----
-
-## 第一阶段：架构重构
-
-### 目标
-将 `main.gd` 从硬编码单地图改为数据驱动的通用游戏控制器，支持不同地图配置。
-
-### 新建文件
-
-**1. `scripts/map_config.gd`** — 地图配置资源类
-```gdscript
-class_name MapConfig
-extends Resource
-```
-- `map_name: String`
-- `map_bounds: Rect2` — 地图边界
-- `nav_bounds: Array[Vector2]` — 导航区域顶点
-- `initial_gold: int` — 初始金币
-- `camera_start: Vector2` — 相机初始位置
-- `player_units: Array[Dictionary]` — {type: int, pos: Vector2}
-- `enemy_units: Array[Dictionary]`
-- `player_buildings: Array[Dictionary]` — {type: int, grid_pos: Vector2i}
-- `enemy_buildings: Array[Dictionary]`
-- `environment: Dictionary` — {trees: int, rocks: int, bushes: int, sheep: int}
-- `available_items: Array[int]` — 该地图可用的 PlaceMode 列表
-- `map_description: String`
-
-**2. `scripts/victory_condition.gd`** — 胜利条件基类
-```gdscript
-class_name VictoryCondition
-extends Node
-```
-- `signal game_ended(result: String)` — "victory" / "defeat"
-- `func check() -> int` — 返回 0=进行中, 1=胜利, 2=失败
-- 子类重写 `check()` 实现不同胜利条件
-
-**3. `scripts/wave_manager.gd`** — 波次管理器
-```gdscript
-class_name WaveManager
-extends Node
-```
-- `@export var waves: Array[Dictionary]` — 每波 {delay: float, units: Array[{type, pos}]}
-- `var current_wave: int = -1`
-- `signal wave_started(wave_number: int)`
-- `signal all_waves_completed`
-- 使用 Timer 控制波次间隔
-- 调用 game_controller 的公开方法刷兵
-
-**4. `scripts/capture_point.gd`** — 占领点实体
-```gdscript
-class_name CapturePoint
-extends Area2D
-```
-- `capture_radius: float = 100.0`
-- `capture_progress: float = 0.0` (0~100)
-- `capturing_team: int = 0` (0=中立, 1=玩家, 2=敌方)
-- `captured_by: int = 0` (已完成的占领方)
-- `reward_gold: int = 500`
-- 视觉：脉冲光圈动画
-- `_process` 检测范围内单位，推进占领进度
-- `signal captured(team: int)` 占领完成信号
-
-### 修改文件
-
-**5. `scripts/main.gd` 重构**
-- 新增变量：`map_config: MapConfig`, `victory_condition: VictoryCondition`
-- `_ready()` 改为：加载 map_config → 根据配置生成 UI → 根据配置刷兵 → 设置胜利条件
-- `_spawn_initial()` → `_spawn_from_config()` 从 map_config 读取数据
-- `_spawn_environment()` → 从 map_config 读取环境配置
-- `_create_ui()` → 从 map_config.available_items 生成按钮（而非硬编码 10 个按钮）
-- `_check_victory()` → 委托给 `victory_condition.check()`
-- `map_bounds` 和 `NAV_BOUNDS` 从 map_config 读取
-- `_create_grid()` 的范围从 map_config 读取
-- 键盘快捷键（KEY_1~KEY_0）绑定改为动态：根据 available_items 映射
-- 新增公开方法供 WaveManager 调用：`spawn_enemy_unit(type, pos)`
-- **保持不变**：相机系统、选择系统、放置逻辑、输入处理、导航重建
-
-### 关键修改点（main.gd 具体行号）
-
-| 区域 | 行号 | 改动 |
-|------|------|------|
-| 地图常量 | 6-7 | 改为从 map_config 读取 |
-| UI按钮数据 | 135-146 | 改为从 map_config.available_items 动态生成 |
-| _ready | 70-83 | 重写为配置驱动 |
-| _spawn_initial | 200-241 | 替换为 _spawn_from_config() |
-| _spawn_environment | 244-301 | 替换为配置驱动 |
-| _check_victory | 569-594 | 委托给 victory_condition.check() |
-| _create_grid | 86-116 | 范围从 map_config 读取 |
-| 快捷键绑定 | 643-662 | 动态映射 |
-| 键盘数据 | 10-21 | 保持 COSTS，available_items 从 config 过滤 |
-
----
-
-## 第二阶段：图2 — 基础进攻
-
-### 玩法
-玩家建造基地、训练军队，直接推掉敌方城堡获胜。
-
-### 新建文件
-
-**1. `scripts/victory_destroy_base.gd`** — 摧毁基地胜利条件
-```gdscript
-class_name VictoryDestroyBase
-extends VictoryCondition
-```
-- `check()`: 玩家城堡被毁 → 失败；敌方城堡被毁 → 胜利
-- 本质上就是当前 `_check_victory()` 的逻辑提取
-
-**2. `resources/map2_config.tres`** — 图2 配置
-- 玩家：城堡(1,2)、兵营(5,3)、3士兵+2弓箭手
-- 敌方：城堡(12,2)、兵营(10,3)、箭塔(15,4)、城墙、3士兵+2弓箭手
-- 金币：10000，所有建筑/单位可用
-- 即当前硬编码的地图数据
-
-**3. `scenes/maps/map_2.tscn`** — 图2 场景
-- 复制 main.tscn 的节点结构（Ground, NavigationRegion2D, Camera2D, PlayerUnits, EnemyUnits, Buildings 等）
-- 根节点脚本不变（main.gd）
-- 添加 VictoryDestroyBase 子节点
-- 设置 map_config 指向 map2_config.tres
-
-### AI（图2）
-- 敌方 AI 使用现有 enemy_ai.gd 的 PATROL/CHASE/ATTACK 即可
-- 初始敌方单位自带巡逻 AI，玩家推过去时自动应战
-
----
-
-## 第三阶段：图1 闪击战 + 图3 基础防守
-
-### 图1：闪击战
-
-**新建文件：**
-
-**`scripts/victory_blitz.gd`** — 据点推进胜利条件
-- 3 个据点坐标（@export）
-- 玩家单位到达据点范围 → 占领（停留3秒）
-- 必须按顺序占领（据点1→2→3）
-- 3个据点全占 → 胜利
-- 玩家城堡被毁 → 失败
-
-**`resources/map1_config.tres`** — 图1 配置
-- 地图：线性狭长（横向），3个据点均匀分布
-- 玩家：左侧出生，只有初始部队 + 少量金币买兵（**无建造**）
-- 敌方：每个据点有守军（2-4个单位），据点3有堡垒
-- available_items：仅 SOLDIER, ARCHER, LANCER（无任何建筑）
-- initial_gold：2000（仅够补充兵力）
-
-**`scenes/maps/map_1.tscn`** — 图1 场景
-- 添加 VictoryBlitz 子节点
-- 3 个 CapturePoint 子节点标记据点位置
-
-**AI（图1）：**
-- 敌方守军在据点附近巡逻（patrol_radius 小）
-- 检测到玩家靠近即 chase + attack
-- 用现有 enemy_ai.gd 即可，调整巡逻中心和半径
-
-### 图3：基础防守
-
-**新建文件：**
-
-**`scripts/victory_survive_waves.gd`** — 生存波次胜利条件
-- `@export var waves_to_survive: int = 3`
-- WaveManager 所有波次完成 + 所有敌方单位死亡 → 胜利
-- 玩家城堡被毁 → 失败
-- `check()` 中检查 WaveManager 状态
-
-**`resources/map3_config.tres`** — 图3 配置
-- 玩家：中央偏左，已有完整防线（城堡+兵营+箭塔+城墙），初始较多军队
-- 敌方：无初始单位，无建筑（靠波次生成）
-- 金币：15000（用于防御建设）
-- available_items：所有防御建筑 + 士兵/弓箭手/枪兵
-
-**`scenes/maps/map_3.tscn`** — 图3 场景
-- 添加 WaveManager 子节点（3波配置）
-- 添加 VictorySurviveWaves 子节点
-
-**波次设计：**
-- 第1波（30秒后）：3士兵+2弓箭手，从右侧进攻
-- 第2波（第1波清完后60秒）：5士兵+3弓箭手+1枪兵，从右侧进攻
-- 第3波（第2波清完后90秒）：8士兵+4弓箭手+2枪兵，从右+上两路进攻
-
-**AI（图3）：**
-- 波次生成的敌方单位使用 `start_wave_attack(player_base_pos)` 直接进攻
-- 扩展 enemy_ai.gd：新增 `WAVE_ATTACK` 状态
-  - 单位朝目标移动
-  - 路上遇到敌方单位 → 切换 CHASE/ATTACK
-  - 击杀后继续朝目标前进
-  - 不返回 PATROL
-
----
-
-## 第四阶段：选关页面
-
-### 新建文件
-
-**`scenes/level_select.tscn`** — 选关界面
-- Control 根节点
-- 标题 "Select Level"
-- 5 个地图按钮/卡片（显示地图名称+描述）
-- 暂时全部解锁（无锁定逻辑）
-
-**`scripts/level_select.gd`** — 选关逻辑
-- 5 个按钮分别跳转到对应地图场景
-- `get_tree().change_scene_to_file()` 切换
-- Esc 键返回或退出
-
-**修改 `project.godot`**：主场景改为 `res://scenes/level_select.tscn`
-
----
-
-## 第五阶段：图4 + 图5
-
-### 图4：复杂防守（主动清野扩张）
-
-**新建文件：**
-
-**`scripts/victory_expand_defense.gd`** — 扩张防守胜利条件
-- 必须占领所有中立据点 + 存活 N 波
-- 占领据点给奖励（金币、解锁新兵种）
-- 玩家城堡被毁 → 失败
-
-**`resources/map4_config.tres`** — 大地图，中立营地分散各处
-- 玩家：中央，初始基地
-- 中立营地：4-5个，各有守军
-- 敌方：地图边缘，定时波次进攻
-- 金币：8000
-
-**`scenes/maps/map_4.tscn`** — 图4 场景
-- CapturePointManager + WaveManager + VictoryExpandDefense
-- 5 个 CapturePoint 分布地图各处
-
-**AI（图4）：**
-- 敌方巡逻：部分单位在营地周围巡逻
-- 波次进攻：每60-90秒一波，进攻玩家基地或已占领据点
-- 需要 enemy_ai.gd 的 WAVE_ATTACK 状态
-
-### 图5：复杂进攻
-
-**新建文件：**
-
-**`scripts/victory_outpost_sequential.gd`** — 前哨→主基地胜利条件
-- 2-3个敌方前哨必须先被摧毁
-- 前哨全灭后，敌方主基地才可被攻击（之前无敌）
-- 或者：占领所有据点也算胜利
-- 玩家城堡被毁 → 失败
-
-**`resources/map5_config.tres`** — 大地图，敌方有多重防线
-- 玩家：左下角，完整基地
-- 敌方：2个前哨（各有守军+建筑），1个主基地
-- 中立据点：2-3个可占领
-- 金币：10000
-
-**`scenes/maps/map_5.tscn`** — 图5 场景
-- CapturePointManager + WaveManager + VictoryOutpostSequential
-
-**AI（图5）：**
-- 前哨守军巡逻
-- 主基地定时派援军到前哨
-- 玩家占领中立据点时，敌方可能派兵抢回
-
----
-
-## enemy_ai.gd 扩展
-
-在现有 3 个状态基础上新增：
+### 1.1 文件与代码量
 
 ```
-enum AIState { PATROL, CHASE, ATTACK, WAVE_ATTACK }
+文件                     行数    主要问题
+─────────────────────────────────────────────────────
+main.gd                  1305    上帝对象，10+职责
+unit.gd                   770    上帝对象，战斗/移动/动画/血量全混
+building.gd               373    塔攻击逻辑混入建筑基类
+enemy_ai.gd               179    与unit.gd紧耦合，字符串调用
+capture_point.gd          170    奖励逻辑耦合
+wave_manager.gd           104    有调试代码
+victory_expand_defense.gd  99    重复的清敌检测
+sheep.gd                   91    -
+level_select.gd            86    关卡数据硬编码
+victory_blitz.gd           83    治疗逻辑不该在这
+explosion.gd                18    ┐
+dust_effect.gd              24    │ 帧动画代码100%重复
+heal_effect.gd              25    ┘
+click_effect.gd             28    类似的补间动画
+floating_text.gd            40    类似的补间动画
+arrow.gd                    40    -
+jelly_effect.gd             30    静态工具类（做得好）
+cursor_manager.gd           41    结构良好
+map_config.gd               24    纯数据，结构良好
+neutral.gd                  63    影子/精灵代码与unit/building重复
+tree.gd                     18    -
+victory_condition.gd        15    基类，结构良好
+victory_destroy_base.gd     31    简洁清晰
+victory_survive_waves.gd    51    有调试代码
+pause_input_handler.gd      11    -
+─────────────────────────────────────────────────────
+总计                      3717
+```
 
-var wave_target: Vector2 = Vector2.ZERO
-var chase_range: float = 300.0  # 波次行军中追敌范围
+### 1.2 当前依赖关系图
 
-func start_wave_attack(target: Vector2):
-    wave_target = target
-    ai_state = AIState.WAVE_ATTACK
-    unit.call("attack_move_to", target)
+```
+                    ┌─────────────────────────────────────────┐
+                    │              main.gd (1305行)            │
+                    │  相机/UI/输入/建筑/经济/战斗/选框/特效   │
+                    └──────┬──────────┬──────────┬────────────┘
+                           │          │          │
+              ┌────────────┘          │          └────────────┐
+              ▼                       ▼                       ▼
+     ┌────────────────┐    ┌──────────────────┐    ┌──────────────────┐
+     │   unit.gd      │    │  building.gd     │    │  wave_manager.gd │
+     │   (770行)      │    │  (373行)         │    │   (104行)        │
+     │ 战斗/移动/动画  │    │ 建造/塔攻击/血量  │    └──────────────────┘
+     │ 血量/治疗/选框  │    └──────────────────┘
+     └───┬────────────┘
+         │ 父子节点（字符串调用）
+         ▼
+   ┌───────────────┐
+   │  enemy_ai.gd  │
+   │  (179行)      │
+   └───────────────┘
 
-# WAVE_ATTACK 状态逻辑：
-# - 朝 wave_target 移动
-# - 遇敌（chase_range 内）→ 切 CHASE
-# - 击杀后 → 回到 WAVE_ATTACK 继续前进
-# - 到达目标 → 切 PATROL（以目标为中心巡逻）
+   胜利条件系统（独立）:            环境系统:
+   victory_condition.gd (基类)       neutral.gd (基类)
+     ├── victory_blitz.gd            ├── tree.gd
+     ├── victory_destroy_base.gd     ├── bush.tscn (无脚本)
+     ├── victory_survive_waves.gd    ├── rock.tscn (无脚本)
+     └── victory_expand_defense.gd   └── sheep.gd
+
+   特效系统（独立但重复）:
+   explosion.gd ─┐
+   dust_effect.gd│ 帧动画代码 100% 重复
+   heal_effect.gd┘
+   click_effect.gd / floating_text.gd / arrow.gd
+```
+
+### 1.3 重复代码热力图
+
+```
+                    unit.gd    building.gd    neutral.gd
+  血量/受伤/死亡     ████░      ████░          ░░░░░
+  影子渲染          ████░      ████░          ████░
+  精灵定位          ████░      ████░          ████░
+  HP条更新          ████░      ████░          ░░░░░
+
+  ████░ = 有实现    ░░░░░ = 无
+
+                    explosion  dust_effect   heal_effect
+  帧动画播放        ████░      ████░         ████░
+  (完全相同的逻辑)
 ```
 
 ---
 
-## capture_point.gd 实现
+## 二、发现的问题（按优先级）
 
-### 灵活奖励系统
-占领点设计为通用场景，支持灵活配置不同奖励类型：
+### P0 - 架构性问题
 
-```
-class_name CapturePoint
-extends Area2D
+| # | 问题 | 涉及文件 | 影响 |
+|---|------|---------|------|
+| 1 | main.gd 是上帝对象（1305行，10+职责） | main.gd | 改任何功能都要动这个文件 |
+| 2 | unit.gd 是上帝对象（770行，6+职责） | unit.gd | 战斗/动画/血量/移动全混 |
+| 3 | 建筑塔攻击逻辑混入建筑基类 | building.gd | 不需要攻击的建筑也带攻击代码 |
+| 4 | 血量系统在 unit/building 重复实现 | unit.gd, building.gd | 改一处忘一处 |
+| 5 | 影子/精灵代码在三个文件重复 | unit.gd, building.gd, neutral.gd | 同上 |
 
-# 奖励类型枚举
-enum RewardType { GOLD, UNITS, CUSTOM }
-@export var reward_type: RewardType = RewardType.GOLD
-@export var reward_gold: int = 500
-@export var reward_units: Array[Dictionary] = []  # [{type: UnitType.SOLDIER, count: 2}]
-@export var reward_custom: String = ""  # 预留未来扩展
+### P1 - 代码质量问题
 
-# 触发方式
-@export var trigger_on_start: bool = true  # 地图开始时可见
-@export var trigger_on_kill_all: bool = false  # 消灭附近敌军后刷新
-@export var trigger_on_destroy_building: NodePath = ""  # 摧毁指定建筑后刷新
-```
+| # | 问题 | 涉及文件 | 影响 |
+|---|------|---------|------|
+| 6 | 特效帧动画代码重复3次 | explosion/dust/heal_effect.gd | 每次改动画逻辑要改3处 |
+| 7 | enemy_ai.gd 用字符串调用unit方法 | enemy_ai.gd | 重构unit时AI会静默崩溃 |
+| 8 | 硬编码数值散落各处 | 几乎所有文件 | 调平衡需要翻遍代码 |
+| 9 | 硬编码场景路径 | main.gd, unit.gd, building.gd | 移动文件后路径全断 |
+| 10 | 胜利条件中有治疗逻辑和重复的清敌检测 | victory_blitz.gd, victory_expand_defense.gd | 职责不清 |
 
-### 视觉表现
-- Area2D + CollisionShape2D (CircleShape2D, radius=100)
-- 未激活时隐藏，触发条件满足后出现光圈
-- 光圈：脉冲动画，占领中进度环
-- _process: 检测 overlapping_bodies，统计各阵营单位数量
-- 占领进度：优势方每秒+20，另一方减少
-- 满值时触发 `captured(team)` 信号
+### P2 - 目录结构问题
 
-### 奖励发放
-- 金币：通知 game_controller.add_gold(amount)
-- 单位：通知 game_controller 在占领点附近生成指定单位
-- 信号：`signal reward_granted(reward_data: Dictionary)` 预留扩展
+| # | 问题 | 影响 |
+|---|------|------|
+| 11 | scenes/ 30个文件平铺在根目录 | 难以快速定位 |
+| 12 | scripts/ 25个文件平铺在根目录 | 同上 |
+| 13 | 关卡数据硬编码在 level_select.gd | 改关卡要改代码 |
 
-### 触发场景
-1. **图1/图2**：据点一开始就存在，玩家踩上去读条占领
-2. **图4/图5**：消灭中立营地守军 → 刷新光圈 → 踩上去占领 → 给金币+兵
-3. **未来扩展**：摧毁敌方建筑后刷新光圈，占领给特殊奖励
+### 做得好的地方（保留不动）
 
----
-
-## 验证计划
-
-1. **重构后**：确保原有地图（图2）功能与重构前完全一致 — 选择、建造、战斗、胜利条件
-2. **图2**：完整游玩一局 — 造兵→推家→胜利/失败
-3. **图1**：3个据点依次推进，验证占领机制和AI防守
-4. **图3**：3波防守，验证波次生成和AI进攻
-5. **选关页面**：5个按钮正确跳转，Esc 返回
-6. **图4/5**：完整游玩验证占领+波次+AI巡逻
-7. **回归测试**：每张地图独立运行无报错，R键重启正常
+- assets/ 按类型分子目录
+- 胜利条件继承体系（VictoryCondition基类）
+- 地图配置用 Resource（.tres）
+- 单位/建筑用场景继承
+- jelly_effect.gd 作为静态工具类
+- cursor_manager.gd 职责单一
+- map_config.gd 纯数据容器
 
 ---
 
-## 文件清单总览
+## 三、重构方案
 
-### 新建文件（约 15 个）
-| 文件 | 说明 |
-|------|------|
-| `scripts/map_config.gd` | 地图配置资源类 |
-| `scripts/victory_condition.gd` | 胜利条件基类 |
-| `scripts/wave_manager.gd` | 波次管理器 |
-| `scripts/capture_point.gd` | 占领点实体 |
-| `scripts/victory_destroy_base.gd` | 图2 摧毁基地 |
-| `scripts/victory_blitz.gd` | 图1 闪击据点 |
-| `scripts/victory_survive_waves.gd` | 图3 生存波次 |
-| `scripts/victory_expand_defense.gd` | 图4 扩张防守 |
-| `scripts/victory_outpost_sequential.gd` | 图5 前哨推进 |
-| `scenes/level_select.tscn` + `scripts/level_select.gd` | 选关页面 |
-| `scenes/maps/map_1.tscn` ~ `map_5.tscn` | 5张地图场景 |
-| `resources/map1_config.tres` ~ `map5_config.tres` | 5份地图配置 |
+### 3.1 新目录结构
 
-### 修改文件（约 3 个）
-| 文件 | 说明 |
-|------|------|
-| `scripts/main.gd` | 重构为数据驱动的游戏控制器 |
-| `scripts/enemy_ai.gd` | 新增 WAVE_ATTACK 状态 |
-| `project.godot` | 主场景改为选关页面 |
+```
+rts-base/
+├── project.godot
+├── scenes/
+│   ├── main.tscn
+│   ├── level_select.tscn
+│   ├── maps/
+│   │   └── map_1~4.tscn
+│   ├── units/                           ← 新分组
+│   │   ├── unit.tscn
+│   │   ├── soldier.tscn
+│   │   ├── archer.tscn
+│   │   ├── lancer.tscn
+│   │   └── monk.tscn
+│   ├── buildings/                       ← 新分组
+│   │   ├── building.tscn
+│   │   ├── castle.tscn
+│   │   ├── barracks.tscn
+│   │   ├── tower.tscn
+│   │   ├── wall.tscn
+│   │   ├── monastery.tscn
+│   │   └── archery_building.tscn
+│   ├── effects/                         ← 新分组
+│   │   ├── arrow.tscn
+│   │   ├── attack_click_effect.tscn
+│   │   ├── move_click_effect.tscn
+│   │   ├── dust_effect.tscn
+│   │   ├── explosion.tscn
+│   │   └── heal_effect.tscn
+│   └── environment/                     ← 新分组
+│       ├── neutral.tscn
+│       ├── tree.tscn
+│       ├── bush.tscn
+│       ├── rock.tscn
+│       └── sheep.tscn
+│
+├── scripts/
+│   ├── main.gd                          ← 瘦身至 ~200行
+│   ├── core/                            ← 新分组：共享基础
+│   │   ├── game_entity.gd               ← 新建：血量/受伤/死亡的基类
+│   │   ├── shadow_renderer.gd           ← 新建：提取影子渲染
+│   │   └── frame_animated_effect.gd     ← 新建：帧动画特效基类
+│   ├── systems/                         ← 新分组：从main拆出的Manager
+│   │   ├── camera_manager.gd
+│   │   ├── selection_manager.gd
+│   │   ├── building_manager.gd
+│   │   ├── combat_manager.gd
+│   │   ├── economy_manager.gd
+│   │   ├── effects_manager.gd
+│   │   └── input_handler.gd
+│   ├── units/                           ← 新分组
+│   │   ├── unit.gd                      ← 瘦身：移除重复代码
+│   │   └── enemy_ai.gd
+│   ├── buildings/                       ← 新分组
+│   │   └── building.gd                  ← 塔攻击逻辑拆出
+│   ├── victory/                         ← 新分组
+│   │   ├── victory_condition.gd
+│   │   ├── victory_blitz.gd
+│   │   ├── victory_destroy_base.gd
+│   │   ├── victory_survive_waves.gd
+│   │   └── victory_expand_defense.gd
+│   ├── effects/                         ← 新分组
+│   │   ├── click_effect.gd
+│   │   ├── dust_effect.gd              ← 继承帧动画基类
+│   │   ├── explosion.gd                ← 继承帧动画基类
+│   │   ├── heal_effect.gd              ← 继承帧动画基类
+│   │   ├── floating_text.gd
+│   │   ├── jelly_effect.gd
+│   │   └── arrow.gd
+│   ├── environment/                     ← 新分组
+│   │   ├── neutral.gd
+│   │   ├── tree.gd
+│   │   └── sheep.gd
+│   ├── systems_game/                    ← 新分组：游戏内系统
+│   │   ├── capture_point.gd
+│   │   └── wave_manager.gd
+│   └── ui/                              ← 新分组
+│       ├── cursor_manager.gd
+│       ├── pause_input_handler.gd
+│       └── level_select.gd
+│
+├── resources/
+│   ├── map1~4_config.tres
+│   └── level_data.tres                  ← 新建：关卡数据从代码中提取
+│
+└── assets/                              ← 不动（结构已经很好）
+```
+
+### 3.2 重构后的依赖关系图
+
+```
+                      ┌──────────────┐
+                      │   main.gd    │
+                      │  (~200行)    │
+                      │  初始化+协调  │
+                      └──────┬───────┘
+                             │ 创建/持有引用
+           ┌─────────┬───────┼───────┬──────────┐
+           ▼         ▼       ▼       ▼          ▼
+     ┌──────────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────────┐
+     │camera_mgr│ │build.│ │combat│ │select│ │economy   │
+     │ ~150行   │ │mgr   │ │mgr   │ │mgr   │ │  ~80行   │
+     └──────────┘ │~250行│ │~120行│ │~100行│ └──────────┘
+                  └──────┘ └──────┘ └──────┘
+     ┌──────────┐ ┌───────────┐
+     │input_    │ │effects_   │
+     │handler   │ │manager    │
+     │ ~150行   │ │  ~50行    │
+     └──────────┘ └───────────┘
+
+
+  ┌──────────────────────────────────────────────────┐
+  │              共享基础层 (scripts/core/)            │
+  │                                                    │
+  │  game_entity.gd         影子/精灵共用接口          │
+  │  (血量/受伤/死亡)                                    │
+  │       ▲              ▲           ▲                 │
+  │       │              │           │                 │
+  │  ┌────┴────┐   ┌─────┴────┐  ┌──┴──────┐         │
+  │  │ unit.gd │   │building.gd│  │neutral.gd│         │
+  │  (~500行) │   │(~300行)   │  │ (~30行)  │         │
+  │  移动+战斗 │   │建造+塔攻击│  │ 环境基类 │         │
+  │  +AI接口  │   │          │  │         │         │
+  │  └────┬────┘   └──────────┘  └─────────┘         │
+  │       │                                            │
+  │  ┌────┴────┐                                      │
+  │  │enemy_ai │  ← 通过类型化接口调用，不用字符串     │
+  │  └─────────┘                                      │
+  └──────────────────────────────────────────────────┘
+
+
+  ┌──────────────────────────────────────────────────┐
+  │              帧动画特效 (scripts/effects/)         │
+  │                                                    │
+  │  frame_animated_effect.gd (基类，消除3处重复)       │
+  │       ▲              ▲           ▲                 │
+  │  explosion.gd   dust_effect.gd  heal_effect.gd    │
+  │  (各~10行)      (各~10行)       (各~10行)         │
+  └──────────────────────────────────────────────────┘
+```
+
+### 3.3 具体重构项
+
+#### A. 新建共享基类（消除重复代码）
+
+**A1. game_entity.gd — 血量/受伤/死亡基类**
+```
+来源：unit.gd 和 building.gd 中重复的血量逻辑
+功能：
+  - hp / max_hp 变量
+  - take_damage(amount, attacker)
+  - die()
+  - is_dead()
+  - _update_hp_bar()
+  - signal died(entity)
+继承者：unit.gd, building.gd
+```
+
+**A2. shadow_renderer.gd — 影子渲染（或混入 game_entity）**
+```
+来源：unit.gd, building.gd, neutral.gd 中重复的影子代码
+功能：
+  - _rebuild_shadow()  生成椭圆阴影
+  - _apply_sprite_position()  精灵定位
+```
+
+**A3. frame_animated_effect.gd — 帧动画特效基类**
+```
+来源：explosion.gd, dust_effect.gd, heal_effect.gd 中100%重复的帧动画代码
+功能：
+  - _frame, _total_frames, _fps, _timer
+  - _ready() 初始化总帧数
+  - _process(delta) 推进帧，播完自动销毁
+继承者：explosion.gd, dust_effect.gd, heal_effect.gd
+每个子类只需 ~5-10 行（设置纹理和FPS）
+```
+
+#### B. main.gd 拆分（7个Manager）
+
+| Manager | 提取的函数 | 预估行数 |
+|---------|-----------|---------|
+| camera_manager | _process_camera, _clamp_camera, _get_base_position, _jump_to_base | ~150 |
+| building_manager | _place_building, _on_building_died, _rebuild_nav, grid_*, _create_grid, _enter_place_mode, _update_preview, _do_place | ~250 |
+| combat_manager | _do_attack_move, _find_enemy_at, _stop_selected, _hold_position, _right_click | ~120 |
+| selection_manager | _selection_released, _deselect_all, _get_selection_rect, _formation_offset | ~100 |
+| economy_manager | add_gold, _update_gold_display, _update_button_affordability, COSTS | ~80 |
+| effects_manager | _spawn_click_effect, _spawn_dust_effect, show_floating_text, spawn_enemy_wave/unit | ~50 |
+| input_handler | _input中的路由分发 | ~150 |
+
+重构后 main.gd (~200行)：只做初始化各Manager + 游戏流程控制
+
+#### C. unit.gd 优化
+
+```
+当前：770行，战斗/移动/动画/血量/治疗/选框全混
+目标：~500行，去掉重复代码后更清晰
+
+具体改动：
+1. 血量/受伤/死亡 → 继承 game_entity.gd（删 ~60行）
+2. 影子/精灵定位 → 继承共享代码（删 ~40行）
+3. 硬编码数值 → 提取为常量或导出变量
+4. _physics_process 中的视觉更新 → 拆为独立函数
+```
+
+#### D. building.gd 优化
+
+```
+当前：373行，塔攻击逻辑混入建筑基类
+目标：~300行
+
+具体改动：
+1. 血量/受伤/死亡 → 继承 game_entity.gd（删 ~30行）
+2. 影子/精灵定位 → 继承共享代码（删 ~40行）
+3. 塔攻击逻辑（_tower_process, _spawn_arrow）考虑拆为 TowerBehaviour 组件
+   或者保持 if building_type == TOWER 的守卫（更简单，暂不拆）
+4. 硬编码数值 → 常量或导出变量
+```
+
+#### E. enemy_ai.gd 解耦
+
+```
+当前：通过 unit.get("state") / unit.call("move_to") 字符串调用
+目标：通过类型化引用直接调用
+
+具体改动：
+1. var unit: Unit = get_parent()  (类型化，不是 get_parent() as CharacterBody2D)
+2. unit.move_to()  (直接调用，不用 call())
+3. unit.state = Unit.UnitState.GUARD  (直接赋值，不用 set())
+```
+
+#### F. 其他小改动
+
+```
+- victory_blitz.gd: 移除治疗逻辑（或通过信号委托）
+- level_select.gd: 关卡数据提取到 level_data.tres
+- wave_manager.gd: 移除调试代码
+- victory_survive_waves.gd: 移除调试代码
+- 所有文件: 硬编码场景路径 → 用常量集中管理
+```
+
+---
+
+## 四、执行计划
+
+### 阶段 0: 准备
+- 运行游戏确认当前可正常工作
+
+### 阶段 1: 目录重组（只移动文件 + 修路径）
+1. 创建 scenes/ 子目录: units/, buildings/, effects/, environment/
+2. 移动 .tscn 文件
+3. 全局搜索替换场景路径引用（preload/load 中的 "res://scenes/xxx.tscn" → "res://scenes/xxx/xxx.tscn"）
+4. 运行验证 → 提交
+
+### 阶段 2: 建立共享基类
+1. 新建 scripts/core/frame_animated_effect.gd
+2. 改 explosion/dust/heal_effect 继承它
+3. 新建 scripts/core/game_entity.gd（血量基类）
+4. 改 unit.gd 和 building.gd 继承它
+5. 提取影子/精灵公共代码
+6. 运行验证 → 提交
+
+### 阶段 3: 拆分 main.gd
+3a. 提取 camera_manager（最独立）
+3b. 提取 effects_manager
+3c. 提取 economy_manager
+3d. 提取 building_manager
+3e. 提取 selection_manager
+3f. 提取 combat_manager
+3g. 提取 input_handler
+每步：提取 → 验证 → 提交
+
+### 阶段 4: scripts/ 目录分组
+1. 创建 scripts/ 子目录
+2. 移动 .gd 文件
+3. 更新 class_name / preload 路径
+4. 运行验证 → 提交
+
+### 阶段 5: 清理与优化
+1. enemy_ai.gd 类型化解耦
+2. 硬编码数值提取为常量
+3. 移除调试代码
+4. 关卡数据提取到 Resource
+5. 运行验证 → 最终提交
+
+---
+
+## 五、验证方式
+
+每个阶段完成后：
+1. 运行 Godot 项目，无报错
+2. 完整玩一局：选关 → 生产单位 → 放建筑 → 战斗 → 胜利/失败
+3. 重点验证当前阶段涉及的系统
+4. git commit
