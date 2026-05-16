@@ -570,6 +570,11 @@ func _get_steered_direction(base_dir: Vector2, delta: float) -> Vector2:
 				continue
 			if u == attack_target:
 				continue
+			# 同方向移动的单位不算障碍（保持阵型）
+			if u.velocity.length_squared() > 1.0:
+				var vel_angle: float = abs(base_dir.angle_to(u.velocity))
+				if vel_angle < PI / 4.0:
+					continue
 			var to_u: Vector2 = u.global_position - global_position
 			var dist: float = to_u.length()
 			if dist < scan_range and dist > 0.1:
