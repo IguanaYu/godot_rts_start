@@ -74,6 +74,8 @@ var _frames_idle: int = 6
 var _frames_run: int = 6
 var _frames_attack: int = 6
 var _is_attacking: bool = false
+var _lateral_dir: Vector2 = Vector2.ZERO
+var _lateral_timer: float = 0.0
 var _shadow: Sprite2D = null
 var _state_indicator: ColorRect = null
 
@@ -399,7 +401,7 @@ func _attack_process(delta: float) -> void:
 			base_dir = global_position.direction_to(attack_target.global_position)
 
 		# 切线避让：根据前方友军位置调整方向
-		var steered_dir := _get_steered_direction(base_dir)
+		var steered_dir := _get_steered_direction(base_dir, delta)
 		velocity = steered_dir * move_speed
 	else:
 		if attack_timer <= 0.0:
@@ -420,7 +422,7 @@ func _attack_move_process(delta: float) -> void:
 			return
 		var next_pos := nav_agent.get_next_path_position()
 		var base_dir := global_position.direction_to(next_pos)
-		velocity = _get_steered_direction(base_dir) * move_speed
+		velocity = _get_steered_direction(base_dir, delta) * move_speed
 		return
 
 	var closest = _find_closest_enemy_in_range(attack_move_scan_range)
@@ -438,7 +440,7 @@ func _attack_move_process(delta: float) -> void:
 		return
 	var next_pos2 := nav_agent.get_next_path_position()
 	var base_dir2 := global_position.direction_to(next_pos2)
-	velocity = _get_steered_direction(base_dir2) * move_speed
+	velocity = _get_steered_direction(base_dir2, delta) * move_speed
 
 func _find_closest_enemy_in_range(scan_range: float):
 	var enemy_group := "enemy_units" if team == Team.PLAYER else "player_units"
@@ -546,38 +548,124 @@ func _get_dist_to_target(target) -> float:
 	var nearest := global_position.clamp(brect.position, brect.end)
 	return global_position.distance_to(nearest)
 
-func _get_steered_direction(base_dir: Vector2) -> Vector2:
-	var ally_group := "player_units" if team == Team.PLAYER else "enemy_units"
+func _get_steered_direction(base_dir: Vector2, delta: float) -> Vector2:
 	var scan_range := 50.0
-	var tangent_sum := Vector2.ZERO
 
-	for u in get_tree().get_nodes_in_group(ally_group):
-		if u == self or u.is_dead():
-			continue
-		var to_ally: Vector2 = u.global_position - global_position
-		var dist: float = to_ally.length()
-		if dist < scan_range and dist > 0.1:
-			# 只看前方±90度范围内的友军
-			var angle := base_dir.angle_to(to_ally)
-			if abs(angle) < PI / 2.0:
-				# 两个切线方向
-				var tangent1 := Vector2(-to_ally.y, to_ally.x).normalized()
-				var tangent2 := Vector2(to_ally.y, -to_ally.x).normalized()
-				# 选更接近目标方向的切线
-				var dot1 := tangent1.dot(base_dir)
-				var dot2 := tangent2.dot(base_dir)
-				var tangent: Vector2
-				if abs(dot1 - dot2) < 0.01:
-					tangent = tangent1 if (get_instance_id() % 2 == 0) else tangent2
-				else:
-					tangent = tangent1 if dot1 > dot2 else tangent2
-				# 距离越近权重越大
-				var weight: float = 1.0 - (dist / scan_range)
-				tangent_sum += tangent * weight
+	# Step 1: 收集前方±60°内的单位（友军+敌军），分左右
+	var left_units: Array = []
+	var right_units: Array = []
 
-	if tangent_sum.length_squared() > 0.01:
-		return tangent_sum.normalized()
-	return base_dir
+	var ally_group := "player_units" if team == Team.PLAYER else "enemy_units"
+	var enemy_group := "enemy_units" if team == Team.PLAYER else "player_units"
+
+	for group in [ally_group, enemy_group]:
+		for u in get_tree().get_nodes_in_group(group):
+			if u == self or u.is_dead():
+				continue
+			# 排除攻击目标本身，避免追击时躲目标
+			if u == attack_target:
+				continue
+			var to_u: Vector2 = u.global_position - global_position
+			var dist: float = to_u.length()
+			if dist < scan_range and dist > 0.1:
+				var angle: float = base_dir.angle_to(to_u)
+				if abs(angle) < PI / 3.0:  # ±60°
+					if angle < 0:
+						left_units.append(to_u)
+					else:
+						right_units.append(to_u)
+
+	var has_left: bool = not left_units.is_empty()
+	var has_right: bool = not right_units.is_empty()
+
+	# Step 2: 前方无单位 → 直走
+	if not has_left and not has_right:
+		_lateral_dir = Vector2.ZERO
+		_lateral_timer = 0.0
+		return base_dir
+
+	# Step 3: 单侧避让
+	if has_left != has_right:
+		# 如果横向记忆还有效，继续沿用（防止状态翻转导致抖动）
+		if _lateral_dir != Vector2.ZERO and _lateral_timer < 2.0:
+			_lateral_timer += delta
+			return _lateral_dir
+		# 否则每帧重算
+		_lateral_dir = Vector2.ZERO
+		_lateral_timer = 0.0
+		var units: Array = left_units if has_left else right_units
+		return _calc_best_tangent(units, base_dir, true, true)
+
+	# Step 4: 双侧都有单位
+	var left_acute: Vector2 = _calc_best_tangent(left_units, base_dir, true, true)
+	var right_acute: Vector2 = _calc_best_tangent(right_units, base_dir, true, true)
+
+	# 判断切线在同侧还是对侧
+	var left_cross: float = left_acute.cross(base_dir)
+	var right_cross: float = right_acute.cross(base_dir)
+	var same_side: bool = (left_cross > 0) == (right_cross > 0)
+
+	if same_side:
+		# 4a: 同侧堵塞 → 选角度更大的切线
+		_lateral_dir = Vector2.ZERO
+		_lateral_timer = 0.0
+		var la: float = abs(left_acute.angle_to(base_dir))
+		var ra: float = abs(right_acute.angle_to(base_dir))
+		return left_acute if la > ra else right_acute
+
+	# 4b: 对侧拥堵 → 扩大扫描到±120°
+	_lateral_timer += delta
+	if _lateral_dir != Vector2.ZERO and _lateral_timer < 2.0:
+		return _lateral_dir
+
+	# 扩大扫描：60°~120° 每侧
+	for group in [ally_group, enemy_group]:
+		for u in get_tree().get_nodes_in_group(group):
+			if u == self or u.is_dead() or u == attack_target:
+				continue
+			var to_u: Vector2 = u.global_position - global_position
+			var dist: float = to_u.length()
+			if dist < scan_range and dist > 0.1:
+				var angle: float = base_dir.angle_to(to_u)
+				if abs(angle) >= PI / 3.0 and abs(angle) < 2.0 * PI / 3.0:
+					if angle < 0:
+						left_units.append(to_u)
+					else:
+						right_units.append(to_u)
+
+	var left_escape: Vector2 = _calc_best_tangent(left_units, base_dir, false, false)
+	var right_escape: Vector2 = _calc_best_tangent(right_units, base_dir, false, false)
+
+	var la2: float = abs(left_escape.angle_to(base_dir))
+	var ra2: float = abs(right_escape.angle_to(base_dir))
+	_lateral_dir = left_escape if la2 < ra2 else right_escape
+	_lateral_timer = 0.0
+	return _lateral_dir
+
+
+# 计算一组单位的最佳切线方向
+# acute: true=锐角切线(接近base_dir), false=钝角切线(远离base_dir)
+# pick_smallest: true=选角度最小的单位, false=选角度最大的单位
+func _calc_best_tangent(units: Array, base_dir: Vector2, acute: bool, pick_smallest: bool) -> Vector2:
+	var best: Vector2 = base_dir
+	var best_ang: float = INF if pick_smallest else -1.0
+	for to_u_v in units:
+		var to_u: Vector2 = to_u_v
+		var t1: Vector2 = Vector2(-to_u.y, to_u.x).normalized()
+		var t2: Vector2 = Vector2(to_u.y, -to_u.x).normalized()
+		var tangent: Vector2
+		if acute:
+			tangent = t1 if t1.dot(base_dir) >= t2.dot(base_dir) else t2
+		else:
+			tangent = t1 if t1.dot(base_dir) < t2.dot(base_dir) else t2
+		var ang: float = abs(tangent.angle_to(base_dir))
+		if pick_smallest and ang < best_ang:
+			best_ang = ang
+			best = tangent
+		elif not pick_smallest and ang > best_ang:
+			best_ang = ang
+			best = tangent
+	return best
 
 func _perform_attack() -> void:
 	if attack_target and not attack_target.is_dead():
