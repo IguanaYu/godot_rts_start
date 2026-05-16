@@ -549,6 +549,11 @@ func _get_dist_to_target(target) -> float:
 	return global_position.distance_to(nearest)
 
 func _get_steered_direction(base_dir: Vector2, delta: float) -> Vector2:
+	# 通用1秒方向锁：设定了新方向就锁住不改，防止抖动
+	if _lateral_dir != Vector2.ZERO and _lateral_timer < 0.5:
+		_lateral_timer += delta
+		return _lateral_dir
+
 	var scan_range := 50.0
 
 	# Step 1: 收集前方±60°内的单位（友军+敌军），分左右
@@ -562,7 +567,6 @@ func _get_steered_direction(base_dir: Vector2, delta: float) -> Vector2:
 		for u in get_tree().get_nodes_in_group(group):
 			if u == self or u.is_dead():
 				continue
-			# 排除攻击目标本身，避免追击时躲目标
 			if u == attack_target:
 				continue
 			var to_u: Vector2 = u.global_position - global_position
@@ -578,47 +582,36 @@ func _get_steered_direction(base_dir: Vector2, delta: float) -> Vector2:
 	var has_left: bool = not left_units.is_empty()
 	var has_right: bool = not right_units.is_empty()
 
-	# Step 2: 前方无单位 → 直走
+	# Step 2: 前方无单位 → 直走，清空锁
 	if not has_left and not has_right:
 		_lateral_dir = Vector2.ZERO
 		_lateral_timer = 0.0
 		return base_dir
 
-	# Step 3: 单侧避让
+	# Step 3: 单侧避让 → 锐角切线
 	if has_left != has_right:
-		# 如果横向记忆还有效，继续沿用（防止状态翻转导致抖动）
-		if _lateral_dir != Vector2.ZERO and _lateral_timer < 2.0:
-			_lateral_timer += delta
-			return _lateral_dir
-		# 否则每帧重算
-		_lateral_dir = Vector2.ZERO
-		_lateral_timer = 0.0
 		var units: Array = left_units if has_left else right_units
-		return _calc_best_tangent(units, base_dir, true, true)
+		_lateral_dir = _calc_best_tangent(units, base_dir, true, true)
+		_lateral_timer = 0.0
+		return _lateral_dir
 
 	# Step 4: 双侧都有单位
 	var left_acute: Vector2 = _calc_best_tangent(left_units, base_dir, true, true)
 	var right_acute: Vector2 = _calc_best_tangent(right_units, base_dir, true, true)
 
-	# 判断切线在同侧还是对侧
 	var left_cross: float = left_acute.cross(base_dir)
 	var right_cross: float = right_acute.cross(base_dir)
 	var same_side: bool = (left_cross > 0) == (right_cross > 0)
 
 	if same_side:
 		# 4a: 同侧堵塞 → 选角度更大的切线
-		_lateral_dir = Vector2.ZERO
-		_lateral_timer = 0.0
 		var la: float = abs(left_acute.angle_to(base_dir))
 		var ra: float = abs(right_acute.angle_to(base_dir))
-		return left_acute if la > ra else right_acute
-
-	# 4b: 对侧拥堵 → 扩大扫描到±120°
-	_lateral_timer += delta
-	if _lateral_dir != Vector2.ZERO and _lateral_timer < 2.0:
+		_lateral_dir = left_acute if la > ra else right_acute
+		_lateral_timer = 0.0
 		return _lateral_dir
 
-	# 扩大扫描：60°~120° 每侧
+	# 4b: 对侧拥堵 → 扩大扫描到±120°，钝角切线横向躲避
 	for group in [ally_group, enemy_group]:
 		for u in get_tree().get_nodes_in_group(group):
 			if u == self or u.is_dead() or u == attack_target:
