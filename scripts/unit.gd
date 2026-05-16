@@ -74,8 +74,6 @@ var _frames_idle: int = 6
 var _frames_run: int = 6
 var _frames_attack: int = 6
 var _is_attacking: bool = false
-var _stuck_timer: float = 0.0
-var _was_stuck: bool = false
 var _shadow: Sprite2D = null
 var _state_indicator: ColorRect = null
 
@@ -345,9 +343,6 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		if global_position.distance_squared_to(prev_pos) < 0.5:
 			velocity = Vector2.ZERO
-			_was_stuck = true
-		else:
-			_was_stuck = false
 
 	attack_timer = max(0.0, attack_timer - delta)
 	_update_aggro_line()
@@ -388,25 +383,25 @@ func _attack_process(delta: float) -> void:
 			_is_attacking = false
 			state = UnitState.HOLD_POSITION
 			return
-		# 卡住检测：速度接近零 = 被友军挡住了
-		if _was_stuck:
-			_stuck_timer += delta
+
+		var base_dir: Vector2
+
+		if attack_target.has_method("get_rect"):
+			# 建筑：用 NavAgent 导航（需避开建筑障碍区）
+			var nav_target := _get_building_nav_target(attack_target)
+			nav_agent.target_position = nav_target
+			if not nav_agent.is_navigation_finished():
+				base_dir = global_position.direction_to(nav_agent.get_next_path_position())
+			else:
+				base_dir = global_position.direction_to(attack_target.global_position)
 		else:
-			_stuck_timer = 0.0
-		var nav_target := _get_building_nav_target(attack_target)
-		# 卡住超过1.5秒 → 自动绕行
-		if _stuck_timer > 1.5:
-			nav_target = _get_detour_target(attack_target)
-			_stuck_timer = 0.0
-			var gc = get_tree().current_scene
-			if gc and gc.has_method("show_floating_text"):
-				gc.show_floating_text("绕行", Color.YELLOW, global_position)
-		nav_agent.target_position = nav_target
-		if not nav_agent.is_navigation_finished():
-			var next_pos := nav_agent.get_next_path_position()
-			velocity = global_position.direction_to(next_pos) * move_speed
+			# 单位：直接追，不用 NavAgent
+			base_dir = global_position.direction_to(attack_target.global_position)
+
+		# 切线避让：根据前方友军位置调整方向
+		var steered_dir := _get_steered_direction(base_dir)
+		velocity = steered_dir * move_speed
 	else:
-		_stuck_timer = 0.0
 		if attack_timer <= 0.0:
 			_perform_attack()
 			attack_timer = attack_cooldown
@@ -424,7 +419,8 @@ func _attack_move_process(delta: float) -> void:
 			state = UnitState.GUARD
 			return
 		var next_pos := nav_agent.get_next_path_position()
-		velocity = global_position.direction_to(next_pos) * move_speed
+		var base_dir := global_position.direction_to(next_pos)
+		velocity = _get_steered_direction(base_dir) * move_speed
 		return
 
 	var closest = _find_closest_enemy_in_range(attack_move_scan_range)
@@ -440,8 +436,9 @@ func _attack_move_process(delta: float) -> void:
 		state = UnitState.GUARD
 		hold_position_mode = false
 		return
-	var next_pos := nav_agent.get_next_path_position()
-	velocity = global_position.direction_to(next_pos) * move_speed
+	var next_pos2 := nav_agent.get_next_path_position()
+	var base_dir2 := global_position.direction_to(next_pos2)
+	velocity = _get_steered_direction(base_dir2) * move_speed
 
 func _find_closest_enemy_in_range(scan_range: float):
 	var enemy_group := "enemy_units" if team == Team.PLAYER else "player_units"
@@ -549,17 +546,38 @@ func _get_dist_to_target(target) -> float:
 	var nearest := global_position.clamp(brect.position, brect.end)
 	return global_position.distance_to(nearest)
 
-func _get_detour_target(target) -> Vector2:
-	if target.has_method("get_rect"):
-		var offset := deg_to_rad(randf_range(60.0, 120.0))
-		if randi() % 2 == 0:
-			offset = -offset
-		return _get_building_nav_target(target, offset)
-	else:
-		var to_target: Vector2 = target.global_position - global_position
-		var perp := Vector2(-to_target.y, to_target.x).normalized()
-		var side := perp * (50.0 if randi() % 2 == 0 else -50.0)
-		return target.global_position + side
+func _get_steered_direction(base_dir: Vector2) -> Vector2:
+	var ally_group := "player_units" if team == Team.PLAYER else "enemy_units"
+	var scan_range := 50.0
+	var tangent_sum := Vector2.ZERO
+
+	for u in get_tree().get_nodes_in_group(ally_group):
+		if u == self or u.is_dead():
+			continue
+		var to_ally: Vector2 = u.global_position - global_position
+		var dist: float = to_ally.length()
+		if dist < scan_range and dist > 0.1:
+			# 只看前方±90度范围内的友军
+			var angle := base_dir.angle_to(to_ally)
+			if abs(angle) < PI / 2.0:
+				# 两个切线方向
+				var tangent1 := Vector2(-to_ally.y, to_ally.x).normalized()
+				var tangent2 := Vector2(to_ally.y, -to_ally.x).normalized()
+				# 选更接近目标方向的切线
+				var dot1 := tangent1.dot(base_dir)
+				var dot2 := tangent2.dot(base_dir)
+				var tangent: Vector2
+				if abs(dot1 - dot2) < 0.01:
+					tangent = tangent1 if (get_instance_id() % 2 == 0) else tangent2
+				else:
+					tangent = tangent1 if dot1 > dot2 else tangent2
+				# 距离越近权重越大
+				var weight: float = 1.0 - (dist / scan_range)
+				tangent_sum += tangent * weight
+
+	if tangent_sum.length_squared() > 0.01:
+		return tangent_sum.normalized()
+	return base_dir
 
 func _perform_attack() -> void:
 	if attack_target and not attack_target.is_dead():
