@@ -37,6 +37,14 @@ var selected_units: Array = []
 # 攻击移动
 var attack_move_mode: bool = false
 
+# 自定义光标管理器
+var cursor_manager: Node = null
+
+# 点击特效场景
+const MoveClickEffectScene := preload("res://scenes/move_click_effect.tscn")
+const AttackClickEffectScene := preload("res://scenes/attack_click_effect.tscn")
+const DustEffectScene := preload("res://scenes/dust_effect.tscn")
+
 # 放置模式
 var place_mode: PlaceMode = PlaceMode.NONE
 
@@ -63,6 +71,7 @@ var ui_buttons: Dictionary = {}
 var place_mode_label: Label
 var gold: int = 10000
 var gold_label: Label
+var wave_countdown_label: Label
 
 # Dynamic key mapping (filled in _ready based on available_items)
 var key_to_mode: Dictionary = {}
@@ -87,6 +96,12 @@ func _ready() -> void:
 	result_label.visible = false
 	attack_move_indicator.visible = false
 	preview_rect.visible = false
+
+	# 初始化光标管理器
+	var CursorManagerScene := preload("res://scenes/cursor_manager.tscn")
+	cursor_manager = CursorManagerScene.instantiate()
+	add_child(cursor_manager)
+
 
 	# Load map config if set
 	_load_from_config()
@@ -142,9 +157,33 @@ func _setup_wave_manager() -> void:
 	for child in get_children():
 		if child is WaveManager:
 			child.set_game_controller(self)
-			child.wave_started.connect(func(_n): _wave_clear_notified = false)
+			child.wave_started.connect(_on_wave_started)
+			child.countdown_updated.connect(_on_countdown_updated)
+			child.all_waves_completed.connect(_on_all_waves_completed)
 			child.start_waves()
 			break
+
+
+func _on_wave_started(_wave_number: int) -> void:
+	_wave_clear_notified = false
+
+
+func _on_countdown_updated(wave_number: int, remaining: float, total: int) -> void:
+	if wave_countdown_label == null:
+		return
+	var display_wave := wave_number + 1
+	var secs := ceili(remaining)
+	wave_countdown_label.text = "Wave %d/%d incoming in: %ds" % [display_wave, total, secs]
+	wave_countdown_label.visible = true
+	if remaining <= 5.0:
+		wave_countdown_label.add_theme_color_override("font_color", Color(1, 0.1, 0.1))
+	else:
+		wave_countdown_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
+
+
+func _on_all_waves_completed() -> void:
+	if wave_countdown_label:
+		wave_countdown_label.visible = false
 
 
 func _create_grid() -> void:
@@ -285,6 +324,20 @@ func _create_ui() -> void:
 	gold_label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
 	_update_gold_display()
 	canvas.add_child(gold_label)
+
+	# 波次倒计时
+	wave_countdown_label = Label.new()
+	wave_countdown_label.anchor_left = 0.5
+	wave_countdown_label.anchor_right = 0.5
+	wave_countdown_label.anchor_top = 0.0
+	wave_countdown_label.anchor_bottom = 0.0
+	wave_countdown_label.offset_top = 55.0
+	wave_countdown_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	wave_countdown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	wave_countdown_label.add_theme_font_size_override("font_size", 20)
+	wave_countdown_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
+	wave_countdown_label.visible = false
+	canvas.add_child(wave_countdown_label)
 
 func _update_gold_display() -> void:
 	if gold_label:
@@ -930,6 +983,7 @@ func _input(event: InputEvent) -> void:
 		elif place_mode != PlaceMode.NONE or attack_move_mode:
 			place_mode = PlaceMode.NONE
 			attack_move_mode = false
+			_set_attack_cursor(false)
 			return
 		else:
 			_open_pause_menu()
@@ -943,6 +997,7 @@ func _input(event: InputEvent) -> void:
 				if attack_move_mode:
 					_do_attack_move(get_global_mouse_position())
 					attack_move_mode = false
+					_set_attack_cursor(false)
 				elif place_mode != PlaceMode.NONE:
 					_do_place(get_global_mouse_position())
 				else:
@@ -955,6 +1010,7 @@ func _input(event: InputEvent) -> void:
 		elif event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 			attack_move_mode = false
 			place_mode = PlaceMode.NONE
+			_set_attack_cursor(false)
 			_right_click()
 		elif event.button_index == MOUSE_BUTTON_MIDDLE:
 			if event.pressed:
@@ -977,6 +1033,7 @@ func _input(event: InputEvent) -> void:
 				if not selected_units.is_empty():
 					attack_move_mode = true
 					place_mode = PlaceMode.NONE
+					_set_attack_cursor(true)
 			KEY_S:
 				_stop_selected()
 			KEY_H:
@@ -1020,11 +1077,13 @@ func _do_place(click_pos: Vector2) -> void:
 			var unit := _create_unit(UnitScript.UnitType.SOLDIER, UnitScript.Team.PLAYER, click_pos)
 			player_units_node.add_child(unit)
 			unit.add_to_group("player_units")
+			_spawn_dust_effect(click_pos)
 			placed = true
 		PlaceMode.ARCHER:
 			var unit := _create_unit(UnitScript.UnitType.ARCHER, UnitScript.Team.PLAYER, click_pos)
 			player_units_node.add_child(unit)
 			unit.add_to_group("player_units")
+			_spawn_dust_effect(click_pos)
 			placed = true
 		PlaceMode.CASTLE:
 			var gpos := snap_to_grid(click_pos)
@@ -1054,11 +1113,13 @@ func _do_place(click_pos: Vector2) -> void:
 			var unit := _create_unit(UnitScript.UnitType.LANCER, UnitScript.Team.PLAYER, click_pos)
 			player_units_node.add_child(unit)
 			unit.add_to_group("player_units")
+			_spawn_dust_effect(click_pos)
 			placed = true
 		PlaceMode.MONK_UNIT:
 			var unit := _create_unit(UnitScript.UnitType.MONK, UnitScript.Team.PLAYER, click_pos)
 			player_units_node.add_child(unit)
 			unit.add_to_group("player_units")
+			_spawn_dust_effect(click_pos)
 			placed = true
 
 	if placed:
@@ -1080,6 +1141,7 @@ func _do_attack_move(click_pos: Vector2) -> void:
 			for ai in target.get_children():
 				if ai.has_method("on_attacked") and selected_units.size() > 0:
 					ai.on_attacked(selected_units[0])
+		_spawn_click_effect(AttackClickEffectScene, click_pos)
 		return
 
 	# 没点到敌人 → 普通攻击移动
@@ -1087,6 +1149,7 @@ func _do_attack_move(click_pos: Vector2) -> void:
 	for i in range(count):
 		var offset := _formation_offset(i, count)
 		selected_units[i].call("attack_move_to", click_pos + offset)
+	_spawn_click_effect(AttackClickEffectScene, click_pos)
 
 func _find_enemy_at(pos: Vector2):
 	# 先查敌方单位
@@ -1111,6 +1174,21 @@ func _stop_selected() -> void:
 func _hold_position_selected() -> void:
 	for unit in selected_units:
 		unit.call("hold_position")
+
+# --- 点击特效与光标 ---
+
+func _spawn_click_effect(scene: PackedScene, pos: Vector2) -> void:
+	var effect: Node2D = scene.instantiate()
+	get_tree().current_scene.add_child(effect)
+	effect.global_position = pos
+
+func _spawn_dust_effect(pos: Vector2) -> void:
+	var effect: Node2D = DustEffectScene.instantiate()
+	get_tree().current_scene.add_child(effect)
+	effect.global_position = pos
+
+func _set_attack_cursor(is_attack: bool) -> void:
+	cursor_manager.set_attack(is_attack)
 
 # --- 选择 ---
 
@@ -1149,6 +1227,7 @@ func _right_click() -> void:
 			for ai in target.get_children():
 				if ai.has_method("on_attacked"):
 					ai.on_attacked(selected_units[0])
+		_spawn_click_effect(AttackClickEffectScene, click_pos)
 		return
 
 	# 移动
@@ -1156,6 +1235,7 @@ func _right_click() -> void:
 	for i in range(count):
 		var offset := _formation_offset(i, count)
 		selected_units[i].call("move_to", click_pos + offset)
+	_spawn_click_effect(MoveClickEffectScene, click_pos)
 
 # --- 工具 ---
 
@@ -1187,6 +1267,7 @@ func spawn_enemy_wave(units: Array, wave_attack: bool = false, wave_target: Vect
 func spawn_enemy_unit(type: int, pos: Vector2, wave_attack: bool = false, wave_target: Vector2 = Vector2.ZERO) -> void:
 	var unit := _create_unit(type, UnitScript.Team.ENEMY, pos)
 	enemy_units_node.add_child(unit)
+	_spawn_dust_effect(pos)
 	unit.add_to_group("enemy_units")
 	var ai := Node2D.new()
 	ai.name = "EnemyAI"
@@ -1200,14 +1281,22 @@ func add_gold(amount: int) -> void:
 	gold += amount
 	_update_gold_display()
 
+func show_floating_text(text: String, color: Color, world_pos: Vector2) -> void:
+	var ft := Node2D.new()
+	ft.set_script(load("res://scripts/floating_text.gd"))
+	add_child(ft)
+	ft.setup(text, color, world_pos)
+
 func spawn_unit_near(type: int, pos: Vector2, team: int) -> void:
 	var offset := Vector2(randf_range(-50, 50), randf_range(-50, 50))
 	var unit := _create_unit(type, team, pos + offset)
 	if team == UnitScript.Team.PLAYER:
 		player_units_node.add_child(unit)
 		unit.add_to_group("player_units")
+		_spawn_dust_effect(pos + offset)
 	else:
 		enemy_units_node.add_child(unit)
+		_spawn_dust_effect(pos + offset)
 		unit.add_to_group("enemy_units")
 		var ai := Node2D.new()
 		ai.name = "EnemyAI"

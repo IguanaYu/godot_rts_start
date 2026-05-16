@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/effects/Heal_Effect.png" id="1_heal"]
+[ext_resource type="Script" path="res://scripts/heal_effect.gd" id="2_script"]
+
+[node name="HealEffect" type="Node2D"]
+z_index = 6
+script = ExtResource("2_script")
+
+[node name="Sprite" type="Sprite2D" parent="."]
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("1_heal")
+hframes = 5

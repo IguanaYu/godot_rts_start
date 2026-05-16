@@ -15,6 +15,7 @@ var _waiting: bool = false
 
 signal wave_started(wave_number: int)
 signal all_waves_completed
+signal countdown_updated(wave_number: int, remaining: float, total_waves: int)
 
 func set_game_controller(gc: Node2D) -> void:
 	game_controller = gc
@@ -48,6 +49,7 @@ func _process(delta: float) -> void:
 	if not _waiting:
 		return
 	_countdown -= delta
+	countdown_updated.emit(current_wave, _countdown, waves.size())
 	if _countdown <= 0.0:
 		_waiting = false
 		_on_countdown_finished()

@@ -3,6 +3,13 @@ extends Area2D
 
 const UnitScript := preload("res://scripts/unit.gd")
 
+const UNIT_TYPE_NAMES := {
+	UnitScript.UnitType.SOLDIER: "Soldier",
+	UnitScript.UnitType.ARCHER: "Archer",
+	UnitScript.UnitType.LANCER: "Lancer",
+	UnitScript.UnitType.MONK: "Monk",
+}
+
 enum RewardType { GOLD, UNITS, CUSTOM }
 
 @export var capture_radius: float = 100.0
@@ -124,6 +131,11 @@ func _grant_reward() -> void:
 				print("CapturePoint: granted ", reward_gold, " gold!")
 			else:
 				print("CapturePoint: game_controller has no add_gold method!")
+			if game_controller.has_method("show_floating_text"):
+				game_controller.call("show_floating_text",
+					"+%d" % reward_gold,
+					Color(1.0, 0.85, 0.0),
+					global_position)
 		RewardType.UNITS:
 			if game_controller.has_method("spawn_unit_near"):
 				for unit_data in reward_units:
@@ -131,6 +143,20 @@ func _grant_reward() -> void:
 					var count = unit_data.get("count", 1)
 					for i in count:
 						game_controller.call("spawn_unit_near", type, global_position, captured_by)
+			if game_controller.has_method("show_floating_text"):
+				var parts: Array[String] = []
+				for unit_data in reward_units:
+					var type = unit_data.get("type", 0)
+					var count = unit_data.get("count", 1)
+					var unit_name: String = UNIT_TYPE_NAMES.get(type, "Unit")
+					if count > 1:
+						parts.append("+%d %ss" % [count, unit_name])
+					else:
+						parts.append("+%d %s" % [count, unit_name])
+				game_controller.call("show_floating_text",
+					" ".join(parts),
+					Color(0.3, 1.0, 0.3),
+					global_position)
 		RewardType.CUSTOM:
 			pass
 
