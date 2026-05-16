@@ -14,6 +14,8 @@ const PATH_ICON_02 := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pa
 const PATH_ICON_03 := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_03.png"
 const PATH_ICON_04 := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_04.png"
 
+var cursor_manager: Node = null
+
 # === 关卡数据 ===
 var levels := [
 	{
@@ -112,6 +114,11 @@ func _process_ninepatch(source_path: String, content_rows: Array, content_cols: 
 # 初始化
 # ============================================================
 func _ready() -> void:
+	# 自定义光标
+	var CursorManagerScene := preload("res://scenes/cursor_manager.tscn")
+	cursor_manager = CursorManagerScene.instantiate()
+	add_child(cursor_manager)
+
 	# 预处理所有九宫格纹理（通过 Python 像素分析得到的精确 tile 边界）
 	# Banner (448x448): row [60-127, 192-255, 320-430], col [28-127, 192-255, 320-403]
 	np_banner = _process_ninepatch(PATH_BANNER,
@@ -148,7 +155,7 @@ func _ready() -> void:
 		[[28, 63], [128, 191], [256, 304]],
 		[[14, 63], [128, 191], [256, 305]])
 
-	# 构建 UI（banner 在最底层，不遮挡内容）
+	# 构建 UI
 	_create_banner()
 	_create_main_layout()
 	_create_hint_label()

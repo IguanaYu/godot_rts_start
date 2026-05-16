@@ -6,7 +6,7 @@ extends CanvasLayer
 @export_group("默认光标")
 @export var default_cursor: Texture2D = preload("res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Cursors/Cursor_01.png")
 @export var default_scale: float = 2.0
-@export var default_offset: Vector2 = Vector2(0, 0)
+@export var default_offset: Vector2 = Vector2(16, 16)
 
 @export_group("攻击光标")
 @export var attack_cursor: Texture2D = preload("res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_05.png")
