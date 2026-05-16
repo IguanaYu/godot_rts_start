@@ -74,6 +74,8 @@ var _frames_idle: int = 6
 var _frames_run: int = 6
 var _frames_attack: int = 6
 var _is_attacking: bool = false
+var _stuck_timer: float = 0.0
+var _was_stuck: bool = false
 var _shadow: Sprite2D = null
 var _state_indicator: ColorRect = null
 
@@ -343,6 +345,9 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		if global_position.distance_squared_to(prev_pos) < 0.5:
 			velocity = Vector2.ZERO
+			_was_stuck = true
+		else:
+			_was_stuck = false
 
 	attack_timer = max(0.0, attack_timer - delta)
 	_update_aggro_line()
@@ -376,25 +381,32 @@ func _attack_process(delta: float) -> void:
 			hold_position_mode = false
 		return
 
-	var dist := global_position.distance_to(attack_target.global_position)
-	# 建筑有碰撞体，需要加上碰撞半径才能实际到达攻击范围
-	var effective_attack_range := attack_range
-	if attack_target.has_method("get_rect"):
-		var brect: Rect2 = attack_target.get_rect()
-		var building_radius: float = min(brect.size.x, brect.size.y) / 2.0
-		effective_attack_range = attack_range + building_radius * 0.5
-	if dist > effective_attack_range:
+	var dist := _get_dist_to_target(attack_target)
+	if dist > attack_range:
 		if hold_position_mode:
-			# 不追击，丢弃目标回到原地
 			attack_target = null
 			_is_attacking = false
 			state = UnitState.HOLD_POSITION
 			return
-		nav_agent.target_position = attack_target.global_position
+		# 卡住检测：速度接近零 = 被友军挡住了
+		if _was_stuck:
+			_stuck_timer += delta
+		else:
+			_stuck_timer = 0.0
+		var nav_target := _get_building_nav_target(attack_target)
+		# 卡住超过1.5秒 → 自动绕行
+		if _stuck_timer > 1.5:
+			nav_target = _get_detour_target(attack_target)
+			_stuck_timer = 0.0
+			var gc = get_tree().current_scene
+			if gc and gc.has_method("show_floating_text"):
+				gc.show_floating_text("绕行", Color.YELLOW, global_position)
+		nav_agent.target_position = nav_target
 		if not nav_agent.is_navigation_finished():
 			var next_pos := nav_agent.get_next_path_position()
 			velocity = global_position.direction_to(next_pos) * move_speed
 	else:
+		_stuck_timer = 0.0
 		if attack_timer <= 0.0:
 			_perform_attack()
 			attack_timer = attack_cooldown
@@ -419,7 +431,7 @@ func _attack_move_process(delta: float) -> void:
 
 	if closest != null:
 		attack_target = closest
-		nav_agent.target_position = closest.global_position
+		nav_agent.target_position = _get_building_nav_target(closest)
 		state = UnitState.ATTACK
 		return
 
@@ -500,22 +512,54 @@ func _guard_process(delta: float) -> void:
 	var closest = _find_closest_enemy_in_range(attack_move_scan_range)
 	if closest != null:
 		attack_target = closest
-		nav_agent.target_position = closest.global_position
+		nav_agent.target_position = _get_building_nav_target(closest)
 		state = UnitState.ATTACK
 		hold_position_mode = false
 
 func _hold_position_process(delta: float) -> void:
 	var closest = _find_closest_enemy_in_range(attack_move_scan_range)
 	if closest != null:
-		var dist := global_position.distance_to(closest.global_position)
-		var effective_range := attack_range
-		if closest.has_method("get_rect"):
-			var brect: Rect2 = closest.get_rect()
-			effective_range = attack_range + min(brect.size.x, brect.size.y) / 2.0 * 0.5
-		if dist <= effective_range:
+		var dist := _get_dist_to_target(closest)
+		if dist <= attack_range:
 			attack_target = closest
 			state = UnitState.ATTACK
 			hold_position_mode = true
+
+func _get_building_nav_target(target, angle_offset: float = 0.0) -> Vector2:
+	if not target.has_method("get_rect"):
+		return target.global_position
+	var brect: Rect2 = target.get_rect()
+	var center := brect.get_center()
+	var to_unit := global_position - center
+	if to_unit.length_squared() < 1.0:
+		return center + Vector2.RIGHT * brect.size.x / 2.0
+	var angle := to_unit.angle() + angle_offset
+	var half := brect.size / 2.0
+	var ca := cos(angle)
+	var sa := sin(angle)
+	var dx: float = half.x / abs(ca) if abs(ca) > 0.001 else 999999.0
+	var dy: float = half.y / abs(sa) if abs(sa) > 0.001 else 999999.0
+	var d: float = minf(dx, dy)
+	return center + Vector2(ca, sa) * (d + 25.0)
+
+func _get_dist_to_target(target) -> float:
+	if not target.has_method("get_rect"):
+		return global_position.distance_to(target.global_position)
+	var brect: Rect2 = target.get_rect()
+	var nearest := global_position.clamp(brect.position, brect.end)
+	return global_position.distance_to(nearest)
+
+func _get_detour_target(target) -> Vector2:
+	if target.has_method("get_rect"):
+		var offset := deg_to_rad(randf_range(60.0, 120.0))
+		if randi() % 2 == 0:
+			offset = -offset
+		return _get_building_nav_target(target, offset)
+	else:
+		var to_target: Vector2 = target.global_position - global_position
+		var perp := Vector2(-to_target.y, to_target.x).normalized()
+		var side := perp * (50.0 if randi() % 2 == 0 else -50.0)
+		return target.global_position + side
 
 func _perform_attack() -> void:
 	if attack_target and not attack_target.is_dead():
@@ -562,7 +606,7 @@ func _player_retaliate(attacker) -> void:
 		return
 
 	attack_target = attacker
-	nav_agent.target_position = attacker.global_position
+	nav_agent.target_position = _get_building_nav_target(attacker)
 
 	if state == UnitState.HOLD_POSITION:
 		state = UnitState.ATTACK
@@ -650,7 +694,7 @@ func command_attack(target) -> void:
 	hold_position_mode = false
 	heal_target = null
 	_is_healing = false
-	nav_agent.target_position = target.global_position
+	nav_agent.target_position = _get_building_nav_target(target)
 	state = UnitState.ATTACK
 
 func set_selected(value: bool) -> void:
