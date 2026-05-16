@@ -37,6 +37,7 @@ var hp: int
 var attack_damage: int
 var attack_range: float
 var attack_cooldown: float
+var steer_lock_time: float = 0.5
 var move_speed: float
 
 var state: UnitState = UnitState.GUARD
@@ -550,7 +551,7 @@ func _get_dist_to_target(target) -> float:
 
 func _get_steered_direction(base_dir: Vector2, delta: float) -> Vector2:
 	# 通用1秒方向锁：设定了新方向就锁住不改，防止抖动
-	if _lateral_dir != Vector2.ZERO and _lateral_timer < 0.5:
+	if _lateral_dir != Vector2.ZERO and _lateral_timer < steer_lock_time:
 		_lateral_timer += delta
 		return _lateral_dir
 
