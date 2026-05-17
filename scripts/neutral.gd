@@ -17,42 +17,20 @@ class_name Neutral
 
 @onready var body_sprite: Sprite2D = $Sprite
 
-var _shadow: Sprite2D = null
+const ShadowComp := preload("res://scripts/shadow_component.gd")
+@onready var _shadow_component: ShadowComp = $ShadowComponent
 
 func _ready() -> void:
 	_rebuild_shadow()
 	_apply_sprite_position()
 
 func _rebuild_shadow() -> void:
-	if not is_node_ready():
-		return
-
-	if _shadow and is_instance_valid(_shadow):
-		_shadow.queue_free()
-		_shadow = null
-
-	if shadow_width <= 0 or shadow_height <= 0:
-		return
-
-	var img := Image.create(shadow_width, shadow_height, false, Image.FORMAT_RGBA8)
-	for x in range(shadow_width):
-		for y in range(shadow_height):
-			var dx := (float(x) - shadow_width / 2.0) / (shadow_width / 2.0)
-			var dy := (float(y) - shadow_height / 2.0) / (shadow_height / 2.0)
-			if dx * dx + dy * dy <= 1.0:
-				img.set_pixel(x, y, Color(0, 0, 0, shadow_alpha))
-
-	_shadow = Sprite2D.new()
-	_shadow.texture = ImageTexture.create_from_image(img)
-	_shadow.z_index = 0
-	add_child(_shadow)
-	move_child(_shadow, 0)
+	if _shadow_component:
+		_shadow_component.rebuild(shadow_width, shadow_height, shadow_alpha)
 
 func _apply_sprite_position() -> void:
-	if not is_node_ready() or not body_sprite:
-		return
-	body_sprite.scale = Vector2(sprite_scale_x, sprite_scale_y)
-	body_sprite.position.y = -sprite_lift
+	if _shadow_component:
+		_shadow_component.apply_sprite_position(body_sprite, sprite_scale_x, sprite_scale_y, sprite_lift)
 
 func _refresh_editor() -> void:
 	if not Engine.is_editor_hint():

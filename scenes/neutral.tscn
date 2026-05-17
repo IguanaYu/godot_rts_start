@@ -1,8 +1,12 @@
 [gd_scene format=3 uid="uid://bxneutral01"]
 
 [ext_resource type="Script" path="res://scripts/neutral.gd" id="neu_script"]
+[ext_resource type="Script" path="res://scripts/shadow_component.gd" id="shadow_script"]
 
 [node name="Neutral" type="Node2D"]
 script = ExtResource("neu_script")
+
+[node name="ShadowComponent" type="Node2D" parent="."]
+script = ExtResource("shadow_script")
 
 [node name="Sprite" type="Sprite2D" parent="."]

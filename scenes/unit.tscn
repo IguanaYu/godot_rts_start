@@ -2,12 +2,20 @@
 
 [ext_resource type="Texture2D" uid="uid://uwmjnao0x165" path="res://assets/units/blue_warrior/Warrior_Idle.png" id="2_k673f"]
 [ext_resource type="Script" uid="uid://fjmqlor3rasr" path="res://scripts/unit.gd" id="unit_script"]
+[ext_resource type="Script" path="res://scripts/shadow_component.gd" id="shadow_script"]
+[ext_resource type="Script" path="res://scripts/health_component.gd" id="health_script"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1"]
 radius = 16.0
 
 [node name="Unit" type="CharacterBody2D" unique_id=460682109]
 script = ExtResource("unit_script")
+
+[node name="ShadowComponent" type="Node2D" parent="."]
+script = ExtResource("shadow_script")
+
+[node name="HealthComponent" type="Node2D" parent="."]
+script = ExtResource("health_script")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1301662309]
 shape = SubResource("CircleShape2D_1")

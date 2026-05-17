@@ -77,7 +77,10 @@ var _frames_attack: int = 6
 var _is_attacking: bool = false
 var _lateral_dir: Vector2 = Vector2.ZERO
 var _lateral_timer: float = 0.0
-var _shadow: Sprite2D = null
+const ShadowComp := preload("res://scripts/shadow_component.gd")
+@onready var _shadow_component: ShadowComp = $ShadowComponent
+const HealthComp := preload("res://scripts/health_component.gd")
+@onready var health: HealthComp = $HealthComponent
 var _state_indicator: ColorRect = null
 
 signal died(unit: Unit)
@@ -121,7 +124,8 @@ func _setup_stats() -> void:
 			heal_amount = 8
 			heal_cooldown = 1.0
 			heal_scan_range = 250.0
-	hp = max_hp
+	if health and not Engine.is_editor_hint():
+		health.setup(max_hp, hp_bar)
 
 func _setup_editor_visuals() -> void:
 	_setup_texture()
@@ -188,38 +192,12 @@ func _setup_texture() -> void:
 			body_sprite.frame = 0
 
 func _rebuild_shadow() -> void:
-	if not is_node_ready():
-		return
-
-	# 移除旧阴影
-	if _shadow and is_instance_valid(_shadow):
-		_shadow.queue_free()
-		_shadow = null
-
-	if shadow_width <= 0 or shadow_height <= 0:
-		return
-
-	var img := Image.create(shadow_width, shadow_height, false, Image.FORMAT_RGBA8)
-	for x in range(shadow_width):
-		for y in range(shadow_height):
-			var dx := (float(x) - shadow_width / 2.0) / (shadow_width / 2.0)
-			var dy := (float(y) - shadow_height / 2.0) / (shadow_height / 2.0)
-			if dx * dx + dy * dy <= 1.0:
-				img.set_pixel(x, y, Color(0, 0, 0, shadow_alpha))
-
-	_shadow = Sprite2D.new()
-	_shadow.texture = ImageTexture.create_from_image(img)
-	_shadow.z_index = 0
-	_shadow.position = Vector2(shadow_offset_x, shadow_offset_y)
-	add_child(_shadow)
-	move_child(_shadow, 0)
+	if _shadow_component:
+		_shadow_component.rebuild(shadow_width, shadow_height, shadow_alpha, shadow_offset_x, shadow_offset_y)
 
 func _apply_sprite_position() -> void:
-	if not is_node_ready() or not body_sprite:
-		return
-	body_sprite.scale = Vector2(sprite_scale_x, sprite_scale_y)
-	body_sprite.position.x = sprite_offset_x
-	body_sprite.position.y = -sprite_lift + sprite_offset_y
+	if _shadow_component:
+		_shadow_component.apply_sprite_position(body_sprite, sprite_scale_x, sprite_scale_y, sprite_lift, sprite_offset_x, sprite_offset_y)
 
 func _refresh_editor() -> void:
 	if not Engine.is_editor_hint():
@@ -690,16 +668,15 @@ func _spawn_arrow(target) -> void:
 func take_damage(amount: int, attacker = null) -> void:
 	if Engine.is_editor_hint():
 		return
-	if state == UnitState.DEAD:
+	if health.is_dead():
 		return
-	hp = max(0, hp - amount)
-	_update_hp_bar()
+	health.take_damage(amount)
 	if attacker:
 		if team == Team.ENEMY:
 			_alert_enemy_response(attacker)
 		elif team == Team.PLAYER:
 			_player_retaliate(attacker)
-	if hp <= 0:
+	if health.hp <= 0:
 		die()
 
 func _player_retaliate(attacker) -> void:
@@ -750,6 +727,7 @@ func _alert_enemy_response(attacker) -> void:
 func die() -> void:
 	state = UnitState.DEAD
 	died.emit(self)
+	health._is_dead = true
 	var tween := create_tween()
 	tween.tween_property(self, "scale", Vector2.ZERO, 0.3)
 	tween.tween_callback(queue_free)
@@ -812,9 +790,8 @@ func _update_selection_ring() -> void:
 	_update_state_indicator()
 
 func _update_hp_bar() -> void:
-	if hp_bar:
-		hp_bar.max_value = max_hp
-		hp_bar.value = hp
+	if health:
+		health._update_hp_bar()
 
 func _update_state_indicator() -> void:
 	if _state_indicator == null:
@@ -852,13 +829,12 @@ func _update_aggro_line() -> void:
 		aggro_line.visible = false
 
 func is_dead() -> bool:
-	return state == UnitState.DEAD
+	return health.is_dead() if health else state == UnitState.DEAD
 
 func heal(amount: int) -> void:
-	if state == UnitState.DEAD:
+	if health.is_dead():
 		return
-	hp = mini(hp + amount, max_hp)
-	_update_hp_bar()
+	health.heal(amount)
 	var effect: Node2D = HealEffectScene.instantiate()
 	get_tree().current_scene.add_child(effect)
 	effect.global_position = global_position

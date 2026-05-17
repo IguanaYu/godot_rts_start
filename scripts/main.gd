@@ -14,26 +14,8 @@ var victory_condition: VictoryCondition = null
 # Fallback defaults
 var NAV_BOUNDS := [Vector2(-500, -500), Vector2(1500, -500), Vector2(1500, 1200), Vector2(-500, 1200)]
 
-# 框选
-var is_selecting: bool = false
-var selection_start: Vector2 = Vector2.ZERO
-var selected_units: Array = []
-
-# 攻击移动
-var attack_move_mode: bool = false
-
 # 自定义光标管理器
 var cursor_manager: Node = null
-
-# 放置模式
-var place_mode: int = D.PlaceMode.NONE
-
-# 网格显示
-var show_grid: bool = false
-var grid_overlay = null
-
-# 网格占用
-var occupied_cells: Dictionary = {}
 
 # 节点引用
 @onready var camera: Camera2D = $Camera2D
@@ -50,6 +32,8 @@ var occupied_cells: Dictionary = {}
 var ui_module: Node
 var camera_module: Node
 var spawner_module: Node
+var building_placer: Node
+var combat_ctrl: Node
 
 # 游戏状态
 var gold: int = 10000
@@ -72,7 +56,7 @@ func _ready() -> void:
 	ui_module.set_script(load("res://scripts/game_ui.gd"))
 	add_child(ui_module)
 	ui_module.initialize(self, map_config, gold)
-	ui_module.place_mode_requested.connect(_enter_place_mode)
+	ui_module.place_mode_requested.connect(_on_place_mode_requested)
 	key_to_mode = ui_module.key_to_mode
 
 	# 相机模块
@@ -86,11 +70,23 @@ func _ready() -> void:
 	spawner_module.set_script(load("res://scripts/game_spawner.gd"))
 	add_child(spawner_module)
 	spawner_module.initialize(self, player_units_node, enemy_units_node, buildings_node)
-	spawner_module.place_building_callback = _place_building
+
+	# 建筑放置模块
+	building_placer = Node.new()
+	building_placer.set_script(load("res://scripts/building_placer.gd"))
+	add_child(building_placer)
+	building_placer.initialize(map_bounds, NAV_BOUNDS, nav_region, buildings_node, preview_rect, ui_module)
+	spawner_module.place_building_callback = building_placer.place_building
+
+	# 战斗/选择模块
+	combat_ctrl = Node.new()
+	combat_ctrl.set_script(load("res://scripts/combat_controller.gd"))
+	add_child(combat_ctrl)
+	combat_ctrl.initialize(spawner_module)
 
 	# 生成
 	spawner_module.spawn_from_config(map_config)
-	_create_grid()
+	building_placer.create_grid()
 	spawner_module.spawn_environment(map_config, map_bounds)
 
 	_setup_victory_condition()
@@ -144,129 +140,28 @@ func _on_countdown_updated(wave_number: int, remaining: float, total: int) -> vo
 func _on_all_waves_completed() -> void:
 	ui_module.hide_wave_countdown()
 
-func _create_grid() -> void:
-	var container := Node2D.new()
-	container.name = "GridOverlay"
-	container.z_index = 1
-	container.visible = false
-	add_child(container)
-	move_child(container, 1)
-	var bounds: Rect2 = map_bounds
-	var color := Color(1, 1, 1, 0.2)
-	var x := bounds.position.x
-	while x <= bounds.end.x:
-		var line := Line2D.new()
-		line.width = 1.0
-		line.default_color = color
-		line.add_point(Vector2(x, bounds.position.y))
-		line.add_point(Vector2(x, bounds.end.y))
-		container.add_child(line)
-		x += D.GRID_SIZE
-	var y := bounds.position.y
-	while y <= bounds.end.y:
-		var line := Line2D.new()
-		line.width = 1.0
-		line.default_color = color
-		line.add_point(Vector2(bounds.position.x, y))
-		line.add_point(Vector2(bounds.end.x, y))
-		container.add_child(line)
-		y += D.GRID_SIZE
-	grid_overlay = container
-
-func _enter_place_mode(mode: int) -> void:
-	if place_mode == mode:
-		place_mode = D.PlaceMode.NONE
-	else:
-		place_mode = mode
-	attack_move_mode = false
-
-# --- 网格工具 ---
-
-func snap_to_grid(pos: Vector2) -> Vector2i:
-	return Vector2i(floori(pos.x / D.GRID_SIZE), floori(pos.y / D.GRID_SIZE))
-
-func grid_to_world(gpos: Vector2i) -> Vector2:
-	return Vector2(gpos.x * D.GRID_SIZE + D.GRID_SIZE / 2.0, gpos.y * D.GRID_SIZE + D.GRID_SIZE / 2.0)
-
-func is_grid_free(gpos: Vector2i, size: Vector2i) -> bool:
-	for dx in range(size.x):
-		for dy in range(size.y):
-			if Vector2i(gpos.x + dx, gpos.y + dy) in occupied_cells:
-				return false
-	return true
-
-# --- 建筑 ---
-
-func _place_building(type: int, team: int, gpos: Vector2i) -> Node2D:
-	var scene_path: String = D.BUILDING_SCENES.get(type, "res://scenes/building.tscn")
-	var building: Node2D = load(scene_path).instantiate()
-	building.set("team", team)
-	building.set("grid_pos", gpos)
-	building.position = grid_to_world(gpos)
-	var gsize: Vector2i = D.get_building_grid_size(type)
-	if gsize.x > 1 or gsize.y > 1:
-		building.position += Vector2((gsize.x - 1) * D.GRID_SIZE / 2.0, (gsize.y - 1) * D.GRID_SIZE / 2.0)
-	buildings_node.add_child(building)
-	building.add_to_group("buildings")
-	building.add_to_group("player_buildings" if team == BuildingScript.Team.PLAYER else "enemy_buildings")
-	building.connect("died", _on_building_died)
-	for dx in range(gsize.x):
-		for dy in range(gsize.y):
-			occupied_cells[Vector2i(gpos.x + dx, gpos.y + dy)] = building
-	_rebuild_navigation()
-	return building
-
-func _on_building_died(building: Node2D) -> void:
-	var gpos: Vector2i = building.get("grid_pos")
-	var gsize: Vector2i = building.get("grid_size")
-	for dx in range(gsize.x):
-		for dy in range(gsize.y):
-			occupied_cells.erase(Vector2i(gpos.x + dx, gpos.y + dy))
-	_rebuild_navigation()
-
-func _rebuild_navigation() -> void:
-	var source_geom := NavigationMeshSourceGeometryData2D.new()
-	source_geom.traversable_outlines = [PackedVector2Array(NAV_BOUNDS)]
-	var obstructions: Array = []
-	for building in get_tree().get_nodes_in_group("buildings"):
-		if building.is_dead():
-			continue
-		var rect: Rect2 = building.get_rect()
-		var m := 20.0
-		obstructions.append(PackedVector2Array([
-			rect.position - Vector2(m, m), Vector2(rect.end.x + m, rect.position.y - m),
-			rect.end + Vector2(m, m), Vector2(rect.position.x - m, rect.end.y + m)
-		]))
-	source_geom.obstruction_outlines = obstructions
-	var nav_poly := NavigationPolygon.new()
-	NavigationServer2D.bake_from_source_geometry_data(nav_poly, source_geom)
-	nav_region.navigation_polygon = nav_poly
+func _on_place_mode_requested(mode: int) -> void:
+	building_placer.enter_place_mode(mode)
+	combat_ctrl.set_attack_move_mode(false)
 
 # --- 单位死亡 ---
 
 func _on_unit_died(unit: CharacterBody2D) -> void:
-	if selected_units.has(unit):
-		selected_units.erase(unit)
+	combat_ctrl.remove_dead_unit(unit)
 
 # --- 每帧更新 ---
 
 var _wave_clear_notified: bool = false
-var _wc_debug_timer: float = 0.0
 
 func _process(delta: float) -> void:
 	camera_module.process_camera(delta)
 	_check_victory()
 	_check_wave_cleared()
-	if is_selecting:
-		var current_pos := get_global_mouse_position()
-		var rect := _get_selection_rect(selection_start, current_pos)
-		selection_box.position = rect.position
-		selection_box.size = rect.size
-		selection_box.visible = true
-	else:
-		selection_box.visible = false
-	attack_move_indicator.visible = attack_move_mode
-	_update_preview()
+	combat_ctrl.update_selection(get_global_mouse_position(), selection_box)
+	attack_move_indicator.visible = combat_ctrl.attack_move_mode
+	building_placer.update_preview()
+	if building_placer.show_grid and building_placer.grid_overlay:
+		building_placer.grid_overlay.visible = building_placer.show_grid
 
 func _get_base_position() -> Vector2:
 	var buildings := get_tree().get_nodes_in_group("player_buildings")
@@ -280,29 +175,6 @@ func _get_base_position() -> Vector2:
 
 func _jump_to_base() -> void:
 	camera_module.jump_to_base(_get_base_position())
-
-func _update_preview() -> void:
-	if D.is_unit_mode(place_mode):
-		preview_rect.visible = false
-		ui_module.set_place_mode_text("Click to place %s" % D.MODE_NAMES.get(place_mode, "Unit"))
-		return
-	if place_mode == D.PlaceMode.NONE:
-		preview_rect.visible = false
-		ui_module.hide_place_mode_label()
-		return
-	var mouse_pos := get_global_mouse_position()
-	var gpos := snap_to_grid(mouse_pos)
-	var building_type: int = D.PLACE_MODE_TO_BUILDING.get(place_mode, -1)
-	var gsize: Vector2i = D.get_building_grid_size(building_type) if building_type >= 0 else Vector2i(1, 1)
-	var world_pos := grid_to_world(gpos)
-	if gsize.x > 1 or gsize.y > 1:
-		world_pos += Vector2((gsize.x - 1) * D.GRID_SIZE / 2.0, (gsize.y - 1) * D.GRID_SIZE / 2.0)
-	var can_place := is_grid_free(gpos, gsize)
-	preview_rect.visible = true
-	preview_rect.position = world_pos - Vector2(gsize.x * D.GRID_SIZE / 2.0, gsize.y * D.GRID_SIZE / 2.0)
-	preview_rect.size = Vector2(gsize.x * D.GRID_SIZE, gsize.y * D.GRID_SIZE)
-	preview_rect.color = Color(0, 1, 0, 0.3) if can_place else Color(1, 0, 0, 0.3)
-	ui_module.set_place_mode_text("Place %s $%d (Esc cancel)" % [D.MODE_NAMES.get(place_mode, "Building"), D.COSTS.get(place_mode, 0)])
 
 func _check_victory() -> void:
 	if result_label.visible:
@@ -345,13 +217,6 @@ func _check_wave_cleared() -> void:
 	if wm == null:
 		return
 	if not wm.wave_active:
-		_wc_debug_timer += 0.016
-		if _wc_debug_timer > 5.0:
-			_wc_debug_timer = 0.0
-			var ec := 0
-			for u in get_tree().get_nodes_in_group("enemy_units"):
-				if u is CharacterBody2D and not u.is_dead():
-					ec += 1
 		return
 	var ec := 0
 	for u in get_tree().get_nodes_in_group("enemy_units"):
@@ -370,10 +235,10 @@ func _input(event: InputEvent) -> void:
 		if ui_module.pause_menu_open:
 			ui_module.close_pause_menu()
 			return
-		elif place_mode != D.PlaceMode.NONE or attack_move_mode:
-			place_mode = D.PlaceMode.NONE
-			attack_move_mode = false
-			_set_attack_cursor(false)
+		elif building_placer.get_place_mode() != D.PlaceMode.NONE or combat_ctrl.attack_move_mode:
+			building_placer.cancel_place_mode()
+			combat_ctrl.set_attack_move_mode(false)
+			cursor_manager.set_attack(false)
 			return
 		else:
 			ui_module.open_pause_menu()
@@ -384,25 +249,23 @@ func _input(event: InputEvent) -> void:
 		match event.button_index:
 			MOUSE_BUTTON_LEFT:
 				if event.pressed:
-					if attack_move_mode:
-						_do_attack_move(get_global_mouse_position())
-						attack_move_mode = false
-						_set_attack_cursor(false)
-					elif place_mode != D.PlaceMode.NONE:
+					if combat_ctrl.attack_move_mode:
+						combat_ctrl.do_attack_move(get_global_mouse_position())
+						combat_ctrl.set_attack_move_mode(false)
+						cursor_manager.set_attack(false)
+					elif building_placer.get_place_mode() != D.PlaceMode.NONE:
 						_do_place(get_global_mouse_position())
 					else:
-						is_selecting = true
-						selection_start = get_global_mouse_position()
+						combat_ctrl.start_selection(get_global_mouse_position())
 				else:
-					if is_selecting:
-						is_selecting = false
-						_selection_released()
+					if combat_ctrl.is_selecting:
+						combat_ctrl.release_selection(get_global_mouse_position(), selection_box)
 			MOUSE_BUTTON_RIGHT:
 				if event.pressed:
-					attack_move_mode = false
-					place_mode = D.PlaceMode.NONE
-					_set_attack_cursor(false)
-					_right_click()
+					combat_ctrl.set_attack_move_mode(false)
+					building_placer.cancel_place_mode()
+					cursor_manager.set_attack(false)
+					combat_ctrl.right_click(get_global_mouse_position())
 			MOUSE_BUTTON_MIDDLE:
 				if event.pressed:
 					camera_module.start_mid_drag(get_viewport().get_mouse_position(), camera.position)
@@ -417,31 +280,32 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventKey and event.pressed:
 		match event.keycode:
 			KEY_A:
-				if not selected_units.is_empty():
-					attack_move_mode = true
-					place_mode = D.PlaceMode.NONE
-					_set_attack_cursor(true)
+				if not combat_ctrl.is_empty():
+					combat_ctrl.set_attack_move_mode(true)
+					building_placer.cancel_place_mode()
+					cursor_manager.set_attack(true)
 			KEY_S:
-				_stop_selected()
+				combat_ctrl.stop_selected()
 			KEY_H:
-				_hold_position_selected()
+				combat_ctrl.hold_position_selected()
 			KEY_R:
 				get_tree().reload_current_scene()
 			KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0:
 				if key_to_mode.has(event.keycode):
-					_enter_place_mode(key_to_mode[event.keycode])
+					_on_place_mode_requested(key_to_mode[event.keycode])
 			KEY_G:
-				show_grid = not show_grid
-				if grid_overlay:
-					grid_overlay.visible = show_grid
+				building_placer.show_grid = not building_placer.show_grid
+				if building_placer.grid_overlay:
+					building_placer.grid_overlay.visible = building_placer.show_grid
 			KEY_SPACE:
-				if place_mode != D.PlaceMode.NONE:
-					place_mode = D.PlaceMode.NONE
+				if building_placer.get_place_mode() != D.PlaceMode.NONE:
+					building_placer.cancel_place_mode()
 				_jump_to_base()
 
 # --- 放置 ---
 
 func _do_place(click_pos: Vector2) -> void:
+	var place_mode: int = building_placer.get_place_mode()
 	var cost: int = D.COSTS.get(place_mode, 0)
 	if gold < cost:
 		return
@@ -452,101 +316,13 @@ func _do_place(click_pos: Vector2) -> void:
 	elif D.is_building_mode(place_mode):
 		var bt: int = D.PLACE_MODE_TO_BUILDING[place_mode]
 		var gs: Vector2i = D.get_building_grid_size(bt)
-		var gp := snap_to_grid(click_pos)
-		if is_grid_free(gp, gs):
-			_place_building(bt, BuildingScript.Team.PLAYER, gp).start_construction()
+		var gp: Vector2i = building_placer.snap_to_grid(click_pos)
+		if building_placer.is_grid_free(gp, gs):
+			building_placer.place_building(bt, BuildingScript.Team.PLAYER, gp).start_construction()
 			placed = true
 	if placed:
 		gold -= cost
 		ui_module.update_gold_display(gold)
-
-# --- 攻击移动 ---
-
-func _do_attack_move(click_pos: Vector2) -> void:
-	if selected_units.is_empty():
-		return
-	var target = _find_enemy_at(click_pos)
-	if target != null:
-		for u in selected_units:
-			u.call("command_attack", target)
-		if target.has_method("get_children"):
-			for ai in target.get_children():
-				if ai.has_method("on_attacked") and selected_units.size() > 0:
-					ai.on_attacked(selected_units[0])
-		spawner_module.spawn_click_effect(D.AttackClickEffectScene, click_pos)
-		return
-	for i in range(selected_units.size()):
-		selected_units[i].call("attack_move_to", click_pos + _formation_offset(i, selected_units.size()))
-	spawner_module.spawn_click_effect(D.AttackClickEffectScene, click_pos)
-
-func _find_enemy_at(pos: Vector2):
-	for u in get_tree().get_nodes_in_group("enemy_units"):
-		if u is CharacterBody2D and not u.is_dead():
-			var sp: Vector2 = u.get_node("BodySprite").global_position if u.has_node("BodySprite") else u.global_position
-			if sp.distance_to(pos) < 25.0:
-				return u
-	for b in get_tree().get_nodes_in_group("enemy_buildings"):
-		if b.has_method("is_dead") and not b.is_dead() and b.get_rect().has_point(pos):
-			return b
-	return null
-
-func _stop_selected() -> void:
-	for unit in selected_units:
-		unit.call("stop")
-
-func _hold_position_selected() -> void:
-	for unit in selected_units:
-		unit.call("hold_position")
-
-func _set_attack_cursor(is_attack: bool) -> void:
-	cursor_manager.set_attack(is_attack)
-
-# --- 选择 ---
-
-func _selection_released() -> void:
-	var end_pos := get_global_mouse_position()
-	var rect := _get_selection_rect(selection_start, end_pos)
-	if rect.size.length() < 5.0:
-		rect = Rect2(end_pos - Vector2(10, 10), Vector2(20, 20))
-	_deselect_all()
-	for u in get_tree().get_nodes_in_group("player_units"):
-		if u is CharacterBody2D and not u.is_dead():
-			var sp: Vector2 = u.get_node("BodySprite").global_position if u.has_node("BodySprite") else u.global_position
-			if rect.has_point(sp):
-				u.call("set_selected", true)
-				selected_units.append(u)
-
-func _right_click() -> void:
-	if selected_units.is_empty():
-		return
-	var click_pos := get_global_mouse_position()
-	var target = _find_enemy_at(click_pos)
-	if target != null:
-		for unit in selected_units:
-			unit.call("command_attack", target)
-		if target.has_method("get_children"):
-			for ai in target.get_children():
-				if ai.has_method("on_attacked"):
-					ai.on_attacked(selected_units[0])
-		spawner_module.spawn_click_effect(D.AttackClickEffectScene, click_pos)
-		return
-	for i in range(selected_units.size()):
-		selected_units[i].call("move_to", click_pos + _formation_offset(i, selected_units.size()))
-	spawner_module.spawn_click_effect(D.MoveClickEffectScene, click_pos)
-
-func _formation_offset(index: int, total: int) -> Vector2:
-	if total == 1:
-		return Vector2.ZERO
-	var angle := (float(index) / float(total)) * PI - PI / 2.0
-	return Vector2(cos(angle), sin(angle)) * (30.0 + total * 5.0)
-
-func _deselect_all() -> void:
-	for unit in selected_units:
-		unit.call("set_selected", false)
-	selected_units.clear()
-
-func _get_selection_rect(start: Vector2, end: Vector2) -> Rect2:
-	return Rect2(Vector2(min(start.x, end.x), min(start.y, end.y)), Vector2(abs(end.x - start.x), abs(end.y - start.y)))
 
 # === Public API (for WaveManager, CapturePoint, etc.) ===
 

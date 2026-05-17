@@ -33,7 +33,10 @@ var max_hp: int
 var grid_size: Vector2i = Vector2i(1, 1)
 var grid_pos: Vector2i = Vector2i.ZERO
 var _is_dead: bool = false
-var _shadow: Sprite2D = null
+const ShadowComp := preload("res://scripts/shadow_component.gd")
+@onready var _shadow_component: ShadowComp = $ShadowComponent
+const HealthComp := preload("res://scripts/health_component.gd")
+@onready var health: HealthComp = $HealthComponent
 const JellyEffect := preload("res://scripts/jelly_effect.gd")
 
 # 建造系统
@@ -85,7 +88,8 @@ func _setup_stats() -> void:
 		BuildingType.ARCHERY:
 			max_hp = 200
 			grid_size = Vector2i(2, 2)
-	hp = max_hp
+	if health and not Engine.is_editor_hint():
+		health.setup(max_hp, hp_bar)
 
 func _setup_editor_visuals() -> void:
 	_setup_texture()
@@ -148,44 +152,17 @@ func _setup_texture() -> void:
 			body_sprite.texture = tex
 
 func _rebuild_shadow() -> void:
-	if not is_node_ready():
-		return
-
-	# 移除旧阴影
-	if _shadow and is_instance_valid(_shadow):
-		_shadow.queue_free()
-		_shadow = null
-
-	var pixel_size := Vector2(grid_size.x * 64, grid_size.y * 64)
-	var shadow_w := int(pixel_size.x * shadow_scale_x)
-	var shadow_h := int(pixel_size.y * shadow_scale_y)
-	if shadow_w <= 0 or shadow_h <= 0:
-		return
-
-	var img := Image.create(shadow_w, shadow_h, false, Image.FORMAT_RGBA8)
-	for x in range(shadow_w):
-		for y in range(shadow_h):
-			var dx := (float(x) - shadow_w / 2.0) / (shadow_w / 2.0)
-			var dy := (float(y) - shadow_h / 2.0) / (shadow_h / 2.0)
-			if dx * dx + dy * dy <= 1.0:
-				img.set_pixel(x, y, Color(0, 0, 0, shadow_alpha))
-
-	_shadow = Sprite2D.new()
-	_shadow.texture = ImageTexture.create_from_image(img)
-	_shadow.z_index = 0
-	_shadow.position = Vector2(shadow_offset_x, shadow_offset_y)
-	add_child(_shadow)
-	move_child(_shadow, 0)
+	if _shadow_component:
+		var pixel_size := Vector2(grid_size.x * 64, grid_size.y * 64)
+		var shadow_w := int(pixel_size.x * shadow_scale_x)
+		var shadow_h := int(pixel_size.y * shadow_scale_y)
+		_shadow_component.rebuild(shadow_w, shadow_h, shadow_alpha, shadow_offset_x, shadow_offset_y)
 
 func _apply_sprite_position() -> void:
-	if not is_node_ready() or not body_sprite or not body_sprite.texture:
-		return
-
-	var sprite_height: float = body_sprite.texture.get_height() * sprite_scale_y
-	body_sprite.scale = Vector2(sprite_scale_x, sprite_scale_y)
-	var lift: float = sprite_height * sprite_lift_ratio
-	body_sprite.position.x = sprite_offset_x
-	body_sprite.position.y = -lift + sprite_offset_y
+	if _shadow_component and body_sprite and body_sprite.texture:
+		var sprite_height: float = body_sprite.texture.get_height() * sprite_scale_y
+		var lift: float = sprite_height * sprite_lift_ratio
+		_shadow_component.apply_sprite_position(body_sprite, sprite_scale_x, sprite_scale_y, lift, sprite_offset_x, sprite_offset_y)
 
 func _refresh_editor() -> void:
 	if not Engine.is_editor_hint():
@@ -222,7 +199,7 @@ func _draw() -> void:
 	draw_rect(Rect2(origin, pixel_size), Color(1, 0, 0, 0.6), false, 2.0)
 
 func is_dead() -> bool:
-	return _is_dead
+	return health.is_dead() if health else _is_dead
 
 func get_rect() -> Rect2:
 	var pixel_size := Vector2(grid_size.x * 64, grid_size.y * 64)
@@ -231,7 +208,7 @@ func get_rect() -> Rect2:
 func _process(delta: float) -> void:
 	if Engine.is_editor_hint():
 		return
-	if _is_dead:
+	if health.is_dead():
 		return
 	# 建造倒计时
 	if not is_constructed:
@@ -295,13 +272,12 @@ func _spawn_arrow(target) -> void:
 func take_damage(amount: int, attacker = null) -> void:
 	if Engine.is_editor_hint():
 		return
-	if _is_dead:
+	if health.is_dead():
 		return
-	hp = max(0, hp - amount)
-	_update_hp_bar()
+	health.take_damage(amount)
 	if attacker and team == Team.ENEMY:
 		_alert_nearby_enemies(attacker)
-	if hp <= 0:
+	if health.hp <= 0:
 		die()
 
 func _alert_nearby_enemies(attacker) -> void:
@@ -315,7 +291,7 @@ func _alert_nearby_enemies(attacker) -> void:
 				ai.on_attacked(attacker)
 
 func die() -> void:
-	_is_dead = true
+	health._is_dead = true
 	died.emit(self)
 	# 生成爆炸特效
 	var explosion_scene := load("res://scenes/explosion.tscn")
@@ -330,9 +306,8 @@ func die() -> void:
 	tween.tween_callback(queue_free)
 
 func _update_hp_bar() -> void:
-	if hp_bar:
-		hp_bar.max_value = max_hp
-		hp_bar.value = hp
+	if health:
+		health._update_hp_bar()
 
 func start_construction(duration: float = 5.0) -> void:
 	build_time = duration

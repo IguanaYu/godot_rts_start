@@ -41,9 +41,7 @@ func _heal_all_players() -> void:
 	for u in get_tree().get_nodes_in_group("player_units"):
 		if u is CharacterBody2D and not u.is_dead():
 			if u.has_method("heal"):
-				u.heal(int(u.get("max_hp") * 0.5))
-
-var _debug_timer: float = 0.0
+				u.heal(int(u.health.max_hp * 0.5))
 
 func check() -> int:
 	if game_result != 0:
