@@ -32,8 +32,6 @@ const HealEffectScene := preload("res://scenes/heal_effect.tscn")
 @export var sprite_offset_y: float = 0.0:
 	set(v): sprite_offset_y = v; _refresh_editor()
 
-var max_hp: int
-var hp: int
 var attack_damage: int
 var attack_range: float
 var attack_cooldown: float
@@ -95,6 +93,7 @@ func _ready() -> void:
 		_update_hp_bar()
 
 func _setup_stats() -> void:
+	var max_hp: int
 	match unit_type:
 		UnitType.SOLDIER:
 			max_hp = 100
@@ -451,7 +450,7 @@ func _find_wounded_ally(scan_range: float):
 			continue
 		if u.is_dead():
 			continue
-		if u.hp >= u.max_hp:
+		if u.health.hp >= u.health.max_hp:
 			continue
 		var d := global_position.distance_to(u.global_position)
 		if d < scan_range and d < closest_dist:
@@ -460,7 +459,7 @@ func _find_wounded_ally(scan_range: float):
 	return closest
 
 func _heal_process(delta: float) -> void:
-	if heal_target == null or heal_target.is_dead() or heal_target.hp >= heal_target.max_hp:
+	if heal_target == null or heal_target.is_dead() or heal_target.health.hp >= heal_target.health.max_hp:
 		heal_target = null
 		_is_healing = false
 		state = UnitState.GUARD

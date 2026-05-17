@@ -28,8 +28,6 @@ enum Team { PLAYER, ENEMY }
 @export var sprite_offset_y: float = 0.0:
 	set(v): sprite_offset_y = v; _refresh_editor()
 
-var hp: int
-var max_hp: int
 var grid_size: Vector2i = Vector2i(1, 1)
 var grid_pos: Vector2i = Vector2i.ZERO
 var _is_dead: bool = false
@@ -69,6 +67,7 @@ func _ready() -> void:
 		_update_hp_bar()
 
 func _setup_stats() -> void:
+	var max_hp: int
 	match building_type:
 		BuildingType.WALL:
 			max_hp = 300
