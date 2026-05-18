@@ -22,18 +22,18 @@ const COSTS := {
 	PlaceMode.MONK_UNIT: 80,
 }
 
-# --- 显示名称 ---
+# --- 显示名称（翻译键，使用时需 tr()） ---
 const MODE_NAMES := {
-	PlaceMode.WALL: "Wall",
-	PlaceMode.TOWER: "Tower",
-	PlaceMode.SOLDIER: "Soldier",
-	PlaceMode.ARCHER: "Archer",
-	PlaceMode.CASTLE: "Castle",
-	PlaceMode.BARRACKS: "Barracks",
-	PlaceMode.MONASTERY: "Monastery",
-	PlaceMode.ARCHERY_RANGE: "Archery",
-	PlaceMode.LANCER: "Lancer",
-	PlaceMode.MONK_UNIT: "Monk",
+	PlaceMode.WALL: "ENTITY_WALL",
+	PlaceMode.TOWER: "ENTITY_TOWER",
+	PlaceMode.SOLDIER: "ENTITY_SOLDIER",
+	PlaceMode.ARCHER: "ENTITY_ARCHER",
+	PlaceMode.CASTLE: "ENTITY_CASTLE",
+	PlaceMode.BARRACKS: "ENTITY_BARRACKS",
+	PlaceMode.MONASTERY: "ENTITY_MONASTERY",
+	PlaceMode.ARCHERY_RANGE: "ENTITY_ARCHERY",
+	PlaceMode.LANCER: "ENTITY_LANCER",
+	PlaceMode.MONK_UNIT: "ENTITY_MONK",
 }
 
 # --- 默认全部物品 ---
@@ -43,7 +43,42 @@ const ALL_ITEMS := [
 	PlaceMode.ARCHERY_RANGE, PlaceMode.LANCER, PlaceMode.MONK_UNIT
 ]
 
-# --- 快捷键列表 ---
+# --- 固定显示顺序（单位在前，建筑在后） ---
+const DISPLAY_ORDER := [
+	PlaceMode.SOLDIER, PlaceMode.ARCHER, PlaceMode.LANCER, PlaceMode.MONK_UNIT,
+	PlaceMode.WALL, PlaceMode.TOWER, PlaceMode.BARRACKS,
+	PlaceMode.ARCHERY_RANGE, PlaceMode.MONASTERY, PlaceMode.CASTLE,
+]
+
+# --- 固定快捷键映射（每种物品始终对应同一个按键） ---
+const MODE_HOTKEYS := {
+	PlaceMode.SOLDIER:       KEY_1,
+	PlaceMode.ARCHER:        KEY_2,
+	PlaceMode.LANCER:        KEY_3,
+	PlaceMode.MONK_UNIT:     KEY_4,
+	PlaceMode.WALL:          KEY_5,
+	PlaceMode.TOWER:         KEY_6,
+	PlaceMode.BARRACKS:      KEY_7,
+	PlaceMode.ARCHERY_RANGE: KEY_8,
+	PlaceMode.MONASTERY:     KEY_9,
+	PlaceMode.CASTLE:        KEY_0,
+}
+
+# --- 按钮图标纹理路径 ---
+const MODE_ICONS := {
+	PlaceMode.WALL:          "res://assets/buildings/blue_house/House1.png",
+	PlaceMode.TOWER:         "res://assets/buildings/blue_tower/Tower.png",
+	PlaceMode.CASTLE:        "res://assets/buildings/blue_castle/Castle.png",
+	PlaceMode.BARRACKS:      "res://assets/buildings/blue_barracks/Barracks.png",
+	PlaceMode.MONASTERY:     "res://assets/buildings/blue_monastery/Monastery.png",
+	PlaceMode.ARCHERY_RANGE: "res://assets/buildings/blue_archery/Archery.png",
+	PlaceMode.SOLDIER:       "res://assets/units/blue_warrior/Warrior_Idle.png",
+	PlaceMode.ARCHER:        "res://assets/units/blue_archer/Archer_Idle.png",
+	PlaceMode.LANCER:        "res://assets/units/blue_lancer/Lancer_Idle.png",
+	PlaceMode.MONK_UNIT:     "res://assets/units/blue_monk/Idle.png",
+}
+
+# --- 快捷键列表（旧版兼容） ---
 const KEY_LIST := [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0]
 
 # --- 建筑场景路径 ---

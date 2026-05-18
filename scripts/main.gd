@@ -42,6 +42,7 @@ var map_bounds := Rect2(-500, -500, 2000, 1700)
 
 func _ready() -> void:
 	result_label.visible = false
+	attack_move_indicator.text = tr("UI_ATTACK_MOVE")
 	attack_move_indicator.visible = false
 	preview_rect.visible = false
 
@@ -64,6 +65,10 @@ func _ready() -> void:
 	camera_module.set_script(load("res://scripts/systems/game_camera.gd"))
 	add_child(camera_module)
 	camera_module.initialize(camera, map_bounds)
+
+	# 注册 UI 面板豁免区域到相机（防止底部面板触发边缘滚动）
+	ui_module.update_panel_rect()
+	camera_module.ui_exclusion_rects.append(ui_module.get_panel_screen_rect())
 
 	# 生成模块
 	spawner_module = Node.new()
@@ -113,7 +118,7 @@ func _setup_victory_condition() -> void:
 			break
 
 func _on_game_ended(result: String) -> void:
-	result_label.text = "Victory!" if result == "victory" else "Defeat!"
+	result_label.text = tr("RESULT_VICTORY") if result == "victory" else tr("RESULT_DEFEAT")
 	result_label.visible = true
 
 func _setup_capture_points() -> void:
@@ -182,10 +187,10 @@ func _check_victory() -> void:
 	if victory_condition != null:
 		var result := victory_condition.check()
 		if result == 1:
-			result_label.text = "Victory!"
+			result_label.text = tr("RESULT_VICTORY")
 			result_label.visible = true
 		elif result == 2:
-			result_label.text = "Defeat!"
+			result_label.text = tr("RESULT_DEFEAT")
 			result_label.visible = true
 	else:
 		_fallback_check_victory()
@@ -202,10 +207,10 @@ func _fallback_check_victory() -> void:
 			enemy_castle_alive = true
 			break
 	if not enemy_castle_alive:
-		result_label.text = "Victory!"
+		result_label.text = tr("RESULT_VICTORY")
 		result_label.visible = true
 	elif not player_castle_alive:
-		result_label.text = "Defeat!"
+		result_label.text = tr("RESULT_DEFEAT")
 		result_label.visible = true
 
 func _check_wave_cleared() -> void:

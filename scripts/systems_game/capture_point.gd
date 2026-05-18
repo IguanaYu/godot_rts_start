@@ -4,10 +4,10 @@ extends Area2D
 const UnitScript := preload("res://scripts/units/unit.gd")
 
 const UNIT_TYPE_NAMES := {
-	UnitScript.UnitType.SOLDIER: "Soldier",
-	UnitScript.UnitType.ARCHER: "Archer",
-	UnitScript.UnitType.LANCER: "Lancer",
-	UnitScript.UnitType.MONK: "Monk",
+	UnitScript.UnitType.SOLDIER: "ENTITY_SOLDIER",
+	UnitScript.UnitType.ARCHER: "ENTITY_ARCHER",
+	UnitScript.UnitType.LANCER: "ENTITY_LANCER",
+	UnitScript.UnitType.MONK: "ENTITY_MONK",
 }
 
 enum RewardType { GOLD, UNITS, CUSTOM }
@@ -148,11 +148,11 @@ func _grant_reward() -> void:
 				for unit_data in reward_units:
 					var type = unit_data.get("type", 0)
 					var count = unit_data.get("count", 1)
-					var unit_name: String = UNIT_TYPE_NAMES.get(type, "Unit")
+					var unit_name: String = tr(UNIT_TYPE_NAMES.get(type, "ENTITY_UNIT"))
 					if count > 1:
-						parts.append("+%d %ss" % [count, unit_name])
+						parts.append(tr("REWARD_UNITS_PLURAL") % [count, unit_name])
 					else:
-						parts.append("+%d %s" % [count, unit_name])
+						parts.append(tr("REWARD_UNITS_SINGLE") % [count, unit_name])
 				game_controller.call("show_floating_text",
 					" ".join(parts),
 					Color(0.3, 1.0, 0.3),

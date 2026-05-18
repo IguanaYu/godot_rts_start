@@ -111,7 +111,7 @@ func place_building(type: int, team: int, gpos: Vector2i) -> Node2D:
 func update_preview() -> void:
 	if D.is_unit_mode(place_mode):
 		_preview_rect.visible = false
-		_ui_module.set_place_mode_text("Click to place %s" % D.MODE_NAMES.get(place_mode, "Unit"))
+		_ui_module.set_place_mode_text(tr("PLACE_UNIT") % tr(D.MODE_NAMES.get(place_mode, "ENTITY_UNIT")))
 		return
 	if place_mode == D.PlaceMode.NONE:
 		_preview_rect.visible = false
@@ -129,7 +129,7 @@ func update_preview() -> void:
 	_preview_rect.position = world_pos - Vector2(gsize.x * D.GRID_SIZE / 2.0, gsize.y * D.GRID_SIZE / 2.0)
 	_preview_rect.size = Vector2(gsize.x * D.GRID_SIZE, gsize.y * D.GRID_SIZE)
 	_preview_rect.color = Color(0, 1, 0, 0.3) if can_place else Color(1, 0, 0, 0.3)
-	_ui_module.set_place_mode_text("Place %s $%d (Esc cancel)" % [D.MODE_NAMES.get(place_mode, "Building"), D.COSTS.get(place_mode, 0)])
+	_ui_module.set_place_mode_text(tr("PLACE_BUILDING") % [tr(D.MODE_NAMES.get(place_mode, "ENTITY_BUILDING")), D.COSTS.get(place_mode, 0)])
 
 
 func cancel_place_mode() -> void:

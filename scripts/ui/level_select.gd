@@ -14,39 +14,44 @@ const PATH_ICON_02 := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pa
 const PATH_ICON_03 := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_03.png"
 const PATH_ICON_04 := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_04.png"
 
+const SETTINGS_PATH := "user://settings.cfg"
+
 var cursor_manager: Node = null
 
-# === 关卡数据 ===
+# === 关卡数据（翻译键） ===
 var levels := [
 	{
-		"name": "Map 1: Blitz",
-		"desc": "No base, no gold. Capture strongpoints to reinforce and push forward!",
+		"name_key": "LEVEL_1_NAME",
+		"desc_key": "LEVEL_1_DESC",
 		"scene": "res://scenes/maps/map_1.tscn",
 		"icon": PATH_ICON_01,
 		"ribbon_row": 0,
 	},
 	{
-		"name": "Map 2: Basic Attack",
-		"desc": "Build your base, train your army, and destroy the enemy castle!",
+		"name_key": "LEVEL_2_NAME",
+		"desc_key": "LEVEL_2_DESC",
 		"scene": "res://scenes/maps/map_2.tscn",
 		"icon": PATH_ICON_02,
 		"ribbon_row": 2,
 	},
 	{
-		"name": "Map 3: Tower Defense",
-		"desc": "Survive 3 waves of enemy attacks! Build defenses and hold your ground.",
+		"name_key": "LEVEL_3_NAME",
+		"desc_key": "LEVEL_3_DESC",
 		"scene": "res://scenes/maps/map_3.tscn",
 		"icon": PATH_ICON_03,
 		"ribbon_row": 4,
 	},
 	{
-		"name": "Map 4: Expand & Defend",
-		"desc": "Capture 4 neutral camps while defending against waves of enemies!",
+		"name_key": "LEVEL_4_NAME",
+		"desc_key": "LEVEL_4_DESC",
 		"scene": "res://scenes/maps/map_4.tscn",
 		"icon": PATH_ICON_04,
 		"ribbon_row": 6,
 	},
 ]
+
+# === 支持的语言 ===
+var _supported_locales := ["en", "zh", "ja"]
 
 # === UI 引用 ===
 var selected_index: int = -1
@@ -57,6 +62,10 @@ var right_desc: Label
 var right_icon: TextureRect
 var right_ribbon: NinePatchRect
 var start_button_bg: NinePatchRect
+var start_button_label: Label
+var _banner_title: Label
+var _hint_label: Label
+var _lang_buttons: Array[Button] = []
 
 # === 预处理的九宫格纹理（去除透明间隙后的连续纹理）===
 var np_banner: Dictionary
@@ -114,6 +123,9 @@ func _process_ninepatch(source_path: String, content_rows: Array, content_cols: 
 # 初始化
 # ============================================================
 func _ready() -> void:
+	_ensure_translations_loaded()
+	_load_language_preference()
+
 	# 自定义光标
 	var CursorManagerScene := preload("res://scenes/cursor_manager.tscn")
 	cursor_manager = CursorManagerScene.instantiate()
@@ -163,6 +175,45 @@ func _ready() -> void:
 
 
 # ============================================================
+# 语言偏好持久化
+# ============================================================
+func _load_language_preference() -> void:
+	var config := ConfigFile.new()
+	if config.load(SETTINGS_PATH) == OK:
+		var saved_locale: String = config.get_value("game", "locale", "en")
+		TranslationServer.set_locale(saved_locale)
+
+
+func _save_language_preference(locale_code: String) -> void:
+	var config := ConfigFile.new()
+	config.set_value("game", "locale", locale_code)
+	config.save(SETTINGS_PATH)
+
+
+# ============================================================
+# 语言切换
+# ============================================================
+func _on_language_selected(locale_code: String) -> void:
+	TranslationServer.set_locale(locale_code)
+	_save_language_preference(locale_code)
+	_refresh_ui()
+
+
+func _refresh_ui() -> void:
+	_banner_title.text = tr("LEVEL_SELECT_TITLE")
+	start_button_label.text = tr("LEVEL_START_MISSION")
+	_hint_label.text = tr("LEVEL_PRESS_ESC_QUIT")
+	for i in range(levels.size()):
+		button_labels[i].text = tr(levels[i].name_key)
+	_update_right_panel(selected_index)
+	# 更新语言按钮高亮
+	var current_locale := TranslationServer.get_locale()
+	for btn in _lang_buttons:
+		var btn_locale: String = btn.get_meta("locale")
+		btn.add_theme_color_override("font_color", Color(1, 0.85, 0.0) if btn_locale == current_locale else Color(0.8, 0.8, 0.8))
+
+
+# ============================================================
 # 辅助：创建 NinePatchRect 并设置好 margin
 # ============================================================
 func _make_ninepatch(np: Dictionary) -> NinePatchRect:
@@ -177,24 +228,49 @@ func _make_ninepatch(np: Dictionary) -> NinePatchRect:
 
 
 # ============================================================
-# 顶部横幅
+# 顶部横幅 + 语言按钮
 # ============================================================
 func _create_banner() -> void:
-	# 简单文字标题
-	var title := Label.new()
-	title.text = "SELECT LEVEL"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 36)
-	title.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
-	title.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
-	title.add_theme_constant_override("shadow_offset_x", 2)
-	title.add_theme_constant_override("shadow_offset_y", 2)
-	title.anchor_left = 0.0
-	title.anchor_right = 1.0
-	title.anchor_top = 0.01
-	title.anchor_bottom = 0.06
-	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(title)
+	# 标题
+	_banner_title = Label.new()
+	_banner_title.text = tr("LEVEL_SELECT_TITLE")
+	_banner_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_banner_title.add_theme_font_size_override("font_size", 36)
+	_banner_title.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
+	_banner_title.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	_banner_title.add_theme_constant_override("shadow_offset_x", 2)
+	_banner_title.add_theme_constant_override("shadow_offset_y", 2)
+	_banner_title.anchor_left = 0.0
+	_banner_title.anchor_right = 1.0
+	_banner_title.anchor_top = 0.01
+	_banner_title.anchor_bottom = 0.06
+	_banner_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_banner_title)
+
+	# 语言按钮行
+	var lang_hbox := HBoxContainer.new()
+	lang_hbox.anchor_left = 0.0
+	lang_hbox.anchor_right = 1.0
+	lang_hbox.anchor_top = 0.065
+	lang_hbox.anchor_bottom = 0.10
+	lang_hbox.add_theme_constant_override("separation", 8)
+	lang_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	add_child(lang_hbox)
+
+	var current_locale := TranslationServer.get_locale()
+	for locale_code in _supported_locales:
+		var btn := Button.new()
+		btn.text = tr("LANG_" + locale_code.to_upper())
+		btn.custom_minimum_size = Vector2(90, 28)
+		btn.add_theme_font_size_override("font_size", 14)
+		btn.set_meta("locale", locale_code)
+		if locale_code == current_locale:
+			btn.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
+		else:
+			btn.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+		btn.pressed.connect(_on_language_selected.bind(locale_code))
+		lang_hbox.add_child(btn)
+		_lang_buttons.append(btn)
 
 
 # ============================================================
@@ -204,7 +280,7 @@ func _create_main_layout() -> void:
 	var hbox := HBoxContainer.new()
 	hbox.anchor_left = 0.05
 	hbox.anchor_right = 0.95
-	hbox.anchor_top = 0.10
+	hbox.anchor_top = 0.12
 	hbox.anchor_bottom = 0.93
 	hbox.add_theme_constant_override("separation", 20)
 	add_child(hbox)
@@ -277,7 +353,7 @@ func _create_level_button(index: int) -> Control:
 
 	# 文字标签
 	var label := Label.new()
-	label.text = levels[index].name
+	label.text = tr(levels[index].name_key)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 20)
@@ -382,18 +458,18 @@ func _create_start_button(parent: VBoxContainer) -> void:
 	btn.button_up.connect(func(): start_button_bg.texture = np_btn_red.texture)
 	wrapper.add_child(btn)
 
-	var label := Label.new()
-	label.text = "START MISSION"
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 22)
-	label.add_theme_color_override("font_color", Color(1, 1, 1))
-	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
-	label.add_theme_constant_override("shadow_offset_x", 1)
-	label.add_theme_constant_override("shadow_offset_y", 1)
-	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	wrapper.add_child(label)
+	start_button_label = Label.new()
+	start_button_label.text = tr("LEVEL_START_MISSION")
+	start_button_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	start_button_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	start_button_label.add_theme_font_size_override("font_size", 22)
+	start_button_label.add_theme_color_override("font_color", Color(1, 1, 1))
+	start_button_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	start_button_label.add_theme_constant_override("shadow_offset_x", 1)
+	start_button_label.add_theme_constant_override("shadow_offset_y", 1)
+	start_button_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	start_button_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wrapper.add_child(start_button_label)
 
 	parent.add_child(wrapper)
 
@@ -402,16 +478,16 @@ func _create_start_button(parent: VBoxContainer) -> void:
 # 底部提示
 # ============================================================
 func _create_hint_label() -> void:
-	var hint := Label.new()
-	hint.text = "Press Esc to quit"
-	hint.add_theme_font_size_override("font_size", 14)
-	hint.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
-	hint.anchor_left = 0.0
-	hint.anchor_right = 1.0
-	hint.anchor_top = 0.94
-	hint.anchor_bottom = 0.98
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	add_child(hint)
+	_hint_label = Label.new()
+	_hint_label.text = tr("LEVEL_PRESS_ESC_QUIT")
+	_hint_label.add_theme_font_size_override("font_size", 14)
+	_hint_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+	_hint_label.anchor_left = 0.0
+	_hint_label.anchor_right = 1.0
+	_hint_label.anchor_top = 0.94
+	_hint_label.anchor_bottom = 0.98
+	_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(_hint_label)
 
 
 # ============================================================
@@ -445,8 +521,8 @@ func _update_right_panel(index: int) -> void:
 	if index < 0 or index >= levels.size():
 		return
 	var level: Dictionary = levels[index]
-	right_title.text = level.name
-	right_desc.text = level.desc
+	right_title.text = tr(level.name_key)
+	right_desc.text = tr(level.desc_key)
 	right_icon.texture = load(level.icon)
 
 	# 更新丝带（从 SmallRibbons 图集提取对应行）
@@ -523,3 +599,54 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed:
 		if event.keycode == KEY_ESCAPE:
 			get_tree().quit()
+
+
+# ============================================================
+# 手动加载 CSV 翻译文件（不依赖 Godot 自动导入）
+# ============================================================
+var _translations_loaded := false
+
+func _ensure_translations_loaded() -> void:
+	if _translations_loaded:
+		return
+	_translations_loaded = true
+	var csv_path := "res://locales/translations.csv"
+	var file := FileAccess.open(csv_path, FileAccess.READ)
+	if file == null:
+		push_error("Failed to open translations file: " + csv_path)
+		return
+	var header_line := file.get_line()
+	var headers := header_line.split(",")
+	if headers.size() < 2:
+		push_error("Invalid translations CSV header")
+		return
+	# headers[0] = "keys", headers[1..] = locale codes
+	var locale_codes: PackedStringArray = []
+	for i in range(1, headers.size()):
+		locale_codes.append(headers[i].strip_edges())
+	# 为每种语言创建 Translation 资源
+	var translations: Array[Translation] = []
+	for locale in locale_codes:
+		var t := Translation.new()
+		t.locale = locale
+		translations.append(t)
+	# 逐行读取翻译
+	while not file.eof_reached():
+		var line := file.get_line()
+		if line.strip_edges() == "":
+			continue
+		var cols := line.split(",", false)
+		if cols.size() < 2:
+			continue
+		var key := cols[0].strip_edges()
+		for i in range(locale_codes.size()):
+			var col_index := i + 1
+			if col_index < cols.size():
+				translations[i].add_message(key, cols[col_index].strip_edges())
+			else:
+				translations[i].add_message(key, key)
+	file.close()
+	# 注册到 TranslationServer
+	for t in translations:
+		TranslationServer.add_translation(t)
+	print("Translations loaded: ", locale_codes)

@@ -16,6 +16,9 @@ var _mid_dragging: bool = false
 var _mid_drag_start_mouse := Vector2.ZERO
 var _mid_drag_start_cam := Vector2.ZERO
 
+# UI 豁免区域：鼠标在这些矩形内时不触发对应方向的边缘滚动
+var ui_exclusion_rects: Array[Rect2] = []
+
 func initialize(cam: Camera2D, bounds: Rect2) -> void:
 	camera = cam
 	map_bounds = bounds
@@ -29,13 +32,32 @@ func process_camera(delta: float) -> void:
 
 	# --- 边缘滚动 ---
 	var mouse_pos := camera.get_viewport().get_mouse_position()
-	if mouse_pos.x < edge_margin:
+
+	var blocked_left := false
+	var blocked_right := false
+	var blocked_top := false
+	var blocked_bottom := false
+
+	# 检查鼠标是否在任何 UI 豁免区域内
+	for rect in ui_exclusion_rects:
+		if rect.has_point(mouse_pos):
+			# 判断豁免区域在屏幕的哪个边缘
+			if rect.position.y < edge_margin:
+				blocked_top = true
+			if rect.end.y > viewport_size.y - edge_margin:
+				blocked_bottom = true
+			if rect.position.x < edge_margin:
+				blocked_left = true
+			if rect.end.x > viewport_size.x - edge_margin:
+				blocked_right = true
+
+	if not blocked_left and mouse_pos.x < edge_margin:
 		move_dir.x -= 1.0
-	elif mouse_pos.x > viewport_size.x - edge_margin:
+	elif not blocked_right and mouse_pos.x > viewport_size.x - edge_margin:
 		move_dir.x += 1.0
-	if mouse_pos.y < edge_margin:
+	if not blocked_top and mouse_pos.y < edge_margin:
 		move_dir.y -= 1.0
-	elif mouse_pos.y > viewport_size.y - edge_margin:
+	elif not blocked_bottom and mouse_pos.y > viewport_size.y - edge_margin:
 		move_dir.y += 1.0
 
 	# --- 方向键滚动 ---
