@@ -2,8 +2,8 @@ class_name GameData
 extends RefCounted
 ## 静态游戏数据：枚举、常量、路径映射
 
-const UnitScript := preload("res://scripts/unit.gd")
-const BuildingScript := preload("res://scripts/building.gd")
+const UnitScript := preload("res://scripts/units/unit.gd")
+const BuildingScript := preload("res://scripts/buildings/building.gd")
 
 # --- 放置模式 ---
 enum PlaceMode { NONE, WALL, TOWER, CASTLE, BARRACKS, SOLDIER, ARCHER, MONASTERY, ARCHERY_RANGE, LANCER, MONK_UNIT }

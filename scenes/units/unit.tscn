@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://bxunit0001"]
 
 [ext_resource type="Texture2D" uid="uid://uwmjnao0x165" path="res://assets/units/blue_warrior/Warrior_Idle.png" id="2_k673f"]
-[ext_resource type="Script" uid="uid://fjmqlor3rasr" path="res://scripts/unit.gd" id="unit_script"]
-[ext_resource type="Script" path="res://scripts/shadow_component.gd" id="shadow_script"]
-[ext_resource type="Script" path="res://scripts/health_component.gd" id="health_script"]
+[ext_resource type="Script" uid="uid://fjmqlor3rasr" path="res://scripts/units/unit.gd" id="unit_script"]
+[ext_resource type="Script" path="res://scripts/core/shadow_component.gd" id="shadow_script"]
+[ext_resource type="Script" path="res://scripts/core/health_component.gd" id="health_script"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1"]
 radius = 16.0

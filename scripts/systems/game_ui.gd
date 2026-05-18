@@ -1,7 +1,7 @@
 extends Node
 ## UI 模块：按钮面板、金币显示、放置模式提示、波次倒计时、暂停菜单
 
-const D := preload("res://scripts/game_data.gd")
+const D := preload("res://scripts/systems/game_data.gd")
 
 signal place_mode_requested(mode: int)
 signal restart_requested
@@ -158,7 +158,7 @@ func _create_pause_menu() -> void:
 
 	# ESC input handler (runs while paused)
 	var input_handler := Control.new()
-	input_handler.set_script(load("res://scripts/pause_input_handler.gd"))
+	input_handler.set_script(load("res://scripts/ui/pause_input_handler.gd"))
 	input_handler.main_node = _main_node
 	input_handler.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	input_handler.mouse_filter = Control.MOUSE_FILTER_IGNORE

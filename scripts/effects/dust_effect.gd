@@ -1,4 +1,4 @@
-extends "res://scripts/frame_animated_effect.gd"
+extends "res://scripts/core/frame_animated_effect.gd"
 ## 灰尘特效：随机纹理，6 帧 20fps
 
 

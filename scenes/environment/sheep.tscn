@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bxsheep001"]
 
 [ext_resource type="Texture2D" uid="uid://mdlvexetsnjd" path="res://assets/environment/sheep/Sheep_Idle.png" id="1_sheep"]
-[ext_resource type="Script" path="res://scripts/sheep.gd" id="sheep_script"]
+[ext_resource type="Script" path="res://scripts/environment/sheep.gd" id="sheep_script"]
 [ext_resource type="PackedScene" uid="uid://bxneutral01" path="res://scenes/environment/neutral.tscn" id="base"]
 
 [node name="Sheep" instance=ExtResource("base")]

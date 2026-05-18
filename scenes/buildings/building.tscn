@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://bxbld0001"]
 
-[ext_resource type="Script" uid="uid://brxgc8ols7de3" path="res://scripts/building.gd" id="bld_script"]
-[ext_resource type="Script" path="res://scripts/shadow_component.gd" id="shadow_script"]
-[ext_resource type="Script" path="res://scripts/health_component.gd" id="health_script"]
+[ext_resource type="Script" uid="uid://brxgc8ols7de3" path="res://scripts/buildings/building.gd" id="bld_script"]
+[ext_resource type="Script" path="res://scripts/core/shadow_component.gd" id="shadow_script"]
+[ext_resource type="Script" path="res://scripts/core/health_component.gd" id="health_script"]
 
 [node name="Building" type="Node2D" unique_id=90714510]
 script = ExtResource("bld_script")

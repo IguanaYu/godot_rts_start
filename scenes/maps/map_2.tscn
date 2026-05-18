@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="main_script"]
 [ext_resource type="Resource" path="res://resources/map2_config.tres" id="map2_config"]
-[ext_resource type="Script" path="res://scripts/victory_destroy_base.gd" id="victory_destroy_base"]
+[ext_resource type="Script" path="res://scripts/victory/victory_destroy_base.gd" id="victory_destroy_base"]
 
 [sub_resource type="NavigationPolygon" id="NavPoly_1"]
 vertices = PackedVector2Array(-500, -500, 1500, -500, 1500, 1200, -500, 1200)

@@ -17,7 +17,7 @@ class_name Neutral
 
 @onready var body_sprite: Sprite2D = $Sprite
 
-const ShadowComp := preload("res://scripts/shadow_component.gd")
+const ShadowComp := preload("res://scripts/core/shadow_component.gd")
 @onready var _shadow_component: ShadowComp = $ShadowComponent
 
 func _ready() -> void:

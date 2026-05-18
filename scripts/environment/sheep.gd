@@ -1,4 +1,4 @@
-extends "res://scripts/neutral.gd"
+extends "res://scripts/environment/neutral.gd"
 
 enum SheepState { IDLE, MOVING, EATING }
 

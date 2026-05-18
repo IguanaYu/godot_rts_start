@@ -1,9 +1,9 @@
 extends Node
 ## 生成模块：单位/建筑生成、环境装饰、特效
 
-const D := preload("res://scripts/game_data.gd")
-const UnitScript := preload("res://scripts/unit.gd")
-const BuildingScript := preload("res://scripts/building.gd")
+const D := preload("res://scripts/systems/game_data.gd")
+const UnitScript := preload("res://scripts/units/unit.gd")
+const BuildingScript := preload("res://scripts/buildings/building.gd")
 
 var _main_node: Node2D
 var _player_units_node: Node2D
@@ -51,7 +51,7 @@ func spawn_from_config(map_config: Resource) -> void:
 		unit.add_to_group("enemy_units")
 		var ai := Node2D.new()
 		ai.name = "EnemyAI"
-		ai.set_script(load("res://scripts/enemy_ai.gd"))
+		ai.set_script(load("res://scripts/units/enemy_ai.gd"))
 		unit.add_child(ai)
 
 	# Spawn player buildings
@@ -139,7 +139,7 @@ func spawn_enemy_unit(type: int, pos: Vector2, wave_attack: bool = false, wave_t
 	unit.add_to_group("enemy_units")
 	var ai := Node2D.new()
 	ai.name = "EnemyAI"
-	ai.set_script(load("res://scripts/enemy_ai.gd"))
+	ai.set_script(load("res://scripts/units/enemy_ai.gd"))
 	unit.add_child(ai)
 	if wave_attack and wave_target != Vector2.ZERO:
 		ai.call_deferred("start_wave_attack", wave_target)
@@ -157,7 +157,7 @@ func spawn_unit_near(type: int, pos: Vector2, team: int) -> void:
 		unit.add_to_group("enemy_units")
 		var ai := Node2D.new()
 		ai.name = "EnemyAI"
-		ai.set_script(load("res://scripts/enemy_ai.gd"))
+		ai.set_script(load("res://scripts/units/enemy_ai.gd"))
 		unit.add_child(ai)
 
 # --- 特效 ---
@@ -174,6 +174,6 @@ func spawn_dust_effect(pos: Vector2) -> void:
 
 func show_floating_text(text: String, color: Color, world_pos: Vector2) -> void:
 	var ft := Node2D.new()
-	ft.set_script(load("res://scripts/floating_text.gd"))
+	ft.set_script(load("res://scripts/effects/floating_text.gd"))
 	_main_node.add_child(ft)
 	ft.setup(text, color, world_pos)

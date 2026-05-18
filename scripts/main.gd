@@ -1,8 +1,8 @@
 extends Node2D
 
-const D := preload("res://scripts/game_data.gd")
-const UnitScript := preload("res://scripts/unit.gd")
-const BuildingScript := preload("res://scripts/building.gd")
+const D := preload("res://scripts/systems/game_data.gd")
+const UnitScript := preload("res://scripts/units/unit.gd")
+const BuildingScript := preload("res://scripts/buildings/building.gd")
 const MapConfigScript := preload("res://scripts/map_config.gd")
 
 # Map configuration
@@ -53,7 +53,7 @@ func _ready() -> void:
 
 	# UI 模块
 	ui_module = Node.new()
-	ui_module.set_script(load("res://scripts/game_ui.gd"))
+	ui_module.set_script(load("res://scripts/systems/game_ui.gd"))
 	add_child(ui_module)
 	ui_module.initialize(self, map_config, gold)
 	ui_module.place_mode_requested.connect(_on_place_mode_requested)
@@ -61,26 +61,26 @@ func _ready() -> void:
 
 	# 相机模块
 	camera_module = Node.new()
-	camera_module.set_script(load("res://scripts/game_camera.gd"))
+	camera_module.set_script(load("res://scripts/systems/game_camera.gd"))
 	add_child(camera_module)
 	camera_module.initialize(camera, map_bounds)
 
 	# 生成模块
 	spawner_module = Node.new()
-	spawner_module.set_script(load("res://scripts/game_spawner.gd"))
+	spawner_module.set_script(load("res://scripts/systems/game_spawner.gd"))
 	add_child(spawner_module)
 	spawner_module.initialize(self, player_units_node, enemy_units_node, buildings_node)
 
 	# 建筑放置模块
 	building_placer = Node.new()
-	building_placer.set_script(load("res://scripts/building_placer.gd"))
+	building_placer.set_script(load("res://scripts/systems/building_placer.gd"))
 	add_child(building_placer)
 	building_placer.initialize(map_bounds, NAV_BOUNDS, nav_region, buildings_node, preview_rect, ui_module)
 	spawner_module.place_building_callback = building_placer.place_building
 
 	# 战斗/选择模块
 	combat_ctrl = Node.new()
-	combat_ctrl.set_script(load("res://scripts/combat_controller.gd"))
+	combat_ctrl.set_script(load("res://scripts/systems/combat_controller.gd"))
 	add_child(combat_ctrl)
 	combat_ctrl.initialize(spawner_module)
 

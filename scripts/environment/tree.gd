@@ -1,4 +1,4 @@
-extends "res://scripts/neutral.gd"
+extends "res://scripts/environment/neutral.gd"
 
 @export var sway_amplitude: float = 2.0
 @export var sway_period: float = 3.0

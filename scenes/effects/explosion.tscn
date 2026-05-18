@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bxexplo01"]
 
 [ext_resource type="Texture2D" uid="uid://ykdbnibgyhiu" path="res://assets/effects/Explosion_01.png" id="1_exp"]
-[ext_resource type="Script" path="res://scripts/explosion.gd" id="exp_script"]
+[ext_resource type="Script" path="res://scripts/effects/explosion.gd" id="exp_script"]
 
 [node name="Explosion" type="Node2D"]
 script = ExtResource("exp_script")

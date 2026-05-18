@@ -1,7 +1,7 @@
 class_name VictorySurviveWaves
 extends VictoryCondition
 
-const BuildingScript := preload("res://scripts/building.gd")
+const BuildingScript := preload("res://scripts/buildings/building.gd")
 
 @export var wave_manager_path: NodePath = ^"WaveManager"
 

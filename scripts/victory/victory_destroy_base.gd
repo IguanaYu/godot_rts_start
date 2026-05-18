@@ -1,7 +1,7 @@
 class_name VictoryDestroyBase
 extends VictoryCondition
 
-const BuildingScript := preload("res://scripts/building.gd")
+const BuildingScript := preload("res://scripts/buildings/building.gd")
 
 func _ready() -> void:
 	pass

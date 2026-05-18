@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bxtree001"]
 
 [ext_resource type="Texture2D" uid="uid://cj4nqwri6f1rt" path="res://assets/environment/trees/Tree1.png" id="1_tree"]
-[ext_resource type="Script" path="res://scripts/tree.gd" id="tree_script"]
+[ext_resource type="Script" path="res://scripts/environment/tree.gd" id="tree_script"]
 [ext_resource type="PackedScene" uid="uid://bxneutral01" path="res://scenes/environment/neutral.tscn" id="base"]
 
 [node name="Tree" instance=ExtResource("base")]

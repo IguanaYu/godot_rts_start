@@ -1,8 +1,8 @@
 class_name VictoryExpandDefense
 extends VictoryCondition
 
-const UnitScript := preload("res://scripts/unit.gd")
-const BuildingScript := preload("res://scripts/building.gd")
+const UnitScript := preload("res://scripts/units/unit.gd")
+const BuildingScript := preload("res://scripts/buildings/building.gd")
 
 @export var wave_manager_path: NodePath = ^"WaveManager"
 @export var capture_points: Array[NodePath] = []

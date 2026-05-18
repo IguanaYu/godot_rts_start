@@ -2,8 +2,8 @@
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="main_script"]
 [ext_resource type="Resource" path="res://resources/map3_config.tres" id="map3_config"]
-[ext_resource type="Script" path="res://scripts/victory_survive_waves.gd" id="victory_survive"]
-[ext_resource type="Script" path="res://scripts/wave_manager.gd" id="wave_manager"]
+[ext_resource type="Script" path="res://scripts/victory/victory_survive_waves.gd" id="victory_survive"]
+[ext_resource type="Script" path="res://scripts/systems_game/wave_manager.gd" id="wave_manager"]
 
 [sub_resource type="NavigationPolygon" id="NavPoly_1"]
 vertices = PackedVector2Array(-500, -500, 1500, -500, 1500, 1200, -500, 1200)

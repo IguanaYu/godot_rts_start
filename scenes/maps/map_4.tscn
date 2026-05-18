@@ -2,9 +2,9 @@
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="main_script"]
 [ext_resource type="Resource" path="res://resources/map4_config.tres" id="map4_config"]
-[ext_resource type="Script" path="res://scripts/victory_expand_defense.gd" id="victory_expand"]
-[ext_resource type="Script" path="res://scripts/wave_manager.gd" id="wave_manager"]
-[ext_resource type="Script" path="res://scripts/capture_point.gd" id="capture_point"]
+[ext_resource type="Script" path="res://scripts/victory/victory_expand_defense.gd" id="victory_expand"]
+[ext_resource type="Script" path="res://scripts/systems_game/wave_manager.gd" id="wave_manager"]
+[ext_resource type="Script" path="res://scripts/systems_game/capture_point.gd" id="capture_point"]
 
 [sub_resource type="NavigationPolygon" id="NavPoly_1"]
 vertices = PackedVector2Array(-500, -500, 2000, -500, 2000, 1700, -500, 1700)

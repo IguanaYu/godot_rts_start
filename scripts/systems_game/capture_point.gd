@@ -1,7 +1,7 @@
 class_name CapturePoint
 extends Area2D
 
-const UnitScript := preload("res://scripts/unit.gd")
+const UnitScript := preload("res://scripts/units/unit.gd")
 
 const UNIT_TYPE_NAMES := {
 	UnitScript.UnitType.SOLDIER: "Soldier",

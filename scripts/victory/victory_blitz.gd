@@ -1,7 +1,7 @@
 class_name VictoryBlitz
 extends VictoryCondition
 
-const UnitScript := preload("res://scripts/unit.gd")
+const UnitScript := preload("res://scripts/units/unit.gd")
 
 @export var capture_points: Array[NodePath] = []
 @export var activation_radius: float = 200.0

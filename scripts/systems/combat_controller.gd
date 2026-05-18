@@ -1,7 +1,7 @@
 extends Node
 ## 选择/战斗系统：框选、右键指令、攻击移动、停止、坚守
 
-const D := preload("res://scripts/game_data.gd")
+const D := preload("res://scripts/systems/game_data.gd")
 
 var selected_units: Array = []
 var is_selecting: bool = false

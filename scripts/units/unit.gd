@@ -75,9 +75,9 @@ var _frames_attack: int = 6
 var _is_attacking: bool = false
 var _lateral_dir: Vector2 = Vector2.ZERO
 var _lateral_timer: float = 0.0
-const ShadowComp := preload("res://scripts/shadow_component.gd")
+const ShadowComp := preload("res://scripts/core/shadow_component.gd")
 @onready var _shadow_component: ShadowComp = $ShadowComponent
-const HealthComp := preload("res://scripts/health_component.gd")
+const HealthComp := preload("res://scripts/core/health_component.gd")
 @onready var health: HealthComp = $HealthComponent
 var _state_indicator: ColorRect = null
 

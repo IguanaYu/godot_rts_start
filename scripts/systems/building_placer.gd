@@ -4,8 +4,8 @@ extends Node
 signal building_placed(building)
 signal building_died(building)
 
-const D := preload("res://scripts/game_data.gd")
-const BuildingScript := preload("res://scripts/building.gd")
+const D := preload("res://scripts/systems/game_data.gd")
+const BuildingScript := preload("res://scripts/buildings/building.gd")
 
 var place_mode: int = D.PlaceMode.NONE
 var show_grid: bool = false

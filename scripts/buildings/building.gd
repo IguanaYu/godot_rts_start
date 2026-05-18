@@ -31,11 +31,11 @@ enum Team { PLAYER, ENEMY }
 var grid_size: Vector2i = Vector2i(1, 1)
 var grid_pos: Vector2i = Vector2i.ZERO
 var _is_dead: bool = false
-const ShadowComp := preload("res://scripts/shadow_component.gd")
+const ShadowComp := preload("res://scripts/core/shadow_component.gd")
 @onready var _shadow_component: ShadowComp = $ShadowComponent
-const HealthComp := preload("res://scripts/health_component.gd")
+const HealthComp := preload("res://scripts/core/health_component.gd")
 @onready var health: HealthComp = $HealthComponent
-const JellyEffect := preload("res://scripts/jelly_effect.gd")
+const JellyEffect := preload("res://scripts/effects/jelly_effect.gd")
 
 # 建造系统
 var build_time: float = 5.0

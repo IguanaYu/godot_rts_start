@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://lvlselect0001"]
 
-[ext_resource type="Script" path="res://scripts/level_select.gd" id="level_select_script"]
+[ext_resource type="Script" path="res://scripts/ui/level_select.gd" id="level_select_script"]
 
 [node name="LevelSelect" type="Control"]
 layout_mode = 3

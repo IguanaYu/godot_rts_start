@@ -1,4 +1,4 @@
-extends "res://scripts/frame_animated_effect.gd"
+extends "res://scripts/core/frame_animated_effect.gd"
 ## 治疗特效：5 帧 14fps
 
 
