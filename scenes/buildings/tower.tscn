@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://tower0001"]
 
-[ext_resource type="PackedScene" uid="uid://bxbld0001" path="res://scenes/building.tscn" id="base"]
+[ext_resource type="PackedScene" uid="uid://bxbld0001" path="res://scenes/buildings/building.tscn" id="base"]
 
 [node name="Tower" instance=ExtResource("base")]
 building_type = 1

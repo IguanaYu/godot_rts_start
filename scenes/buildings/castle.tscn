@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://8rfekrdqs7gf"]
 
 [ext_resource type="Texture2D" uid="uid://dmjrdvt5pi26q" path="res://assets/buildings/blue_castle/Castle.png" id="2_0ysgy"]
-[ext_resource type="PackedScene" uid="uid://bxbld0001" path="res://scenes/building.tscn" id="base"]
+[ext_resource type="PackedScene" uid="uid://bxbld0001" path="res://scenes/buildings/building.tscn" id="base"]
 
 [node name="Castle" unique_id=1983900034 instance=ExtResource("base")]
 building_type = 2

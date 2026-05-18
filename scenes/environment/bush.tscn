@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bxbush001"]
 
 [ext_resource type="Texture2D" uid="uid://3ir882etequf" path="res://assets/environment/bushes/Bushe1.png" id="1_bush"]
-[ext_resource type="PackedScene" uid="uid://bxneutral01" path="res://scenes/neutral.tscn" id="base"]
+[ext_resource type="PackedScene" uid="uid://bxneutral01" path="res://scenes/environment/neutral.tscn" id="base"]
 
 [node name="Bush" instance=ExtResource("base")]
 sprite_scale_x = 0.5

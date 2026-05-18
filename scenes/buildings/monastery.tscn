@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bxmonastery01"]
 
 [ext_resource type="Texture2D" uid="uid://crry62451h0qp" path="res://assets/buildings/blue_monastery/Monastery.png" id="2_mon"]
-[ext_resource type="PackedScene" uid="uid://bxbld0001" path="res://scenes/building.tscn" id="base"]
+[ext_resource type="PackedScene" uid="uid://bxbld0001" path="res://scenes/buildings/building.tscn" id="base"]
 
 [node name="Monastery" instance=ExtResource("base")]
 building_type = 4

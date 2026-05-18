@@ -88,7 +88,7 @@ func is_grid_free(gpos: Vector2i, size: Vector2i) -> bool:
 
 
 func place_building(type: int, team: int, gpos: Vector2i) -> Node2D:
-	var scene_path: String = D.BUILDING_SCENES.get(type, "res://scenes/building.tscn")
+	var scene_path: String = D.BUILDING_SCENES.get(type, "res://scenes/buildings/building.tscn")
 	var building: Node2D = load(scene_path).instantiate()
 	building.set("team", team)
 	building.set("grid_pos", gpos)

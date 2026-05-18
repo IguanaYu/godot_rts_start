@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bxarchery01"]
 
 [ext_resource type="Texture2D" uid="uid://dtknlgsl1vi1b" path="res://assets/buildings/blue_archery/Archery.png" id="2_arc"]
-[ext_resource type="PackedScene" uid="uid://bxbld0001" path="res://scenes/building.tscn" id="base"]
+[ext_resource type="PackedScene" uid="uid://bxbld0001" path="res://scenes/buildings/building.tscn" id="base"]
 
 [node name="Archery" instance=ExtResource("base")]
 building_type = 5

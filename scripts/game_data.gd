@@ -48,12 +48,12 @@ const KEY_LIST := [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9
 
 # --- 建筑场景路径 ---
 const BUILDING_SCENES := {
-	BuildingScript.BuildingType.WALL: "res://scenes/wall.tscn",
-	BuildingScript.BuildingType.TOWER: "res://scenes/tower.tscn",
-	BuildingScript.BuildingType.CASTLE: "res://scenes/castle.tscn",
-	BuildingScript.BuildingType.BARRACKS: "res://scenes/barracks.tscn",
-	BuildingScript.BuildingType.MONASTERY: "res://scenes/monastery.tscn",
-	BuildingScript.BuildingType.ARCHERY: "res://scenes/archery_building.tscn",
+	BuildingScript.BuildingType.WALL: "res://scenes/buildings/wall.tscn",
+	BuildingScript.BuildingType.TOWER: "res://scenes/buildings/tower.tscn",
+	BuildingScript.BuildingType.CASTLE: "res://scenes/buildings/castle.tscn",
+	BuildingScript.BuildingType.BARRACKS: "res://scenes/buildings/barracks.tscn",
+	BuildingScript.BuildingType.MONASTERY: "res://scenes/buildings/monastery.tscn",
+	BuildingScript.BuildingType.ARCHERY: "res://scenes/buildings/archery_building.tscn",
 }
 
 # --- 建筑网格尺寸 ---
@@ -68,10 +68,10 @@ const BUILDING_GRID_SIZES := {
 
 # --- 单位场景路径 ---
 const UNIT_SCENES := {
-	UnitScript.UnitType.SOLDIER: "res://scenes/soldier.tscn",
-	UnitScript.UnitType.ARCHER: "res://scenes/archer.tscn",
-	UnitScript.UnitType.LANCER: "res://scenes/lancer.tscn",
-	UnitScript.UnitType.MONK: "res://scenes/monk.tscn",
+	UnitScript.UnitType.SOLDIER: "res://scenes/units/soldier.tscn",
+	UnitScript.UnitType.ARCHER: "res://scenes/units/archer.tscn",
+	UnitScript.UnitType.LANCER: "res://scenes/units/lancer.tscn",
+	UnitScript.UnitType.MONK: "res://scenes/units/monk.tscn",
 }
 
 # --- PlaceMode → BuildingType 映射 ---
@@ -103,9 +103,9 @@ const MIN_ZOOM := 0.4
 const MAX_ZOOM := 2.0
 
 # --- 特效场景 ---
-const MoveClickEffectScene := preload("res://scenes/move_click_effect.tscn")
-const AttackClickEffectScene := preload("res://scenes/attack_click_effect.tscn")
-const DustEffectScene := preload("res://scenes/dust_effect.tscn")
+const MoveClickEffectScene := preload("res://scenes/effects/move_click_effect.tscn")
+const AttackClickEffectScene := preload("res://scenes/effects/attack_click_effect.tscn")
+const DustEffectScene := preload("res://scenes/effects/dust_effect.tscn")
 
 # --- 环境纹理路径 ---
 const TREE_TEXTURES := [

@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://e5by4tc82spk"]
 
 [ext_resource type="Texture2D" uid="uid://n2yxiptxgrlt" path="res://assets/units/blue_archer/Archer_Idle.png" id="2_b0l3x"]
-[ext_resource type="PackedScene" uid="uid://bxunit0001" path="res://scenes/unit.tscn" id="base"]
+[ext_resource type="PackedScene" uid="uid://bxunit0001" path="res://scenes/units/unit.tscn" id="base"]
 
 [node name="Archer" unique_id=113123254 instance=ExtResource("base")]
 unit_type = 1

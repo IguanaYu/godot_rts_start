@@ -24,7 +24,7 @@ func initialize(main_node: Node2D, player_units: Node2D, enemy_units: Node2D, bu
 # --- 单位创建 ---
 
 func create_unit(type: int, team: int, pos: Vector2) -> CharacterBody2D:
-	var scene_path: String = D.UNIT_SCENES.get(type, "res://scenes/soldier.tscn")
+	var scene_path: String = D.UNIT_SCENES.get(type, "res://scenes/units/soldier.tscn")
 	var unit_scene := load(scene_path)
 	var unit: CharacterBody2D = unit_scene.instantiate()
 	unit.set("team", team)
@@ -88,7 +88,7 @@ func spawn_environment(map_config: Resource, map_bounds: Rect2) -> void:
 		bush_count = env.get("bushes", D.DEFAULT_BUSHES)
 		sheep_count = env.get("sheep", D.DEFAULT_SHEEP)
 
-	var tree_scene := load("res://scenes/tree.tscn")
+	var tree_scene := load("res://scenes/environment/tree.tscn")
 	for i in range(tree_count):
 		var tree: Node2D = tree_scene.instantiate()
 		tree.position = Vector2(randf_range(spawn_min_x, spawn_max_x), randf_range(spawn_min_y, spawn_max_y))
@@ -96,21 +96,21 @@ func spawn_environment(map_config: Resource, map_bounds: Rect2) -> void:
 		tree.get_node("Sprite").frame = randi() % 8
 		env_node.add_child(tree)
 
-	var rock_scene := load("res://scenes/rock.tscn")
+	var rock_scene := load("res://scenes/environment/rock.tscn")
 	for i in range(rock_count):
 		var rock: Node2D = rock_scene.instantiate()
 		rock.position = Vector2(randf_range(spawn_min_x, spawn_max_x), randf_range(spawn_min_y, spawn_max_y))
 		rock.get_node("Sprite").texture = load(D.ROCK_TEXTURES[i % 4])
 		env_node.add_child(rock)
 
-	var bush_scene := load("res://scenes/bush.tscn")
+	var bush_scene := load("res://scenes/environment/bush.tscn")
 	for i in range(bush_count):
 		var bush: Node2D = bush_scene.instantiate()
 		bush.position = Vector2(randf_range(spawn_min_x, spawn_max_x), randf_range(spawn_min_y, spawn_max_y))
 		bush.get_node("Sprite").texture = load(D.BUSH_TEXTURES[i % 4])
 		env_node.add_child(bush)
 
-	var sheep_scene := load("res://scenes/sheep.tscn")
+	var sheep_scene := load("res://scenes/environment/sheep.tscn")
 	for i in range(sheep_count):
 		var sheep: Node2D = sheep_scene.instantiate()
 		sheep.position = Vector2(randf_range(spawn_min_x, spawn_max_x), randf_range(spawn_min_y, spawn_max_y))

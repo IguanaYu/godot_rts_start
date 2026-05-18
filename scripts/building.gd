@@ -260,7 +260,7 @@ func _tower_process(delta: float) -> void:
 
 func _spawn_arrow(target) -> void:
 	JellyEffect.play(body_sprite, Vector2(sprite_scale_x, sprite_scale_y))
-	var arrow_scene := load("res://scenes/arrow.tscn")
+	var arrow_scene := load("res://scenes/effects/arrow.tscn")
 	var arrow: Node2D = arrow_scene.instantiate()
 	get_tree().current_scene.add_child(arrow)
 	arrow.setup(global_position, target.global_position)
@@ -293,7 +293,7 @@ func die() -> void:
 	health._is_dead = true
 	died.emit(self)
 	# 生成爆炸特效
-	var explosion_scene := load("res://scenes/explosion.tscn")
+	var explosion_scene := load("res://scenes/effects/explosion.tscn")
 	var explosion: Node2D = explosion_scene.instantiate()
 	get_tree().current_scene.add_child(explosion)
 	explosion.global_position = global_position

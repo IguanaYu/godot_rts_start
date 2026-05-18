@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://dhyxequcxurbh"]
 
 [ext_resource type="Texture2D" uid="uid://vqewokkrry6i" path="res://assets/buildings/blue_barracks/Barracks.png" id="2_lery3"]
-[ext_resource type="PackedScene" uid="uid://bxbld0001" path="res://scenes/building.tscn" id="base"]
+[ext_resource type="PackedScene" uid="uid://bxbld0001" path="res://scenes/buildings/building.tscn" id="base"]
 
 [node name="Barracks" unique_id=759152347 instance=ExtResource("base")]
 building_type = 3

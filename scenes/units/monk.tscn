@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bxmonk001"]
 
 [ext_resource type="Texture2D" uid="uid://cxu763vgva6ga" path="res://assets/units/blue_monk/Idle.png" id="2_monk"]
-[ext_resource type="PackedScene" uid="uid://bxunit0001" path="res://scenes/unit.tscn" id="base"]
+[ext_resource type="PackedScene" uid="uid://bxunit0001" path="res://scenes/units/unit.tscn" id="base"]
 
 [node name="Monk" instance=ExtResource("base")]
 unit_type = 3

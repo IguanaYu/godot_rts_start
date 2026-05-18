@@ -6,7 +6,7 @@ enum UnitState { GUARD, HOLD_POSITION, MOVE, ATTACK_MOVE, ATTACK, HEAL, DEAD }
 enum UnitType { SOLDIER, ARCHER, LANCER, MONK }
 enum Team { PLAYER, ENEMY }
 
-const HealEffectScene := preload("res://scenes/heal_effect.tscn")
+const HealEffectScene := preload("res://scenes/effects/heal_effect.tscn")
 
 @export var unit_type: UnitType = UnitType.SOLDIER:
 	set(v): unit_type = v; _refresh_editor()
@@ -656,7 +656,7 @@ func _perform_attack() -> void:
 			attack_target.take_damage(attack_damage, self)
 
 func _spawn_arrow(target) -> void:
-	var arrow_scene := load("res://scenes/arrow.tscn")
+	var arrow_scene := load("res://scenes/effects/arrow.tscn")
 	var arrow: Node2D = arrow_scene.instantiate()
 	get_tree().current_scene.add_child(arrow)
 	arrow.setup(global_position, target.global_position)
