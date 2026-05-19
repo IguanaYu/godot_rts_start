@@ -78,6 +78,20 @@ const MODE_ICONS := {
 	PlaceMode.MONK_UNIT:     "res://assets/units/blue_monk/Idle.png",
 }
 
+# --- 预加载按钮图标纹理 ---
+const ICON_TEXTURES := {
+	PlaceMode.WALL:          preload("res://assets/buildings/blue_house/House1.png"),
+	PlaceMode.TOWER:         preload("res://assets/buildings/blue_tower/Tower.png"),
+	PlaceMode.CASTLE:        preload("res://assets/buildings/blue_castle/Castle.png"),
+	PlaceMode.BARRACKS:      preload("res://assets/buildings/blue_barracks/Barracks.png"),
+	PlaceMode.MONASTERY:     preload("res://assets/buildings/blue_monastery/Monastery.png"),
+	PlaceMode.ARCHERY_RANGE: preload("res://assets/buildings/blue_archery/Archery.png"),
+	PlaceMode.SOLDIER:       preload("res://assets/units/blue_warrior/Warrior_Idle.png"),
+	PlaceMode.ARCHER:        preload("res://assets/units/blue_archer/Archer_Idle.png"),
+	PlaceMode.LANCER:        preload("res://assets/units/blue_lancer/Lancer_Idle.png"),
+	PlaceMode.MONK_UNIT:     preload("res://assets/units/blue_monk/Idle.png"),
+	}
+
 # --- 快捷键列表（旧版兼容） ---
 const KEY_LIST := [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0]
 

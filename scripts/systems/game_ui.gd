@@ -164,9 +164,9 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 		var hotkey_index: int = (hotkey - KEY_1 + 1) if hotkey != KEY_0 else 0
 		var cost: int = D.COSTS.get(mode, 0)
 		var mode_name: String = tr(D.MODE_NAMES.get(mode, "ENTITY_UNIT"))
-		var icon_path: String = D.MODE_ICONS.get(mode, "")
+		var icon_tex: Texture2D = D.ICON_TEXTURES.get(mode, null) as Texture2D
 
-		var btn_wrapper := _create_build_button(mode, mode_name, hotkey_index, cost, icon_path)
+		var btn_wrapper := _create_build_button(mode, mode_name, hotkey_index, cost, icon_tex)
 		hbox.add_child(btn_wrapper)
 		ui_buttons[mode] = btn_wrapper
 
@@ -224,7 +224,7 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 # ============================================================
 # 建造按钮工厂
 # ============================================================
-func _create_build_button(mode: int, mode_name: String, hotkey_index: int, cost: int, icon_path: String) -> Control:
+func _create_build_button(mode: int, mode_name: String, hotkey_index: int, cost: int, icon_tex: Texture2D) -> Control:
 	var wrapper := Control.new()
 	wrapper.custom_minimum_size = Vector2(100, 56)
 
@@ -246,9 +246,19 @@ func _create_build_button(mode: int, mode_name: String, hotkey_index: int, cost:
 	wrapper.add_child(content)
 
 	# 图标
-	if icon_path != "":
+	if icon_tex != null:
+		# 单位贴图是动画雪犇图，裁剪只取第一帧
+		var display_tex: Texture2D = icon_tex
+		var tw := icon_tex.get_width()
+		var th := icon_tex.get_height()
+		if tw > th:
+			var atlas := AtlasTexture.new()
+			atlas.atlas = icon_tex
+			atlas.region = Rect2(0, 0, th, th)
+			display_tex = atlas
+
 		var icon := TextureRect.new()
-		icon.texture = load(icon_path)
+		icon.texture = display_tex
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		icon.custom_minimum_size = Vector2(28, 28)
