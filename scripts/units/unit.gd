@@ -106,13 +106,13 @@ func _setup_stats() -> void:
 			attack_damage = 15
 			attack_range = 200.0
 			attack_cooldown = 1.2
-			move_speed = 80.0
+			move_speed = 180.0
 		UnitType.LANCER:
 			max_hp = 180
 			attack_damage = 12
 			attack_range = 45.0
 			attack_cooldown = 1.0
-			move_speed = 70.0
+			move_speed = 100.0
 		UnitType.MONK:
 			max_hp = 50
 			attack_damage = 0
