@@ -1,5 +1,5 @@
 extends Node
-## UI 模块：底部建造面板、金币显示、放置模式提示、波次倒计时、暂停菜单
+## UI 模块：底部建造面板（标签页）+ 金币显示 + 放置模式提示 + 波次倒计时 + 暂停菜单
 
 const D := preload("res://scripts/systems/game_data.gd")
 
@@ -7,6 +7,7 @@ const D := preload("res://scripts/systems/game_data.gd")
 const PATH_WOOD_TABLE := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Wood Table/WoodTable.png"
 const PATH_BTN_BLUE_REG := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Buttons/BigBlueButton_Regular.png"
 const PATH_BTN_BLUE_PRS := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Buttons/BigBlueButton_Pressed.png"
+const PATH_BTN_RED_REG := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Buttons/BigRedButton_Regular.png"
 
 signal place_mode_requested(mode: int)
 signal restart_requested
@@ -18,6 +19,18 @@ var ui_buttons: Dictionary = {}  # mode -> Control wrapper
 var place_mode_label: Label
 var gold_label: Label
 var wave_countdown_label: Label
+
+# 标签页
+var active_tab: int = 0  # 0=单位, 1=建筑
+var tab_buttons: Array[Button] = []
+var unit_container: HBoxContainer
+var building_container: HBoxContainer
+
+# Tooltip
+var tooltip_panel: PanelContainer
+var tooltip_label: Label
+var tooltip_timer: Timer
+var tooltip_target_mode: int = -1
 
 # 暂停菜单
 var pause_menu_open: bool = false
@@ -32,15 +45,20 @@ var _main_node: Node2D
 # 面板矩形（用于相机豁免）
 var panel_rect: Rect2
 
+# CanvasLayer 引用（用于 tooltip）
+var _ui_canvas: CanvasLayer
+
 # 九宫格纹理
 var np_wood_table: Dictionary
 var np_btn_blue: Dictionary
 var np_btn_blue_prs: Dictionary
+var np_btn_red: Dictionary
 
 func initialize(main_node: Node2D, map_config: Resource, gold: int) -> void:
 	_main_node = main_node
 	_preprocess_textures()
 	_create_ui(map_config, gold)
+	_create_tooltip()
 	_create_pause_menu()
 
 
@@ -97,18 +115,18 @@ func _make_ninepatch(np: Dictionary) -> NinePatchRect:
 
 
 func _preprocess_textures() -> void:
-	# WoodTable (448x448)
 	np_wood_table = _process_ninepatch(PATH_WOOD_TABLE,
 		[[43, 127], [192, 255], [320, 422]],
 		[[44, 127], [192, 255], [320, 403]])
-	# BigBlueButton Regular (320x320)
 	np_btn_blue = _process_ninepatch(PATH_BTN_BLUE_REG,
 		[[17, 63], [128, 191], [256, 302]],
 		[[19, 63], [128, 191], [256, 300]])
-	# BigBlueButton Pressed (320x320)
 	np_btn_blue_prs = _process_ninepatch(PATH_BTN_BLUE_PRS,
 		[[28, 63], [128, 191], [256, 304]],
 		[[14, 63], [128, 191], [256, 305]])
+	np_btn_red = _process_ninepatch(PATH_BTN_RED_REG,
+		[[17, 63], [128, 191], [256, 302]],
+		[[19, 63], [128, 191], [256, 300]])
 
 
 # ============================================================
@@ -118,33 +136,7 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	var canvas := CanvasLayer.new()
 	canvas.layer = 10
 	_main_node.add_child(canvas)
-
-	# --- 底部建造面板 ---
-	var panel_wrapper := Control.new()
-	panel_wrapper.anchor_left = 0.05
-	panel_wrapper.anchor_right = 0.95
-	panel_wrapper.anchor_top = 1.0
-	panel_wrapper.anchor_bottom = 1.0
-	panel_wrapper.offset_top = -80.0
-	panel_wrapper.offset_bottom = -8.0
-	panel_wrapper.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	canvas.add_child(panel_wrapper)
-
-	# WoodTable 九宫格底板
-	var panel_bg := _make_ninepatch(np_wood_table)
-	panel_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	panel_wrapper.add_child(panel_bg)
-
-	# 按钮容器（居中）
-	var hbox := HBoxContainer.new()
-	hbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	hbox.offset_left = 12
-	hbox.offset_right = -12
-	hbox.offset_top = 8
-	hbox.offset_bottom = -8
-	hbox.add_theme_constant_override("separation", 6)
-	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	panel_wrapper.add_child(hbox)
+	_ui_canvas = canvas
 
 	# --- 获取并按固定顺序排序可用物品 ---
 	var available_items: Array = []
@@ -158,20 +150,89 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 		if mode in available_items:
 			sorted_items.append(mode)
 
-	# --- 生成按钮 ---
+	# 分离单位和建筑
+	var unit_modes: Array = []
+	var building_modes: Array = []
 	for mode in sorted_items:
-		var hotkey: Key = D.MODE_HOTKEYS.get(mode, KEY_0)
-		var hotkey_index: int = (hotkey - KEY_1 + 1) if hotkey != KEY_0 else 0
-		var cost: int = D.COSTS.get(mode, 0)
-		var mode_name: String = tr(D.MODE_NAMES.get(mode, "ENTITY_UNIT"))
-		var icon_tex: Texture2D = D.ICON_TEXTURES.get(mode, null) as Texture2D
+		if D.is_unit_mode(mode):
+			unit_modes.append(mode)
+		else:
+			building_modes.append(mode)
 
-		var btn_wrapper := _create_build_button(mode, mode_name, hotkey_index, cost, icon_tex)
-		hbox.add_child(btn_wrapper)
-		ui_buttons[mode] = btn_wrapper
+	# --- 底部建造面板 ---
+	var panel_wrapper := Control.new()
+	panel_wrapper.anchor_left = 0.1
+	panel_wrapper.anchor_right = 0.9
+	panel_wrapper.anchor_top = 1.0
+	panel_wrapper.anchor_bottom = 1.0
+	panel_wrapper.offset_top = -140.0
+	panel_wrapper.offset_bottom = -8.0
+	panel_wrapper.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	canvas.add_child(panel_wrapper)
 
-		# 固定快捷键映射
-		key_to_mode[hotkey] = mode
+	# WoodTable 九宫格底板
+	var panel_bg := _make_ninepatch(np_wood_table)
+	panel_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	panel_wrapper.add_child(panel_bg)
+
+	# 内容区域
+	var content := VBoxContainer.new()
+	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.offset_left = 10
+	content.offset_right = -10
+	content.offset_top = 6
+	content.offset_bottom = -6
+	content.add_theme_constant_override("separation", 4)
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel_wrapper.add_child(content)
+
+	# --- 标签页行 ---
+	var tab_row := HBoxContainer.new()
+	tab_row.add_theme_constant_override("separation", 8)
+	tab_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	tab_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(tab_row)
+
+	# 单位标签
+	var unit_tab := Button.new()
+	unit_tab.text = tr("TAB_UNITS")
+	unit_tab.custom_minimum_size = Vector2(100, 28)
+	unit_tab.toggle_mode = true
+	unit_tab.pressed.connect(func(): _switch_tab(0))
+	tab_row.add_child(unit_tab)
+	tab_buttons.append(unit_tab)
+
+	# 建筑标签
+	var build_tab := Button.new()
+	build_tab.text = tr("TAB_BUILDINGS")
+	build_tab.custom_minimum_size = Vector2(100, 28)
+	build_tab.toggle_mode = true
+	build_tab.pressed.connect(func(): _switch_tab(1))
+	tab_row.add_child(build_tab)
+	tab_buttons.append(build_tab)
+
+	# --- 单位图标容器 ---
+	unit_container = HBoxContainer.new()
+	unit_container.add_theme_constant_override("separation", 16)
+	unit_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	unit_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(unit_container)
+
+	# --- 建筑图标容器 ---
+	building_container = HBoxContainer.new()
+	building_container.add_theme_constant_override("separation", 16)
+	building_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	building_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(building_container)
+
+	# --- 生成按钮 ---
+	for mode in unit_modes:
+		_add_icon_button(mode, unit_container)
+	for mode in building_modes:
+		_add_icon_button(mode, building_container)
+
+	# 默认显示单位页
+	_switch_tab(0)
 
 	# --- 金币显示（左上角）---
 	gold_label = Label.new()
@@ -186,7 +247,7 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	gold_label.text = tr("UI_GOLD") % current_gold
 	canvas.add_child(gold_label)
 
-	# --- 放置模式提示（屏幕顶部偏下）---
+	# --- 放置模式提示（屏幕顶部）---
 	place_mode_label = Label.new()
 	place_mode_label.anchor_left = 0.5
 	place_mode_label.anchor_right = 0.5
@@ -209,7 +270,7 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	wave_countdown_label.anchor_right = 0.5
 	wave_countdown_label.anchor_top = 1.0
 	wave_countdown_label.anchor_bottom = 1.0
-	wave_countdown_label.offset_top = -95.0
+	wave_countdown_label.offset_top = -155.0
 	wave_countdown_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	wave_countdown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	wave_countdown_label.add_theme_font_size_override("font_size", 20)
@@ -222,11 +283,56 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 
 
 # ============================================================
-# 建造按钮工厂
+# 图标裁剪工具
 # ============================================================
-func _create_build_button(mode: int, mode_name: String, hotkey_index: int, cost: int, icon_tex: Texture2D) -> Control:
+## 裁剪图标的透明边距，返回紧凑的 AtlasTexture
+func _make_trimmed_icon(tex: Texture2D) -> AtlasTexture:
+	var img: Image = tex.get_image()
+	var tw := img.get_width()
+	var th := img.get_height()
+
+	# 确定帧尺寸（宽动画表裁剪为第一帧）
+	var frame_w: int
+	var frame_h: int
+	if tw > th:
+		var frame_count := tw / th
+		if frame_count > 0:
+			frame_w = tw / frame_count
+		else:
+			frame_w = tw
+		frame_h = th
+	else:
+		frame_w = tw
+		frame_h = th
+
+	# 裁剪第一帧并查找内容边界
+	var frame_img := img.get_region(Rect2i(0, 0, frame_w, frame_h))
+	var bbox: Rect2i = frame_img.get_used_rect()
+
+	if bbox.size.x <= 0 or bbox.size.y <= 0:
+		bbox = Rect2i(0, 0, frame_w, frame_h)
+
+	var atlas := AtlasTexture.new()
+	atlas.atlas = tex
+	atlas.region = Rect2(bbox.position.x, bbox.position.y, bbox.size.x, bbox.size.y)
+	return atlas
+
+
+# ============================================================
+# 图标按钮工厂
+# ============================================================
+func _add_icon_button(mode: int, container: HBoxContainer) -> void:
+	var hotkey: Key = D.MODE_HOTKEYS.get(mode, KEY_0)
+	var hotkey_index: int = (hotkey - KEY_1 + 1) if hotkey != KEY_0 else 0
+	var cost: int = D.COSTS.get(mode, 0)
+	var mode_name: String = tr(D.MODE_NAMES.get(mode, "ENTITY_UNIT"))
+	var icon_tex: Texture2D = D.ICON_TEXTURES.get(mode, null) as Texture2D
+
+	# 固定快捷键映射
+	key_to_mode[hotkey] = mode
+
 	var wrapper := Control.new()
-	wrapper.custom_minimum_size = Vector2(100, 56)
+	wrapper.custom_minimum_size = Vector2(80, 80)
 
 	# 九宫格按钮底板
 	var bg := _make_ninepatch(np_btn_blue)
@@ -234,68 +340,42 @@ func _create_build_button(mode: int, mode_name: String, hotkey_index: int, cost:
 	bg.name = "ButtonBG"
 	wrapper.add_child(bg)
 
-	# 内容容器（水平布局：图标 + 文字）
-	var content := HBoxContainer.new()
-	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	content.offset_left = 4
-	content.offset_right = -4
-	content.offset_top = 4
-	content.offset_bottom = -4
-	content.add_theme_constant_override("separation", 2)
-	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	wrapper.add_child(content)
-
-	# 图标
+	# 图标（自动裁剪透明边距）
 	if icon_tex != null:
-		# 单位贴图是动画雪犇图，裁剪只取第一帧
-		var display_tex: Texture2D = icon_tex
-		var tw := icon_tex.get_width()
-		var th := icon_tex.get_height()
-		if tw > th:
-			var atlas := AtlasTexture.new()
-			atlas.atlas = icon_tex
-			atlas.region = Rect2(0, 0, th, th)
-			display_tex = atlas
+		var display_tex: AtlasTexture = _make_trimmed_icon(icon_tex)
 
 		var icon := TextureRect.new()
 		icon.texture = display_tex
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.custom_minimum_size = Vector2(28, 28)
-		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		icon.offset_left = 6
+		icon.offset_right = -6
+		icon.offset_top = 6
+		icon.offset_bottom = -6
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		content.add_child(icon)
+		wrapper.add_child(icon)
 
-	# 文字区域（垂直布局）
-	var text_col := VBoxContainer.new()
-	text_col.add_theme_constant_override("separation", 0)
-	text_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	text_col.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content.add_child(text_col)
+	# 快捷键角标
+	var key_label := Label.new()
+	key_label.text = str(hotkey_index)
+	key_label.add_theme_font_size_override("font_size", 14)
+	key_label.add_theme_color_override("font_color", Color(1, 1, 1))
+	key_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	key_label.add_theme_constant_override("shadow_offset_x", 1)
+	key_label.add_theme_constant_override("shadow_offset_y", 1)
+	key_label.anchor_left = 0.0
+	key_label.anchor_right = 0.0
+	key_label.anchor_top = 0.0
+	key_label.anchor_bottom = 0.0
+	key_label.offset_left = 4
+	key_label.offset_right = 18
+	key_label.offset_top = 2
+	key_label.offset_bottom = 14
+	key_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wrapper.add_child(key_label)
 
-	var name_label := Label.new()
-	name_label.text = "%d:%s" % [hotkey_index, mode_name]
-	name_label.add_theme_font_size_override("font_size", 13)
-	name_label.add_theme_color_override("font_color", Color(1, 1, 1))
-	name_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
-	name_label.add_theme_constant_override("shadow_offset_x", 1)
-	name_label.add_theme_constant_override("shadow_offset_y", 1)
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	text_col.add_child(name_label)
-
-	var cost_label := Label.new()
-	cost_label.text = "$%d" % cost
-	cost_label.add_theme_font_size_override("font_size", 12)
-	cost_label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
-	cost_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.5))
-	cost_label.add_theme_constant_override("shadow_offset_x", 1)
-	cost_label.add_theme_constant_override("shadow_offset_y", 1)
-	cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	cost_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	text_col.add_child(cost_label)
-
-	# 透明 Button 接收点击
+	# 透明 Button 接收点击 + 悬浮
 	var btn := Button.new()
 	btn.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
@@ -307,9 +387,106 @@ func _create_build_button(mode: int, mode_name: String, hotkey_index: int, cost:
 	btn.pressed.connect(func(): place_mode_requested.emit(mode))
 	btn.button_down.connect(func(): bg.texture = np_btn_blue_prs.texture)
 	btn.button_up.connect(func(): bg.texture = np_btn_blue.texture)
+	btn.mouse_entered.connect(_on_icon_hover.bind(mode))
+	btn.mouse_exited.connect(_on_icon_unhover)
 	wrapper.add_child(btn)
 
-	return wrapper
+	container.add_child(wrapper)
+	ui_buttons[mode] = wrapper
+
+
+# ============================================================
+# 标签页切换
+# ============================================================
+func _switch_tab(tab_index: int) -> void:
+	active_tab = tab_index
+	unit_container.visible = (tab_index == 0)
+	building_container.visible = (tab_index == 1)
+
+	# 更新标签按钮外观
+	for i in range(tab_buttons.size()):
+		tab_buttons[i].button_pressed = (i == tab_index)
+
+
+## 快捷键触发时自动切换标签页
+func switch_tab_for_mode(mode: int) -> void:
+	if D.is_unit_mode(mode):
+		if active_tab != 0:
+			_switch_tab(0)
+	else:
+		if active_tab != 1:
+			_switch_tab(1)
+
+
+# ============================================================
+# Tooltip 系统
+# ============================================================
+func _create_tooltip() -> void:
+	# Timer: 悬浮1秒后显示
+	tooltip_timer = Timer.new()
+	tooltip_timer.one_shot = true
+	tooltip_timer.wait_time = 0.8
+	tooltip_timer.timeout.connect(_show_tooltip)
+	add_child(tooltip_timer)
+
+	# Tooltip 面板
+	tooltip_panel = PanelContainer.new()
+	tooltip_panel.z_index = 100
+	tooltip_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 半透明深色背景
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.1, 0.1, 0.15, 0.92)
+	style.set_corner_radius_all(4)
+	style.set_content_margin_all(8)
+	tooltip_panel.add_theme_stylebox_override("panel", style)
+	tooltip_panel.visible = false
+
+	# 添加到 canvas (需要找到 canvas)
+	# 我们把它挂在 _main_node 的 canvas layer 上
+	# 但 canvas 是局部变量... 挂在 _main_node 上
+	_ui_canvas.add_child(tooltip_panel)
+
+	tooltip_label = Label.new()
+	tooltip_label.add_theme_font_size_override("font_size", 14)
+	tooltip_label.add_theme_color_override("font_color", Color(1, 1, 1))
+	tooltip_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tooltip_panel.add_child(tooltip_label)
+
+
+func _on_icon_hover(mode: int) -> void:
+	tooltip_target_mode = mode
+	tooltip_timer.start()
+
+
+func _on_icon_unhover() -> void:
+	tooltip_timer.stop()
+	tooltip_panel.visible = false
+	tooltip_target_mode = -1
+
+
+func _show_tooltip() -> void:
+	if tooltip_target_mode < 0:
+		return
+	var mode: int = tooltip_target_mode
+	var mode_name: String = tr(D.MODE_NAMES.get(mode, "?"))
+	var cost: int = D.COSTS.get(mode, 0)
+	var hotkey: Key = D.MODE_HOTKEYS.get(mode, KEY_0)
+	var hotkey_index: int = (hotkey - KEY_1 + 1) if hotkey != KEY_0 else 0
+	var type_str: String = tr("TAB_UNITS") if D.is_unit_mode(mode) else tr("TAB_BUILDINGS")
+
+	tooltip_label.text = "%s (%s)\n$%d  [%d]" % [mode_name, type_str, cost, hotkey_index]
+	tooltip_panel.visible = true
+
+	# 定位：用锚点偏移量（屏幕坐标，在 CanvasLayer 内）
+	var mouse_pos := _main_node.get_viewport().get_mouse_position()
+	tooltip_panel.anchor_left = 0.0
+	tooltip_panel.anchor_right = 0.0
+	tooltip_panel.anchor_top = 0.0
+	tooltip_panel.anchor_bottom = 0.0
+	tooltip_panel.offset_left = mouse_pos.x - 40
+	tooltip_panel.offset_right = mouse_pos.x + 140
+	tooltip_panel.offset_top = mouse_pos.y - 55
+	tooltip_panel.offset_bottom = mouse_pos.y - 5
 
 
 # ============================================================
@@ -327,7 +504,6 @@ func _update_button_affordability(current_gold: int) -> void:
 		var cost: int = D.COSTS.get(mode, 0)
 		var can_afford: bool = current_gold >= cost
 		btn_wrapper.modulate.a = 1.0 if can_afford else 0.5
-		# 禁用/启用内部按钮
 		var btn: Button = btn_wrapper.get_child(btn_wrapper.get_child_count() - 1)
 		if btn is Button:
 			btn.disabled = not can_afford
@@ -369,13 +545,12 @@ func get_panel_screen_rect() -> Rect2:
 
 ## 每帧更新面板矩形位置
 func update_panel_rect() -> void:
-	# 底部面板区域估算：屏幕底部 8px ~ 80px
 	var vp_size: Vector2 = _main_node.get_viewport().get_visible_rect().size
 	panel_rect = Rect2(
-		vp_size.x * 0.05,
-		vp_size.y - 80.0,
-		vp_size.x * 0.9,
-		72.0
+		vp_size.x * 0.1,
+		vp_size.y - 132.0,
+		vp_size.x * 0.8,
+		132.0
 	)
 
 
@@ -397,7 +572,6 @@ func _create_pause_menu() -> void:
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	pause_canvas.add_child(overlay)
 
-	# ESC input handler (runs while paused)
 	var input_handler := Control.new()
 	input_handler.set_script(load("res://scripts/ui/pause_input_handler.gd"))
 	input_handler.main_node = _main_node
