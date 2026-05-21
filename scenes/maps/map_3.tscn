@@ -1,9 +1,15 @@
-[gd_scene load_steps=5 format=3 uid="uid://map3scene0001"]
+[gd_scene format=3 uid="uid://map3scene0001"]
 
-[ext_resource type="Script" path="res://scripts/main.gd" id="main_script"]
+[ext_resource type="Script" uid="uid://cg2igjmusi0dq" path="res://scripts/main.gd" id="main_script"]
 [ext_resource type="Resource" path="res://resources/map3_config.tres" id="map3_config"]
 [ext_resource type="Script" path="res://scripts/victory/victory_survive_waves.gd" id="victory_survive"]
 [ext_resource type="Script" path="res://scripts/systems_game/wave_manager.gd" id="wave_manager"]
+[ext_resource type="PackedScene" uid="uid://mmgbo1ded4ro" path="res://scenes/units/soldier.tscn" id="soldier"]
+[ext_resource type="PackedScene" uid="uid://e5by4tc82spk" path="res://scenes/units/archer.tscn" id="archer"]
+[ext_resource type="PackedScene" uid="uid://8rfekrdqs7gf" path="res://scenes/buildings/castle.tscn" id="castle"]
+[ext_resource type="PackedScene" uid="uid://dhyxequcxurbh" path="res://scenes/buildings/barracks.tscn" id="barracks"]
+[ext_resource type="PackedScene" uid="uid://bxarchery01" path="res://scenes/buildings/archery_building.tscn" id="archery"]
+[ext_resource type="PackedScene" uid="uid://tower0001" path="res://scenes/buildings/tower.tscn" id="tower"]
 
 [sub_resource type="NavigationPolygon" id="NavPoly_1"]
 vertices = PackedVector2Array(-500, -500, 1500, -500, 1500, 1200, -500, 1200)
@@ -27,9 +33,36 @@ navigation_polygon = SubResource("NavPoly_1")
 
 [node name="PlayerUnits" type="Node2D" parent="."]
 
+[node name="PlayerSoldier1" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(100, 200)
+
+[node name="PlayerSoldier2" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(100, 280)
+
+[node name="PlayerSoldier3" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(100, 360)
+
+[node name="PlayerArcher1" parent="PlayerUnits" instance=ExtResource("archer")]
+position = Vector2(50, 240)
+
+[node name="PlayerArcher2" parent="PlayerUnits" instance=ExtResource("archer")]
+position = Vector2(50, 320)
+
 [node name="EnemyUnits" type="Node2D" parent="."]
 
 [node name="Buildings" type="Node2D" parent="."]
+
+[node name="PlayerCastle" parent="Buildings" instance=ExtResource("castle")]
+position = Vector2(160, 224)
+
+[node name="PlayerBarracks" parent="Buildings" instance=ExtResource("barracks")]
+position = Vector2(384, 256)
+
+[node name="PlayerArchery" parent="Buildings" instance=ExtResource("archery")]
+position = Vector2(384, 128)
+
+[node name="PlayerTower" parent="Buildings" instance=ExtResource("tower")]
+position = Vector2(480, 160)
 
 [node name="SelectionBox" type="ColorRect" parent="."]
 visible = false

@@ -1,9 +1,13 @@
 [gd_scene format=3 uid="uid://oif05mvpfeqq"]
 
+[ext_resource type="PackedScene" uid="uid://e5by4tc82spk" path="res://scenes/units/archer.tscn" id="archer"]
 [ext_resource type="Script" uid="uid://cmp1bdjkabfkb" path="res://scripts/systems_game/capture_point.gd" id="capture_point"]
 [ext_resource type="Script" uid="uid://cg2igjmusi0dq" path="res://scripts/main.gd" id="main_script"]
 [ext_resource type="Resource" uid="uid://bf4gvwxd1j4wh" path="res://resources/map1_config.tres" id="map1_config"]
+[ext_resource type="PackedScene" uid="uid://mmgbo1ded4ro" path="res://scenes/units/soldier.tscn" id="soldier"]
+[ext_resource type="PackedScene" uid="uid://tower0001" path="res://scenes/buildings/tower.tscn" id="tower"]
 [ext_resource type="Script" uid="uid://bl6nwwaua5wpn" path="res://scripts/victory/victory_blitz.gd" id="victory_blitz"]
+[ext_resource type="PackedScene" uid="uid://wall00001" path="res://scenes/buildings/wall.tscn" id="wall"]
 
 [sub_resource type="NavigationPolygon" id="NavPoly_1"]
 vertices = PackedVector2Array(-100, -100, 2100, -100, 2100, 500, -100, 500)
@@ -27,9 +31,80 @@ navigation_polygon = SubResource("NavPoly_1")
 
 [node name="PlayerUnits" type="Node2D" parent="." unique_id=9081123]
 
+[node name="PlayerSoldier1" parent="PlayerUnits" unique_id=1413990926 instance=ExtResource("soldier")]
+position = Vector2(0, 170)
+
+[node name="PlayerSoldier2" parent="PlayerUnits" unique_id=1047753874 instance=ExtResource("soldier")]
+position = Vector2(0, 200)
+
+[node name="PlayerSoldier3" parent="PlayerUnits" unique_id=1621521586 instance=ExtResource("soldier")]
+position = Vector2(0, 230)
+
+[node name="PlayerArcher1" parent="PlayerUnits" unique_id=140355678 instance=ExtResource("archer")]
+position = Vector2(-30, 185)
+
+[node name="PlayerArcher2" parent="PlayerUnits" unique_id=1340247514 instance=ExtResource("archer")]
+position = Vector2(-30, 215)
+
 [node name="EnemyUnits" type="Node2D" parent="." unique_id=1138210242]
 
+[node name="EnemySoldier1" parent="EnemyUnits" unique_id=995571038 instance=ExtResource("soldier")]
+position = Vector2(460, 170)
+team = 1
+
+[node name="EnemySoldier2" parent="EnemyUnits" unique_id=2117921756 instance=ExtResource("soldier")]
+position = Vector2(540, 230)
+team = 1
+
+[node name="EnemySoldier3" parent="EnemyUnits" unique_id=474893290 instance=ExtResource("soldier")]
+position = Vector2(960, 150)
+team = 1
+
+[node name="EnemySoldier4" parent="EnemyUnits" unique_id=414655730 instance=ExtResource("soldier")]
+position = Vector2(1040, 250)
+team = 1
+
+[node name="EnemySoldier5" parent="EnemyUnits" unique_id=1277298162 instance=ExtResource("soldier")]
+position = Vector2(1020, 200)
+team = 1
+
+[node name="EnemyArcher1" parent="EnemyUnits" unique_id=43617351 instance=ExtResource("archer")]
+position = Vector2(980, 220)
+team = 1
+
+[node name="EnemySoldier6" parent="EnemyUnits" unique_id=1662044932 instance=ExtResource("soldier")]
+position = Vector2(1510, 150)
+team = 1
+
+[node name="EnemySoldier7" parent="EnemyUnits" unique_id=1422943922 instance=ExtResource("soldier")]
+position = Vector2(1530, 250)
+team = 1
+
+[node name="EnemySoldier8" parent="EnemyUnits" unique_id=1304281742 instance=ExtResource("soldier")]
+position = Vector2(1570, 180)
+team = 1
+
+[node name="EnemyArcher2" parent="EnemyUnits" unique_id=181656642 instance=ExtResource("archer")]
+position = Vector2(1500, 220)
+team = 1
+
+[node name="EnemyArcher3" parent="EnemyUnits" unique_id=2104814037 instance=ExtResource("archer")]
+position = Vector2(1560, 240)
+team = 1
+
 [node name="Buildings" type="Node2D" parent="." unique_id=1682768343]
+
+[node name="EnemyTower" parent="Buildings" unique_id=1266297307 instance=ExtResource("tower")]
+position = Vector2(1504, 160)
+team = 1
+
+[node name="EnemyWall1" parent="Buildings" unique_id=944379155 instance=ExtResource("wall")]
+position = Vector2(1440, 96)
+team = 1
+
+[node name="EnemyWall2" parent="Buildings" unique_id=1757159703 instance=ExtResource("wall")]
+position = Vector2(1440, 224)
+team = 1
 
 [node name="SelectionBox" type="ColorRect" parent="." unique_id=208703597]
 visible = false

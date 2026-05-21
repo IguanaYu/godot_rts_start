@@ -1,10 +1,16 @@
 [gd_scene format=3 uid="uid://oii05mvpfeqq"]
 
-[ext_resource type="Script" path="res://scripts/main.gd" id="main_script"]
+[ext_resource type="Script" uid="uid://cg2igjmusi0dq" path="res://scripts/main.gd" id="main_script"]
 [ext_resource type="Resource" path="res://resources/map4_config.tres" id="map4_config"]
 [ext_resource type="Script" path="res://scripts/victory/victory_expand_defense.gd" id="victory_expand"]
 [ext_resource type="Script" path="res://scripts/systems_game/wave_manager.gd" id="wave_manager"]
 [ext_resource type="Script" path="res://scripts/systems_game/capture_point.gd" id="capture_point"]
+[ext_resource type="PackedScene" uid="uid://mmgbo1ded4ro" path="res://scenes/units/soldier.tscn" id="soldier"]
+[ext_resource type="PackedScene" uid="uid://e5by4tc82spk" path="res://scenes/units/archer.tscn" id="archer"]
+[ext_resource type="PackedScene" uid="uid://bxlancer01" path="res://scenes/units/lancer.tscn" id="lancer"]
+[ext_resource type="PackedScene" uid="uid://8rfekrdqs7gf" path="res://scenes/buildings/castle.tscn" id="castle"]
+[ext_resource type="PackedScene" uid="uid://dhyxequcxurbh" path="res://scenes/buildings/barracks.tscn" id="barracks"]
+[ext_resource type="PackedScene" uid="uid://tower0001" path="res://scenes/buildings/tower.tscn" id="tower"]
 
 [sub_resource type="NavigationPolygon" id="NavPoly_1"]
 vertices = PackedVector2Array(-500, -500, 2000, -500, 2000, 1700, -500, 1700)
@@ -28,9 +34,106 @@ navigation_polygon = SubResource("NavPoly_1")
 
 [node name="PlayerUnits" type="Node2D" parent="."]
 
+[node name="PlayerSoldier1" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(420, 520)
+
+[node name="PlayerSoldier2" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(420, 580)
+
+[node name="PlayerSoldier3" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(420, 640)
+
+[node name="PlayerArcher1" parent="PlayerUnits" instance=ExtResource("archer")]
+position = Vector2(360, 550)
+
+[node name="PlayerArcher2" parent="PlayerUnits" instance=ExtResource("archer")]
+position = Vector2(360, 610)
+
 [node name="EnemyUnits" type="Node2D" parent="."]
 
+[node name="EnemySoldier1" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(340, -250)
+team = 1
+
+[node name="EnemySoldier2" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(460, -250)
+team = 1
+
+[node name="EnemyArcher1" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(400, -300)
+team = 1
+
+[node name="EnemySoldier3" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1140, -250)
+team = 1
+
+[node name="EnemySoldier4" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1260, -250)
+team = 1
+
+[node name="EnemyArcher2" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(1200, -300)
+team = 1
+
+[node name="EnemySoldier5" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(-160, 750)
+team = 1
+
+[node name="EnemySoldier6" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(-40, 750)
+team = 1
+
+[node name="EnemyArcher3" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(-100, 700)
+team = 1
+
+[node name="EnemyArcher4" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(-100, 850)
+team = 1
+
+[node name="EnemySoldier7" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1140, 850)
+team = 1
+
+[node name="EnemySoldier8" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1260, 850)
+team = 1
+
+[node name="EnemyArcher5" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(1200, 800)
+team = 1
+
+[node name="EnemyArcher6" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(1200, 950)
+team = 1
+
+[node name="EnemyLancer1" parent="EnemyUnits" instance=ExtResource("lancer")]
+position = Vector2(1200, 900)
+team = 1
+
 [node name="Buildings" type="Node2D" parent="."]
+
+[node name="PlayerCastle" parent="Buildings" instance=ExtResource("castle")]
+position = Vector2(544, 608)
+
+[node name="PlayerBarracks" parent="Buildings" instance=ExtResource("barracks")]
+position = Vector2(768, 704)
+
+[node name="EnemyTower1" parent="Buildings" instance=ExtResource("tower")]
+position = Vector2(352, -288)
+team = 1
+
+[node name="EnemyTower2" parent="Buildings" instance=ExtResource("tower")]
+position = Vector2(1312, -288)
+team = 1
+
+[node name="EnemyTower3" parent="Buildings" instance=ExtResource("tower")]
+position = Vector2(-288, 736)
+team = 1
+
+[node name="EnemyTower4" parent="Buildings" instance=ExtResource("tower")]
+position = Vector2(1312, 864)
+team = 1
 
 [node name="SelectionBox" type="ColorRect" parent="."]
 visible = false
