@@ -61,10 +61,19 @@ signal died(building)
 func _ready() -> void:
 	_setup_stats()
 	if Engine.is_editor_hint():
+		_snap_position_to_grid()
 		_setup_editor_visuals()
 	else:
 		_setup_visuals()
 		_update_hp_bar()
+
+func _snap_position_to_grid() -> void:
+	var offset := Vector2((grid_size.x - 1) * 32.0, (grid_size.y - 1) * 32.0)
+	var tl := position - offset
+	var gx := floori((tl.x - 32.0) / 64.0)
+	var gy := floori((tl.y - 32.0) / 64.0)
+	grid_pos = Vector2i(gx, gy)
+	position = Vector2(gx * 64.0 + 32.0 + offset.x, gy * 64.0 + 32.0 + offset.y)
 
 func _setup_stats() -> void:
 	var max_hp: int
@@ -206,6 +215,7 @@ func get_rect() -> Rect2:
 
 func _process(delta: float) -> void:
 	if Engine.is_editor_hint():
+		_snap_position_to_grid()
 		return
 	if health.is_dead():
 		return

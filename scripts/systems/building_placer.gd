@@ -136,6 +136,21 @@ func cancel_place_mode() -> void:
 	place_mode = D.PlaceMode.NONE
 
 
+func register_preplaced_buildings(buildings_node: Node2D) -> void:
+	for building in buildings_node.get_children():
+		if not building.has_method("is_dead"):
+			continue
+		var gpos: Vector2i = building.grid_pos
+		var gsize: Vector2i = building.grid_size
+		var team: int = building.team
+		building.add_to_group("buildings")
+		building.add_to_group("player_buildings" if team == BuildingScript.Team.PLAYER else "enemy_buildings")
+		building.connect("died", _on_building_died)
+		for dx in range(gsize.x):
+			for dy in range(gsize.y):
+				occupied_cells[Vector2i(gpos.x + dx, gpos.y + dy)] = building
+
+
 func _on_building_died(building: Node2D) -> void:
 	var gpos: Vector2i = building.get("grid_pos")
 	var gsize: Vector2i = building.get("grid_size")

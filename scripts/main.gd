@@ -90,7 +90,12 @@ func _ready() -> void:
 	combat_ctrl.initialize(spawner_module)
 
 	# 生成
-	spawner_module.spawn_from_config(map_config)
+	var has_preplaced := _has_preplaced_entities()
+	if has_preplaced:
+		building_placer.register_preplaced_buildings(buildings_node)
+		_init_preplaced_units()
+	else:
+		spawner_module.spawn_from_config(map_config)
 	building_placer.create_grid()
 	spawner_module.spawn_environment(map_config, map_bounds)
 
@@ -102,6 +107,35 @@ func _ready() -> void:
 		camera.position = map_config.camera_start
 
 	await get_tree().process_frame
+
+func _has_preplaced_entities() -> bool:
+	for child in player_units_node.get_children():
+		if child is Unit:
+			return true
+	for child in enemy_units_node.get_children():
+		if child is Unit:
+			return true
+	for child in buildings_node.get_children():
+		if child.has_method("is_dead"):
+			return true
+	return false
+
+func _init_preplaced_units() -> void:
+	for unit in player_units_node.get_children():
+		if not unit is Unit:
+			continue
+		unit.connect("died", Callable(self, "_on_unit_died"))
+		unit.add_to_group("player_units")
+
+	for unit in enemy_units_node.get_children():
+		if not unit is Unit:
+			continue
+		unit.connect("died", Callable(self, "_on_unit_died"))
+		unit.add_to_group("enemy_units")
+		var ai := Node2D.new()
+		ai.name = "EnemyAI"
+		ai.set_script(load("res://scripts/units/enemy_ai.gd"))
+		unit.add_child(ai)
 
 func _load_from_config() -> void:
 	if map_config == null:
@@ -297,6 +331,7 @@ func _input(event: InputEvent) -> void:
 				get_tree().reload_current_scene()
 			KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0:
 				if key_to_mode.has(event.keycode):
+					ui_module.switch_tab_for_mode(key_to_mode[event.keycode])
 					_on_place_mode_requested(key_to_mode[event.keycode])
 			KEY_G:
 				building_placer.show_grid = not building_placer.show_grid
