@@ -144,11 +144,8 @@ position = Vector2(500, 200)
 script = ExtResource("capture_point")
 capture_radius = 80.0
 capture_speed = 50.0
-reward_type = 1
-reward_units = Array[Dictionary]([{
-"count": 2,
-"type": 0
-}])
+reward_gold = 200
+reward_soldiers = 3
 trigger_on_start = false
 
 [node name="CapturePoint2" type="Area2D" parent="." unique_id=571342277]
@@ -156,14 +153,8 @@ position = Vector2(1000, 200)
 script = ExtResource("capture_point")
 capture_radius = 80.0
 capture_speed = 50.0
-reward_type = 1
-reward_units = Array[Dictionary]([{
-"count": 1,
-"type": 0
-}, {
-"count": 1,
-"type": 1
-}])
+reward_soldiers = 1
+reward_archers = 1
 trigger_on_start = false
 
 [node name="CapturePoint3" type="Area2D" parent="." unique_id=1552047378]
@@ -171,12 +162,6 @@ position = Vector2(1550, 200)
 script = ExtResource("capture_point")
 capture_radius = 80.0
 capture_speed = 50.0
-reward_type = 1
-reward_units = Array[Dictionary]([{
-"count": 2,
-"type": 0
-}, {
-"count": 1,
-"type": 1
-}])
+reward_soldiers = 2
+reward_archers = 1
 trigger_on_start = false

@@ -10,15 +10,14 @@ const UNIT_TYPE_NAMES := {
 	UnitScript.UnitType.MONK: "ENTITY_MONK",
 }
 
-enum RewardType { GOLD, UNITS, CUSTOM }
-
 @export var capture_radius: float = 100.0
 @export var capture_speed: float = 20.0  # Progress per second when dominant
 
-@export var reward_type: RewardType = RewardType.GOLD
-@export var reward_gold: int = 500
-@export var reward_units: Array[Dictionary] = []
-@export var reward_custom: String = ""
+@export var reward_gold: int = 0
+@export var reward_soldiers: int = 0
+@export var reward_archers: int = 0
+@export var reward_lancers: int = 0
+@export var reward_monks: int = 0
 
 # Trigger conditions
 @export var trigger_on_start: bool = true
@@ -124,41 +123,46 @@ func _grant_reward() -> void:
 		print("CapturePoint: grant_reward FAILED - game_controller is null!")
 		return
 
-	match reward_type:
-		RewardType.GOLD:
-			if game_controller.has_method("add_gold"):
-				game_controller.call("add_gold", reward_gold)
-				print("CapturePoint: granted ", reward_gold, " gold!")
+	# 金币奖励
+	if reward_gold > 0:
+		if game_controller.has_method("add_gold"):
+			game_controller.call("add_gold", reward_gold)
+		if game_controller.has_method("show_floating_text"):
+			game_controller.call("show_floating_text",
+				"+%d" % reward_gold,
+				Color(1.0, 0.85, 0.0),
+				global_position)
+
+	# 单位奖励
+	var rewards := [
+		[UnitScript.UnitType.SOLDIER, reward_soldiers],
+		[UnitScript.UnitType.ARCHER, reward_archers],
+		[UnitScript.UnitType.LANCER, reward_lancers],
+		[UnitScript.UnitType.MONK, reward_monks],
+	]
+	if game_controller.has_method("spawn_unit_near"):
+		for entry in rewards:
+			var type: int = entry[0]
+			var count: int = entry[1]
+			for i in count:
+				game_controller.call("spawn_unit_near", type, global_position, captured_by)
+	if game_controller.has_method("show_floating_text"):
+		var parts: Array[String] = []
+		for entry in rewards:
+			var type: int = entry[0]
+			var count: int = entry[1]
+			if count <= 0:
+				continue
+			var unit_name: String = tr(UNIT_TYPE_NAMES.get(type, "ENTITY_UNIT"))
+			if count > 1:
+				parts.append(tr("REWARD_UNITS_PLURAL") % [count, unit_name])
 			else:
-				print("CapturePoint: game_controller has no add_gold method!")
-			if game_controller.has_method("show_floating_text"):
-				game_controller.call("show_floating_text",
-					"+%d" % reward_gold,
-					Color(1.0, 0.85, 0.0),
-					global_position)
-		RewardType.UNITS:
-			if game_controller.has_method("spawn_unit_near"):
-				for unit_data in reward_units:
-					var type = unit_data.get("type", 0)
-					var count = unit_data.get("count", 1)
-					for i in count:
-						game_controller.call("spawn_unit_near", type, global_position, captured_by)
-			if game_controller.has_method("show_floating_text"):
-				var parts: Array[String] = []
-				for unit_data in reward_units:
-					var type = unit_data.get("type", 0)
-					var count = unit_data.get("count", 1)
-					var unit_name: String = tr(UNIT_TYPE_NAMES.get(type, "ENTITY_UNIT"))
-					if count > 1:
-						parts.append(tr("REWARD_UNITS_PLURAL") % [count, unit_name])
-					else:
-						parts.append(tr("REWARD_UNITS_SINGLE") % [count, unit_name])
-				game_controller.call("show_floating_text",
-					" ".join(parts),
-					Color(0.3, 1.0, 0.3),
-					global_position)
-		RewardType.CUSTOM:
-			pass
+				parts.append(tr("REWARD_UNITS_SINGLE") % [count, unit_name])
+		if not parts.is_empty():
+			game_controller.call("show_floating_text",
+				" ".join(parts),
+				Color(0.3, 1.0, 0.3),
+				global_position)
 
 func get_capture_progress() -> float:
 	return capture_progress
