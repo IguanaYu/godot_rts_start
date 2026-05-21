@@ -92,6 +92,10 @@ team = 1
 position = Vector2(1560, 240)
 team = 1
 
+[node name="EnemyArcher4" parent="EnemyUnits" unique_id=113123254 instance=ExtResource("archer")]
+position = Vector2(686, 307)
+team = 1
+
 [node name="Buildings" type="Node2D" parent="." unique_id=1682768343]
 
 [node name="EnemyTower" parent="Buildings" unique_id=1266297307 instance=ExtResource("tower")]
@@ -139,29 +143,26 @@ text = "Attack Move (Click)"
 script = ExtResource("victory_blitz")
 capture_points = Array[NodePath]([NodePath("../CapturePoint1"), NodePath("../CapturePoint2"), NodePath("../CapturePoint3")])
 
+[node name="DetectionArea1" type="Marker2D" parent="." unique_id=900000001]
+position = Vector2(154, 213)
+
 [node name="CapturePoint1" type="Area2D" parent="." unique_id=1000529755]
-position = Vector2(500, 200)
+position = Vector2(600, 200)
 script = ExtResource("capture_point")
-capture_radius = 80.0
-capture_speed = 50.0
+detection_area = NodePath("../DetectionArea1")
 reward_gold = 200
 reward_soldiers = 3
-trigger_on_start = false
 
 [node name="CapturePoint2" type="Area2D" parent="." unique_id=571342277]
 position = Vector2(1000, 200)
 script = ExtResource("capture_point")
-capture_radius = 80.0
-capture_speed = 50.0
 reward_soldiers = 1
 reward_archers = 1
-trigger_on_start = false
+enabled_on_start = false
 
 [node name="CapturePoint3" type="Area2D" parent="." unique_id=1552047378]
 position = Vector2(1550, 200)
 script = ExtResource("capture_point")
-capture_radius = 80.0
-capture_speed = 50.0
 reward_soldiers = 2
 reward_archers = 1
-trigger_on_start = false
+enabled_on_start = false

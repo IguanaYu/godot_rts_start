@@ -260,40 +260,39 @@ waves = Array[Dictionary]( [
 script = ExtResource("victory_expand")
 wave_manager_path = NodePath("../WaveManager")
 capture_points = [NodePath("../CapturePointNW"), NodePath("../CapturePointNE"), NodePath("../CapturePointSW"), NodePath("../CapturePointSE")]
-activation_radius = 250.0
 
 [node name="CapturePointNW" type="Area2D" parent="."]
 position = Vector2(400, -200)
 script = ExtResource("capture_point")
+trigger_type = 0
+detection_radius = 250.0
 capture_radius = 100.0
-trigger_on_start = false
-reward_type = 0
-reward_gold = 600
 capture_speed = 30.0
+reward_gold = 600
 
 [node name="CapturePointNE" type="Area2D" parent="."]
 position = Vector2(1200, -200)
 script = ExtResource("capture_point")
+trigger_type = 0
+detection_radius = 250.0
 capture_radius = 100.0
-trigger_on_start = false
-reward_type = 0
-reward_gold = 600
 capture_speed = 30.0
+reward_gold = 600
 
 [node name="CapturePointSW" type="Area2D" parent="."]
 position = Vector2(-100, 800)
 script = ExtResource("capture_point")
+trigger_type = 0
+detection_radius = 250.0
 capture_radius = 100.0
-trigger_on_start = false
-reward_type = 0
-reward_gold = 800
 capture_speed = 30.0
+reward_gold = 800
 
 [node name="CapturePointSE" type="Area2D" parent="."]
 position = Vector2(1200, 900)
 script = ExtResource("capture_point")
+trigger_type = 0
+detection_radius = 250.0
 capture_radius = 100.0
-trigger_on_start = false
-reward_type = 0
-reward_gold = 1000
 capture_speed = 30.0
+reward_gold = 1000

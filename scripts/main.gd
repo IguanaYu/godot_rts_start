@@ -187,6 +187,10 @@ func _on_place_mode_requested(mode: int) -> void:
 
 func _on_unit_died(unit: CharacterBody2D) -> void:
 	combat_ctrl.remove_dead_unit(unit)
+	# 通知类型C的CapturePoint
+	for child in get_children():
+		if child is CapturePoint:
+			child.notify_kill()
 
 # --- 每帧更新 ---
 
