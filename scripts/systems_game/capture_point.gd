@@ -27,6 +27,7 @@ enum TriggerType { CLEAR_AREA, KILL_TARGETS, MISSION_COUNTER }
 @export var capture_radius: float = 80.0:
 	set(v): capture_radius = v; queue_redraw()
 @export var capture_speed: float = 50.0
+@export var can_enemy_capture: bool = true
 
 # --- 奖励效果 ---
 @export var reward_gold: int = 0
@@ -174,15 +175,16 @@ func _process_capture(delta: float) -> void:
 			if u.global_position.distance_to(global_position) <= capture_radius:
 				player_count += 1
 
-	for u in get_tree().get_nodes_in_group("enemy_units"):
-		if u is CharacterBody2D and not u.is_dead():
-			if u.global_position.distance_to(global_position) <= capture_radius:
-				enemy_count += 1
+	if can_enemy_capture:
+		for u in get_tree().get_nodes_in_group("enemy_units"):
+			if u is CharacterBody2D and not u.is_dead():
+				if u.global_position.distance_to(global_position) <= capture_radius:
+					enemy_count += 1
 
 	var dominant_team := -1
 	if player_count > enemy_count:
 		dominant_team = UnitScript.Team.PLAYER
-	elif enemy_count > player_count:
+	elif can_enemy_capture and enemy_count > player_count:
 		dominant_team = UnitScript.Team.ENEMY
 
 	if dominant_team != -1:
@@ -276,6 +278,8 @@ func _draw() -> void:
 		draw_arc(det_local, detection_radius, 0, TAU, 64, Color(1, 0.3, 0.3, 0.5), 2.0)
 		draw_circle(det_local, detection_radius, Color(1, 0.3, 0.3, 0.08))
 
-	# 绿色奖励圈
-	draw_arc(Vector2.ZERO, capture_radius, 0, TAU, 64, Color(0.3, 1.0, 0.3, 0.7), 2.0)
-	draw_circle(Vector2.ZERO, capture_radius, Color(0.3, 1.0, 0.3, 0.12))
+	# 奖励圈（玩家专属=蓝色，可争夺=绿色）
+	var ring_color := Color(0.3, 0.6, 1.0, 0.7) if not can_enemy_capture else Color(0.3, 1.0, 0.3, 0.7)
+	var fill_color := Color(0.3, 0.6, 1.0, 0.12) if not can_enemy_capture else Color(0.3, 1.0, 0.3, 0.12)
+	draw_arc(Vector2.ZERO, capture_radius, 0, TAU, 64, ring_color, 2.0)
+	draw_circle(Vector2.ZERO, capture_radius, fill_color)
