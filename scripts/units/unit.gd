@@ -5,6 +5,7 @@ class_name Unit
 enum UnitState { GUARD, HOLD_POSITION, MOVE, ATTACK_MOVE, ATTACK, HEAL, DEAD }
 enum UnitType { SOLDIER, ARCHER, LANCER, MONK }
 enum Team { PLAYER, ENEMY }
+enum CommandSource { NONE, PLAYER, AUTO }
 
 const HealEffectScene := preload("res://scenes/effects/heal_effect.tscn")
 
@@ -40,6 +41,7 @@ var move_speed: float
 
 var state: UnitState = UnitState.GUARD
 var attack_target = null
+var attack_command_source: CommandSource = CommandSource.NONE
 var attack_timer: float = 0.0
 var selected: bool = false
 var attack_move_target: Vector2 = Vector2.ZERO
@@ -376,6 +378,7 @@ func _attack_process(delta: float) -> void:
 
 	if attack_target == null or attack_target.is_dead():
 		attack_target = null
+		attack_command_source = CommandSource.NONE
 		_is_attacking = false
 		if hold_position_mode:
 			state = UnitState.HOLD_POSITION
@@ -391,9 +394,21 @@ func _attack_process(delta: float) -> void:
 	if dist > get_effective_attack_range():
 		if hold_position_mode:
 			attack_target = null
+			attack_command_source = CommandSource.NONE
 			_is_attacking = false
 			state = UnitState.HOLD_POSITION
 			return
+
+		# Attack-Move 清区域：目标跑出扫描范围就放弃，换最近的
+		if attack_move_target != Vector2.ZERO and attack_command_source == CommandSource.AUTO:
+			var dist_to_target := global_position.distance_to(attack_target.global_position)
+			if dist_to_target > attack_move_scan_range:
+				attack_target = null
+				attack_command_source = CommandSource.NONE
+				_is_attacking = false
+				nav_agent.target_position = attack_move_target
+				state = UnitState.ATTACK_MOVE
+				return
 
 		var base_dir: Vector2
 
@@ -447,6 +462,7 @@ func _attack_move_process(delta: float) -> void:
 
 	if closest != null:
 		attack_target = closest
+		attack_command_source = CommandSource.AUTO
 		nav_agent.target_position = _get_building_nav_target(closest)
 		state = UnitState.ATTACK
 		return
@@ -534,18 +550,18 @@ func _guard_process(delta: float) -> void:
 	var closest = _find_closest_enemy_in_range(attack_move_scan_range)
 	if closest != null:
 		attack_target = closest
+		attack_command_source = CommandSource.AUTO
 		nav_agent.target_position = _get_building_nav_target(closest)
 		state = UnitState.ATTACK
 		hold_position_mode = false
 
 func _hold_position_process(delta: float) -> void:
-	var closest = _find_closest_enemy_in_range(attack_move_scan_range)
+	var closest = _find_closest_enemy_in_range(get_effective_attack_range())
 	if closest != null:
-		var dist := _get_dist_to_target(closest)
-		if dist <= attack_range:
-			attack_target = closest
-			state = UnitState.ATTACK
-			hold_position_mode = true
+		attack_target = closest
+		attack_command_source = CommandSource.AUTO
+		state = UnitState.ATTACK
+		hold_position_mode = true
 
 func _get_building_nav_target(target, angle_offset: float = 0.0) -> Vector2:
 	if not target.has_method("get_rect"):
@@ -739,11 +755,15 @@ func _player_retaliate(attacker) -> void:
 	# 已经在攻击有效目标时不切换
 	if state == UnitState.ATTACK and attack_target != null and not attack_target.is_dead():
 		return
+	# 玩家手动指定的攻击目标不被自动索敌打断
+	if attack_command_source == CommandSource.PLAYER:
+		return
 	# 验证攻击者仍存活
 	if attacker == null or not is_instance_valid(attacker) or attacker.is_dead():
 		return
 
 	attack_target = attacker
+	attack_command_source = CommandSource.AUTO
 	nav_agent.target_position = _get_building_nav_target(attacker)
 
 	if state == UnitState.HOLD_POSITION:
@@ -797,6 +817,7 @@ func _reset_movement_state() -> void:
 func move_to(target_pos: Vector2) -> void:
 	_reset_movement_state()
 	attack_target = null
+	attack_command_source = CommandSource.NONE
 	attack_move_target = Vector2.ZERO
 	hold_position_mode = false
 	heal_target = null
@@ -807,6 +828,7 @@ func move_to(target_pos: Vector2) -> void:
 func attack_move_to(target_pos: Vector2) -> void:
 	_reset_movement_state()
 	attack_target = null
+	attack_command_source = CommandSource.NONE
 	attack_move_target = target_pos
 	hold_position_mode = false
 	heal_target = null
@@ -817,6 +839,7 @@ func attack_move_to(target_pos: Vector2) -> void:
 func stop() -> void:
 	_reset_movement_state()
 	attack_target = null
+	attack_command_source = CommandSource.NONE
 	attack_move_target = Vector2.ZERO
 	_is_attacking = false
 	hold_position_mode = false
@@ -829,6 +852,7 @@ func stop() -> void:
 func hold_position() -> void:
 	_reset_movement_state()
 	attack_target = null
+	attack_command_source = CommandSource.NONE
 	attack_move_target = Vector2.ZERO
 	_is_attacking = false
 	hold_position_mode = true
@@ -841,6 +865,7 @@ func hold_position() -> void:
 func command_attack(target) -> void:
 	_reset_movement_state()
 	attack_target = target
+	attack_command_source = CommandSource.PLAYER
 	hold_position_mode = false
 	heal_target = null
 	_is_healing = false
