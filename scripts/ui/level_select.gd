@@ -397,7 +397,10 @@ func _create_right_panel(parent: HBoxContainer) -> void:
 	right_title = Label.new()
 	right_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	right_title.add_theme_font_size_override("font_size", 28)
-	right_title.add_theme_color_override("font_color", Color(0.3, 0.2, 0.1))
+	right_title.add_theme_color_override("font_color", Color(1, 0.95, 0.8))
+	right_title.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	right_title.add_theme_constant_override("shadow_offset_x", 1)
+	right_title.add_theme_constant_override("shadow_offset_y", 1)
 	vbox.add_child(right_title)
 
 	# 2) 丝带装饰条
@@ -419,7 +422,10 @@ func _create_right_panel(parent: HBoxContainer) -> void:
 	right_desc = Label.new()
 	right_desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	right_desc.add_theme_font_size_override("font_size", 18)
-	right_desc.add_theme_color_override("font_color", Color(0.4, 0.35, 0.25))
+	right_desc.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
+	right_desc.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.5))
+	right_desc.add_theme_constant_override("shadow_offset_x", 1)
+	right_desc.add_theme_constant_override("shadow_offset_y", 1)
 	right_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	right_desc.custom_minimum_size = Vector2(0, 60)
 	vbox.add_child(right_desc)
@@ -635,7 +641,7 @@ func _ensure_translations_loaded() -> void:
 		var line := file.get_line()
 		if line.strip_edges() == "":
 			continue
-		var cols := line.split(",", false)
+		var cols := _parse_csv_line(line)
 		if cols.size() < 2:
 			continue
 		var key := cols[0].strip_edges()
@@ -650,3 +656,33 @@ func _ensure_translations_loaded() -> void:
 	for t in translations:
 		TranslationServer.add_translation(t)
 	print("Translations loaded: ", locale_codes)
+
+## 解析 CSV 行，正确处理双引号包裹的字段（含逗号）
+func _parse_csv_line(line: String) -> PackedStringArray:
+	var result: PackedStringArray = []
+	var current := ""
+	var in_quotes := false
+	var i := 0
+	while i < line.length():
+		var ch := line[i]
+		if in_quotes:
+			if ch == '"':
+				if i + 1 < line.length() and line[i + 1] == '"':
+					current += '"'
+					i += 2
+					continue
+				else:
+					in_quotes = false
+			else:
+				current += ch
+		else:
+			if ch == '"':
+				in_quotes = true
+			elif ch == ',':
+				result.append(current)
+				current = ""
+			else:
+				current += ch
+		i += 1
+	result.append(current)
+	return result

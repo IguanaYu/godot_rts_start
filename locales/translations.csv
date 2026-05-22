@@ -29,16 +29,18 @@ LEVEL_SELECT_TITLE,SELECT LEVEL,选择关卡,レベルを選択
 LEVEL_START_MISSION,START MISSION,开始任务,ミッション開始
 LEVEL_PRESS_ESC_QUIT,Press Esc to quit,按 Esc 退出,Escで終了
 LEVEL_1_NAME,Map 1: Blitz,关卡1: 闪电战,マップ1: 電撃戦
-LEVEL_1_DESC,No base, no gold. Capture strongpoints to reinforce and push forward!,没有基地和金币，占领据点补充兵力向前推进！,基地なし金貨なし！拠点を占領し増援を得て前進せよ！
+LEVEL_1_DESC,"No base, no gold — just 5 soldiers and archers. Capture 3 strongpoints in sequence to earn gold and reinforcements. Each point heals your squad. Lose all units and it's over.","没有基地、没有金币，只有3个士兵和2个弓箭手。依次占领3个据点获取金币和增援，每占领一处全军恢复半数生命。全军覆没即为失败。","基地も金貨もない、ただ5人の兵士とアーチャーだけ。3つの拠点を順次占領して金貨と増援を獲得せよ。各拠点占領時に全軍が半分回復。全滅すれば敗北。"
 LEVEL_2_NAME,Map 2: Basic Attack,关卡2: 基础进攻,マップ2: 基本攻撃
-LEVEL_2_DESC,Build your base, train your army, and destroy the enemy castle!,建造基地，训练军队，摧毁敌方城堡！,基地を建設し軍を訓練せよ！敵の城を破壊せよ！
+LEVEL_2_DESC,Starting with a castle and 10000 gold. Train all unit types and build freely. Destroy the enemy castle to win — but protect yours!,"城堡开局，10000金币起步，可建造全部兵种和建筑。摧毁敌方城堡即可获胜，别忘了守住自己的城堡！","城と10000金貨でスタート。全兵種を訓練し自由に建設可能。敵の城を破壊すれば勝利だが、自城の防衛も忘れるな！"
 LEVEL_3_NAME,Map 3: Tower Defense,关卡3: 塔防,マップ3: タワーディフェンス
-LEVEL_3_DESC,Survive 3 waves of enemy attacks! Build defenses and hold your ground.,在3波敌人进攻中存活！建造防御工事，坚守阵地。,3波の敵の攻撃を生き延びよ！防衛を築き、陣地を守れ。
+LEVEL_3_DESC,"6000 gold, 3 waves incoming! Wave 1: 5 enemies. Wave 2: 9 enemies with lancers. Wave 3: 14 enemies. Build walls and towers, train soldiers and archers to survive.","6000金币，3波敌袭！第1波5人，第2波9人含枪兵，第3波14人大军压境。善用城墙和箭塔，训练士兵与弓箭手守住阵地。","金貨6000、3波の敵襲が来る！第1波は5体、第2波は9体でランサー登場、第3波は14体の大軍。城壁と矢塔を築き、兵士とアーチャーを訓練して持ちこたえろ。"
 LEVEL_4_NAME,Map 4: Expand & Defend,关卡4: 扩张防守,マップ4: 拡張防衛
-LEVEL_4_DESC,Capture 4 neutral camps while defending against waves of enemies!,占领4个中立营地，同时抵御一波波敌人的进攻！,4つの中立キャンプを占領しつつ敵の波状攻撃を防げ！
+LEVEL_4_DESC,"8000 gold, 5 enemy waves, 4 camps to capture. Each camp grants gold income. Expand quickly while defending — balance offense and defense to win!","8000金币，5波敌军，4座中立营地。每占领一座营地获得金币收入。一边扩张一边防守，在攻守之间找到平衡才能取胜！","金貨8000、5波の敵軍、4つの中立キャンプ。各キャンプを占領すると金貨収入を得る。防衛しつつ拡張し、攻守のバランスを取って勝利せよ！"
 REWARD_GOLD,+%d,+%d,+%d
 REWARD_UNITS_PLURAL,+%d %ss,+%d %s,+%d %s
 REWARD_UNITS_SINGLE,+%d %s,+%d %s,+%d %s
 LANG_EN,English,English,English
 LANG_ZH,中文,中文,中文
 LANG_JA,日本語,日本語,日本語
+TAB_UNITS,Units,单位,ユニット
+TAB_BUILDINGS,Buildings,建筑,建物
