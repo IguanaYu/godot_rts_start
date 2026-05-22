@@ -75,6 +75,8 @@ var _frames_attack: int = 6
 var _is_attacking: bool = false
 var _lateral_dir: Vector2 = Vector2.ZERO
 var _lateral_timer: float = 0.0
+var _blocked_timer: float = 0.0
+var _is_blocked: bool = false
 const ShadowComp := preload("res://scripts/core/shadow_component.gd")
 @onready var _shadow_component: ShadowComp = $ShadowComponent
 const HealthComp := preload("res://scripts/core/health_component.gd")
@@ -321,8 +323,27 @@ func _physics_process(delta: float) -> void:
 	if velocity.length_squared() > 1.0:
 		var prev_pos := global_position
 		move_and_slide()
-		if global_position.distance_squared_to(prev_pos) < 0.5:
+		var actual_move := global_position.distance_to(prev_pos)
+		var expected_move := move_speed * delta
+		if actual_move < expected_move * 0.3:
 			velocity = Vector2.ZERO
+			_blocked_timer = min(_blocked_timer + delta, 2.0)
+			var was_blocked := _is_blocked
+			_is_blocked = _blocked_timer > 0.1
+			if _is_blocked and not was_blocked:
+				_show_debug_text("Blocked!", Color(1.0, 0.5, 0.2))
+		else:
+			if _is_blocked:
+				_blocked_timer -= delta * 0.1
+				if _blocked_timer <= 0.0:
+					_is_blocked = false
+					_blocked_timer = 0.0
+			else:
+				_blocked_timer = 0.0
+	else:
+		_blocked_timer = max(_blocked_timer - delta, 0.0)
+		if _blocked_timer <= 0.0:
+			_is_blocked = false
 
 	attack_timer = max(0.0, attack_timer - delta)
 	_update_aggro_line()
@@ -378,9 +399,13 @@ func _attack_process(delta: float) -> void:
 			# 单位：直接追，不用 NavAgent
 			base_dir = global_position.direction_to(attack_target.global_position)
 
-		# 切线避让：根据前方友军位置调整方向
-		var steered_dir := _get_steered_direction(base_dir, delta)
-		velocity = steered_dir * move_speed
+		# 只有被堵住时才横向挣脱，否则直走
+		if _is_blocked:
+			velocity = _get_steered_direction(base_dir, delta) * move_speed
+		else:
+			_lateral_dir = Vector2.ZERO
+			_lateral_timer = 0.0
+			velocity = base_dir * move_speed
 	else:
 		if attack_timer <= 0.0:
 			_perform_attack()
@@ -400,7 +425,12 @@ func _attack_move_process(delta: float) -> void:
 			return
 		var next_pos := nav_agent.get_next_path_position()
 		var base_dir := global_position.direction_to(next_pos)
-		velocity = _get_steered_direction(base_dir, delta) * move_speed
+		if _is_blocked:
+			velocity = _get_steered_direction(base_dir, delta) * move_speed
+		else:
+			_lateral_dir = Vector2.ZERO
+			_lateral_timer = 0.0
+			velocity = base_dir * move_speed
 		return
 
 	var closest = _find_closest_enemy_in_range(attack_move_scan_range)
@@ -418,7 +448,12 @@ func _attack_move_process(delta: float) -> void:
 		return
 	var next_pos2 := nav_agent.get_next_path_position()
 	var base_dir2 := global_position.direction_to(next_pos2)
-	velocity = _get_steered_direction(base_dir2, delta) * move_speed
+	if _is_blocked:
+		velocity = _get_steered_direction(base_dir2, delta) * move_speed
+	else:
+		_lateral_dir = Vector2.ZERO
+		_lateral_timer = 0.0
+		velocity = base_dir2 * move_speed
 
 func _find_closest_enemy_in_range(scan_range: float):
 	var enemy_group := "enemy_units" if team == Team.PLAYER else "player_units"
@@ -525,6 +560,12 @@ func _get_dist_to_target(target) -> float:
 	var brect: Rect2 = target.get_rect()
 	var nearest := global_position.clamp(brect.position, brect.end)
 	return global_position.distance_to(nearest)
+
+func _show_debug_text(text: String, color: Color) -> void:
+	var ft := Node2D.new()
+	ft.set_script(load("res://scripts/effects/floating_text.gd"))
+	get_tree().current_scene.add_child(ft)
+	ft.setup(text, color, global_position + Vector2(0, -20))
 
 func _get_steered_direction(base_dir: Vector2, delta: float) -> Vector2:
 	# 通用1秒方向锁：设定了新方向就锁住不改，防止抖动
@@ -731,7 +772,14 @@ func die() -> void:
 	tween.tween_property(self, "scale", Vector2.ZERO, 0.3)
 	tween.tween_callback(queue_free)
 
+func _reset_movement_state() -> void:
+	_is_blocked = false
+	_blocked_timer = 0.0
+	_lateral_dir = Vector2.ZERO
+	_lateral_timer = 0.0
+
 func move_to(target_pos: Vector2) -> void:
+	_reset_movement_state()
 	attack_target = null
 	attack_move_target = Vector2.ZERO
 	hold_position_mode = false
@@ -741,6 +789,7 @@ func move_to(target_pos: Vector2) -> void:
 	state = UnitState.MOVE
 
 func attack_move_to(target_pos: Vector2) -> void:
+	_reset_movement_state()
 	attack_target = null
 	attack_move_target = target_pos
 	hold_position_mode = false
@@ -750,6 +799,7 @@ func attack_move_to(target_pos: Vector2) -> void:
 	state = UnitState.ATTACK_MOVE
 
 func stop() -> void:
+	_reset_movement_state()
 	attack_target = null
 	attack_move_target = Vector2.ZERO
 	_is_attacking = false
@@ -761,6 +811,7 @@ func stop() -> void:
 	state = UnitState.GUARD
 
 func hold_position() -> void:
+	_reset_movement_state()
 	attack_target = null
 	attack_move_target = Vector2.ZERO
 	_is_attacking = false
@@ -772,6 +823,7 @@ func hold_position() -> void:
 	state = UnitState.HOLD_POSITION
 
 func command_attack(target) -> void:
+	_reset_movement_state()
 	attack_target = target
 	hold_position_mode = false
 	heal_target = null
