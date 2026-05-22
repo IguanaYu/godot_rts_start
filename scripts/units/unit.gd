@@ -54,6 +54,11 @@ var heal_cooldown: float = 1.0
 var heal_scan_range: float = 250.0
 var _is_healing: bool = false
 
+# Buff 系统
+var buffs: Dictionary = {}  # {buff_type: {"value": float, "expire": float}}
+var _slow_factor: float = 1.0
+var _slow_timer: float = 0.0
+
 @onready var nav_agent: NavigationAgent2D = $NavigationAgent2D
 @onready var selection_ring: CanvasItem = $SelectionRing
 @onready var hp_bar: ProgressBar = $HPBar
@@ -320,6 +325,11 @@ func _physics_process(delta: float) -> void:
 		UnitState.HEAL:
 			_heal_process(delta)
 
+	# 减速效果
+	if _slow_timer > 0.0:
+		_slow_timer -= delta
+		velocity *= _slow_factor
+
 	if velocity.length_squared() > 1.0:
 		var prev_pos := global_position
 		move_and_slide()
@@ -378,7 +388,7 @@ func _attack_process(delta: float) -> void:
 		return
 
 	var dist := _get_dist_to_target(attack_target)
-	if dist > attack_range:
+	if dist > get_effective_attack_range():
 		if hold_position_mode:
 			attack_target = null
 			_is_attacking = false
@@ -691,18 +701,21 @@ func _perform_attack() -> void:
 		_is_attacking = true
 		_set_anim("")
 		_set_anim("attack")
+		var damage := attack_damage
+		if has_buff("attack_melee") and unit_type in [UnitType.SOLDIER, UnitType.LANCER]:
+			damage = int(attack_damage * (1.0 + get_buff_value("attack_melee")))
 		if unit_type == UnitType.ARCHER:
-			_spawn_arrow(attack_target)
+			_spawn_arrow(attack_target, damage)
 		else:
-			attack_target.take_damage(attack_damage, self)
+			attack_target.take_damage(damage, self)
 
-func _spawn_arrow(target) -> void:
+func _spawn_arrow(target, damage: int = -1) -> void:
 	var arrow_scene := load("res://scenes/effects/arrow.tscn")
 	var arrow: Node2D = arrow_scene.instantiate()
 	get_tree().current_scene.add_child(arrow)
 	arrow.setup(global_position, target.global_position)
 	arrow.hit_target = target
-	arrow.hit_damage = attack_damage
+	arrow.hit_damage = damage if damage >= 0 else attack_damage
 	arrow.shooter = self
 
 func take_damage(amount: int, attacker = null) -> void:
@@ -710,7 +723,10 @@ func take_damage(amount: int, attacker = null) -> void:
 		return
 	if health.is_dead():
 		return
-	health.take_damage(amount)
+	var final_amount := amount
+	if has_buff("defense"):
+		final_amount = int(amount * (1.0 - get_buff_value("defense")))
+	health.take_damage(final_amount)
 	if attacker:
 		if team == Team.ENEMY:
 			_alert_enemy_response(attacker)
@@ -889,3 +905,33 @@ func heal(amount: int) -> void:
 	var effect: Node2D = HealEffectScene.instantiate()
 	get_tree().current_scene.add_child(effect)
 	effect.global_position = global_position
+
+# ============================================================
+# Buff 系统
+# ============================================================
+func apply_buff(buff_type: String, value: float) -> void:
+	var now_msec := Time.get_ticks_msec()
+	buffs[buff_type] = {"value": value, "expire": now_msec + 1500}
+
+func has_buff(buff_type: String) -> bool:
+	if buff_type not in buffs:
+		return false
+	if Time.get_ticks_msec() > buffs[buff_type]["expire"]:
+		buffs.erase(buff_type)
+		return false
+	return true
+
+func get_buff_value(buff_type: String) -> float:
+	if not has_buff(buff_type):
+		return 0.0
+	return buffs[buff_type]["value"]
+
+func apply_slow(factor: float, duration: float) -> void:
+	_slow_factor = 1.0 - factor
+	_slow_timer = duration
+
+func get_effective_attack_range() -> float:
+	var r := attack_range
+	if has_buff("range_bonus"):
+		r += get_buff_value("range_bonus")
+	return r

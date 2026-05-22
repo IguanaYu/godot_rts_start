@@ -30,6 +30,10 @@ func _process(delta: float) -> void:
 	if progress >= 1.0:
 		if hit_target != null and is_instance_valid(hit_target) and not hit_target.is_dead():
 			hit_target.take_damage(hit_damage, shooter)
+			# 箭塔射击减速
+			if shooter and shooter.get("building_type") == 1:  # BuildingType.TOWER
+				if hit_target.has_method("apply_slow"):
+					hit_target.apply_slow(0.25, 2.0)
 		queue_free()
 		return
 

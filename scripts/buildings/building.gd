@@ -4,6 +4,9 @@ extends Node2D
 enum BuildingType { WALL, TOWER, CASTLE, BARRACKS, MONASTERY, ARCHERY }
 enum Team { PLAYER, ENEMY }
 
+const UnitScript := preload("res://scripts/units/unit.gd")
+const D := preload("res://scripts/systems/game_data.gd")
+
 @export var building_type: BuildingType = BuildingType.WALL:
 	set(v): building_type = v; _refresh_editor()
 @export var team: Team = Team.PLAYER
@@ -50,6 +53,24 @@ var attack_range: float = 150.0
 var attack_cooldown: float = 1.5
 var attack_timer: float = 0.0
 
+# 生产系统
+var production_timer: float = 0.0
+var production_cooldown: float = 0.0
+var production_unit_type: int = -1  # UnitType 枚举值，-1 = 不生产
+
+# 光环系统
+var aura_range: float = 0.0
+var aura_type: String = ""
+var aura_value: float = 0.0
+var aura_scan_timer: float = 0.0
+
+# 城墙自修
+var _last_damage_time: float = 0.0
+var _repair_accumulator: float = 0.0
+
+# 生产圆圈
+var _production_circle: Node2D = null
+
 signal died(building)
 
 @onready var static_body: StaticBody2D = $StaticBody2D
@@ -66,6 +87,9 @@ func _ready() -> void:
 	else:
 		_setup_visuals()
 		_update_hp_bar()
+		# 预放置建筑（已建造状态）直接创建生产圆圈
+		if is_constructed:
+			_create_production_circle()
 
 func _snap_position_to_grid() -> void:
 	var offset := Vector2((grid_size.x - 1) * 32.0, (grid_size.y - 1) * 32.0)
@@ -87,15 +111,34 @@ func _setup_stats() -> void:
 		BuildingType.CASTLE:
 			max_hp = 500
 			grid_size = Vector2i(3, 3)
+			production_cooldown = 10.0
+			aura_range = 200.0
+			aura_type = "defense"
+			aura_value = 0.1
 		BuildingType.BARRACKS:
 			max_hp = 250
 			grid_size = Vector2i(2, 2)
+			production_cooldown = 25.0
+			production_unit_type = UnitScript.UnitType.SOLDIER
+			aura_range = 150.0
+			aura_type = "attack_melee"
+			aura_value = 0.15
 		BuildingType.MONASTERY:
 			max_hp = 400
 			grid_size = Vector2i(2, 2)
+			production_cooldown = 35.0
+			production_unit_type = UnitScript.UnitType.MONK
+			aura_range = 120.0
+			aura_type = "regen"
+			aura_value = 2.0
 		BuildingType.ARCHERY:
 			max_hp = 200
 			grid_size = Vector2i(2, 2)
+			production_cooldown = 30.0
+			production_unit_type = UnitScript.UnitType.ARCHER
+			aura_range = 150.0
+			aura_type = "range_bonus"
+			aura_value = 25.0
 	if health and not Engine.is_editor_hint():
 		health.setup(max_hp, hp_bar)
 
@@ -227,8 +270,16 @@ func _process(delta: float) -> void:
 		if build_progress >= build_time:
 			_finish_construction()
 		return
+	# 箭塔攻击
 	if building_type == BuildingType.TOWER:
 		_tower_process(delta)
+	# 生产系统
+	_production_process(delta)
+	# 光环系统
+	_aura_process(delta)
+	# 城墙自修
+	if building_type == BuildingType.WALL:
+		_wall_repair_process(delta)
 
 func _tower_process(delta: float) -> void:
 	attack_timer = max(0.0, attack_timer - delta)
@@ -278,12 +329,175 @@ func _spawn_arrow(target) -> void:
 	arrow.hit_damage = int(attack_damage)
 	arrow.shooter = self
 
+# ============================================================
+# 生产系统
+# ============================================================
+func _production_process(delta: float) -> void:
+	if production_cooldown <= 0.0:
+		return
+	production_timer += delta
+	# 更新圆圈进度
+	if _production_circle:
+		_production_circle.update_progress(production_timer / production_cooldown)
+	if production_timer >= production_cooldown:
+		production_timer = 0.0
+		if building_type == BuildingType.CASTLE:
+			_produce_gold()
+		else:
+			_spawn_produced_unit()
+
+func _spawn_produced_unit() -> void:
+	var scene_path: String = D.UNIT_SCENES.get(production_unit_type, "")
+	if scene_path == "":
+		return
+	var unit_scene := load(scene_path)
+	if unit_scene == null:
+		return
+	var unit: CharacterBody2D = unit_scene.instantiate()
+	var unit_team := UnitScript.Team.PLAYER if team == Team.PLAYER else UnitScript.Team.ENEMY
+	unit.set("team", unit_team)
+	# 在建筑旁随机偏移出生
+	var pixel_size := Vector2(grid_size.x * 64, grid_size.y * 64)
+	var offset := Vector2(randf_range(-30, 30), pixel_size.y / 2.0 + randf_range(10, 30))
+	unit.position = global_position + offset
+	# 找到正确的父节点
+	var main_node := get_tree().current_scene
+	var parent_name := "PlayerUnits" if team == Team.PLAYER else "EnemyUnits"
+	var parent_node := main_node.get_node_or_null(parent_name)
+	if parent_node == null:
+		unit.queue_free()
+		return
+	parent_node.add_child(unit)
+	# 召唤特效
+	var dust := D.DustEffectScene.instantiate()
+	get_tree().current_scene.add_child(dust)
+	dust.global_position = unit.global_position
+	# 添加到对应的组
+	var group_name := "player_units" if team == Team.PLAYER else "enemy_units"
+	unit.add_to_group(group_name)
+	# 连接死亡信号
+	if main_node.has_method("_on_unit_died"):
+		unit.connect("died", Callable(main_node, "_on_unit_died"))
+	# 敌方单位添加AI
+	if team == Team.ENEMY:
+		var ai := Node2D.new()
+		ai.name = "EnemyAI"
+		ai.set_script(load("res://scripts/units/enemy_ai.gd"))
+		unit.add_child(ai)
+
+func _produce_gold() -> void:
+	var main_node := get_tree().current_scene
+	if main_node and main_node.has_method("add_gold"):
+		main_node.add_gold(30)
+		# 金币漂浮数字
+		var ft := Node2D.new()
+		ft.set_script(load("res://scripts/effects/floating_text.gd"))
+		get_tree().current_scene.add_child(ft)
+		ft.setup("+30", Color(1.0, 0.85, 0.0), global_position + Vector2(0, -40))
+
+# ============================================================
+# 光环系统
+# ============================================================
+func _aura_process(delta: float) -> void:
+	if aura_range <= 0.0:
+		return
+	aura_scan_timer += delta
+	if aura_scan_timer < 0.5:
+		return
+	aura_scan_timer = 0.0
+	var ally_group := "player_units" if team == Team.PLAYER else "enemy_units"
+	for u in get_tree().get_nodes_in_group(ally_group):
+		if not is_instance_valid(u) or u.is_dead():
+			continue
+		var dist := global_position.distance_to(u.global_position)
+		if dist > aura_range:
+			continue
+		match aura_type:
+			"regen":
+				if u.health.hp < u.health.max_hp:
+					u.health.heal(int(aura_value * 0.5))
+			"attack_melee":
+				u.apply_buff("attack_melee", aura_value)
+			"range_bonus":
+				u.apply_buff("range_bonus", aura_value)
+			"defense":
+				u.apply_buff("defense", aura_value)
+
+# ============================================================
+# 城墙系统
+# ============================================================
+func _wall_repair_process(delta: float) -> void:
+	if health.hp >= health.max_hp:
+		return
+	# 被攻击后3秒才开始修复
+	if _last_damage_time > 0.0:
+		_last_damage_time -= delta
+		return
+	_repair_accumulator += delta
+	if _repair_accumulator >= 1.0:
+		_repair_accumulator -= 1.0
+		health.heal(1)
+
+func _check_wall_connections() -> void:
+	if building_type != BuildingType.WALL:
+		return
+	var bonus := 0
+	for b in get_tree().get_nodes_in_group("buildings"):
+		if b == self or b.building_type != BuildingType.WALL:
+			continue
+		if b.is_dead() or not b.is_constructed:
+			continue
+		var diff: Vector2i = b.grid_pos - grid_pos
+		if absi(diff.x) + absi(diff.y) == 1:
+			bonus += 80
+	var new_max := 300 + bonus
+	if health.max_hp != new_max:
+		health.max_hp = new_max
+		if health.hp > new_max:
+			health.hp = new_max
+		health._update_hp_bar()
+
+func _update_neighbor_walls() -> void:
+	for b in get_tree().get_nodes_in_group("buildings"):
+		if b == self or b.building_type != BuildingType.WALL:
+			continue
+		if b.is_dead() or not b.is_constructed:
+			continue
+		var diff: Vector2i = b.grid_pos - grid_pos
+		if absi(diff.x) + absi(diff.y) == 1:
+			b._check_wall_connections()
+
+# ============================================================
+# 生产圆圈
+# ============================================================
+func _create_production_circle() -> void:
+	if production_cooldown <= 0.0:
+		return
+	# 确定颜色
+	var fill_color := Color.WHITE
+	match building_type:
+		BuildingType.CASTLE:
+			fill_color = Color(1.0, 0.85, 0.0)    # 金色
+		BuildingType.BARRACKS:
+			fill_color = Color(0.9, 0.3, 0.2)     # 红色
+		BuildingType.MONASTERY:
+			fill_color = Color(0.9, 0.9, 1.0)     # 白色
+		BuildingType.ARCHERY:
+			fill_color = Color(0.3, 0.8, 0.3)     # 绿色
+	# 计算 Y 偏移：放在 HP 条上方
+	var y_offset := hp_bar.offset_top - 12.0
+	_production_circle = Node2D.new()
+	_production_circle.set_script(load("res://scripts/effects/production_circle.gd"))
+	add_child(_production_circle)
+	_production_circle.setup(fill_color, y_offset)
+
 func take_damage(amount: int, attacker = null) -> void:
 	if Engine.is_editor_hint():
 		return
 	if health.is_dead():
 		return
 	health.take_damage(amount)
+	_last_damage_time = 3.0  # 城墙被攻击后3秒才开始修复
 	if attacker and team == Team.ENEMY:
 		_alert_nearby_enemies(attacker)
 	if health.hp <= 0:
@@ -302,6 +516,9 @@ func _alert_nearby_enemies(attacker) -> void:
 func die() -> void:
 	health._is_dead = true
 	died.emit(self)
+	# 更新相邻城墙的连结加成
+	if building_type == BuildingType.WALL:
+		_update_neighbor_walls()
 	# 生成爆炸特效
 	var explosion_scene := load("res://scenes/effects/explosion.tscn")
 	var explosion: Node2D = explosion_scene.instantiate()
@@ -352,6 +569,10 @@ func _create_build_bar() -> void:
 func _finish_construction() -> void:
 	is_constructed = true
 	body_sprite.modulate.a = 1.0
+	# 城墙连结检测
+	_check_wall_connections()
+	# 创建生产圆圈
+	_create_production_circle()
 	if build_bar:
 		build_bar.queue_free()
 		build_bar = null
