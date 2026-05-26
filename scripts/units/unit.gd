@@ -62,7 +62,7 @@ var _slow_factor: float = 1.0
 var _slow_timer: float = 0.0
 
 @onready var nav_agent: NavigationAgent2D = $NavigationAgent2D
-@onready var selection_ring: CanvasItem = $SelectionRing
+@onready var selection_ring: Node2D = $SelectionRing
 @onready var hp_bar: ProgressBar = $HPBar
 @onready var body_sprite: Sprite2D = $BodySprite
 @onready var aggro_line: Line2D = $AggroLine

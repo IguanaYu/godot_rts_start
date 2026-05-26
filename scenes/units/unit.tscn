@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://fjmqlor3rasr" path="res://scripts/units/unit.gd" id="unit_script"]
 [ext_resource type="Script" path="res://scripts/core/shadow_component.gd" id="shadow_script"]
 [ext_resource type="Script" path="res://scripts/core/health_component.gd" id="health_script"]
+[ext_resource type="Script" path="res://scripts/ui/selection_circle.gd" id="selection_circle_script"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1"]
 radius = 16.0
@@ -26,13 +27,9 @@ scale = Vector2(0.3, 0.3)
 texture = ExtResource("2_k673f")
 hframes = 8
 
-[node name="SelectionRing" type="ColorRect" parent="." unique_id=1867120877]
+[node name="SelectionRing" type="Node2D" parent="." unique_id=1867120877]
 visible = false
-offset_left = -20.0
-offset_top = -20.0
-offset_right = 20.0
-offset_bottom = 20.0
-color = Color(0, 1, 0.3, 0.35)
+script = ExtResource("selection_circle_script")
 
 [node name="HPBar" type="ProgressBar" parent="." unique_id=43602349]
 offset_left = -18.0
