@@ -94,7 +94,7 @@ func _chase_process() -> void:
 		return
 
 	var dist: float = unit.global_position.distance_to(chase_target.global_position)
-	var atk_range: float = unit.attack_range
+	var atk_range: float = unit.get_effective_attack_range()
 	if dist <= atk_range:
 		ai_state = AIState.ATTACK
 		unit.command_attack(chase_target)

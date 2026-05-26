@@ -458,7 +458,8 @@ func _aura_process(delta: float) -> void:
 				if u.health.hp < u.health.max_hp:
 					u.health.heal(int(aura_value * 0.5))
 			"attack_melee":
-				u.apply_buff("attack_melee", aura_value)
+				if u.unit_type in [UnitScript.UnitType.SOLDIER, UnitScript.UnitType.LANCER]:
+					u.apply_buff("attack_melee", aura_value)
 			"range_bonus":
 				u.apply_buff("range_bonus", aura_value)
 			"defense":

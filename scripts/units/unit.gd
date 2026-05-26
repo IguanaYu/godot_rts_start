@@ -33,11 +33,12 @@ const HealEffectScene := preload("res://scenes/effects/heal_effect.tscn")
 @export var sprite_offset_y: float = 0.0:
 	set(v): sprite_offset_y = v; _refresh_editor()
 
-var attack_damage: int
-var attack_range: float
-var attack_cooldown: float
+const StatSetClass = preload("res://scripts/stats/stat_set.gd")
+const UpgradeMgrClass = preload("res://scripts/stats/upgrade_manager.gd")
+@export var stats_data: UnitStats
+var stat_set
+var upgrade_mgr
 var steer_lock_time: float = 0.5
-var move_speed: float
 
 var state: UnitState = UnitState.GUARD
 var attack_target = null
@@ -50,10 +51,6 @@ var hold_position_mode: bool = false
 
 # Monk 治疗系统
 var heal_target = null
-var heal_range: float = 120.0
-var heal_amount: int = 8
-var heal_cooldown: float = 1.0
-var heal_scan_range: float = 250.0
 var _is_healing: bool = false
 
 # Buff 系统
@@ -105,38 +102,17 @@ func _ready() -> void:
 		_update_hp_bar()
 
 func _setup_stats() -> void:
-	var max_hp: int
-	match unit_type:
-		UnitType.SOLDIER:
-			max_hp = 100
-			attack_damage = 10
-			attack_range = 40.0
-			attack_cooldown = 0.8
-			move_speed = 120.0
-		UnitType.ARCHER:
-			max_hp = 60
-			attack_damage = 15
-			attack_range = 200.0
-			attack_cooldown = 1.2
-			move_speed = 180.0
-		UnitType.LANCER:
-			max_hp = 180
-			attack_damage = 12
-			attack_range = 45.0
-			attack_cooldown = 1.0
-			move_speed = 100.0
-		UnitType.MONK:
-			max_hp = 50
-			attack_damage = 0
-			attack_range = 0.0
-			attack_cooldown = 999.0
-			move_speed = 90.0
-			heal_range = 120.0
-			heal_amount = 8
-			heal_cooldown = 1.0
-			heal_scan_range = 250.0
+	if stats_data == null:
+		return
+	stat_set = StatSetClass.new(stats_data)
+	upgrade_mgr = UpgradeMgrClass.new(stat_set)
+	upgrade_mgr.setup_from_data(stats_data)
+	var max_hp = stat_set.get_int(StatSetClass.MAX_HP)
 	if health and not Engine.is_editor_hint():
 		health.setup(max_hp, hp_bar)
+	if stats_data.sprite_scale != 1.0:
+		sprite_scale_x *= stats_data.sprite_scale
+		sprite_scale_y *= stats_data.sprite_scale
 
 func _setup_editor_visuals() -> void:
 	_setup_texture()
@@ -373,6 +349,10 @@ func _physics_process(delta: float) -> void:
 		return
 	if state == UnitState.DEAD:
 		return
+	if stat_set == null:
+		return
+	# 过期 buff 清理
+	_expire_buffs()
 	# 建筑内逃生逻辑（优先于正常状态机）
 	if _escaping_building:
 		_escape_timer -= delta
@@ -383,7 +363,7 @@ func _physics_process(delta: float) -> void:
 			_stop_escape()
 		else:
 			var dir := global_position.direction_to(_escape_target)
-			velocity = dir * move_speed
+			velocity = dir * stat_set.get_value(StatSetClass.MOVE_SPEED)
 			move_and_slide()
 			attack_timer = max(0.0, attack_timer - delta)
 			_update_aggro_line()
@@ -416,7 +396,7 @@ func _physics_process(delta: float) -> void:
 		var prev_pos := global_position
 		move_and_slide()
 		var actual_move := global_position.distance_to(prev_pos)
-		var expected_move := move_speed * delta
+		var expected_move = stat_set.get_value(StatSetClass.MOVE_SPEED) * delta
 		if actual_move < expected_move * 0.3:
 			velocity = Vector2.ZERO
 			_blocked_timer = min(_blocked_timer + delta, 2.0)
@@ -451,7 +431,7 @@ func _move_process() -> void:
 		return
 	var next_pos := nav_agent.get_next_path_position()
 	var direction := global_position.direction_to(next_pos)
-	velocity = direction * move_speed
+	velocity = direction * stat_set.get_value(StatSetClass.MOVE_SPEED)
 
 func _attack_process(delta: float) -> void:
 	# Monk不攻击，站着不动
@@ -508,20 +488,20 @@ func _attack_process(delta: float) -> void:
 
 		# 只有被堵住时才横向挣脱，否则直走
 		if _is_blocked:
-			velocity = _get_steered_direction(base_dir, delta) * move_speed
+			velocity = _get_steered_direction(base_dir, delta) * stat_set.get_value(StatSetClass.MOVE_SPEED)
 		else:
 			_lateral_dir = Vector2.ZERO
 			_lateral_timer = 0.0
-			velocity = base_dir * move_speed
+			velocity = base_dir * stat_set.get_value(StatSetClass.MOVE_SPEED)
 	else:
 		if attack_timer <= 0.0:
 			_perform_attack()
-			attack_timer = attack_cooldown
+			attack_timer = stat_set.get_value(StatSetClass.ATTACK_COOLDOWN)
 
 func _attack_move_process(delta: float) -> void:
 	# Monk 攻击移动时优先治疗
 	if unit_type == UnitType.MONK:
-		var wounded = _find_wounded_ally(heal_scan_range)
+		var wounded = _find_wounded_ally(stat_set.get_value(StatSetClass.HEAL_SCAN_RANGE))
 		if wounded != null:
 			heal_target = wounded
 			nav_agent.target_position = wounded.global_position
@@ -533,11 +513,11 @@ func _attack_move_process(delta: float) -> void:
 		var next_pos := nav_agent.get_next_path_position()
 		var base_dir := global_position.direction_to(next_pos)
 		if _is_blocked:
-			velocity = _get_steered_direction(base_dir, delta) * move_speed
+			velocity = _get_steered_direction(base_dir, delta) * stat_set.get_value(StatSetClass.MOVE_SPEED)
 		else:
 			_lateral_dir = Vector2.ZERO
 			_lateral_timer = 0.0
-			velocity = base_dir * move_speed
+			velocity = base_dir * stat_set.get_value(StatSetClass.MOVE_SPEED)
 		return
 
 	var closest = _find_closest_enemy_in_range(attack_move_scan_range)
@@ -557,11 +537,11 @@ func _attack_move_process(delta: float) -> void:
 	var next_pos2 := nav_agent.get_next_path_position()
 	var base_dir2 := global_position.direction_to(next_pos2)
 	if _is_blocked:
-		velocity = _get_steered_direction(base_dir2, delta) * move_speed
+		velocity = _get_steered_direction(base_dir2, delta) * stat_set.get_value(StatSetClass.MOVE_SPEED)
 	else:
 		_lateral_dir = Vector2.ZERO
 		_lateral_timer = 0.0
-		velocity = base_dir2 * move_speed
+		velocity = base_dir2 * stat_set.get_value(StatSetClass.MOVE_SPEED)
 
 func _find_closest_enemy_in_range(scan_range: float):
 	var enemy_group := "enemy_units" if team == Team.PLAYER else "player_units"
@@ -608,21 +588,21 @@ func _heal_process(delta: float) -> void:
 		state = UnitState.GUARD
 		return
 	var dist := global_position.distance_to(heal_target.global_position)
-	if dist > heal_range:
+	if dist > stat_set.get_value(StatSetClass.HEAL_RANGE):
 		nav_agent.target_position = heal_target.global_position
 		if not nav_agent.is_navigation_finished():
 			var next_pos := nav_agent.get_next_path_position()
-			velocity = global_position.direction_to(next_pos) * move_speed
+			velocity = global_position.direction_to(next_pos) * stat_set.get_value(StatSetClass.MOVE_SPEED)
 	else:
 		if attack_timer <= 0.0:
-			heal_target.heal(heal_amount)
-			attack_timer = heal_cooldown
+			heal_target.heal(stat_set.get_int(StatSetClass.HEAL_AMOUNT))
+			attack_timer = stat_set.get_value(StatSetClass.HEAL_COOLDOWN)
 			_is_healing = true
 
 func _guard_process(delta: float) -> void:
 	# Monk 优先寻找受伤友军
 	if unit_type == UnitType.MONK:
-		var wounded = _find_wounded_ally(heal_scan_range)
+		var wounded = _find_wounded_ally(stat_set.get_value(StatSetClass.HEAL_SCAN_RANGE))
 		if wounded != null:
 			heal_target = wounded
 			nav_agent.target_position = wounded.global_position
@@ -799,9 +779,7 @@ func _perform_attack() -> void:
 		_is_attacking = true
 		_set_anim("")
 		_set_anim("attack")
-		var damage := attack_damage
-		if has_buff("attack_melee") and unit_type in [UnitType.SOLDIER, UnitType.LANCER]:
-			damage = int(attack_damage * (1.0 + get_buff_value("attack_melee")))
+		var damage = stat_set.get_int(StatSetClass.ATTACK_DAMAGE)
 		if unit_type == UnitType.ARCHER:
 			_spawn_arrow(attack_target, damage)
 		else:
@@ -813,7 +791,7 @@ func _spawn_arrow(target, damage: int = -1) -> void:
 	get_tree().current_scene.add_child(arrow)
 	arrow.setup(global_position, target.global_position)
 	arrow.hit_target = target
-	arrow.hit_damage = damage if damage >= 0 else attack_damage
+	arrow.hit_damage = damage if damage >= 0 else stat_set.get_int(StatSetClass.ATTACK_DAMAGE)
 	arrow.shooter = self
 
 func take_damage(amount: int, attacker = null) -> void:
@@ -822,8 +800,9 @@ func take_damage(amount: int, attacker = null) -> void:
 	if health.is_dead():
 		return
 	var final_amount := amount
-	if has_buff("defense"):
-		final_amount = int(amount * (1.0 - get_buff_value("defense")))
+	var reduction = stat_set.get_value(StatSetClass.DAMAGE_REDUCTION)
+	if reduction > 0.0:
+		final_amount = int(amount * (1.0 - reduction))
 	health.take_damage(final_amount)
 	if attacker:
 		if team == Team.ENEMY:
@@ -1022,12 +1001,31 @@ func heal(amount: int) -> void:
 func apply_buff(buff_type: String, value: float) -> void:
 	var now_msec := Time.get_ticks_msec()
 	buffs[buff_type] = {"value": value, "expire": now_msec + 1500}
+	# 同步修饰器到 StatSet
+	match buff_type:
+		"defense":
+			stat_set.add_modifier("buff:defense", StatSetClass.DAMAGE_REDUCTION, 0.0, 1.0 - value)
+		"attack_melee":
+			stat_set.add_modifier("buff:attack_melee", StatSetClass.ATTACK_DAMAGE, 0.0, 1.0 + value)
+		"range_bonus":
+			stat_set.add_modifier("buff:range_bonus", StatSetClass.ATTACK_RANGE, value, 1.0)
+
+func _expire_buffs() -> void:
+	var now_msec := Time.get_ticks_msec()
+	var expired := []
+	for buff_type in buffs:
+		if now_msec > buffs[buff_type]["expire"]:
+			expired.append(buff_type)
+	for bt in expired:
+		buffs.erase(bt)
+		stat_set.remove_source("buff:" + bt)
 
 func has_buff(buff_type: String) -> bool:
 	if buff_type not in buffs:
 		return false
 	if Time.get_ticks_msec() > buffs[buff_type]["expire"]:
 		buffs.erase(buff_type)
+		stat_set.remove_source("buff:" + buff_type)
 		return false
 	return true
 
@@ -1041,7 +1039,4 @@ func apply_slow(factor: float, duration: float) -> void:
 	_slow_timer = duration
 
 func get_effective_attack_range() -> float:
-	var r := attack_range
-	if has_buff("range_bonus"):
-		r += get_buff_value("range_bonus")
-	return r
+	return stat_set.get_value(StatSetClass.ATTACK_RANGE)

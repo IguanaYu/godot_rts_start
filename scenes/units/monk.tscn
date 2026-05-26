@@ -2,9 +2,11 @@
 
 [ext_resource type="Texture2D" uid="uid://cxu763vgva6ga" path="res://assets/units/blue_monk/Idle.png" id="2_monk"]
 [ext_resource type="PackedScene" uid="uid://bxunit0001" path="res://scenes/units/unit.tscn" id="base"]
+[ext_resource type="Resource" path="res://resources/stats/monk_stats.tres" id="monk_stats"]
 
 [node name="Monk" instance=ExtResource("base")]
 unit_type = 3
+stats_data = ExtResource("monk_stats")
 sprite_scale_x = 0.5
 sprite_scale_y = 0.5
 sprite_offset_y = 10.0

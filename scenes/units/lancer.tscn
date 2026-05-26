@@ -2,9 +2,11 @@
 
 [ext_resource type="Texture2D" uid="uid://b7corm3s0ljcs" path="res://assets/units/blue_lancer/Lancer_Idle.png" id="2_lan"]
 [ext_resource type="PackedScene" uid="uid://bxunit0001" path="res://scenes/units/unit.tscn" id="base"]
+[ext_resource type="Resource" path="res://resources/stats/lancer_stats.tres" id="lancer_stats"]
 
 [node name="Lancer" instance=ExtResource("base")]
 unit_type = 2
+stats_data = ExtResource("lancer_stats")
 sprite_scale_x = 0.35
 sprite_scale_y = 0.35
 sprite_offset_y = 12.0
