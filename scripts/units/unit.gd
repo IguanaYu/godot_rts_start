@@ -84,6 +84,9 @@ var _lateral_dir: Vector2 = Vector2.ZERO
 var _lateral_timer: float = 0.0
 var _blocked_timer: float = 0.0
 var _is_blocked: bool = false
+var _escaping_building: bool = false
+var _escape_target: Vector2 = Vector2.ZERO
+var _escape_timer: float = 0.0
 const ShadowComp := preload("res://scripts/core/shadow_component.gd")
 @onready var _shadow_component: ShadowComp = $ShadowComponent
 const HealthComp := preload("res://scripts/core/health_component.gd")
@@ -305,11 +308,88 @@ func _update_animation() -> void:
 			target_anim = "idle"
 	_set_anim(target_anim)
 
+
+## 检查当前是否在某个建筑的碰撞区域内
+func _is_inside_any_building() -> bool:
+	for b in get_tree().get_nodes_in_group("buildings"):
+		if b.is_dead():
+			continue
+		var rect: Rect2 = b.get_rect().grow(16.0)
+		if rect.has_point(global_position):
+			return true
+	return false
+
+## 计算从建筑内逃生的目标位置
+func _find_escape_target() -> Vector2:
+	var unit_radius := 16.0
+	for b in get_tree().get_nodes_in_group("buildings"):
+		if b.is_dead():
+			continue
+		var rect: Rect2 = b.get_rect().grow(unit_radius)
+		if not rect.has_point(global_position):
+			continue
+		# 找到困住小兵的建筑，计算到四条边的距离
+		var pos := global_position
+		var dist_left := pos.x - rect.position.x
+		var dist_right := rect.end.x - pos.x
+		var dist_top := pos.y - rect.position.y
+		var dist_bottom := rect.end.y - pos.y
+		# 按距离排序四个逃生方向
+		var tries := [
+			[dist_left, Vector2(rect.position.x - 4.0, pos.y)],
+			[dist_right, Vector2(rect.end.x + 4.0, pos.y)],
+			[dist_top, Vector2(pos.x, rect.position.y - 4.0)],
+			[dist_bottom, Vector2(pos.x, rect.end.y + 4.0)],
+		]
+		tries.sort_custom(func(a, b): return a[0] < b[0])
+		for t in tries:
+			var escape_pos: Vector2 = t[1]
+			var valid := true
+			for b2 in get_tree().get_nodes_in_group("buildings"):
+				if b2.is_dead():
+					continue
+				if b2.get_rect().grow(unit_radius).has_point(escape_pos):
+					valid = false
+					break
+			if valid:
+				return escape_pos
+	# 兜底：向下移动
+	return global_position + Vector2(0, 64)
+
+## 启动建筑内逃生
+func _start_escape() -> void:
+	_escaping_building = true
+	_escape_target = _find_escape_target()
+	_escape_timer = 3.0
+
+## 结束逃生
+func _stop_escape() -> void:
+	_escaping_building = false
+	_escape_target = Vector2.ZERO
+	_escape_timer = 0.0
+
 func _physics_process(delta: float) -> void:
 	if Engine.is_editor_hint():
 		return
 	if state == UnitState.DEAD:
 		return
+	# 建筑内逃生逻辑（优先于正常状态机）
+	if _escaping_building:
+		_escape_timer -= delta
+		if not _is_inside_any_building():
+			_stop_escape()
+		elif _escape_timer <= 0.0:
+			global_position = _escape_target
+			_stop_escape()
+		else:
+			var dir := global_position.direction_to(_escape_target)
+			velocity = dir * move_speed
+			move_and_slide()
+			attack_timer = max(0.0, attack_timer - delta)
+			_update_aggro_line()
+			_update_animation()
+			_update_state_indicator()
+			return
 
 	velocity = Vector2.ZERO
 
@@ -344,6 +424,8 @@ func _physics_process(delta: float) -> void:
 			_is_blocked = _blocked_timer > 0.1
 			if _is_blocked and not was_blocked:
 				_show_debug_text("Blocked!", Color(1.0, 0.5, 0.2))
+				if _is_inside_any_building():
+					_start_escape()
 		else:
 			if _is_blocked:
 				_blocked_timer -= delta * 0.1

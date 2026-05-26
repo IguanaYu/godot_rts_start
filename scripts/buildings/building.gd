@@ -256,6 +256,45 @@ func get_rect() -> Rect2:
 	var pixel_size := Vector2(grid_size.x * 64, grid_size.y * 64)
 	return Rect2(global_position - pixel_size / 2.0, pixel_size)
 
+## 检查指定位置是否与任何建筑的碰撞区域重叠
+func _is_position_clear(pos: Vector2, unit_radius: float) -> bool:
+	for b in get_tree().get_nodes_in_group("buildings"):
+		if b == self or b.is_dead():
+			continue
+		var rect: Rect2 = b.get_rect().grow(unit_radius)
+		if rect.has_point(pos):
+			return false
+	return true
+
+## 找到一个有效的刷新位置，确保不在任何建筑内
+func _find_valid_spawn_position(unit_radius: float = 16.0) -> Vector2:
+	var pixel_size := Vector2(grid_size.x * 64, grid_size.y * 64)
+	var clearance := unit_radius + 4.0
+	var half_w := pixel_size.x / 2.0
+	var half_h := pixel_size.y / 2.0
+	# 候选位置：建筑外围各方向（相对于建筑中心的偏移）
+	var candidates := [
+		Vector2(0, half_h + clearance),              # 底部中央（正门）
+		Vector2(-half_w - clearance, half_h * 0.5),  # 左下
+		Vector2(half_w + clearance, half_h * 0.5),   # 右下
+		Vector2(-half_w - clearance, 0),              # 左侧中央
+		Vector2(half_w + clearance, 0),               # 右侧中央
+		Vector2(0, -half_h - clearance),              # 顶部中央
+	]
+	for offset in candidates:
+		var pos: Vector2 = global_position + offset
+		if _is_position_clear(pos, unit_radius):
+			return pos
+	# 扩大搜索：环形扫描
+	for dist in [64.0, 128.0, 192.0, 256.0]:
+		for i in range(8):
+			var angle: float = i * PI / 4.0
+			var pos: Vector2 = global_position + Vector2(cos(angle), sin(angle)) * dist
+			if _is_position_clear(pos, unit_radius):
+				return pos
+	# 兜底：底部中央
+	return global_position + Vector2(0, half_h + clearance)
+
 func _process(delta: float) -> void:
 	if Engine.is_editor_hint():
 		_snap_position_to_grid()
@@ -356,10 +395,8 @@ func _spawn_produced_unit() -> void:
 	var unit: CharacterBody2D = unit_scene.instantiate()
 	var unit_team := UnitScript.Team.PLAYER if team == Team.PLAYER else UnitScript.Team.ENEMY
 	unit.set("team", unit_team)
-	# 在建筑旁随机偏移出生
-	var pixel_size := Vector2(grid_size.x * 64, grid_size.y * 64)
-	var offset := Vector2(randf_range(-30, 30), pixel_size.y / 2.0 + randf_range(10, 30))
-	unit.position = global_position + offset
+	# 在建筑旁找到有效出生位置
+	unit.position = _find_valid_spawn_position(16.0)
 	# 找到正确的父节点
 	var main_node := get_tree().current_scene
 	var parent_name := "PlayerUnits" if team == Team.PLAYER else "EnemyUnits"
@@ -368,6 +405,10 @@ func _spawn_produced_unit() -> void:
 		unit.queue_free()
 		return
 	parent_node.add_child(unit)
+	# 刷新后检查：如果小兵仍在建筑内，触发逃生
+	if unit.has_method("_start_escape") and unit.has_method("_is_inside_any_building"):
+		if unit._is_inside_any_building():
+			unit._start_escape()
 	# 召唤特效
 	var dust := D.DustEffectScene.instantiate()
 	get_tree().current_scene.add_child(dust)
