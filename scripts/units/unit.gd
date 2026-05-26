@@ -840,6 +840,9 @@ func _player_retaliate(attacker) -> void:
 	# 玩家手动指定的攻击目标不被自动索敌打断
 	if attack_command_source == CommandSource.PLAYER:
 		return
+	# 玩家移动指令不被自动反击打断
+	if state == UnitState.MOVE:
+		return
 	# 验证攻击者仍存活
 	if attacker == null or not is_instance_valid(attacker) or attacker.is_dead():
 		return
