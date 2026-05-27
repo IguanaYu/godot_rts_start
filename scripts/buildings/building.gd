@@ -539,6 +539,11 @@ func take_damage(amount: int, attacker = null) -> void:
 	if health.is_dead():
 		return
 	health.take_damage(amount)
+	# 伤害飘字
+	if amount > 0:
+		var main_node := get_tree().current_scene
+		if main_node and main_node.has_method("show_damage_number"):
+			main_node.show_damage_number(amount, global_position)
 	_last_damage_time = 3.0  # 城墙被攻击后3秒才开始修复
 	if attacker and team == Team.ENEMY:
 		_alert_nearby_enemies(attacker)

@@ -822,6 +822,11 @@ func take_damage(amount: int, attacker = null) -> void:
 	if reduction > 0.0:
 		final_amount = int(amount * (1.0 - reduction))
 	health.take_damage(final_amount)
+	# 伤害飘字
+	if final_amount > 0:
+		var main_node := get_tree().current_scene
+		if main_node and main_node.has_method("show_damage_number"):
+			main_node.show_damage_number(final_amount, global_position)
 	if attacker:
 		if team == Team.ENEMY:
 			_alert_enemy_response(attacker)

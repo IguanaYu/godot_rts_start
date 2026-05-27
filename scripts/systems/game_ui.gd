@@ -618,6 +618,14 @@ func _create_pause_menu() -> void:
 		btn.pressed.connect(data[1])
 		vbox.add_child(btn)
 
+		# 伤害飘字开关
+		var dmg_toggle := CheckButton.new()
+		dmg_toggle.text = tr("UI_DAMAGE_NUMBERS")
+		dmg_toggle.button_pressed = _main_node.show_damage_numbers
+		dmg_toggle.custom_minimum_size = Vector2(200, 40)
+		dmg_toggle.toggled.connect(_on_damage_numbers_toggled)
+		vbox.add_child(dmg_toggle)
+
 	var hint := Label.new()
 	hint.text = tr("UI_PRESS_ESC_RESUME")
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -652,6 +660,13 @@ func _on_pause_level_select() -> void:
 
 func _on_pause_quit() -> void:
 	_main_node.get_tree().quit()
+
+
+func _on_damage_numbers_toggled(pressed: bool) -> void:
+	_main_node.show_damage_numbers = pressed
+	var config := ConfigFile.new()
+	config.set_value("game", "show_damage_numbers", pressed)
+	config.save("user://settings.cfg")
 
 
 func close_pause_menu() -> void:

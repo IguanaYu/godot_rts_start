@@ -39,6 +39,7 @@ var combat_ctrl: Node
 var gold: int = 10000
 var key_to_mode: Dictionary = {}
 var map_bounds := Rect2(-500, -500, 2000, 1700)
+var show_damage_numbers: bool = true
 
 func _ready() -> void:
 	result_label.visible = false
@@ -51,6 +52,7 @@ func _ready() -> void:
 	add_child(cursor_manager)
 
 	_load_from_config()
+	_load_damage_number_setting()
 
 	# UI 模块
 	ui_module = Node.new()
@@ -382,6 +384,19 @@ func add_gold(amount: int) -> void:
 
 func show_floating_text(text: String, color: Color, world_pos: Vector2) -> void:
 	spawner_module.show_floating_text(text, color, world_pos)
+
+func show_damage_number(amount: int, world_pos: Vector2) -> void:
+	if not show_damage_numbers:
+		return
+	var dn := Node2D.new()
+	dn.set_script(load("res://scripts/effects/damage_number.gd"))
+	add_child(dn)
+	dn.setup(amount, world_pos)
+
+func _load_damage_number_setting() -> void:
+	var config := ConfigFile.new()
+	if config.load("user://settings.cfg") == OK:
+		show_damage_numbers = config.get_value("game", "show_damage_numbers", true)
 
 func spawn_unit_near(type: int, pos: Vector2, team: int) -> void:
 	spawner_module.spawn_unit_near(type, pos, team)
