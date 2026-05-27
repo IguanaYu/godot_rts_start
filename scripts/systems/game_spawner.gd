@@ -126,15 +126,89 @@ func place_player_unit(unit_type: int, click_pos: Vector2) -> void:
 	unit.add_to_group("player_units")
 	spawn_dust_effect(click_pos)
 
+# --- 阵型计算 ---
+
+## 将 groups 展开为有序的 type+data 列表
+static func _expand_groups(groups: Array) -> Array:
+	var result: Array = []
+	for g in groups:
+		var type: int = g.get("type", 0)
+		var count: int = g.get("count", 1)
+		for _i in count:
+			var entry: Dictionary = {"type": type}
+			for key in ["variant_hp", "variant_atk", "variant_speed_mult", "variant_scale"]:
+				if g.has(key):
+					entry[key] = g[key]
+			result.append(entry)
+	return result
+
+## 根据阵型计算每个单位的出生坐标
+static func _calc_formation_positions(center: Vector2, count: int, formation: String, spacing: float) -> Array:
+	var positions: Array = []
+	match formation:
+		"line":
+			for i in count:
+				var x: float = center.x + (i - (count - 1) / 2.0) * spacing
+				positions.append(Vector2(x, center.y))
+		"grid":
+			var cols: int = max(1, ceili(sqrt(count)))
+			var rows: int = ceili(count / float(cols))
+			var idx := 0
+			for r in rows:
+				for c in cols:
+					if idx >= count:
+						break
+					var x: float = center.x + (c - (cols - 1) / 2.0) * spacing
+					var y: float = center.y + (r - (rows - 1) / 2.0) * spacing
+					positions.append(Vector2(x, y))
+					idx += 1
+		_:  # "column" 默认：纵列左右交错
+			for i in count:
+				var row := i / 2
+				var side := 1 if i % 2 == 0 else -1
+				var x: float = center.x + side * spacing * 0.5
+				var y: float = center.y + row * spacing
+				positions.append(Vector2(x, y))
+	return positions
+
+# --- 帧延迟生成队列 ---
+
+var _spawn_queue: Array = []
+
+func _process(_delta: float) -> void:
+	if _spawn_queue.is_empty():
+		return
+	var batch := 2
+	while batch > 0 and not _spawn_queue.is_empty():
+		var job: Dictionary = _spawn_queue.pop_front()
+		_spawn_enemy_unit_immediate(job.type, job.pos, job.wave_attack, job.wave_target, job.data)
+		batch -= 1
+
 # --- Public API (for WaveManager, CapturePoint) ---
 
+## 旧接口兼容：直接指定 pos 的 units 数组
 func spawn_enemy_wave(units: Array, wave_attack: bool = false, wave_target: Vector2 = Vector2.ZERO) -> void:
 	for unit_data in units:
 		var type: int = unit_data.get("type", 0)
 		var pos: Vector2 = unit_data.get("pos", Vector2.ZERO)
-		spawn_enemy_unit(type, pos, wave_attack, wave_target, unit_data)
+		_spawn_queue.append({
+			"type": type, "pos": pos,
+			"wave_attack": wave_attack, "wave_target": wave_target,
+			"data": unit_data
+		})
 
-func spawn_enemy_unit(type: int, pos: Vector2, wave_attack: bool = false, wave_target: Vector2 = Vector2.ZERO, data: Dictionary = {}) -> void:
+## 新接口：groups 编组 + spawn_center，自动计算阵型位置
+func spawn_enemy_wave_v2(groups: Array, spawn_center: Vector2, wave_attack: bool, wave_target: Vector2, formation: String = "column", spacing: float = 50.0) -> void:
+	var expanded: Array = _expand_groups(groups)
+	var positions: Array = _calc_formation_positions(spawn_center, expanded.size(), formation, spacing)
+	for i in expanded.size():
+		_spawn_queue.append({
+			"type": expanded[i].type, "pos": positions[i],
+			"wave_attack": wave_attack, "wave_target": wave_target,
+			"data": expanded[i]
+		})
+
+func _spawn_enemy_unit_immediate(type: int, pos: Vector2, wave_attack: bool, wave_target: Vector2, data: Dictionary) -> void:
 	var unit := create_unit(type, UnitScript.Team.ENEMY, pos)
 	# 先加入场景树触发 _ready()，确保 stat_set 已初始化
 	_enemy_units_node.add_child(unit)

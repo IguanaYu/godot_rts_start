@@ -2,8 +2,11 @@ class_name WaveManager
 extends Node
 
 ## Wave dictionary format:
-## {delay: float, units: Array[{type: int, pos: Vector2}],
-##  post_clear_delay: float, wave_attack: bool, wave_target: Vector2}
+## 旧格式: {delay: float, units: Array[{type: int, pos: Vector2}],
+##   post_clear_delay: float, wave_attack: bool, wave_target: Vector2}
+## 新格式: {delay: float, groups: Array[{type: int, count: int, ...}],
+##   spawn_center: Vector2, spawn_point_path: NodePath, formation: String, spacing: float,
+##   post_clear_delay: float, wave_attack: bool, wave_target: Vector2}
 @export var waves: Array[Dictionary] = []
 @export var clear_then_next: bool = false
 
@@ -59,11 +62,23 @@ func _on_countdown_finished() -> void:
 		return
 
 	var wave_data: Dictionary = waves[current_wave]
-	var units: Array = wave_data.get("units", [])
 	var wave_attack: bool = wave_data.get("wave_attack", false)
 	var wave_target: Vector2 = wave_data.get("wave_target", Vector2.ZERO)
 
-	if game_controller != null and game_controller.has_method("spawn_enemy_wave"):
+	if game_controller == null or not game_controller.has_method("spawn_enemy_wave"):
+		push_error("WaveManager: game_controller 没有配置或缺少 spawn_enemy_wave 方法")
+		return
+
+	if wave_data.has("groups"):
+		# 新格式：groups 编组 + 自动阵型
+		var groups: Array = wave_data.groups
+		var spawn_center: Vector2 = _resolve_spawn_center(wave_data)
+		var formation: String = wave_data.get("formation", "column")
+		var spacing: float = wave_data.get("spacing", 50.0)
+		game_controller.call("spawn_enemy_wave_v2", groups, spawn_center, wave_attack, wave_target, formation, spacing)
+	else:
+		# 旧格式：units + pos
+		var units: Array = wave_data.get("units", [])
 		game_controller.call("spawn_enemy_wave", units, wave_attack, wave_target)
 
 	if clear_then_next:
@@ -102,3 +117,16 @@ func get_total_waves() -> int:
 
 func is_waves_complete() -> bool:
 	return current_wave >= waves.size() and not wave_active
+
+## 解析出生中心点：优先用 spawn_point_path 引用节点，否则用 spawn_center 坐标
+func _resolve_spawn_center(wave_data: Dictionary) -> Vector2:
+	if wave_data.has("spawn_point_path"):
+		var path: NodePath = wave_data.spawn_point_path
+		var marker: Node2D = get_node_or_null(path)
+		if marker != null:
+			return marker.global_position
+		push_warning("WaveManager: spawn_point_path '%s' 未找到节点" % path)
+	if wave_data.has("spawn_center"):
+		return wave_data.spawn_center
+	push_warning("WaveManager: 波次缺少 spawn_point_path 和 spawn_center，使用 (0,0)")
+	return Vector2.ZERO

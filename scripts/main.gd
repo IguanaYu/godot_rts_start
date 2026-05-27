@@ -382,6 +382,9 @@ func _do_place(click_pos: Vector2) -> void:
 func spawn_enemy_wave(units: Array, wave_attack: bool = false, wave_target: Vector2 = Vector2.ZERO) -> void:
 	spawner_module.spawn_enemy_wave(units, wave_attack, wave_target)
 
+func spawn_enemy_wave_v2(groups: Array, spawn_center: Vector2, wave_attack: bool, wave_target: Vector2, formation: String = "column", spacing: float = 50.0) -> void:
+	spawner_module.spawn_enemy_wave_v2(groups, spawn_center, wave_attack, wave_target, formation, spacing)
+
 func spawn_enemy_unit(type: int, pos: Vector2, wave_attack: bool = false, wave_target: Vector2 = Vector2.ZERO) -> void:
 	spawner_module.spawn_enemy_unit(type, pos, wave_attack, wave_target)
 

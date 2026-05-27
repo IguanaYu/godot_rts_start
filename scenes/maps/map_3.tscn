@@ -103,13 +103,13 @@ waves = Array[Dictionary]( [
 		"post_clear_delay": 60.0,
 		"wave_attack": true,
 		"wave_target": Vector2(200, 350),
-		"units": Array[Dictionary]( [
-			{"type": 0, "pos": Vector2(1400, 200)},
-			{"type": 0, "pos": Vector2(1400, 300)},
-			{"type": 0, "pos": Vector2(1400, 400)},
-			{"type": 1, "pos": Vector2(1450, 250)},
-			{"type": 1, "pos": Vector2(1450, 350)},
-			{"type": 0, "pos": Vector2(1400, 500), "variant_hp": 150, "variant_atk": 5, "variant_speed_mult": 0.85, "variant_scale": 1.3}
+		"spawn_point_path": NodePath("../Wave1Spawn"),
+		"formation": "column",
+		"spacing": 50.0,
+		"groups": Array[Dictionary]( [
+			{"type": 0, "count": 3},
+			{"type": 1, "count": 2},
+			{"type": 0, "count": 1, "variant_hp": 150, "variant_atk": 5, "variant_speed_mult": 0.85, "variant_scale": 1.3}
 		] )
 	},
 	{
@@ -117,17 +117,14 @@ waves = Array[Dictionary]( [
 		"post_clear_delay": 60.0,
 		"wave_attack": true,
 		"wave_target": Vector2(200, 350),
-		"units": Array[Dictionary]( [
-			{"type": 0, "pos": Vector2(1400, 150)},
-			{"type": 0, "pos": Vector2(1400, 230)},
-			{"type": 0, "pos": Vector2(1400, 310)},
-			{"type": 0, "pos": Vector2(1400, 390)},
-			{"type": 0, "pos": Vector2(1400, 470)},
-			{"type": 1, "pos": Vector2(1450, 190)},
-			{"type": 1, "pos": Vector2(1450, 270)},
-			{"type": 1, "pos": Vector2(1450, 350)},
-			{"type": 2, "pos": Vector2(1425, 430)},
-			{"type": 0, "pos": Vector2(1400, 550), "variant_hp": 200, "variant_atk": 8, "variant_speed_mult": 0.8, "variant_scale": 1.5}
+		"spawn_point_path": NodePath("../Wave2Spawn"),
+		"formation": "column",
+		"spacing": 50.0,
+		"groups": Array[Dictionary]( [
+			{"type": 0, "count": 5},
+			{"type": 1, "count": 3},
+			{"type": 2, "count": 1},
+			{"type": 0, "count": 1, "variant_hp": 200, "variant_atk": 8, "variant_speed_mult": 0.8, "variant_scale": 1.5}
 		] )
 	},
 	{
@@ -135,25 +132,26 @@ waves = Array[Dictionary]( [
 		"post_clear_delay": 0.0,
 		"wave_attack": true,
 		"wave_target": Vector2(200, 350),
-		"units": Array[Dictionary]( [
-			{"type": 0, "pos": Vector2(1400, 130)},
-			{"type": 0, "pos": Vector2(1400, 200)},
-			{"type": 0, "pos": Vector2(1400, 270)},
-			{"type": 0, "pos": Vector2(1400, 340)},
-			{"type": 0, "pos": Vector2(1400, 410)},
-			{"type": 0, "pos": Vector2(1400, 480)},
-			{"type": 0, "pos": Vector2(1400, 550)},
-			{"type": 0, "pos": Vector2(1400, 620)},
-			{"type": 1, "pos": Vector2(1450, 165)},
-			{"type": 1, "pos": Vector2(1450, 235)},
-			{"type": 1, "pos": Vector2(1450, 305)},
-			{"type": 1, "pos": Vector2(1450, 375)},
-			{"type": 2, "pos": Vector2(1425, 445)},
-			{"type": 2, "pos": Vector2(1425, 515)},
-			{"type": 2, "pos": Vector2(1425, 700), "variant_hp": 300, "variant_atk": 10, "variant_speed_mult": 0.75, "variant_scale": 1.8}
+		"spawn_point_path": NodePath("../Wave3Spawn"),
+		"formation": "grid",
+		"spacing": 50.0,
+		"groups": Array[Dictionary]( [
+			{"type": 0, "count": 8},
+			{"type": 1, "count": 4},
+			{"type": 2, "count": 2},
+			{"type": 2, "count": 1, "variant_hp": 300, "variant_atk": 10, "variant_speed_mult": 0.75, "variant_scale": 1.8}
 		] )
 	}
 ] )
+
+[node name="Wave1Spawn" type="Marker2D" parent="."]
+position = Vector2(1400, 350)
+
+[node name="Wave2Spawn" type="Marker2D" parent="."]
+position = Vector2(1400, 350)
+
+[node name="Wave3Spawn" type="Marker2D" parent="."]
+position = Vector2(1400, 350)
 
 [node name="VictorySurviveWaves" type="Node" parent="."]
 script = ExtResource("victory_survive")
