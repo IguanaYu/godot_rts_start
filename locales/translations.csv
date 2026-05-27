@@ -42,6 +42,10 @@ REWARD_UNITS_SINGLE,+%d %s,+%d %s,+%d %s
 LANG_EN,English,English,English
 LANG_ZH,中文,中文,中文
 LANG_JA,日本語,日本語,日本語
+DIFFICULTY_LABEL,Difficulty:,难度：,難易度：
+DIFFICULTY_EASY,Easy,简单,イージー
+DIFFICULTY_NORMAL,Normal,普通,ノーマル
+DIFFICULTY_HARD,Hard,困难,ハード
 TAB_UNITS,Units,单位,ユニット
 TAB_BUILDINGS,Buildings,建筑,建物
 UI_DAMAGE_NUMBERS,Damage Numbers,伤害飘字,ダメージ数字

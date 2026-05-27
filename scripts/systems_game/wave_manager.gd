@@ -15,6 +15,7 @@ var wave_active: bool = false
 var game_controller: Node2D = null
 var _countdown: float = 0.0
 var _waiting: bool = false
+var _diff_preset: Resource = null  # DifficultyPreset
 
 signal wave_started(wave_number: int)
 signal all_waves_completed
@@ -22,6 +23,9 @@ signal countdown_updated(wave_number: int, remaining: float, total_waves: int)
 
 func set_game_controller(gc: Node2D) -> void:
 	game_controller = gc
+
+func set_difficulty(preset: Resource) -> void:
+	_diff_preset = preset
 
 func start_waves() -> void:
 	if waves.is_empty():
@@ -38,6 +42,8 @@ func _start_next_wave() -> void:
 
 	var wave_data: Dictionary = waves[current_wave]
 	var delay: float = wave_data.get("delay", 0.0)
+	if _diff_preset != null:
+		delay *= _diff_preset.wave_delay_mult
 	_countdown = delay
 	_waiting = true
 	wave_started.emit(current_wave)
@@ -105,6 +111,8 @@ func on_wave_cleared() -> void:
 
 	# Start countdown for next wave
 	var next_delay: float = post_delay if post_delay > 0 else waves[current_wave].get("delay", 0.0)
+	if _diff_preset != null:
+		next_delay *= _diff_preset.wave_delay_mult
 	_countdown = next_delay
 	_waiting = true
 	wave_started.emit(current_wave)

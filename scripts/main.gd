@@ -4,6 +4,7 @@ const D := preload("res://scripts/systems/game_data.gd")
 const UnitScript := preload("res://scripts/units/unit.gd")
 const BuildingScript := preload("res://scripts/buildings/building.gd")
 const MapConfigScript := preload("res://scripts/map_config.gd")
+const DifficultyClass := preload("res://scripts/difficulty.gd")
 
 # Map configuration
 @export var map_config: MapConfigScript = null
@@ -40,6 +41,7 @@ var gold: int = 10000
 var key_to_mode: Dictionary = {}
 var map_bounds := Rect2(-500, -500, 2000, 1700)
 var show_damage_numbers: bool = true
+var _diff_preset: Resource = null  # DifficultyPreset
 var show_fps: bool = false
 var canvas_modulate: CanvasModulate = null
 
@@ -86,6 +88,7 @@ func _ready() -> void:
 	spawner_module.set_script(load("res://scripts/systems/game_spawner.gd"))
 	add_child(spawner_module)
 	spawner_module.initialize(self, player_units_node, enemy_units_node, buildings_node)
+	spawner_module.set_difficulty(_diff_preset)
 
 	# 建筑放置模块
 	building_placer = Node.new()
@@ -154,6 +157,10 @@ func _load_from_config() -> void:
 	NAV_BOUNDS = map_config.nav_bounds
 	map_bounds = map_config.map_bounds
 	gold = map_config.initial_gold
+	# 加载难度预设并应用金币乘数
+	var diff_level := DifficultyClass.load_from_config()
+	_diff_preset = DifficultyClass.get_preset(map_config, diff_level)
+	gold = int(gold * _diff_preset.gold_mult)
 
 func _replace_ground_with_terrain() -> void:
 	var ground_node = get_node_or_null("Ground")
@@ -196,6 +203,7 @@ func _setup_wave_manager() -> void:
 	for child in get_children():
 		if child is WaveManager:
 			child.set_game_controller(self)
+			child.set_difficulty(_diff_preset)
 			child.wave_started.connect(_on_wave_started)
 			child.countdown_updated.connect(_on_countdown_updated)
 			child.all_waves_completed.connect(_on_all_waves_completed)

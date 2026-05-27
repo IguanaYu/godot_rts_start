@@ -23,6 +23,11 @@ extends Resource
 
 @export var map_description: String = ""
 
+# Difficulty presets (editable in Inspector, null = use defaults)
+@export var easy_preset: Resource = null
+@export var normal_preset: Resource = null
+@export var hard_preset: Resource = null
+
 # Terrain settings
 @export var terrain_theme: int = 0
 @export var water_areas: Array[Rect2] = []

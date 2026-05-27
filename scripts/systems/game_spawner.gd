@@ -10,6 +10,7 @@ var _main_node: Node2D
 var _player_units_node: Node2D
 var _enemy_units_node: Node2D
 var _buildings_node: Node2D
+var _diff_preset: Resource = null  # DifficultyPreset
 
 # Callbacks for building placement (grid module functions)
 var place_building_callback: Callable
@@ -21,6 +22,9 @@ func initialize(main_node: Node2D, player_units: Node2D, enemy_units: Node2D, bu
 	_player_units_node = player_units
 	_enemy_units_node = enemy_units
 	_buildings_node = buildings
+
+func set_difficulty(preset: Resource) -> void:
+	_diff_preset = preset
 
 # --- 单位创建 ---
 
@@ -49,6 +53,7 @@ func spawn_from_config(map_config: Resource) -> void:
 	for spawn in map_config.enemy_units:
 		var unit := create_unit(spawn.type, UnitScript.Team.ENEMY, spawn.pos)
 		_enemy_units_node.add_child(unit)
+		_apply_difficulty_modifiers(unit)
 		unit.add_to_group("enemy_units")
 		var ai := Node2D.new()
 		ai.name = "EnemyAI"
@@ -199,7 +204,8 @@ func spawn_enemy_wave(units: Array, wave_attack: bool = false, wave_target: Vect
 
 ## 新接口：groups 编组 + spawn_center，自动计算阵型位置
 func spawn_enemy_wave_v2(groups: Array, spawn_center: Vector2, wave_attack: bool, wave_target: Vector2, formation: String = "column", spacing: float = 50.0) -> void:
-	var expanded: Array = _expand_groups(groups)
+	var scaled_groups := _scale_group_counts(groups)
+	var expanded: Array = _expand_groups(scaled_groups)
 	var positions: Array = _calc_formation_positions(spawn_center, expanded.size(), formation, spacing)
 	for i in expanded.size():
 		_spawn_queue.append({
@@ -228,6 +234,7 @@ func _spawn_enemy_unit_immediate(type: int, pos: Vector2, wave_attack: bool, wav
 			unit.body_sprite.scale = Vector2(unit.sprite_scale_x, unit.sprite_scale_y)
 	if data.has("variant_hp") or data.has("variant_scale"):
 		unit.health.setup(unit.stat_set.get_int(StatSetClass.MAX_HP), unit.hp_bar)
+		_apply_difficulty_modifiers(unit)
 	spawn_dust_effect(pos)
 	unit.add_to_group("enemy_units")
 	var ai := Node2D.new()
@@ -252,6 +259,35 @@ func spawn_unit_near(type: int, pos: Vector2, team: int) -> void:
 		ai.name = "EnemyAI"
 		ai.set_script(load("res://scripts/units/enemy_ai.gd"))
 		unit.add_child(ai)
+
+# --- 难度乘数 ---
+
+func _apply_difficulty_modifiers(unit: CharacterBody2D) -> void:
+	if _diff_preset == null:
+		return
+	var hp_mult: float = _diff_preset.hp_mult
+	var atk_mult: float = _diff_preset.atk_mult
+	var speed_mult: float = _diff_preset.speed_mult
+	if hp_mult != 1.0:
+		unit.stat_set.add_modifier("difficulty", StatSetClass.MAX_HP, 0.0, hp_mult)
+	if atk_mult != 1.0:
+		unit.stat_set.add_modifier("difficulty", StatSetClass.ATTACK_DAMAGE, 0.0, atk_mult)
+	if speed_mult != 1.0:
+		unit.stat_set.add_modifier("difficulty", StatSetClass.MOVE_SPEED, 0.0, speed_mult)
+	if hp_mult != 1.0:
+		unit.health.setup(unit.stat_set.get_int(StatSetClass.MAX_HP), unit.hp_bar)
+
+func _scale_group_counts(groups: Array) -> Array:
+	if _diff_preset == null or _diff_preset.count_mult == 1.0:
+		return groups
+	var count_mult: float = _diff_preset.count_mult
+	var scaled: Array = []
+	for g in groups:
+		var new_g: Dictionary = g.duplicate()
+		var base_count: int = g.get("count", 1)
+		new_g["count"] = maxi(1, int(base_count * count_mult + 0.5))
+		scaled.append(new_g)
+	return scaled
 
 # --- 特效 ---
 

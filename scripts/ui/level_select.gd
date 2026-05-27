@@ -15,8 +15,11 @@ const PATH_ICON_03 := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pa
 const PATH_ICON_04 := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_04.png"
 
 const SETTINGS_PATH := "user://settings.cfg"
+const DifficultyClass := preload("res://scripts/difficulty.gd")
 
 var cursor_manager: Node = null
+var _difficulty: int = 1  # 默认 NORMAL
+var _difficulty_buttons: Array[Button] = []
 
 # === 关卡数据（翻译键） ===
 var levels := [
@@ -125,6 +128,7 @@ func _process_ninepatch(source_path: String, content_rows: Array, content_cols: 
 func _ready() -> void:
 	_ensure_translations_loaded()
 	_load_language_preference()
+	_difficulty = DifficultyClass.load_from_config()
 
 	# 自定义光标
 	var CursorManagerScene := preload("res://scenes/cursor_manager.tscn")
@@ -186,6 +190,7 @@ func _load_language_preference() -> void:
 
 func _save_language_preference(locale_code: String) -> void:
 	var config := ConfigFile.new()
+	config.load(SETTINGS_PATH)
 	config.set_value("game", "locale", locale_code)
 	config.save(SETTINGS_PATH)
 
@@ -211,6 +216,12 @@ func _refresh_ui() -> void:
 	for btn in _lang_buttons:
 		var btn_locale: String = btn.get_meta("locale")
 		btn.add_theme_color_override("font_color", Color(1, 0.85, 0.0) if btn_locale == current_locale else Color(0.8, 0.8, 0.8))
+
+	# 更新难度按钮
+	var diff_keys := ["DIFFICULTY_EASY", "DIFFICULTY_NORMAL", "DIFFICULTY_HARD"]
+	for i in range(_difficulty_buttons.size()):
+		_difficulty_buttons[i].text = tr(diff_keys[i])
+	_update_difficulty_highlight()
 
 
 # ============================================================
@@ -430,7 +441,10 @@ func _create_right_panel(parent: HBoxContainer) -> void:
 	right_desc.custom_minimum_size = Vector2(0, 60)
 	vbox.add_child(right_desc)
 
-	# 5) 弹性间距
+	# 5) 难度选择
+	_create_difficulty_selector(vbox)
+
+	# 6) 弹性间距
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(spacer)
@@ -478,6 +492,63 @@ func _create_start_button(parent: VBoxContainer) -> void:
 	wrapper.add_child(start_button_label)
 
 	parent.add_child(wrapper)
+
+
+# ============================================================
+# 难度选择器
+# ============================================================
+func _create_difficulty_selector(parent: VBoxContainer) -> void:
+	# 标签
+	var label := Label.new()
+	label.text = tr("DIFFICULTY_LABEL")
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_color_override("font_color", Color(1, 0.95, 0.8))
+	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.5))
+	label.add_theme_constant_override("shadow_offset_x", 1)
+	label.add_theme_constant_override("shadow_offset_y", 1)
+	parent.add_child(label)
+
+	# 按钮行
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 8)
+	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	parent.add_child(hbox)
+
+	var difficulties := [
+		{"key": "DIFFICULTY_EASY", "level": 0},
+		{"key": "DIFFICULTY_NORMAL", "level": 1},
+		{"key": "DIFFICULTY_HARD", "level": 2},
+	]
+
+	for diff in difficulties:
+		var btn := Button.new()
+		btn.text = tr(diff.key)
+		btn.custom_minimum_size = Vector2(90, 28)
+		btn.add_theme_font_size_override("font_size", 14)
+		btn.set_meta("difficulty_level", diff.level)
+		if diff.level == _difficulty:
+			btn.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
+		else:
+			btn.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+		btn.pressed.connect(_on_difficulty_selected.bind(diff.level))
+		hbox.add_child(btn)
+		_difficulty_buttons.append(btn)
+
+
+func _on_difficulty_selected(level: int) -> void:
+	_difficulty = level
+	DifficultyClass.save_to_config(level)
+	_update_difficulty_highlight()
+
+
+func _update_difficulty_highlight() -> void:
+	for btn in _difficulty_buttons:
+		var btn_level: int = btn.get_meta("difficulty_level")
+		if btn_level == _difficulty:
+			btn.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
+		else:
+			btn.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
 
 
 # ============================================================
