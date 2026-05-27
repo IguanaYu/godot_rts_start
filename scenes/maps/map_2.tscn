@@ -19,10 +19,10 @@ script = ExtResource("main_script")
 map_config = ExtResource("map2_config")
 
 [node name="Ground" type="ColorRect" parent="." unique_id=820275618]
-offset_left = -500.0
-offset_top = -500.0
-offset_right = 1500.0
-offset_bottom = 1200.0
+offset_left = -537.0
+offset_top = -468.0
+offset_right = 1463.0
+offset_bottom = 1232.0
 color = Color(0.35, 0.55, 0.25, 1)
 
 [node name="NavigationRegion2D" type="NavigationRegion2D" parent="." unique_id=829099249]
@@ -54,19 +54,19 @@ position = Vector2(900, 200)
 team = 1
 
 [node name="EnemySoldier2" parent="EnemyUnits" unique_id=1667145151 instance=ExtResource("soldier")]
-position = Vector2(900, 280)
+position = Vector2(891, 321)
 team = 1
 
 [node name="EnemySoldier3" parent="EnemyUnits" unique_id=2034998767 instance=ExtResource("soldier")]
-position = Vector2(900, 360)
+position = Vector2(887, 391)
 team = 1
 
 [node name="EnemyArcher1" parent="EnemyUnits" unique_id=838110303 instance=ExtResource("archer")]
-position = Vector2(950, 240)
+position = Vector2(1059, 279)
 team = 1
 
 [node name="EnemyArcher2" parent="EnemyUnits" unique_id=41793350 instance=ExtResource("archer")]
-position = Vector2(950, 320)
+position = Vector2(958, 396)
 team = 1
 
 [node name="EnemyArcher3" parent="EnemyUnits" unique_id=113123254 instance=ExtResource("archer")]
@@ -74,8 +74,16 @@ position = Vector2(1038, 176)
 team = 1
 
 [node name="EnemyArcher4" parent="EnemyUnits" unique_id=813065396 instance=ExtResource("archer")]
-position = Vector2(1055, 393)
+position = Vector2(1085, 356)
 team = 1
+
+[node name="EnemySoldierBoss" parent="EnemyUnits" unique_id=745006089 instance=ExtResource("soldier")]
+position = Vector2(643, 252)
+team = 1
+variant_hp_bonus = 200
+variant_atk_bonus = 8
+variant_speed_mult = 0.75
+variant_scale = 1.5
 
 [node name="Buildings" type="Node2D" parent="." unique_id=1134354485]
 
@@ -90,11 +98,11 @@ position = Vector2(864, 224)
 team = 1
 
 [node name="EnemyBarracks" parent="Buildings" unique_id=428834541 instance=ExtResource("barracks")]
-position = Vector2(896, 448)
+position = Vector2(960, 512)
 team = 1
 
 [node name="EnemyTower" parent="Buildings" unique_id=198907701 instance=ExtResource("tower")]
-position = Vector2(992, 288)
+position = Vector2(864, 32)
 team = 1
 
 [node name="EnemyWall1" parent="Buildings" unique_id=570648438 instance=ExtResource("wall")]

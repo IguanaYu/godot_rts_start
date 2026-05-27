@@ -1,46 +1,71 @@
-[gd_resource type="Resource" script_class="MapConfig" load_steps=2 format=3 uid="uid://m7f6k2n8o3p1q"]
+[gd_resource type="Resource" script_class="MapConfig" format=3 uid="uid://bl7ksvwh0h3rg"]
 
-[ext_resource type="Script" path="res://scripts/map_config.gd" id="1_abc12"]
+[ext_resource type="Script" uid="uid://cjdi3j0utrwrk" path="res://scripts/map_config.gd" id="1_abc12"]
 
 [resource]
 script = ExtResource("1_abc12")
 map_name = "Basic Attack"
-map_bounds = Rect2(-500, -500, 2000, 1700)
-nav_bounds = Array[Vector2]([Vector2(-500, -500), Vector2(1500, -500), Vector2(1500, 1200), Vector2(-500, 1200)])
-initial_gold = 10000
-camera_start = Vector2(500, 350)
-
-player_units = Array[Dictionary]( [
-	{"type": 0, "pos": Vector2(200, 200)},
-	{"type": 0, "pos": Vector2(200, 280)},
-	{"type": 0, "pos": Vector2(200, 360)},
-	{"type": 1, "pos": Vector2(150, 240)},
-	{"type": 1, "pos": Vector2(150, 320)}
-] )
-
-player_buildings = Array[Dictionary]( [
-	{"type": 2, "grid_pos": Vector2i(1, 2)},
-	{"type": 3, "grid_pos": Vector2i(5, 3)}
-] )
-
-enemy_units = Array[Dictionary]( [
-	{"type": 0, "pos": Vector2(900, 200)},
-	{"type": 0, "pos": Vector2(900, 280)},
-	{"type": 0, "pos": Vector2(900, 360)},
-	{"type": 1, "pos": Vector2(950, 240)},
-	{"type": 1, "pos": Vector2(950, 320)}
-] )
-
-enemy_buildings = Array[Dictionary]( [
-	{"type": 2, "grid_pos": Vector2i(12, 2)},
-	{"type": 3, "grid_pos": Vector2i(10, 3)},
-	{"type": 1, "grid_pos": Vector2i(15, 4)},
-	{"type": 0, "grid_pos": Vector2i(11, 4)},
-	{"type": 0, "grid_pos": Vector2i(11, 6)}
-] )
-
-environment = {"trees": 15, "rocks": 10, "bushes": 12, "sheep": 5}
-
-available_items = Array[int]( [1, 2, 5, 6, 3, 4, 7, 8, 9, 10] )
-
+player_units = Array[Dictionary]([{
+"pos": Vector2(200, 200),
+"type": 0
+}, {
+"pos": Vector2(200, 280),
+"type": 0
+}, {
+"pos": Vector2(200, 360),
+"type": 0
+}, {
+"pos": Vector2(150, 240),
+"type": 1
+}, {
+"pos": Vector2(150, 320),
+"type": 1
+}])
+player_buildings = Array[Dictionary]([{
+"grid_pos": Vector2i(1, 2),
+"type": 2
+}, {
+"grid_pos": Vector2i(5, 3),
+"type": 3
+}])
+enemy_units = Array[Dictionary]([{
+"pos": Vector2(900, 200),
+"type": 0
+}, {
+"pos": Vector2(900, 280),
+"type": 0
+}, {
+"pos": Vector2(900, 360),
+"type": 0
+}, {
+"pos": Vector2(950, 240),
+"type": 1
+}, {
+"pos": Vector2(950, 320),
+"type": 1
+}, {
+"atk_flat": 8,
+"hp_flat": 200,
+"pos": Vector2(870, 280),
+"scale": 1.5,
+"speed_mult": 0.75,
+"type": 0
+}])
+enemy_buildings = Array[Dictionary]([{
+"grid_pos": Vector2i(12, 2),
+"type": 2
+}, {
+"grid_pos": Vector2i(10, 3),
+"type": 3
+}, {
+"grid_pos": Vector2i(15, 4),
+"type": 1
+}, {
+"grid_pos": Vector2i(11, 4),
+"type": 0
+}, {
+"grid_pos": Vector2i(11, 6),
+"type": 0
+}])
+available_items = Array[int]([1, 2, 5, 6, 3, 4, 7, 8, 9, 10])
 map_description = "Build your base and destroy the enemy castle to win!"

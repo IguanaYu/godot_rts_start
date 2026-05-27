@@ -36,6 +36,11 @@ const HealEffectScene := preload("res://scenes/effects/heal_effect.tscn")
 const StatSetClass = preload("res://scripts/stats/stat_set.gd")
 const UpgradeMgrClass = preload("res://scripts/stats/upgrade_manager.gd")
 @export var stats_data: UnitStats
+@export_group("Variant Modifiers")
+@export var variant_hp_bonus: int = 0
+@export var variant_atk_bonus: int = 0
+@export var variant_speed_mult: float = 1.0
+@export var variant_scale: float = 1.0
 var stat_set
 var upgrade_mgr
 var steer_lock_time: float = 0.5
@@ -113,6 +118,19 @@ func _setup_stats() -> void:
 	if stats_data.sprite_scale != 1.0:
 		sprite_scale_x *= stats_data.sprite_scale
 		sprite_scale_y *= stats_data.sprite_scale
+	# 应用变体修饰器（通过 add_modifier 改实际属性）
+	if variant_hp_bonus != 0:
+		stat_set.add_modifier("variant", StatSetClass.MAX_HP, float(variant_hp_bonus))
+	if variant_atk_bonus != 0:
+		stat_set.add_modifier("variant", StatSetClass.ATTACK_DAMAGE, float(variant_atk_bonus))
+	if variant_speed_mult != 1.0:
+		stat_set.add_modifier("variant", StatSetClass.MOVE_SPEED, 0.0, variant_speed_mult)
+	if variant_scale != 1.0:
+		sprite_scale_x *= variant_scale
+		sprite_scale_y *= variant_scale
+	# 同步 HP（修饰器可能改了 max_hp）
+	if (variant_hp_bonus != 0) and health and not Engine.is_editor_hint():
+		health.setup(stat_set.get_int(StatSetClass.MAX_HP), hp_bar)
 
 func _setup_editor_visuals() -> void:
 	_setup_texture()

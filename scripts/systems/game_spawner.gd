@@ -53,6 +53,7 @@ func spawn_from_config(map_config: Resource) -> void:
 		ai.name = "EnemyAI"
 		ai.set_script(load("res://scripts/units/enemy_ai.gd"))
 		unit.add_child(ai)
+		unit.add_child(ai)
 
 	# Spawn player buildings
 	for spawn in map_config.player_buildings:
