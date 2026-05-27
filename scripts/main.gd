@@ -53,6 +53,7 @@ func _ready() -> void:
 
 	_load_from_config()
 	_load_damage_number_setting()
+	_load_display_settings()
 
 	# UI 模块
 	ui_module = Node.new()
@@ -407,6 +408,19 @@ func _load_damage_number_setting() -> void:
 	var config := ConfigFile.new()
 	if config.load("user://settings.cfg") == OK:
 		show_damage_numbers = config.get_value("game", "show_damage_numbers", true)
+
+
+func _load_display_settings() -> void:
+	var config := ConfigFile.new()
+	if config.load("user://settings.cfg") != OK:
+		return
+	var fullscreen: bool = config.get_value("display", "fullscreen", false)
+	if fullscreen:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+	else:
+		var w: int = config.get_value("display", "resolution_width", 1280)
+		var h: int = config.get_value("display", "resolution_height", 720)
+		DisplayServer.window_set_size(Vector2i(w, h))
 
 func spawn_unit_near(type: int, pos: Vector2, team: int) -> void:
 	spawner_module.spawn_unit_near(type, pos, team)

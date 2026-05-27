@@ -40,6 +40,15 @@ var _pause_overlay: ColorRect  # 用于切换主菜单/设置页
 # Key mapping
 var key_to_mode: Dictionary = {}
 
+# 分辨率预设
+const RESOLUTION_PRESETS: Array[Vector2i] = [
+	Vector2i(1280, 720), Vector2i(1366, 768),
+	Vector2i(1600, 900), Vector2i(1920, 1080),
+]
+const RESOLUTION_KEYS: Array[String] = [
+	"RES_1280x720", "RES_1366x768", "RES_1600x900", "RES_1920x1080",
+]
+
 # 外部引用
 var _main_node: Node2D
 
@@ -668,6 +677,31 @@ func _on_damage_numbers_toggled(pressed: bool) -> void:
 	config.save("user://settings.cfg")
 
 
+func _on_resolution_selected(index: int) -> void:
+	var new_size := RESOLUTION_PRESETS[index]
+	if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_WINDOWED:
+		DisplayServer.window_set_size(new_size)
+	var config := ConfigFile.new()
+	config.load("user://settings.cfg")
+	config.set_value("display", "resolution_width", new_size.x)
+	config.set_value("display", "resolution_height", new_size.y)
+	config.save("user://settings.cfg")
+
+
+func _on_fullscreen_toggled(pressed: bool) -> void:
+	var config := ConfigFile.new()
+	config.load("user://settings.cfg")
+	if pressed:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+	else:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+		var w: int = config.get_value("display", "resolution_width", 1280)
+		var h: int = config.get_value("display", "resolution_height", 720)
+		DisplayServer.window_set_size(Vector2i(w, h))
+	config.set_value("display", "fullscreen", pressed)
+	config.save("user://settings.cfg")
+
+
 # ============================================================
 # 设置子页面
 # ============================================================
@@ -700,6 +734,32 @@ func _open_settings_page() -> void:
 	dmg_toggle.custom_minimum_size = Vector2(200, 40)
 	dmg_toggle.toggled.connect(_on_damage_numbers_toggled)
 	vbox.add_child(dmg_toggle)
+
+	# 分辨率选择
+	var res_label := Label.new()
+	res_label.text = tr("UI_RESOLUTION")
+	res_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(res_label)
+
+	var res_option := OptionButton.new()
+	res_option.custom_minimum_size = Vector2(200, 40)
+	var current_size := DisplayServer.window_get_size()
+	var selected_idx := 0
+	for i in RESOLUTION_PRESETS.size():
+		res_option.add_item(tr(RESOLUTION_KEYS[i]), i)
+		if RESOLUTION_PRESETS[i] == current_size:
+			selected_idx = i
+	res_option.selected = selected_idx
+	res_option.item_selected.connect(_on_resolution_selected)
+	vbox.add_child(res_option)
+
+	# 全屏切换
+	var fs_toggle := CheckButton.new()
+	fs_toggle.text = tr("UI_FULLSCREEN")
+	fs_toggle.button_pressed = (DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN)
+	fs_toggle.custom_minimum_size = Vector2(200, 40)
+	fs_toggle.toggled.connect(_on_fullscreen_toggled)
+	vbox.add_child(fs_toggle)
 
 	# 返回按钮
 	var back_btn := Button.new()
