@@ -55,6 +55,9 @@ func _ready() -> void:
 	_load_damage_number_setting()
 	_load_display_settings()
 
+	# 替换 ColorRect 地面为 TileMapLayer 地形
+	_replace_ground_with_terrain()
+
 	# UI 模块
 	ui_module = Node.new()
 	ui_module.set_script(load("res://scripts/systems/game_ui.gd"))
@@ -146,6 +149,27 @@ func _load_from_config() -> void:
 	NAV_BOUNDS = map_config.nav_bounds
 	map_bounds = map_config.map_bounds
 	gold = map_config.initial_gold
+
+func _replace_ground_with_terrain() -> void:
+	var ground_node = get_node_or_null("Ground")
+	if ground_node and ground_node is ColorRect:
+		ground_node.queue_free()
+
+	var terrain_layer := TileMapLayer.new()
+	terrain_layer.name = "Ground"
+	terrain_layer.z_index = -10
+	terrain_layer.set_script(load("res://scripts/terrain_layer.gd"))
+	add_child(terrain_layer)
+	move_child(terrain_layer, 0)
+
+	var theme := 0
+	var water_areas: Array[Rect2] = []
+	var border_w := 1
+	if map_config != null:
+		theme = map_config.terrain_theme
+		water_areas = map_config.water_areas
+		border_w = map_config.border_width
+	terrain_layer.setup(map_bounds, theme, water_areas, border_w)
 
 func _setup_victory_condition() -> void:
 	for child in get_children():

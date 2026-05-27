@@ -44,4 +44,6 @@ environment = {"trees": 6, "rocks": 4, "bushes": 3, "sheep": 0}
 
 available_items = Array[int]( [] )
 
+terrain_theme = 0
+border_width = 1
 map_description = "Capture all 3 strongpoints! No base, no gold - fight smart!"

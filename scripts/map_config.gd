@@ -22,3 +22,8 @@ extends Resource
 @export var available_items: Array[int] = []
 
 @export var map_description: String = ""
+
+# Terrain settings
+@export var terrain_theme: int = 0
+@export var water_areas: Array[Rect2] = []
+@export var border_width: int = 1

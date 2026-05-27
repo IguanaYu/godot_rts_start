@@ -33,4 +33,6 @@ environment = {"trees": 10, "rocks": 8, "bushes": 6, "sheep": 3}
 
 available_items = Array[int]( [1, 2, 5, 6, 9] )
 
+terrain_theme = 2
+border_width = 1
 map_description = "Survive 3 waves of enemy attacks! Build defenses and hold your ground."
