@@ -35,6 +35,7 @@ var tooltip_target_mode: int = -1
 # 暂停菜单
 var pause_menu_open: bool = false
 var pause_canvas: CanvasLayer
+var _pause_overlay: ColorRect  # 用于切换主菜单/设置页
 
 # Key mapping
 var key_to_mode: Dictionary = {}
@@ -571,6 +572,7 @@ func _create_pause_menu() -> void:
 	overlay.color = Color(0, 0, 0, 0.6)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	pause_canvas.add_child(overlay)
+	_pause_overlay = overlay
 
 	var input_handler := Control.new()
 	input_handler.set_script(load("res://scripts/ui/pause_input_handler.gd"))
@@ -609,6 +611,7 @@ func _create_pause_menu() -> void:
 		[tr("UI_RESUME"), _close_pause_menu],
 		[tr("UI_RESTART"), _on_pause_restart],
 		[tr("UI_LEVEL_SELECT"), _on_pause_level_select],
+		[tr("UI_SETTINGS"), _open_settings_page],
 		[tr("UI_QUIT_GAME"), _on_pause_quit],
 	]
 	for data in btn_data:
@@ -617,14 +620,6 @@ func _create_pause_menu() -> void:
 		btn.custom_minimum_size = Vector2(200, 40)
 		btn.pressed.connect(data[1])
 		vbox.add_child(btn)
-
-		# 伤害飘字开关
-		var dmg_toggle := CheckButton.new()
-		dmg_toggle.text = tr("UI_DAMAGE_NUMBERS")
-		dmg_toggle.button_pressed = _main_node.show_damage_numbers
-		dmg_toggle.custom_minimum_size = Vector2(200, 40)
-		dmg_toggle.toggled.connect(_on_damage_numbers_toggled)
-		vbox.add_child(dmg_toggle)
 
 	var hint := Label.new()
 	hint.text = tr("UI_PRESS_ESC_RESUME")
@@ -667,6 +662,58 @@ func _on_damage_numbers_toggled(pressed: bool) -> void:
 	var config := ConfigFile.new()
 	config.set_value("game", "show_damage_numbers", pressed)
 	config.save("user://settings.cfg")
+
+
+# ============================================================
+# 设置子页面
+# ============================================================
+func _open_settings_page() -> void:
+	# 隐藏暂停主菜单的背景面板（overlay的第一个子节点是input_handler，第二个是panel_bg）
+	for child in _pause_overlay.get_children():
+		if child is CenterContainer:
+			child.visible = false
+
+	# 创建设置页面
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.name = "SettingsPage"
+	_pause_overlay.add_child(center)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 10)
+	center.add_child(vbox)
+
+	var title := Label.new()
+	title.text = tr("UI_SETTINGS")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 28)
+	vbox.add_child(title)
+
+	# 伤害飘字开关
+	var dmg_toggle := CheckButton.new()
+	dmg_toggle.text = tr("UI_DAMAGE_NUMBERS")
+	dmg_toggle.button_pressed = _main_node.show_damage_numbers
+	dmg_toggle.custom_minimum_size = Vector2(200, 40)
+	dmg_toggle.toggled.connect(_on_damage_numbers_toggled)
+	vbox.add_child(dmg_toggle)
+
+	# 返回按钮
+	var back_btn := Button.new()
+	back_btn.text = tr("UI_BACK")
+	back_btn.custom_minimum_size = Vector2(200, 40)
+	back_btn.pressed.connect(_close_settings_page)
+	vbox.add_child(back_btn)
+
+
+func _close_settings_page() -> void:
+	# 删除设置页面
+	for child in _pause_overlay.get_children():
+		if child.name == "SettingsPage":
+			child.queue_free()
+	# 恢复暂停主菜单
+	for child in _pause_overlay.get_children():
+		if child is CenterContainer:
+			child.visible = true
 
 
 func close_pause_menu() -> void:
