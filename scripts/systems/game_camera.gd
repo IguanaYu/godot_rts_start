@@ -7,6 +7,7 @@ var camera: Camera2D
 var map_bounds: Rect2 = Rect2(-500, -500, 2000, 1700)
 
 var camera_speed: float = 600.0
+var speed_multiplier: float = 1.0
 var edge_margin: float = 30.0
 var zoom_step: float = 0.15
 var min_zoom: float = 0.4
@@ -74,7 +75,7 @@ func process_camera(delta: float) -> void:
 	if move_dir != Vector2.ZERO:
 		move_dir = move_dir.normalized()
 		var current_zoom := camera.zoom.x
-		camera.position += move_dir * camera_speed * delta / current_zoom
+		camera.position += move_dir * camera_speed * speed_multiplier * delta / current_zoom
 
 	# --- 中键拖拽 ---
 	if _mid_dragging:

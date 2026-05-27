@@ -8,6 +8,8 @@ const PATH_WOOD_TABLE := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free
 const PATH_BTN_BLUE_REG := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Buttons/BigBlueButton_Regular.png"
 const PATH_BTN_BLUE_PRS := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Buttons/BigBlueButton_Pressed.png"
 const PATH_BTN_RED_REG := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Buttons/BigRedButton_Regular.png"
+const PATH_BAR_BASE := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Bars/BigBar_Base.png"
+const PATH_BAR_FILL := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Bars/BigBar_Fill.png"
 
 signal place_mode_requested(mode: int)
 signal restart_requested
@@ -63,6 +65,17 @@ var np_wood_table: Dictionary
 var np_btn_blue: Dictionary
 var np_btn_blue_prs: Dictionary
 var np_btn_red: Dictionary
+var np_btn_menu: Dictionary
+var np_btn_menu_prs: Dictionary
+var np_bar_base: Dictionary
+var np_bar_fill: Dictionary
+
+# FPS 显示
+var _fps_label: Label
+
+# 设置页引用（用于动态更新）
+var _settings_res_option: OptionButton
+var _settings_display_mode_option: OptionButton
 
 func initialize(main_node: Node2D, map_config: Resource, gold: int) -> void:
 	_main_node = main_node
@@ -134,9 +147,21 @@ func _preprocess_textures() -> void:
 	np_btn_blue_prs = _process_ninepatch(PATH_BTN_BLUE_PRS,
 		[[28, 63], [128, 191], [256, 304]],
 		[[14, 63], [128, 191], [256, 305]])
+	np_btn_menu = _process_ninepatch(PATH_BTN_BLUE_REG,
+		[[17, 26], [128, 191], [287, 302]],
+		[[19, 28], [128, 191], [291, 300]])
+	np_btn_menu_prs = _process_ninepatch(PATH_BTN_BLUE_PRS,
+		[[28, 37], [128, 191], [294, 304]],
+		[[19, 28], [128, 191], [291, 300]])
 	np_btn_red = _process_ninepatch(PATH_BTN_RED_REG,
 		[[17, 63], [128, 191], [256, 302]],
 		[[19, 63], [128, 191], [256, 300]])
+	np_bar_base = _process_ninepatch(PATH_BAR_BASE,
+		[[6, 31], [128, 159], [256, 281]],
+		[[6, 31], [128, 159], [256, 281]])
+	np_bar_fill = _process_ninepatch(PATH_BAR_FILL,
+		[[6, 31], [128, 159], [256, 281]],
+		[[6, 31], [128, 159], [256, 281]])
 
 
 # ============================================================
@@ -291,17 +316,33 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	wave_countdown_label.visible = false
 	canvas.add_child(wave_countdown_label)
 
+	# --- FPS 显示（左上角，金币下方）---
+	_fps_label = Label.new()
+	_fps_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	_fps_label.offset_left = 10.0
+	_fps_label.offset_top = 38.0
+	_fps_label.add_theme_font_size_override("font_size", 14)
+	_fps_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	_fps_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	_fps_label.add_theme_constant_override("shadow_offset_x", 1)
+	_fps_label.add_theme_constant_override("shadow_offset_y", 1)
+	_fps_label.visible = _main_node.show_fps
+	canvas.add_child(_fps_label)
+
+
+func _process(_delta: float) -> void:
+	if _fps_label and _fps_label.visible:
+		_fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
+
 
 # ============================================================
 # 图标裁剪工具
 # ============================================================
-## 裁剪图标的透明边距，返回紧凑的 AtlasTexture
 func _make_trimmed_icon(tex: Texture2D) -> AtlasTexture:
 	var img: Image = tex.get_image()
 	var tw := img.get_width()
 	var th := img.get_height()
 
-	# 确定帧尺寸（宽动画表裁剪为第一帧）
 	var frame_w: int
 	var frame_h: int
 	if tw > th:
@@ -315,7 +356,6 @@ func _make_trimmed_icon(tex: Texture2D) -> AtlasTexture:
 		frame_w = tw
 		frame_h = th
 
-	# 裁剪第一帧并查找内容边界
 	var frame_img := img.get_region(Rect2i(0, 0, frame_w, frame_h))
 	var bbox: Rect2i = frame_img.get_used_rect()
 
@@ -338,22 +378,18 @@ func _add_icon_button(mode: int, container: HBoxContainer) -> void:
 	var mode_name: String = tr(D.MODE_NAMES.get(mode, "ENTITY_UNIT"))
 	var icon_tex: Texture2D = D.ICON_TEXTURES.get(mode, null) as Texture2D
 
-	# 固定快捷键映射
 	key_to_mode[hotkey] = mode
 
 	var wrapper := Control.new()
 	wrapper.custom_minimum_size = Vector2(80, 80)
 
-	# 九宫格按钮底板
 	var bg := _make_ninepatch(np_btn_blue)
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	bg.name = "ButtonBG"
 	wrapper.add_child(bg)
 
-	# 图标（自动裁剪透明边距）
 	if icon_tex != null:
 		var display_tex: AtlasTexture = _make_trimmed_icon(icon_tex)
-
 		var icon := TextureRect.new()
 		icon.texture = display_tex
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -366,7 +402,6 @@ func _add_icon_button(mode: int, container: HBoxContainer) -> void:
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		wrapper.add_child(icon)
 
-	# 快捷键角标
 	var key_label := Label.new()
 	key_label.text = str(hotkey_index)
 	key_label.add_theme_font_size_override("font_size", 14)
@@ -385,7 +420,6 @@ func _add_icon_button(mode: int, container: HBoxContainer) -> void:
 	key_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	wrapper.add_child(key_label)
 
-	# 透明 Button 接收点击 + 悬浮
 	var btn := Button.new()
 	btn.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
@@ -412,13 +446,10 @@ func _switch_tab(tab_index: int) -> void:
 	active_tab = tab_index
 	unit_container.visible = (tab_index == 0)
 	building_container.visible = (tab_index == 1)
-
-	# 更新标签按钮外观
 	for i in range(tab_buttons.size()):
 		tab_buttons[i].button_pressed = (i == tab_index)
 
 
-## 快捷键触发时自动切换标签页
 func switch_tab_for_mode(mode: int) -> void:
 	if D.is_unit_mode(mode):
 		if active_tab != 0:
@@ -432,28 +463,21 @@ func switch_tab_for_mode(mode: int) -> void:
 # Tooltip 系统
 # ============================================================
 func _create_tooltip() -> void:
-	# Timer: 悬浮1秒后显示
 	tooltip_timer = Timer.new()
 	tooltip_timer.one_shot = true
 	tooltip_timer.wait_time = 0.8
 	tooltip_timer.timeout.connect(_show_tooltip)
 	add_child(tooltip_timer)
 
-	# Tooltip 面板
 	tooltip_panel = PanelContainer.new()
 	tooltip_panel.z_index = 100
 	tooltip_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# 半透明深色背景
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.1, 0.1, 0.15, 0.92)
 	style.set_corner_radius_all(4)
 	style.set_content_margin_all(8)
 	tooltip_panel.add_theme_stylebox_override("panel", style)
 	tooltip_panel.visible = false
-
-	# 添加到 canvas (需要找到 canvas)
-	# 我们把它挂在 _main_node 的 canvas layer 上
-	# 但 canvas 是局部变量... 挂在 _main_node 上
 	_ui_canvas.add_child(tooltip_panel)
 
 	tooltip_label = Label.new()
@@ -487,7 +511,6 @@ func _show_tooltip() -> void:
 	tooltip_label.text = "%s (%s)\n$%d  [%d]" % [mode_name, type_str, cost, hotkey_index]
 	tooltip_panel.visible = true
 
-	# 定位：用锚点偏移量（屏幕坐标，在 CanvasLayer 内）
 	var mouse_pos := _main_node.get_viewport().get_mouse_position()
 	tooltip_panel.anchor_left = 0.0
 	tooltip_panel.anchor_right = 0.0
@@ -522,7 +545,6 @@ func _update_button_affordability(current_gold: int) -> void:
 func update_wave_countdown(wave_number: int, remaining: float, total: int) -> void:
 	if wave_countdown_label == null:
 		return
-	# Hide label when countdown finished (wave is active with enemies on field)
 	if remaining <= 0:
 		wave_countdown_label.visible = false
 		return
@@ -552,12 +574,10 @@ func hide_place_mode_label() -> void:
 		place_mode_label.visible = false
 
 
-## 获取面板在屏幕上的矩形（用于相机豁免）
 func get_panel_screen_rect() -> Rect2:
 	return panel_rect
 
 
-## 每帧更新面板矩形位置
 func update_panel_rect() -> void:
 	var vp_size: Vector2 = _main_node.get_viewport().get_visible_rect().size
 	panel_rect = Rect2(
@@ -569,7 +589,84 @@ func update_panel_rect() -> void:
 
 
 # ============================================================
-# 暂停菜单
+# 辅助：创建九宫格风格按钮
+# ============================================================
+func _make_styled_button(text: String, min_size: Vector2, callback: Callable) -> Control:
+	var wrapper := Control.new()
+	wrapper.custom_minimum_size = min_size
+	wrapper.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var bg := _make_ninepatch(np_btn_menu)
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	wrapper.add_child(bg)
+
+	var btn := Button.new()
+	btn.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	var empty_style := StyleBoxEmpty.new()
+	btn.add_theme_stylebox_override("normal", empty_style)
+	btn.add_theme_stylebox_override("hover", empty_style)
+	btn.add_theme_stylebox_override("pressed", empty_style)
+	btn.add_theme_stylebox_override("focus", empty_style)
+	btn.pressed.connect(callback)
+	btn.button_down.connect(func(): bg.texture = np_btn_menu_prs.texture)
+	btn.button_up.connect(func(): bg.texture = np_btn_menu.texture)
+	wrapper.add_child(btn)
+
+	var label := Label.new()
+	label.text = text
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_color_override("font_color", Color(1, 1, 1))
+	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	label.add_theme_constant_override("shadow_offset_x", 1)
+	label.add_theme_constant_override("shadow_offset_y", 1)
+	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wrapper.add_child(label)
+
+	return wrapper
+
+
+# ============================================================
+# 辅助：创建带滑块的一行设置项
+# ============================================================
+func _make_slider_row(label_text: String, value: float, min_val: float, max_val: float, callback: Callable) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+
+	var label := Label.new()
+	label.text = label_text
+	label.custom_minimum_size = Vector2(100, 0)
+	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
+	row.add_child(label)
+
+	var slider := HSlider.new()
+	slider.min_value = min_val
+	slider.max_value = max_val
+	slider.step = 0.01
+	slider.value = value
+	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	slider.custom_minimum_size = Vector2(120, 20)
+	slider.value_changed.connect(callback)
+	row.add_child(slider)
+
+	var pct := Label.new()
+	pct.text = "%d%%" % int(value * 100)
+	pct.custom_minimum_size = Vector2(45, 0)
+	pct.add_theme_font_size_override("font_size", 14)
+	pct.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
+	pct.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	slider.value_changed.connect(func(v: float): pct.text = "%d%%" % int(v * 100))
+	row.add_child(pct)
+
+	return row
+
+
+# ============================================================
+# 暂停菜单（九宫格风格）
 # ============================================================
 func _create_pause_menu() -> void:
 	pause_canvas = CanvasLayer.new()
@@ -594,31 +691,42 @@ func _create_pause_menu() -> void:
 	input_handler.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	pause_canvas.add_child(input_handler)
 
-	var panel_bg := ColorRect.new()
-	panel_bg.anchor_left = 0.5
-	panel_bg.anchor_right = 0.5
-	panel_bg.anchor_top = 0.5
-	panel_bg.anchor_bottom = 0.5
-	panel_bg.offset_left = -120.0
-	panel_bg.offset_right = 120.0
-	panel_bg.offset_top = -140.0
-	panel_bg.offset_bottom = 140.0
-	panel_bg.color = Color(0.1, 0.1, 0.15, 0.95)
-	overlay.add_child(panel_bg)
-
 	var center := CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.name = "PauseMenuCenter"
 	overlay.add_child(center)
 
+	# WoodTable 九宫格面板
+	var panel_wrapper := Control.new()
+	panel_wrapper.custom_minimum_size = Vector2(300, 460)
+	center.add_child(panel_wrapper)
+
+	var bg := _make_ninepatch(np_wood_table)
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	panel_wrapper.add_child(bg)
+
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 10)
-	center.add_child(vbox)
+	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	vbox.offset_left = 30
+	vbox.offset_right = -30
+	vbox.offset_top = 28
+	vbox.offset_bottom = -28
+	vbox.add_theme_constant_override("separation", 14)
+	panel_wrapper.add_child(vbox)
 
 	var title := Label.new()
 	title.text = tr("UI_PAUSED")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
+	title.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	title.add_theme_constant_override("shadow_offset_x", 2)
+	title.add_theme_constant_override("shadow_offset_y", 2)
 	vbox.add_child(title)
+
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0, 10)
+	vbox.add_child(spacer)
 
 	var btn_data := [
 		[tr("UI_RESUME"), _close_pause_menu],
@@ -628,16 +736,13 @@ func _create_pause_menu() -> void:
 		[tr("UI_QUIT_GAME"), _on_pause_quit],
 	]
 	for data in btn_data:
-		var btn := Button.new()
-		btn.text = data[0]
-		btn.custom_minimum_size = Vector2(200, 40)
-		btn.pressed.connect(data[1])
-		vbox.add_child(btn)
+		var btn_wrapper := _make_styled_button(data[0], Vector2(0, 44), data[1])
+		vbox.add_child(btn_wrapper)
 
 	var hint := Label.new()
 	hint.text = tr("UI_PRESS_ESC_RESUME")
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.add_theme_font_size_override("font_size", 14)
+	hint.add_theme_font_size_override("font_size", 12)
 	hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
 	vbox.add_child(hint)
 
@@ -670,113 +775,381 @@ func _on_pause_quit() -> void:
 	_main_node.get_tree().quit()
 
 
+# ============================================================
+# 设置回调
+# ============================================================
+func _save_setting(section: String, key: String, value) -> void:
+	var config := ConfigFile.new()
+	config.load("user://settings.cfg")
+	config.set_value(section, key, value)
+	config.save("user://settings.cfg")
+
+
 func _on_damage_numbers_toggled(pressed: bool) -> void:
 	_main_node.show_damage_numbers = pressed
-	var config := ConfigFile.new()
-	config.set_value("game", "show_damage_numbers", pressed)
-	config.save("user://settings.cfg")
+	_save_setting("game", "show_damage_numbers", pressed)
 
 
 func _on_resolution_selected(index: int) -> void:
 	var new_size := RESOLUTION_PRESETS[index]
 	if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_WINDOWED:
 		DisplayServer.window_set_size(new_size)
-	var config := ConfigFile.new()
-	config.load("user://settings.cfg")
-	config.set_value("display", "resolution_width", new_size.x)
-	config.set_value("display", "resolution_height", new_size.y)
-	config.save("user://settings.cfg")
+	_save_setting("display", "resolution_width", new_size.x)
+	_save_setting("display", "resolution_height", new_size.y)
 
 
-func _on_fullscreen_toggled(pressed: bool) -> void:
-	var config := ConfigFile.new()
-	config.load("user://settings.cfg")
-	if pressed:
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
-	else:
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
-		var w: int = config.get_value("display", "resolution_width", 1280)
-		var h: int = config.get_value("display", "resolution_height", 720)
-		DisplayServer.window_set_size(Vector2i(w, h))
-	config.set_value("display", "fullscreen", pressed)
-	config.save("user://settings.cfg")
+func _on_display_mode_selected(index: int) -> void:
+	match index:
+		0: DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+		1: DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN)
+		2:
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+			var config := ConfigFile.new()
+			if config.load("user://settings.cfg") == OK:
+				var w: int = config.get_value("display", "resolution_width", 1280)
+				var h: int = config.get_value("display", "resolution_height", 720)
+				DisplayServer.window_set_size(Vector2i(w, h))
+	_save_setting("display", "display_mode", index)
+	# 分辨率选项仅在窗口模式下可用
+	if _settings_res_option:
+		_settings_res_option.disabled = (index != 2)
+
+
+func _on_brightness_changed(value: float) -> void:
+	if _main_node.canvas_modulate:
+		_main_node.canvas_modulate.color = Color(value, value, value, 1.0)
+	_save_setting("display", "brightness", value)
+
+
+func _on_fps_toggled(pressed: bool) -> void:
+	if _fps_label:
+		_fps_label.visible = pressed
+	_main_node.show_fps = pressed
+	_save_setting("display", "show_fps", pressed)
+
+
+func _on_master_volume_changed(value: float) -> void:
+	AudioServer.set_bus_volume_db(0, linear_to_db(value))
+	AudioServer.set_bus_mute(0, value <= 0.0)
+	_save_setting("audio", "master_volume", value)
+
+
+func _on_music_volume_changed(value: float) -> void:
+	AudioServer.set_bus_volume_db(1, linear_to_db(value))
+	AudioServer.set_bus_mute(1, value <= 0.0)
+	_save_setting("audio", "music_volume", value)
+
+
+func _on_sfx_volume_changed(value: float) -> void:
+	AudioServer.set_bus_volume_db(2, linear_to_db(value))
+	AudioServer.set_bus_mute(2, value <= 0.0)
+	_save_setting("audio", "sfx_volume", value)
+
+
+func _on_camera_sensitivity_changed(value: float) -> void:
+	if _main_node.camera_module:
+		_main_node.camera_module.speed_multiplier = value
+	_save_setting("gameplay", "camera_sensitivity", value)
 
 
 # ============================================================
-# 设置子页面
+# 设置子页面（九宫格风格，分区布局）
 # ============================================================
 func _open_settings_page() -> void:
-	# 隐藏暂停主菜单的背景面板（overlay的第一个子节点是input_handler，第二个是panel_bg）
+	# 隐藏暂停主菜单
 	for child in _pause_overlay.get_children():
-		if child is CenterContainer:
+		if child.name == "PauseMenuCenter":
 			child.visible = false
 
-	# 创建设置页面
+	# 加载当前设置
+	var config := ConfigFile.new()
+	config.load("user://settings.cfg")
+
 	var center := CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	center.name = "SettingsPage"
 	_pause_overlay.add_child(center)
 
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 10)
-	center.add_child(vbox)
+	# WoodTable 面板
+	var panel_wrapper := Control.new()
+	panel_wrapper.custom_minimum_size = Vector2(500, 560)
+	center.add_child(panel_wrapper)
 
+	var bg := _make_ninepatch(np_wood_table)
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	panel_wrapper.add_child(bg)
+
+	# ScrollContainer 防止内容溢出
+	var scroll := ScrollContainer.new()
+	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	scroll.offset_left = 20
+	scroll.offset_right = -20
+	scroll.offset_top = 15
+	scroll.offset_bottom = -15
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	panel_wrapper.add_child(scroll)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 4)
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(vbox)
+
+	# --- 标题 ---
 	var title := Label.new()
 	title.text = tr("UI_SETTINGS")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_font_size_override("font_size", 24)
+	title.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
+	title.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	title.add_theme_constant_override("shadow_offset_x", 2)
+	title.add_theme_constant_override("shadow_offset_y", 2)
 	vbox.add_child(title)
 
-	# 伤害飘字开关
-	var dmg_toggle := CheckButton.new()
-	dmg_toggle.text = tr("UI_DAMAGE_NUMBERS")
-	dmg_toggle.button_pressed = _main_node.show_damage_numbers
-	dmg_toggle.custom_minimum_size = Vector2(200, 40)
-	dmg_toggle.toggled.connect(_on_damage_numbers_toggled)
-	vbox.add_child(dmg_toggle)
+	var spacer1 := Control.new()
+	spacer1.custom_minimum_size = Vector2(0, 6)
+	vbox.add_child(spacer1)
 
-	# 分辨率选择
+	# === 显示区域 ===
+	vbox.add_child(_make_section_label(tr("UI_DISPLAY")))
+
+	# 分辨率
+	var res_row := HBoxContainer.new()
+	res_row.add_theme_constant_override("separation", 8)
 	var res_label := Label.new()
 	res_label.text = tr("UI_RESOLUTION")
-	res_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(res_label)
-
-	var res_option := OptionButton.new()
-	res_option.custom_minimum_size = Vector2(200, 40)
+	res_label.custom_minimum_size = Vector2(100, 0)
+	res_label.add_theme_font_size_override("font_size", 14)
+	res_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
+	res_row.add_child(res_label)
+	_settings_res_option = OptionButton.new()
+	_settings_res_option.custom_minimum_size = Vector2(160, 30)
 	var current_size := DisplayServer.window_get_size()
 	var selected_idx := 0
 	for i in RESOLUTION_PRESETS.size():
-		res_option.add_item(tr(RESOLUTION_KEYS[i]), i)
+		_settings_res_option.add_item(tr(RESOLUTION_KEYS[i]), i)
 		if RESOLUTION_PRESETS[i] == current_size:
 			selected_idx = i
-	res_option.selected = selected_idx
-	res_option.item_selected.connect(_on_resolution_selected)
-	vbox.add_child(res_option)
+	_settings_res_option.selected = selected_idx
+	_settings_res_option.item_selected.connect(_on_resolution_selected)
+	res_row.add_child(_settings_res_option)
+	vbox.add_child(res_row)
 
-	# 全屏切换
-	var fs_toggle := CheckButton.new()
-	fs_toggle.text = tr("UI_FULLSCREEN")
-	fs_toggle.button_pressed = (DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN)
-	fs_toggle.custom_minimum_size = Vector2(200, 40)
-	fs_toggle.toggled.connect(_on_fullscreen_toggled)
-	vbox.add_child(fs_toggle)
+	# 显示模式
+	var dm_row := HBoxContainer.new()
+	dm_row.add_theme_constant_override("separation", 8)
+	var dm_label := Label.new()
+	dm_label.text = tr("UI_DISPLAY_MODE")
+	dm_label.custom_minimum_size = Vector2(100, 0)
+	dm_label.add_theme_font_size_override("font_size", 14)
+	dm_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
+	dm_row.add_child(dm_label)
+	_settings_display_mode_option = OptionButton.new()
+	_settings_display_mode_option.add_item(tr("UI_MODE_FULLSCREEN"), 0)
+	_settings_display_mode_option.add_item(tr("UI_MODE_BORDERLESS"), 1)
+	_settings_display_mode_option.add_item(tr("UI_MODE_WINDOWED"), 2)
+	var current_mode := DisplayServer.window_get_mode()
+	match current_mode:
+		DisplayServer.WINDOW_MODE_FULLSCREEN: _settings_display_mode_option.selected = 0
+		DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN: _settings_display_mode_option.selected = 1
+		_: _settings_display_mode_option.selected = 2
+	_settings_display_mode_option.item_selected.connect(_on_display_mode_selected)
+	_settings_res_option.disabled = (current_mode != DisplayServer.WINDOW_MODE_WINDOWED)
+	dm_row.add_child(_settings_display_mode_option)
+	vbox.add_child(dm_row)
+
+	# 亮度
+	var brightness_val: float = config.get_value("display", "brightness", 1.0)
+	vbox.add_child(_make_slider_row(tr("UI_BRIGHTNESS"), brightness_val, 0.3, 1.5, _on_brightness_changed))
+
+	# FPS 显示
+	var fps_row := HBoxContainer.new()
+	fps_row.add_theme_constant_override("separation", 8)
+	var fps_label := Label.new()
+	fps_label.text = tr("UI_SHOW_FPS")
+	fps_label.add_theme_font_size_override("font_size", 14)
+	fps_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
+	fps_row.add_child(fps_label)
+	var fps_toggle := CheckButton.new()
+	fps_toggle.button_pressed = _main_node.show_fps
+	fps_toggle.toggled.connect(_on_fps_toggled)
+	fps_row.add_child(fps_toggle)
+	vbox.add_child(fps_row)
+
+	var spacer2 := Control.new()
+	spacer2.custom_minimum_size = Vector2(0, 6)
+	vbox.add_child(spacer2)
+
+	# === 音频区域 ===
+	vbox.add_child(_make_section_label(tr("UI_AUDIO")))
+
+	var master_val: float = config.get_value("audio", "master_volume", 1.0)
+	vbox.add_child(_make_slider_row(tr("UI_MASTER_VOLUME"), master_val, 0.0, 1.0, _on_master_volume_changed))
+
+	var music_val: float = config.get_value("audio", "music_volume", 1.0)
+	vbox.add_child(_make_slider_row(tr("UI_MUSIC_VOLUME"), music_val, 0.0, 1.0, _on_music_volume_changed))
+
+	var sfx_val: float = config.get_value("audio", "sfx_volume", 1.0)
+	vbox.add_child(_make_slider_row(tr("UI_SFX_VOLUME"), sfx_val, 0.0, 1.0, _on_sfx_volume_changed))
+
+	var spacer3 := Control.new()
+	spacer3.custom_minimum_size = Vector2(0, 6)
+	vbox.add_child(spacer3)
+
+	# === 游戏区域 ===
+	vbox.add_child(_make_section_label(tr("UI_GAMEPLAY")))
+
+	# 伤害飘字
+	var dmg_row := HBoxContainer.new()
+	dmg_row.add_theme_constant_override("separation", 8)
+	var dmg_label := Label.new()
+	dmg_label.text = tr("UI_DAMAGE_NUMBERS")
+	dmg_label.add_theme_font_size_override("font_size", 14)
+	dmg_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
+	dmg_row.add_child(dmg_label)
+	var dmg_toggle := CheckButton.new()
+	dmg_toggle.button_pressed = _main_node.show_damage_numbers
+	dmg_toggle.toggled.connect(_on_damage_numbers_toggled)
+	dmg_row.add_child(dmg_toggle)
+	vbox.add_child(dmg_row)
+
+	# 鼠标灵敏度
+	var sens_val: float = config.get_value("gameplay", "camera_sensitivity", 1.0)
+	vbox.add_child(_make_slider_row(tr("UI_MOUSE_SENSITIVITY"), sens_val, 0.2, 3.0, _on_camera_sensitivity_changed))
+
+	var spacer4 := Control.new()
+	spacer4.custom_minimum_size = Vector2(0, 8)
+	vbox.add_child(spacer4)
+
+	# 查看按键绑定按钮
+	vbox.add_child(_make_styled_button(tr("UI_VIEW_KEYBINDS"), Vector2(0, 40), _open_keybinds_page))
 
 	# 返回按钮
-	var back_btn := Button.new()
-	back_btn.text = tr("UI_BACK")
-	back_btn.custom_minimum_size = Vector2(200, 40)
-	back_btn.pressed.connect(_close_settings_page)
-	vbox.add_child(back_btn)
+	vbox.add_child(_make_styled_button(tr("UI_BACK"), Vector2(0, 40), _close_settings_page))
+
+
+func _make_section_label(text: String) -> Label:
+	var label := Label.new()
+	label.text = text
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
+	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	label.add_theme_constant_override("shadow_offset_x", 1)
+	label.add_theme_constant_override("shadow_offset_y", 1)
+	return label
 
 
 func _close_settings_page() -> void:
-	# 删除设置页面
 	for child in _pause_overlay.get_children():
 		if child.name == "SettingsPage":
 			child.queue_free()
-	# 恢复暂停主菜单
 	for child in _pause_overlay.get_children():
-		if child is CenterContainer:
+		if child.name == "PauseMenuCenter":
+			child.visible = true
+
+
+# ============================================================
+# 按键展示子页面（只读）
+# ============================================================
+func _open_keybinds_page() -> void:
+	# 隐藏设置页
+	for child in _pause_overlay.get_children():
+		if child.name == "SettingsPage":
+			child.visible = false
+
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.name = "KeybindsPage"
+	_pause_overlay.add_child(center)
+
+	var panel_wrapper := Control.new()
+	panel_wrapper.custom_minimum_size = Vector2(400, 500)
+	center.add_child(panel_wrapper)
+
+	var bg := _make_ninepatch(np_wood_table)
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	panel_wrapper.add_child(bg)
+
+	var vbox := VBoxContainer.new()
+	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	vbox.offset_left = 20
+	vbox.offset_right = -20
+	vbox.offset_top = 15
+	vbox.offset_bottom = -15
+	vbox.add_theme_constant_override("separation", 6)
+	panel_wrapper.add_child(vbox)
+
+	var title := Label.new()
+	title.text = tr("UI_KEYBINDS_TITLE")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
+	title.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	title.add_theme_constant_override("shadow_offset_x", 2)
+	title.add_theme_constant_override("shadow_offset_y", 2)
+	vbox.add_child(title)
+
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0, 8)
+	vbox.add_child(spacer)
+
+	# 展示所有快捷键
+	var hotkeys: Dictionary = D.MODE_HOTKEYS
+	var names: Dictionary = D.MODE_NAMES
+	var sorted_modes: Array = D.DISPLAY_ORDER
+	for mode in sorted_modes:
+		if not hotkeys.has(mode):
+			continue
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 12)
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
+
+		var name_label := Label.new()
+		name_label.text = tr(names.get(mode, "?"))
+		name_label.add_theme_font_size_override("font_size", 16)
+		name_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
+		name_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.4))
+		name_label.add_theme_constant_override("shadow_offset_x", 1)
+		name_label.add_theme_constant_override("shadow_offset_y", 1)
+		name_label.custom_minimum_size = Vector2(120, 0)
+		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		row.add_child(name_label)
+
+		var arrow := Label.new()
+		arrow.text = "->"
+		arrow.add_theme_font_size_override("font_size", 16)
+		arrow.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+		row.add_child(arrow)
+
+		var key: Key = hotkeys[mode]
+		var key_index: int = (key - KEY_1 + 1) if key != KEY_0 else 0
+		var key_label := Label.new()
+		key_label.text = str(key_index)
+		key_label.add_theme_font_size_override("font_size", 18)
+		key_label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
+		key_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.4))
+		key_label.add_theme_constant_override("shadow_offset_x", 1)
+		key_label.add_theme_constant_override("shadow_offset_y", 1)
+		key_label.custom_minimum_size = Vector2(40, 0)
+		key_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		row.add_child(key_label)
+
+		vbox.add_child(row)
+
+	var spacer2 := Control.new()
+	spacer2.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(spacer2)
+
+	# 返回设置按钮
+	vbox.add_child(_make_styled_button(tr("UI_BACK_TO_SETTINGS"), Vector2(0, 40), _close_keybinds_page))
+
+
+func _close_keybinds_page() -> void:
+	for child in _pause_overlay.get_children():
+		if child.name == "KeybindsPage":
+			child.queue_free()
+	for child in _pause_overlay.get_children():
+		if child.name == "SettingsPage":
 			child.visible = true
 
 

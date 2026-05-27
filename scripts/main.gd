@@ -40,6 +40,8 @@ var gold: int = 10000
 var key_to_mode: Dictionary = {}
 var map_bounds := Rect2(-500, -500, 2000, 1700)
 var show_damage_numbers: bool = true
+var show_fps: bool = false
+var canvas_modulate: CanvasModulate = null
 
 func _ready() -> void:
 	result_label.visible = false
@@ -54,6 +56,8 @@ func _ready() -> void:
 	_load_from_config()
 	_load_damage_number_setting()
 	_load_display_settings()
+	_load_brightness()
+	_load_audio_settings()
 
 	# 替换 ColorRect 地面为 TileMapLayer 地形
 	_replace_ground_with_terrain()
@@ -71,6 +75,7 @@ func _ready() -> void:
 	camera_module.set_script(load("res://scripts/systems/game_camera.gd"))
 	add_child(camera_module)
 	camera_module.initialize(camera, map_bounds)
+	camera_module.speed_multiplier = _load_gameplay_settings()
 
 	# 注册 UI 面板豁免区域到相机（防止底部面板触发边缘滚动）
 	ui_module.update_panel_rect()
@@ -438,13 +443,63 @@ func _load_display_settings() -> void:
 	var config := ConfigFile.new()
 	if config.load("user://settings.cfg") != OK:
 		return
-	var fullscreen: bool = config.get_value("display", "fullscreen", false)
-	if fullscreen:
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
-	else:
-		var w: int = config.get_value("display", "resolution_width", 1280)
-		var h: int = config.get_value("display", "resolution_height", 720)
-		DisplayServer.window_set_size(Vector2i(w, h))
+	# 兼容旧的 fullscreen 字段，迁移到 display_mode
+	if config.has_section_key("display", "fullscreen"):
+		var fullscreen: bool = config.get_value("display", "fullscreen", false)
+		if fullscreen:
+			config.set_value("display", "display_mode", 0)
+		else:
+			config.set_value("display", "display_mode", 2)
+		config.erase_section_key("display", "fullscreen")
+		config.save("user://settings.cfg")
+	var display_mode: int = config.get_value("display", "display_mode", 2)
+	match display_mode:
+		0: DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+		1: DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN)
+		2:
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+			var w: int = config.get_value("display", "resolution_width", 1280)
+			var h: int = config.get_value("display", "resolution_height", 720)
+			DisplayServer.window_set_size(Vector2i(w, h))
+	show_fps = config.get_value("display", "show_fps", false)
+
+
+func _load_brightness() -> void:
+	canvas_modulate = CanvasModulate.new()
+	canvas_modulate.color = Color(1, 1, 1, 1)
+	add_child(canvas_modulate)
+	var config := ConfigFile.new()
+	if config.load("user://settings.cfg") == OK:
+		var brightness: float = config.get_value("display", "brightness", 1.0)
+		canvas_modulate.color = Color(brightness, brightness, brightness, 1.0)
+
+
+func _load_audio_settings() -> void:
+	# 确保至少有 Master, Music, SFX 三个总线
+	while AudioServer.bus_count < 3:
+		AudioServer.add_bus()
+	if AudioServer.get_bus_count() >= 2:
+		AudioServer.set_bus_name(1, "Music")
+	if AudioServer.get_bus_count() >= 3:
+		AudioServer.set_bus_name(2, "SFX")
+	var config := ConfigFile.new()
+	if config.load("user://settings.cfg") == OK:
+		var master: float = config.get_value("audio", "master_volume", 1.0)
+		var music: float = config.get_value("audio", "music_volume", 1.0)
+		var sfx: float = config.get_value("audio", "sfx_volume", 1.0)
+		AudioServer.set_bus_volume_db(0, linear_to_db(master))
+		AudioServer.set_bus_mute(0, master <= 0.0)
+		AudioServer.set_bus_volume_db(1, linear_to_db(music))
+		AudioServer.set_bus_mute(1, music <= 0.0)
+		AudioServer.set_bus_volume_db(2, linear_to_db(sfx))
+		AudioServer.set_bus_mute(2, sfx <= 0.0)
+
+
+func _load_gameplay_settings() -> float:
+	var config := ConfigFile.new()
+	if config.load("user://settings.cfg") == OK:
+		return config.get_value("gameplay", "camera_sensitivity", 1.0)
+	return 1.0
 
 func spawn_unit_near(type: int, pos: Vector2, team: int) -> void:
 	spawner_module.spawn_unit_near(type, pos, team)

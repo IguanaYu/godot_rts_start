@@ -53,3 +53,19 @@ RES_1280x720,1280 x 720,1280 x 720,1280 x 720
 RES_1366x768,1366 x 768,1366 x 768,1366 x 768
 RES_1600x900,1600 x 900,1600 x 900,1600 x 900
 RES_1920x1080,1920 x 1080,1920 x 1080,1920 x 1080
+UI_DISPLAY,Display,显示,ディスプレイ
+UI_AUDIO,Audio,音频,オーディオ
+UI_GAMEPLAY,Gameplay,游戏,ゲーム
+UI_DISPLAY_MODE,Display Mode,显示模式,表示モード
+UI_MODE_FULLSCREEN,Fullscreen,全屏,フルスクリーン
+UI_MODE_BORDERLESS,Borderless Windowed,无边框窗口,ボーダーレス
+UI_MODE_WINDOWED,Windowed,窗口化,ウィンドウ
+UI_BRIGHTNESS,Brightness,亮度,明るさ
+UI_SHOW_FPS,Show FPS,显示帧率,FPS表示
+UI_MASTER_VOLUME,Master Volume,主音量,マスター音量
+UI_MUSIC_VOLUME,Music,音乐,ミュージック
+UI_SFX_VOLUME,SFX,音效,効果音
+UI_MOUSE_SENSITIVITY,Mouse Sensitivity,鼠标灵敏度,マウス感度
+UI_VIEW_KEYBINDS,View Keybinds,查看按键绑定,キーバインド
+UI_KEYBINDS_TITLE,Keybindings,按键绑定,キーバインド
+UI_BACK_TO_SETTINGS,Back to Settings,返回设置,設定に戻る
