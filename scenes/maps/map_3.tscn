@@ -108,7 +108,8 @@ waves = Array[Dictionary]( [
 			{"type": 0, "pos": Vector2(1400, 300)},
 			{"type": 0, "pos": Vector2(1400, 400)},
 			{"type": 1, "pos": Vector2(1450, 250)},
-			{"type": 1, "pos": Vector2(1450, 350)}
+			{"type": 1, "pos": Vector2(1450, 350)},
+			{"type": 0, "pos": Vector2(1400, 500), "variant_hp": 150, "variant_atk": 5, "variant_speed_mult": 0.85, "variant_scale": 1.3}
 		] )
 	},
 	{
@@ -125,7 +126,8 @@ waves = Array[Dictionary]( [
 			{"type": 1, "pos": Vector2(1450, 190)},
 			{"type": 1, "pos": Vector2(1450, 270)},
 			{"type": 1, "pos": Vector2(1450, 350)},
-			{"type": 2, "pos": Vector2(1425, 430)}
+			{"type": 2, "pos": Vector2(1425, 430)},
+			{"type": 0, "pos": Vector2(1400, 550), "variant_hp": 200, "variant_atk": 8, "variant_speed_mult": 0.8, "variant_scale": 1.5}
 		] )
 	},
 	{
@@ -147,7 +149,8 @@ waves = Array[Dictionary]( [
 			{"type": 1, "pos": Vector2(1450, 305)},
 			{"type": 1, "pos": Vector2(1450, 375)},
 			{"type": 2, "pos": Vector2(1425, 445)},
-			{"type": 2, "pos": Vector2(1425, 515)}
+			{"type": 2, "pos": Vector2(1425, 515)},
+			{"type": 2, "pos": Vector2(1425, 700), "variant_hp": 300, "variant_atk": 10, "variant_speed_mult": 0.75, "variant_scale": 1.8}
 		] )
 	}
 ] )

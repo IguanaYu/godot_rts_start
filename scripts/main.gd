@@ -197,6 +197,7 @@ func _on_unit_died(unit: CharacterBody2D) -> void:
 # --- 每帧更新 ---
 
 var _wave_clear_notified: bool = false
+var _wave_debug_timer: float = 0.0
 
 func _process(delta: float) -> void:
 	camera_module.process_camera(delta)
@@ -267,8 +268,14 @@ func _check_wave_cleared() -> void:
 	for u in get_tree().get_nodes_in_group("enemy_units"):
 		if u is CharacterBody2D and not u.is_dead():
 			ec += 1
+	# Debug log once per second
+	_wave_debug_timer += get_process_delta_time()
+	if _wave_debug_timer >= 1.0:
+		_wave_debug_timer = 0.0
+		print("[WAVE DEBUG] enemy_count=", ec, " wave_active=", wm.wave_active, " notified=", _wave_clear_notified)
 	if ec > 0:
 		return
+	print("[WAVE] All enemies dead, notified=", _wave_clear_notified, " wave_active=", wm.wave_active)
 	if not _wave_clear_notified:
 		_wave_clear_notified = true
 		wm.on_wave_cleared()

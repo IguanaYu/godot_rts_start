@@ -4,6 +4,7 @@ extends Node
 const D := preload("res://scripts/systems/game_data.gd")
 const UnitScript := preload("res://scripts/units/unit.gd")
 const BuildingScript := preload("res://scripts/buildings/building.gd")
+const StatSetClass := preload("res://scripts/stats/stat_set.gd")
 
 var _main_node: Node2D
 var _player_units_node: Node2D
@@ -131,11 +132,28 @@ func spawn_enemy_wave(units: Array, wave_attack: bool = false, wave_target: Vect
 	for unit_data in units:
 		var type: int = unit_data.get("type", 0)
 		var pos: Vector2 = unit_data.get("pos", Vector2.ZERO)
-		spawn_enemy_unit(type, pos, wave_attack, wave_target)
+		spawn_enemy_unit(type, pos, wave_attack, wave_target, unit_data)
 
-func spawn_enemy_unit(type: int, pos: Vector2, wave_attack: bool = false, wave_target: Vector2 = Vector2.ZERO) -> void:
+func spawn_enemy_unit(type: int, pos: Vector2, wave_attack: bool = false, wave_target: Vector2 = Vector2.ZERO, data: Dictionary = {}) -> void:
 	var unit := create_unit(type, UnitScript.Team.ENEMY, pos)
+	# 先加入场景树触发 _ready()，确保 stat_set 已初始化
 	_enemy_units_node.add_child(unit)
+	# 应用变种修饰器
+	if data.has("variant_hp"):
+		unit.stat_set.add_modifier("variant", StatSetClass.MAX_HP, float(data.variant_hp))
+	if data.has("variant_atk"):
+		unit.stat_set.add_modifier("variant", StatSetClass.ATTACK_DAMAGE, float(data.variant_atk))
+	if data.has("variant_speed_mult"):
+		unit.stat_set.add_modifier("variant", StatSetClass.MOVE_SPEED, 0.0, float(data.variant_speed_mult))
+	if data.has("variant_scale"):
+		var s = float(data.variant_scale)
+		unit.sprite_scale_x *= s
+		unit.sprite_scale_y *= s
+		# 重新应用到 BodySprite（_ready 已跑过一次）
+		if unit.body_sprite:
+			unit.body_sprite.scale = Vector2(unit.sprite_scale_x, unit.sprite_scale_y)
+	if data.has("variant_hp") or data.has("variant_scale"):
+		unit.health.setup(unit.stat_set.get_int(StatSetClass.MAX_HP), unit.hp_bar)
 	spawn_dust_effect(pos)
 	unit.add_to_group("enemy_units")
 	var ai := Node2D.new()

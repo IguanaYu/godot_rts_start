@@ -513,6 +513,10 @@ func _update_button_affordability(current_gold: int) -> void:
 func update_wave_countdown(wave_number: int, remaining: float, total: int) -> void:
 	if wave_countdown_label == null:
 		return
+	# Hide label when countdown finished (wave is active with enemies on field)
+	if remaining <= 0:
+		wave_countdown_label.visible = false
+		return
 	var display_wave := wave_number + 1
 	var secs := ceili(remaining)
 	wave_countdown_label.text = tr("UI_WAVE_COUNTDOWN") % [display_wave, total, secs]
