@@ -35,6 +35,19 @@ var camera_module: Node
 var spawner_module: Node
 var building_placer: Node
 var combat_ctrl: Node
+var input_mode: Node  # InputModeManager
+
+# 控制组管理器
+var ctrl_group_mgr: RefCounted
+
+# 双击检测
+var _last_left_click_time: float = 0.0
+var _last_left_click_pos: Vector2 = Vector2.ZERO
+const DOUBLE_CLICK_TIME := 0.3
+const DOUBLE_CLICK_DIST := 10.0
+
+# 编队双击检测
+var _group_tap_times: Array = []  # 10个时间戳
 
 # 游戏状态
 var gold: int = 10000
@@ -102,6 +115,19 @@ func _ready() -> void:
 	combat_ctrl.set_script(load("res://scripts/systems/combat_controller.gd"))
 	add_child(combat_ctrl)
 	combat_ctrl.initialize(spawner_module)
+	combat_ctrl.selection_changed.connect(_on_selection_changed)
+
+	# 输入模式管理器 (Q/W)
+	input_mode = Node.new()
+	input_mode.set_script(load("res://scripts/systems/input_mode_manager.gd"))
+	add_child(input_mode)
+	input_mode.mode_changed.connect(_on_input_mode_changed)
+
+	# 控制组管理器
+	const CtrlGroupMgr := preload("res://scripts/systems/control_group_manager.gd")
+	ctrl_group_mgr = CtrlGroupMgr.new()
+	for i in range(10):
+		_group_tap_times.append(0.0)
 
 	# 生成
 	var has_preplaced := _has_preplaced_entities()
@@ -223,6 +249,76 @@ func _on_place_mode_requested(mode: int) -> void:
 	building_placer.enter_place_mode(mode)
 	combat_ctrl.set_attack_move_mode(false)
 
+
+func _on_selection_changed(units: Array) -> void:
+	ui_module.update_selection_info(units)
+
+
+func _on_input_mode_changed(new_mode: int) -> void:
+	# 切换模式时取消当前放置状态
+	if new_mode == 0:  # DEFAULT
+		building_placer.cancel_place_mode()
+		ui_module.hide_place_mode_label()
+	elif new_mode == 1:  # UNIT_PRODUCTION
+		building_placer.cancel_place_mode()
+		ui_module.switch_tab(0)
+		ui_module.set_place_mode_text(tr("MODE_UNIT_PRODUCTION"))
+	elif new_mode == 2:  # BUILDING_PLACEMENT
+		building_placer.cancel_place_mode()
+		ui_module.switch_tab(1)
+		ui_module.set_place_mode_text(tr("MODE_BUILDING_PLACEMENT"))
+
+
+func _keycode_to_group_index(keycode: int) -> int:
+	if keycode == KEY_0:
+		return 9
+	var idx := keycode - KEY_1
+	if idx >= 0 and idx <= 8:
+		return idx
+	return -1
+
+
+func _handle_number_key(key: int, event: InputEventKey) -> void:
+	# Ctrl+数字键：分配编队
+	if event.ctrl_pressed:
+		var gi := _keycode_to_group_index(key)
+		if gi >= 0:
+			ctrl_group_mgr.assign_group(gi, combat_ctrl.selected_units)
+		return
+
+	# Q/W模式下：放置单位/建筑
+	if input_mode.is_unit_production():
+		var mode: int = D.UNIT_PRODUCTION_HOTKEYS.get(key, -1)
+		if mode >= 0:
+			ui_module.switch_tab_for_mode(mode)
+			_on_place_mode_requested(mode)
+		return
+
+	if input_mode.is_building_placement():
+		var mode: int = D.BUILDING_PLACEMENT_HOTKEYS.get(key, -1)
+		if mode >= 0:
+			ui_module.switch_tab_for_mode(mode)
+			_on_place_mode_requested(mode)
+		return
+
+	# 默认模式：编队操作
+	var gi := _keycode_to_group_index(key)
+	if gi < 0:
+		return
+
+	# Shift+数字键：添加编队到选择
+	if event.shift_pressed:
+		ctrl_group_mgr.add_group_to_selection(gi, combat_ctrl)
+		return
+
+	# 单击数字键：选中编队（双击=居中镜头）
+	var now := Time.get_ticks_msec() / 1000.0
+	if now - _group_tap_times[gi] < DOUBLE_CLICK_TIME:
+		ctrl_group_mgr.center_camera_on_group(gi, camera_module)
+	else:
+		ctrl_group_mgr.select_group(gi, combat_ctrl)
+	_group_tap_times[gi] = now
+
 # --- 单位死亡 ---
 
 func _on_unit_died(unit: CharacterBody2D) -> void:
@@ -325,14 +421,19 @@ func _input(event: InputEvent) -> void:
 		if ui_module.pause_menu_open:
 			ui_module.close_pause_menu()
 			return
-		elif building_placer.get_place_mode() != D.PlaceMode.NONE or combat_ctrl.attack_move_mode:
-			building_placer.cancel_place_mode()
+		# 逐层取消：攻击移动 → 放置 → Q/W模式 → 暂停菜单
+		if combat_ctrl.attack_move_mode:
 			combat_ctrl.set_attack_move_mode(false)
 			cursor_manager.set_attack(false)
 			return
-		else:
-			ui_module.open_pause_menu()
+		if building_placer.get_place_mode() != D.PlaceMode.NONE:
+			building_placer.cancel_place_mode()
 			return
+		if not input_mode.is_default():
+			input_mode.cancel_mode()
+			return
+		ui_module.open_pause_menu()
+		return
 	if get_tree().paused:
 		return
 	if event is InputEventMouseButton:
@@ -346,15 +447,33 @@ func _input(event: InputEvent) -> void:
 					elif building_placer.get_place_mode() != D.PlaceMode.NONE:
 						_do_place(get_global_mouse_position())
 					else:
-						combat_ctrl.start_selection(get_global_mouse_position())
+						# 双击检测
+						var now := Time.get_ticks_msec() / 1000.0
+						var click_pos := get_global_mouse_position()
+						var is_double_click := (now - _last_left_click_time) < DOUBLE_CLICK_TIME \
+							and click_pos.distance_to(_last_left_click_pos) < DOUBLE_CLICK_DIST
+						_last_left_click_time = now
+						_last_left_click_pos = click_pos
+						combat_ctrl.start_selection(click_pos, is_double_click)
 				else:
 					if combat_ctrl.is_selecting:
-						combat_ctrl.release_selection(get_global_mouse_position(), selection_box)
+						var shift_held := Input.is_key_pressed(KEY_SHIFT)
+						var ctrl_held := Input.is_key_pressed(KEY_CTRL)
+						combat_ctrl.release_selection(get_global_mouse_position(), selection_box, shift_held, ctrl_held)
 			MOUSE_BUTTON_RIGHT:
 				if event.pressed:
 					combat_ctrl.set_attack_move_mode(false)
-					building_placer.cancel_place_mode()
 					cursor_manager.set_attack(false)
+					# Q/W模式下右键退出模式
+					if not input_mode.is_default():
+						input_mode.cancel_mode()
+						return
+					building_placer.cancel_place_mode()
+					# 建筑选中时：右键设置集结点
+					var sb = combat_ctrl.selected_building
+					if sb != null and is_instance_valid(sb) and combat_ctrl.is_empty():
+						sb.set_rally_point(get_global_mouse_position())
+						return
 					combat_ctrl.right_click(get_global_mouse_position())
 			MOUSE_BUTTON_MIDDLE:
 				if event.pressed:
@@ -368,7 +487,14 @@ func _input(event: InputEvent) -> void:
 				if event.pressed:
 					camera_module.zoom_out()
 	elif event is InputEventKey and event.pressed:
-		match event.keycode:
+		var key: int = event.keycode
+		match key:
+			KEY_Q:
+				if not event.ctrl_pressed:
+					input_mode.enter_unit_production()
+			KEY_W:
+				if not event.ctrl_pressed:
+					input_mode.enter_building_placement()
 			KEY_A:
 				if not combat_ctrl.is_empty():
 					combat_ctrl.set_attack_move_mode(true)
@@ -380,10 +506,6 @@ func _input(event: InputEvent) -> void:
 				combat_ctrl.hold_position_selected()
 			KEY_R:
 				get_tree().reload_current_scene()
-			KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0:
-				if key_to_mode.has(event.keycode):
-					ui_module.switch_tab_for_mode(key_to_mode[event.keycode])
-					_on_place_mode_requested(key_to_mode[event.keycode])
 			KEY_G:
 				building_placer.show_grid = not building_placer.show_grid
 				if building_placer.grid_overlay:
@@ -392,6 +514,12 @@ func _input(event: InputEvent) -> void:
 				if building_placer.get_place_mode() != D.PlaceMode.NONE:
 					building_placer.cancel_place_mode()
 				_jump_to_base()
+			KEY_F2:
+				combat_ctrl.select_all_army()
+			KEY_TAB:
+				combat_ctrl.cycle_subgroup(not event.shift_pressed)
+			KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0:
+				_handle_number_key(key, event)
 
 # --- 放置 ---
 
@@ -424,7 +552,7 @@ func spawn_enemy_wave_v2(groups: Array, spawn_center: Vector2, wave_attack: bool
 	spawner_module.spawn_enemy_wave_v2(groups, spawn_center, wave_attack, wave_target, formation, spacing)
 
 func spawn_enemy_unit(type: int, pos: Vector2, wave_attack: bool = false, wave_target: Vector2 = Vector2.ZERO) -> void:
-	spawner_module.spawn_enemy_unit(type, pos, wave_attack, wave_target)
+	spawner_module.spawn_enemy_unit(type, wave_attack, wave_target)
 
 func add_gold(amount: int) -> void:
 	gold += amount

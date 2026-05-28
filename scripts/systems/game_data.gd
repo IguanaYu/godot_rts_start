@@ -92,6 +92,24 @@ const ICON_TEXTURES := {
 	PlaceMode.MONK_UNIT:     preload("res://assets/units/blue_monk/Idle.png"),
 	}
 
+# --- Q模式：造兵快捷键 ---
+const UNIT_PRODUCTION_HOTKEYS := {
+	KEY_1: PlaceMode.SOLDIER,
+	KEY_2: PlaceMode.ARCHER,
+	KEY_3: PlaceMode.LANCER,
+	KEY_4: PlaceMode.MONK_UNIT,
+}
+
+# --- W模式：建筑快捷键 ---
+const BUILDING_PLACEMENT_HOTKEYS := {
+	KEY_1: PlaceMode.WALL,
+	KEY_2: PlaceMode.TOWER,
+	KEY_3: PlaceMode.BARRACKS,
+	KEY_4: PlaceMode.ARCHERY_RANGE,
+	KEY_5: PlaceMode.MONASTERY,
+	KEY_6: PlaceMode.CASTLE,
+}
+
 # --- 快捷键列表（旧版兼容） ---
 const KEY_LIST := [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0]
 

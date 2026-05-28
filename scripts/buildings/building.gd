@@ -68,6 +68,10 @@ var aura_scan_timer: float = 0.0
 var _last_damage_time: float = 0.0
 var _repair_accumulator: float = 0.0
 
+# 集结点
+var rally_point: Vector2 = Vector2.ZERO
+var has_rally_point: bool = false
+
 # 生产圆圈
 var _production_circle: Node2D = null
 
@@ -419,6 +423,9 @@ func _spawn_produced_unit() -> void:
 	# 连接死亡信号
 	if main_node.has_method("_on_unit_died"):
 		unit.connect("died", Callable(main_node, "_on_unit_died"))
+	# 集结点：新单位自动前往
+	if has_rally_point:
+		unit.move_to(rally_point)
 	# 敌方单位添加AI
 	if team == Team.ENEMY:
 		var ai := Node2D.new()
@@ -559,6 +566,14 @@ func _alert_nearby_enemies(attacker) -> void:
 			var ai = u.get_node_or_null("EnemyAI")
 			if ai and ai.has_method("on_attacked"):
 				ai.on_attacked(attacker)
+
+func set_rally_point(pos: Vector2) -> void:
+	rally_point = pos
+	has_rally_point = true
+
+func clear_rally_point() -> void:
+	rally_point = Vector2.ZERO
+	has_rally_point = false
 
 func die() -> void:
 	health._is_dead = true

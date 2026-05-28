@@ -37,6 +37,9 @@ var tooltip_target_mode: int = -1
 # 暂停菜单
 var pause_menu_open: bool = false
 var pause_canvas: CanvasLayer
+
+# 选择信息
+var selection_info_label: Label
 var _pause_overlay: ColorRect  # 用于切换主菜单/设置页
 
 # Key mapping
@@ -316,6 +319,23 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	wave_countdown_label.visible = false
 	canvas.add_child(wave_countdown_label)
 
+	# --- 选择信息（底部面板上方）---
+	selection_info_label = Label.new()
+	selection_info_label.anchor_left = 0.5
+	selection_info_label.anchor_right = 0.5
+	selection_info_label.anchor_top = 1.0
+	selection_info_label.anchor_bottom = 1.0
+	selection_info_label.offset_top = -168.0
+	selection_info_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	selection_info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	selection_info_label.add_theme_font_size_override("font_size", 16)
+	selection_info_label.add_theme_color_override("font_color", Color(0.8, 0.9, 1.0))
+	selection_info_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	selection_info_label.add_theme_constant_override("shadow_offset_x", 1)
+	selection_info_label.add_theme_constant_override("shadow_offset_y", 1)
+	selection_info_label.visible = false
+	canvas.add_child(selection_info_label)
+
 	# --- FPS 显示（左上角，金币下方）---
 	_fps_label = Label.new()
 	_fps_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
@@ -459,6 +479,10 @@ func switch_tab_for_mode(mode: int) -> void:
 			_switch_tab(1)
 
 
+func switch_tab(tab_index: int) -> void:
+	_switch_tab(tab_index)
+
+
 # ============================================================
 # Tooltip 系统
 # ============================================================
@@ -525,6 +549,32 @@ func _show_tooltip() -> void:
 # ============================================================
 # 更新方法
 # ============================================================
+func update_selection_info(units: Array) -> void:
+	if selection_info_label == null:
+		return
+	if units.is_empty():
+		selection_info_label.visible = false
+		return
+	var type_counts := {}
+	for u in units:
+		var ut: int = u.unit_type
+		var name_key := "ENTITY_SOLDIER"
+		match ut:
+			0: name_key = "ENTITY_SOLDIER"
+			1: name_key = "ENTITY_ARCHER"
+			2: name_key = "ENTITY_LANCER"
+			3: name_key = "ENTITY_MONK"
+		var name_str := tr(name_key)
+		if type_counts.has(name_str):
+			type_counts[name_str] += 1
+		else:
+			type_counts[name_str] = 1
+	var parts := []
+	for name_str in type_counts:
+		parts.append("%s x%d" % [name_str, type_counts[name_str]])
+	selection_info_label.text = " | ".join(parts) + "  (%d)" % units.size()
+	selection_info_label.visible = true
+
 func update_gold_display(current_gold: int) -> void:
 	if gold_label:
 		gold_label.text = tr("UI_GOLD") % current_gold

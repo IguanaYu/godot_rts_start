@@ -2,7 +2,7 @@
 extends CharacterBody2D
 class_name Unit
 
-enum UnitState { GUARD, HOLD_POSITION, MOVE, ATTACK_MOVE, ATTACK, HEAL, DEAD }
+enum UnitState { GUARD, HOLD_POSITION, MOVE, ATTACK_MOVE, ATTACK, HEAL, DEAD, PATROL }
 enum UnitType { SOLDIER, ARCHER, LANCER, MONK }
 enum Team { PLAYER, ENEMY }
 enum CommandSource { NONE, PLAYER, AUTO }
@@ -62,6 +62,20 @@ var _is_healing: bool = false
 var buffs: Dictionary = {}  # {buff_type: {"value": float, "expire": float}}
 var _slow_factor: float = 1.0
 var _slow_timer: float = 0.0
+
+# 命令队列 (Shift)
+const CommandQueue = preload("res://scripts/systems/command_queue.gd")
+var command_queue = CommandQueue.new()
+
+# 巡逻系统
+var patrol_points: Array = []
+var patrol_index: int = 0
+
+# 跟随系统
+var follow_target = null
+
+# Alt血条
+static var show_all_health_bars: bool = false
 
 @onready var nav_agent: NavigationAgent2D = $NavigationAgent2D
 @onready var selection_ring: Node2D = $SelectionRing
@@ -617,6 +631,28 @@ func _heal_process(delta: float) -> void:
 			attack_timer = stat_set.get_value(StatSetClass.HEAL_COOLDOWN)
 			_is_healing = true
 
+func _patrol_process(delta: float) -> void:
+	if patrol_points.is_empty():
+		state = UnitState.GUARD
+		return
+	# 巡逻中遇敌自动交战
+	var closest = _find_closest_enemy_in_range(attack_move_scan_range)
+	if closest != null:
+		attack_target = closest
+		attack_command_source = CommandSource.AUTO
+		nav_agent.target_position = _get_building_nav_target(closest)
+		state = UnitState.ATTACK
+		return
+	# 移动到当前巡逻点
+	var target: Vector2 = patrol_points[patrol_index]
+	if global_position.distance_to(target) < 20.0:
+		patrol_index = (patrol_index + 1) % patrol_points.size()
+		target = patrol_points[patrol_index]
+	nav_agent.target_position = target
+	if not nav_agent.is_navigation_finished():
+		var next_pos := nav_agent.get_next_path_position()
+		velocity = global_position.direction_to(next_pos) * stat_set.get_value(StatSetClass.MOVE_SPEED)
+
 func _guard_process(delta: float) -> void:
 	# Monk 优先寻找受伤友军
 	if unit_type == UnitType.MONK:
@@ -900,6 +936,65 @@ func _reset_movement_state() -> void:
 	_blocked_timer = 0.0
 	_lateral_dir = Vector2.ZERO
 	_lateral_timer = 0.0
+	follow_target = null
+
+func command_patrol(points: Array) -> void:
+	_reset_movement_state()
+	patrol_points = points
+	patrol_index = 0
+	attack_target = null
+	attack_command_source = CommandSource.NONE
+	hold_position_mode = false
+	heal_target = null
+	_is_healing = false
+	if not patrol_points.is_empty():
+		nav_agent.target_position = patrol_points[0]
+		state = UnitState.PATROL
+
+func command_follow(target) -> void:
+	_reset_movement_state()
+	follow_target = target
+	attack_target = null
+	attack_command_source = CommandSource.NONE
+	hold_position_mode = false
+	heal_target = null
+	_is_healing = false
+	state = UnitState.MOVE
+
+func queue_move(target_pos: Vector2) -> void:
+	var cmd := CommandQueue.QueuedCommand.new()
+	cmd.type = CommandQueue.CommandType.MOVE
+	cmd.target_pos = target_pos
+	command_queue.enqueue(cmd)
+
+func queue_attack_move(target_pos: Vector2) -> void:
+	var cmd := CommandQueue.QueuedCommand.new()
+	cmd.type = CommandQueue.CommandType.ATTACK_MOVE
+	cmd.target_pos = target_pos
+	command_queue.enqueue(cmd)
+
+func queue_attack_target(target) -> void:
+	var cmd := CommandQueue.QueuedCommand.new()
+	cmd.type = CommandQueue.CommandType.ATTACK_TARGET
+	cmd.target_pos = target.global_position if target else Vector2.ZERO
+	cmd.target_unit = weakref(target) if target else null
+	command_queue.enqueue(cmd)
+
+func _try_dequeue_next_command() -> void:
+	if command_queue.is_empty():
+		return
+	var cmd := command_queue.dequeue()
+	match cmd.type:
+		CommandQueue.CommandType.MOVE:
+			move_to(cmd.target_pos)
+		CommandQueue.CommandType.ATTACK_MOVE:
+			attack_move_to(cmd.target_pos)
+		CommandQueue.CommandType.ATTACK_TARGET:
+			var target: Variant = cmd.target_unit.get_ref() if cmd.target_unit else null
+			if is_instance_valid(target) and target.has_method("is_dead") and not target.is_dead():
+				command_attack(target)
+			else:
+				_try_dequeue_next_command()
 
 func move_to(target_pos: Vector2) -> void:
 	_reset_movement_state()
