@@ -50,6 +50,7 @@ var attack_target = null
 var attack_command_source: CommandSource = CommandSource.NONE
 var attack_timer: float = 0.0
 var selected: bool = false
+var _was_selected: bool = false
 var attack_move_target: Vector2 = Vector2.ZERO
 var attack_move_scan_range: float = 300.0
 var hold_position_mode: bool = false
@@ -1061,6 +1062,11 @@ func set_selected(value: bool) -> void:
 func _update_selection_ring() -> void:
 	if selection_ring:
 		selection_ring.visible = selected
+		if selected:
+			selection_ring.team_color = Color(0.3, 0.6, 1.0, 0.6) if team == Team.PLAYER else Color(1.0, 0.3, 0.3, 0.6)
+			if not _was_selected:
+				selection_ring.flash()
+	_was_selected = selected
 	_update_state_indicator()
 
 func _update_hp_bar() -> void:

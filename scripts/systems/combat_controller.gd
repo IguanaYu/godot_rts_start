@@ -145,6 +145,8 @@ func select_all_army() -> void:
 		if u is CharacterBody2D and not u.is_dead():
 			u.set_selected(true)
 			selected_units.append(u)
+			if u.selection_ring and u.selection_ring.has_method("pulse_scale"):
+				u.selection_ring.pulse_scale()
 	selection_changed.emit(selected_units)
 
 

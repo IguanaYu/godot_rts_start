@@ -75,3 +75,4 @@ UI_KEYBINDS_TITLE,Keybindings,按键绑定,キーバインド
 UI_BACK_TO_SETTINGS,Back to Settings,返回设置,設定に戻る
 MODE_UNIT_PRODUCTION,Unit Mode [Q]  Press 1-4 to place,造兵模式 [Q]  按 1-4 放置,ユニットモード [Q]  1-4で配置
 MODE_BUILDING_PLACEMENT,Build Mode [W]  Press 1-6 to place,建筑模式 [W]  按 1-6 放置,建築モード [W]  1-6で配置
+FEEDBACK_ALL_ARMY,All Army Selected (%d),全选军队 (%d),全軍選択 (%d)

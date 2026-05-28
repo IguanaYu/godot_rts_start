@@ -71,6 +71,7 @@ var _repair_accumulator: float = 0.0
 # 集结点
 var rally_point: Vector2 = Vector2.ZERO
 var has_rally_point: bool = false
+var _rally_indicator: Node2D = null
 
 # 生产圆圈
 var _production_circle: Node2D = null
@@ -570,10 +571,23 @@ func _alert_nearby_enemies(attacker) -> void:
 func set_rally_point(pos: Vector2) -> void:
 	rally_point = pos
 	has_rally_point = true
+	if _rally_indicator == null:
+		_rally_indicator = Node2D.new()
+		_rally_indicator.set_script(load("res://scripts/effects/rally_point_indicator.gd"))
+		_rally_indicator.z_index = 5
+		add_child(_rally_indicator)
+	_rally_indicator.setup(pos, global_position)
+	# 弹入动画
+	_rally_indicator.scale = Vector2(0.5, 0.5)
+	var tween := create_tween()
+	tween.tween_property(_rally_indicator, "scale", Vector2(1.0, 1.0), 0.25).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 
 func clear_rally_point() -> void:
 	rally_point = Vector2.ZERO
 	has_rally_point = false
+	if _rally_indicator:
+		_rally_indicator.queue_free()
+		_rally_indicator = null
 
 func die() -> void:
 	health._is_dead = true

@@ -21,6 +21,7 @@ var ui_buttons: Dictionary = {}  # mode -> Control wrapper
 var place_mode_label: Label
 var gold_label: Label
 var wave_countdown_label: Label
+var panel_bg: NinePatchRect  # 底部面板背景，用于高亮
 
 # 标签页
 var active_tab: int = 0  # 0=单位, 1=建筑
@@ -209,7 +210,7 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	canvas.add_child(panel_wrapper)
 
 	# WoodTable 九宫格底板
-	var panel_bg := _make_ninepatch(np_wood_table)
+	panel_bg = _make_ninepatch(np_wood_table)
 	panel_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	panel_wrapper.add_child(panel_bg)
 
@@ -468,6 +469,12 @@ func _switch_tab(tab_index: int) -> void:
 	building_container.visible = (tab_index == 1)
 	for i in range(tab_buttons.size()):
 		tab_buttons[i].button_pressed = (i == tab_index)
+	# 活动标签页按钮脉冲动画
+	if tab_index < tab_buttons.size():
+		var btn := tab_buttons[tab_index]
+		btn.scale = Vector2(1.2, 1.2)
+		var tween := btn.create_tween()
+		tween.tween_property(btn, "scale", Vector2(1.0, 1.0), 0.25).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 
 
 func switch_tab_for_mode(mode: int) -> void:
@@ -481,6 +488,46 @@ func switch_tab_for_mode(mode: int) -> void:
 
 func switch_tab(tab_index: int) -> void:
 	_switch_tab(tab_index)
+
+
+# ============================================================
+# 建造模式面板高亮
+# ============================================================
+func set_build_panel_highlight(active: bool) -> void:
+	if not panel_bg:
+		return
+	if active:
+		var tween := panel_bg.create_tween()
+		tween.tween_property(panel_bg, "modulate", Color(1.2, 1.1, 0.7, 1.0), 0.3).set_ease(Tween.EASE_OUT)
+	else:
+		var tween := panel_bg.create_tween()
+		tween.tween_property(panel_bg, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.2)
+
+
+# ============================================================
+# F2 全选军队反馈
+# ============================================================
+func show_army_selected_feedback(count: int) -> void:
+	var label := Label.new()
+	label.anchor_left = 0.5
+	label.anchor_right = 0.5
+	label.anchor_top = 1.0
+	label.anchor_bottom = 1.0
+	label.offset_top = -175.0
+	label.offset_bottom = -155.0
+	label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_color_override("font_color", Color(0.3, 0.7, 1.0))
+	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	label.add_theme_constant_override("shadow_offset_x", 1)
+	label.add_theme_constant_override("shadow_offset_y", 1)
+	label.text = tr("FEEDBACK_ALL_ARMY") % count
+	_ui_canvas.add_child(label)
+	var tween := label.create_tween()
+	tween.tween_interval(1.0)
+	tween.tween_property(label, "modulate:a", 0.0, 0.5)
+	tween.tween_callback(label.queue_free)
 
 
 # ============================================================

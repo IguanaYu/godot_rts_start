@@ -259,14 +259,20 @@ func _on_input_mode_changed(new_mode: int) -> void:
 	if new_mode == 0:  # DEFAULT
 		building_placer.cancel_place_mode()
 		ui_module.hide_place_mode_label()
+		ui_module.set_build_panel_highlight(false)
+
 	elif new_mode == 1:  # UNIT_PRODUCTION
 		building_placer.cancel_place_mode()
 		ui_module.switch_tab(0)
 		ui_module.set_place_mode_text(tr("MODE_UNIT_PRODUCTION"))
+		ui_module.set_build_panel_highlight(true)
+
 	elif new_mode == 2:  # BUILDING_PLACEMENT
 		building_placer.cancel_place_mode()
 		ui_module.switch_tab(1)
 		ui_module.set_place_mode_text(tr("MODE_BUILDING_PLACEMENT"))
+		ui_module.set_build_panel_highlight(true)
+
 
 
 func _keycode_to_group_index(keycode: int) -> int:
@@ -516,6 +522,7 @@ func _input(event: InputEvent) -> void:
 				_jump_to_base()
 			KEY_F2:
 				combat_ctrl.select_all_army()
+				ui_module.show_army_selected_feedback(combat_ctrl.selected_units.size())
 			KEY_TAB:
 				combat_ctrl.cycle_subgroup(not event.shift_pressed)
 			KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0:
