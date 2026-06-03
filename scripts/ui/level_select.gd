@@ -20,6 +20,13 @@ const DifficultyClass := preload("res://scripts/difficulty.gd")
 var cursor_manager: Node = null
 var _difficulty: int = 1  # 默认 NORMAL
 var _difficulty_buttons: Array[Button] = []
+var _back_button_bg: NinePatchRect
+var _back_button_label: Label
+
+# 通关信息标签
+var _completion_status_label: Label
+var _completion_time_label: Label
+var _completion_play_count_label: Label
 
 # === 关卡数据（翻译键） ===
 var levels := [
@@ -223,9 +230,9 @@ func _refresh_ui() -> void:
 		_difficulty_buttons[i].text = tr(diff_keys[i])
 	_update_difficulty_highlight()
 
-
-# ============================================================
-# 辅助：创建 NinePatchRect 并设置好 margin
+	# 更新返回按钮文本
+	if _back_button_label:
+		_back_button_label.text = tr("SAVE_BACK_PROFILE")
 # ============================================================
 func _make_ninepatch(np: Dictionary) -> NinePatchRect:
 	var npr := NinePatchRect.new()
@@ -441,6 +448,34 @@ func _create_right_panel(parent: HBoxContainer) -> void:
 	right_desc.custom_minimum_size = Vector2(0, 60)
 	vbox.add_child(right_desc)
 
+	# 4.5) 通关信息
+	_completion_status_label = Label.new()
+	_completion_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_completion_status_label.add_theme_font_size_override("font_size", 16)
+	_completion_status_label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
+	_completion_status_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.4))
+	_completion_status_label.add_theme_constant_override("shadow_offset_x", 1)
+	_completion_status_label.add_theme_constant_override("shadow_offset_y", 1)
+	vbox.add_child(_completion_status_label)
+
+	_completion_time_label = Label.new()
+	_completion_time_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_completion_time_label.add_theme_font_size_override("font_size", 15)
+	_completion_time_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
+	_completion_time_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.4))
+	_completion_time_label.add_theme_constant_override("shadow_offset_x", 1)
+	_completion_time_label.add_theme_constant_override("shadow_offset_y", 1)
+	vbox.add_child(_completion_time_label)
+
+	_completion_play_count_label = Label.new()
+	_completion_play_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_completion_play_count_label.add_theme_font_size_override("font_size", 14)
+	_completion_play_count_label.add_theme_color_override("font_color", Color(0.65, 0.65, 0.65))
+	_completion_play_count_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.3))
+	_completion_play_count_label.add_theme_constant_override("shadow_offset_x", 1)
+	_completion_play_count_label.add_theme_constant_override("shadow_offset_y", 1)
+	vbox.add_child(_completion_play_count_label)
+
 	# 5) 难度选择
 	_create_difficulty_selector(vbox)
 
@@ -492,6 +527,54 @@ func _create_start_button(parent: VBoxContainer) -> void:
 	wrapper.add_child(start_button_label)
 
 	parent.add_child(wrapper)
+
+	# 返回存档选择按钮
+	_create_back_button(parent)
+
+
+# ============================================================
+# 返回存档选择按钮
+# ============================================================
+func _create_back_button(parent: VBoxContainer) -> void:
+	var wrapper := Control.new()
+	wrapper.custom_minimum_size = Vector2(160, 50)
+	wrapper.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+
+	_back_button_bg = _make_ninepatch(np_btn_blue)
+	_back_button_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	wrapper.add_child(_back_button_bg)
+
+	var btn := Button.new()
+	btn.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	var empty_style := StyleBoxEmpty.new()
+	btn.add_theme_stylebox_override("normal", empty_style)
+	btn.add_theme_stylebox_override("hover", empty_style)
+	btn.add_theme_stylebox_override("pressed", empty_style)
+	btn.add_theme_stylebox_override("focus", empty_style)
+	btn.pressed.connect(_on_back_pressed)
+	btn.button_down.connect(func(): _back_button_bg.texture = np_btn_blue_prs.texture)
+	btn.button_up.connect(func(): _back_button_bg.texture = np_btn_blue.texture)
+	wrapper.add_child(btn)
+
+	_back_button_label = Label.new()
+	_back_button_label.text = tr("SAVE_BACK_PROFILE")
+	_back_button_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_back_button_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_back_button_label.add_theme_font_size_override("font_size", 16)
+	_back_button_label.add_theme_color_override("font_color", Color(1, 1, 1))
+	_back_button_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	_back_button_label.add_theme_constant_override("shadow_offset_x", 1)
+	_back_button_label.add_theme_constant_override("shadow_offset_y", 1)
+	_back_button_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_back_button_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wrapper.add_child(_back_button_label)
+
+	parent.add_child(wrapper)
+
+
+func _on_back_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/save_select.tscn")
 
 
 # ============================================================
@@ -602,6 +685,25 @@ func _update_right_panel(index: int) -> void:
 	right_desc.text = tr(level.desc_key)
 	right_icon.texture = load(level.icon)
 
+	# 通关信息
+	var sm := _get_save_manager()
+	var level_id := "map_%d" % (index + 1)
+	var save_data: Dictionary = sm.get_current_data()
+	var lvl_data: Dictionary = save_data.get("levels", {}).get(level_id, {})
+	if lvl_data.get("completed", false):
+		var score_val: int = sm.get_level_score_value(level_id)
+		_completion_status_label.text = tr("SAVE_COMPLETED") + "  " + tr("SAVE_SCORE_EARNED") % score_val
+		var best_time = lvl_data.get("best_time_seconds")
+		if best_time != null:
+			_completion_time_label.text = tr("SAVE_BEST_TIME") % sm.format_time(float(best_time))
+		else:
+			_completion_time_label.text = ""
+		_completion_play_count_label.text = tr("SAVE_PLAY_COUNT") % int(lvl_data.get("play_count", 0))
+	else:
+		_completion_status_label.text = ""
+		_completion_time_label.text = ""
+		_completion_play_count_label.text = tr("SAVE_PLAY_COUNT") % int(lvl_data.get("play_count", 0))
+
 	# 更新丝带（从 SmallRibbons 图集提取对应行）
 	var ribbon_row: int = int(level.ribbon_row)
 	# SmallRibbons 行的 content 区域：交替 60px 和 54px
@@ -665,6 +767,11 @@ func _on_button_up(index: int) -> void:
 
 func _on_start_pressed() -> void:
 	if selected_index >= 0 and selected_index < levels.size():
+		# 通知 SaveManager 开始游戏会话
+		var sm := _get_save_manager()
+		if sm:
+			var level_id := "map_%d" % (selected_index + 1)
+			sm.start_game_session(level_id)
 		_load_level(levels[selected_index].scene)
 
 
@@ -675,7 +782,7 @@ func _load_level(scene_path: String) -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed:
 		if event.keycode == KEY_ESCAPE:
-			get_tree().quit()
+			get_tree().change_scene_to_file("res://scenes/save_select.tscn")
 
 
 # ============================================================
@@ -757,3 +864,7 @@ func _parse_csv_line(line: String) -> PackedStringArray:
 		i += 1
 	result.append(current)
 	return result
+
+
+func _get_save_manager() -> Node:
+	return get_node_or_null("/root/SaveManager")

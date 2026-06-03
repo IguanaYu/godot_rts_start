@@ -11,9 +11,13 @@ config_version=5
 [application]
 
 config/name="rts_base"
-run/main_scene="res://scenes/level_select.tscn"
+run/main_scene="res://scenes/save_select.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
+
+[autoload]
+
+SaveManager="*res://scripts/systems/save_manager.gd"
 
 [display]
 

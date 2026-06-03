@@ -26,9 +26,4 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	var viewport := get_viewport()
-	if viewport:
-		var mouse_pos := viewport.get_mouse_position()
-		var camera := viewport.get_camera_2d()
-		if camera:
-			global_position = mouse_pos
+	global_position = get_global_mouse_position()

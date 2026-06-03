@@ -87,3 +87,19 @@ SKILL_UNIT_DROP_DESC,Drop reinforcement units at target location,在目标位置
 SKILL_ENERGY,Energy,能量,エネルギー
 SKILL_COST,Cost,消耗,コスト
 SKILL_COOLDOWN,Cooldown,冷却,クールダウン
+SAVE_SELECT_TITLE,SELECT PROFILE,选择存档,プロファイル選択
+SAVE_SLOT_N,Slot %d,存档 %d,スロット %d
+SAVE_EMPTY,Empty,空,空
+SAVE_NEW_GAME,New Game,新游戏,ニューゲーム
+SAVE_LAST_PLAYED,Last played: %s,上次游玩: %s,最終プレイ: %s
+SAVE_SCORE,Score: %d / %d,得分: %d / %d,スコア: %d / %d
+SAVE_PROGRESS,%d / %d completed,已通关 %d / %d,クリア %d / %d
+SAVE_DELETE,Delete,删除,削除
+SAVE_DELETE_CONFIRM,Delete this save?,确认删除此存档？,このセーブを削除しますか？
+SAVE_COMPLETED,Completed ★,已通关 ★,クリア済み ★
+SAVE_BEST_TIME,Best time: %s,最佳用时: %s,ベストタイム: %s
+SAVE_PLAY_COUNT,Play count: %d,游玩次数: %d,プレイ回数: %d
+SAVE_SCORE_EARNED,+ %d pts,+ %d 分,+ %d ポイント
+SAVE_TOTAL_SCORE,Total: %d / %d,总分: %d / %d,合計: %d / %d
+SAVE_CONTINUE,Continue,继续,続行
+SAVE_BACK_PROFILE,Back to Profile,返回存档,プロファイルに戻る

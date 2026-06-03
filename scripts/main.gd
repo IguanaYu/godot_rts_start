@@ -235,9 +235,101 @@ func _setup_victory_condition() -> void:
 			victory_condition.game_ended.connect(_on_game_ended)
 			break
 
+var _game_result_saved := false
+
 func _on_game_ended(result: String) -> void:
-	result_label.text = tr("RESULT_VICTORY") if result == "victory" else tr("RESULT_DEFEAT")
-	result_label.visible = true
+	if _game_result_saved:
+		return
+	_game_result_saved = true
+
+	# 通知 SaveManager 记录结果
+	var sm := get_node_or_null("/root/SaveManager")
+	if sm:
+		var diff_level := DifficultyClass.load_from_config()
+		sm.end_game_session(result, diff_level)
+
+	if result == "victory":
+		_show_victory_panel(sm)
+	else:
+		result_label.text = tr("RESULT_DEFEAT")
+		result_label.visible = true
+
+
+func _show_victory_panel(sm: Node) -> void:
+	result_label.visible = false
+
+	var canvas := CanvasLayer.new()
+	canvas.layer = 100
+	canvas.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(canvas)
+
+	var overlay := ColorRect.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.color = Color(0, 0, 0, 0.5)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	canvas.add_child(overlay)
+
+	var panel := Control.new()
+	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	panel.offset_left = -180
+	panel.offset_right = 180
+	panel.offset_top = -140
+	panel.offset_bottom = 140
+	canvas.add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	vbox.offset_left = 24
+	vbox.offset_right = -24
+	vbox.offset_top = 20
+	vbox.offset_bottom = -20
+	vbox.add_theme_constant_override("separation", 12)
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	panel.add_child(vbox)
+
+	var title := Label.new()
+	title.text = tr("RESULT_VICTORY")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 32)
+	title.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
+	title.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	title.add_theme_constant_override("shadow_offset_x", 2)
+	title.add_theme_constant_override("shadow_offset_y", 2)
+	vbox.add_child(title)
+
+	if sm:
+		var elapsed: float = sm.get_last_session_time()
+		var time_label := Label.new()
+		time_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		time_label.add_theme_font_size_override("font_size", 18)
+		time_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
+		time_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.5))
+		time_label.add_theme_constant_override("shadow_offset_x", 1)
+		time_label.add_theme_constant_override("shadow_offset_y", 1)
+		time_label.text = tr("SAVE_BEST_TIME") % sm.format_time(elapsed)
+		vbox.add_child(time_label)
+
+		var save_data: Dictionary = sm.get_current_data()
+		var total: int = sm.calc_total_score(save_data)
+		var score_label := Label.new()
+		score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		score_label.add_theme_font_size_override("font_size", 18)
+		score_label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
+		score_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.5))
+		score_label.add_theme_constant_override("shadow_offset_x", 1)
+		score_label.add_theme_constant_override("shadow_offset_y", 1)
+		score_label.text = tr("SAVE_TOTAL_SCORE") % [total, 100]
+		vbox.add_child(score_label)
+
+	var btn := Button.new()
+	btn.text = tr("SAVE_CONTINUE")
+	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	btn.custom_minimum_size = Vector2(160, 44)
+	btn.add_theme_font_size_override("font_size", 18)
+	btn.add_theme_color_override("font_color", Color(1, 1, 1))
+	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	btn.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/level_select.tscn"))
+	vbox.add_child(btn)
 
 func _setup_capture_points() -> void:
 	for child in get_children():
@@ -385,16 +477,14 @@ func _jump_to_base() -> void:
 	camera_module.jump_to_base(_get_base_position())
 
 func _check_victory() -> void:
-	if result_label.visible:
+	if _game_result_saved:
 		return
 	if victory_condition != null:
 		var result := victory_condition.check()
 		if result == 1:
-			result_label.text = tr("RESULT_VICTORY")
-			result_label.visible = true
+			_on_game_ended("victory")
 		elif result == 2:
-			result_label.text = tr("RESULT_DEFEAT")
-			result_label.visible = true
+			_on_game_ended("defeat")
 	else:
 		_fallback_check_victory()
 
@@ -410,11 +500,9 @@ func _fallback_check_victory() -> void:
 			enemy_castle_alive = true
 			break
 	if not enemy_castle_alive:
-		result_label.text = tr("RESULT_VICTORY")
-		result_label.visible = true
+		_on_game_ended("victory")
 	elif not player_castle_alive:
-		result_label.text = tr("RESULT_DEFEAT")
-		result_label.visible = true
+		_on_game_ended("defeat")
 
 func _check_wave_cleared() -> void:
 	var wm: Node = null
