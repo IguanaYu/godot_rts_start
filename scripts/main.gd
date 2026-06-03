@@ -36,6 +36,8 @@ var spawner_module: Node
 var building_placer: Node
 var combat_ctrl: Node
 var input_mode: Node  # InputModeManager
+var commander_skill_manager: Node
+var commander_skill_panel: Node
 
 # 控制组管理器
 var ctrl_group_mgr: RefCounted
@@ -128,6 +130,23 @@ func _ready() -> void:
 	ctrl_group_mgr = CtrlGroupMgr.new()
 	for i in range(10):
 		_group_tap_times.append(0.0)
+
+	# 指挥官技能系统
+	const CSD := preload("res://scripts/commander_skill/commander_skill_data.gd")
+	commander_skill_manager = Node.new()
+	commander_skill_manager.set_script(load("res://scripts/commander_skill/commander_skill_manager.gd"))
+	add_child(commander_skill_manager)
+	var available_skills: Array = CSD.ALL_SKILLS
+	if map_config != null and not map_config.commander_skills.is_empty():
+		available_skills = map_config.commander_skills
+	commander_skill_manager.initialize(self, spawner_module, func(): return gold, func(cost: int): _spend_gold(cost))
+	commander_skill_manager.set_available_skills(available_skills)
+
+	commander_skill_panel = Node.new()
+	commander_skill_panel.set_script(load("res://scripts/commander_skill/commander_skill_panel.gd"))
+	add_child(commander_skill_panel)
+	commander_skill_panel.initialize(self, commander_skill_manager)
+	commander_skill_panel.skill_button_pressed.connect(_on_commander_skill_button_pressed)
 
 	# 生成
 	var has_preplaced := _has_preplaced_entities()
@@ -348,6 +367,9 @@ func _process(delta: float) -> void:
 	building_placer.update_preview()
 	if building_placer.show_grid and building_placer.grid_overlay:
 		building_placer.grid_overlay.visible = building_placer.show_grid
+	# 更新指挥官技能目标预览
+	if input_mode.is_commander_skill_cast() and commander_skill_manager.is_casting():
+		commander_skill_panel.update_target_preview(get_global_mouse_position())
 
 func _get_base_position() -> Vector2:
 	var buildings := get_tree().get_nodes_in_group("player_buildings")
@@ -436,6 +458,7 @@ func _input(event: InputEvent) -> void:
 			building_placer.cancel_place_mode()
 			return
 		if not input_mode.is_default():
+			commander_skill_manager.cancel_cast()
 			input_mode.cancel_mode()
 			return
 		ui_module.open_pause_menu()
@@ -450,6 +473,9 @@ func _input(event: InputEvent) -> void:
 						combat_ctrl.do_attack_move(get_global_mouse_position())
 						combat_ctrl.set_attack_move_mode(false)
 						cursor_manager.set_attack(false)
+					elif input_mode.is_commander_skill_cast() and commander_skill_manager.is_casting():
+						commander_skill_manager.confirm_cast(get_global_mouse_position())
+						input_mode.cancel_mode()
 					elif building_placer.get_place_mode() != D.PlaceMode.NONE:
 						_do_place(get_global_mouse_position())
 					else:
@@ -472,6 +498,7 @@ func _input(event: InputEvent) -> void:
 					cursor_manager.set_attack(false)
 					# Q/W模式下右键退出模式
 					if not input_mode.is_default():
+						commander_skill_manager.cancel_cast()
 						input_mode.cancel_mode()
 						return
 					building_placer.cancel_place_mode()
@@ -510,6 +537,11 @@ func _input(event: InputEvent) -> void:
 				combat_ctrl.stop_selected()
 			KEY_H:
 				combat_ctrl.hold_position_selected()
+			KEY_Z, KEY_X, KEY_C, KEY_V:
+				var CSD2 := preload("res://scripts/commander_skill/commander_skill_data.gd")
+				var skill_id: int = CSD2.HOTKEY_TO_SKILL.get(key, -1)
+				if skill_id >= 0:
+					_start_commander_skill(skill_id)
 			KEY_R:
 				get_tree().reload_current_scene()
 			KEY_G:
@@ -564,6 +596,21 @@ func spawn_enemy_unit(type: int, pos: Vector2, wave_attack: bool = false, wave_t
 func add_gold(amount: int) -> void:
 	gold += amount
 	ui_module.update_gold_display(gold)
+
+
+func _spend_gold(amount: int) -> void:
+	gold -= amount
+	ui_module.update_gold_display(gold)
+
+
+func _on_commander_skill_button_pressed(skill_id: int) -> void:
+	_start_commander_skill(skill_id)
+
+
+func _start_commander_skill(skill_id: int) -> void:
+	if commander_skill_manager.start_cast(skill_id):
+		if commander_skill_manager.is_casting():
+			input_mode.enter_commander_skill_cast()
 
 func show_floating_text(text: String, color: Color, world_pos: Vector2) -> void:
 	spawner_module.show_floating_text(text, color, world_pos)

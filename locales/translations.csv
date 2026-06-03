@@ -76,3 +76,14 @@ UI_BACK_TO_SETTINGS,Back to Settings,返回设置,設定に戻る
 MODE_UNIT_PRODUCTION,Unit Mode [Q]  Press 1-4 to place,造兵模式 [Q]  按 1-4 放置,ユニットモード [Q]  1-4で配置
 MODE_BUILDING_PLACEMENT,Build Mode [W]  Press 1-6 to place,建筑模式 [W]  按 1-6 放置,建築モード [W]  1-6で配置
 FEEDBACK_ALL_ARMY,All Army Selected (%d),全选军队 (%d),全軍選択 (%d)
+SKILL_ORBITAL_STRIKE,Orbital Strike,轨道打击,軌道爆撃
+SKILL_ORBITAL_STRIKE_DESC,Deal area damage to target location,对目标区域造成范围伤害,目標地点に範囲ダメージを与える
+SKILL_HEAL_FIELD,Heal Field,治疗场,ヒールフィールド
+SKILL_HEAL_FIELD_DESC,Heal friendly units in target area,治疗目标区域内友方单位,目標エリア内の味方ユニットを回復
+SKILL_SHIELD_WALL,Shield Wall,护盾墙,シールドウォール
+SKILL_SHIELD_WALL_DESC,Deploy a temporary wall at target location,在目标位置部署临时防御墙,目標地点に一時的な防御壁を展開
+SKILL_UNIT_DROP,Unit Drop,空投单位,ユニット投下
+SKILL_UNIT_DROP_DESC,Drop reinforcement units at target location,在目标位置空投增援部队,目標地点に増援ユニットを投下
+SKILL_ENERGY,Energy,能量,エネルギー
+SKILL_COST,Cost,消耗,コスト
+SKILL_COOLDOWN,Cooldown,冷却,クールダウン

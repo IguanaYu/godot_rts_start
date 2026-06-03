@@ -32,3 +32,6 @@ extends Resource
 @export var terrain_theme: int = 0
 @export var water_areas: Array[Rect2] = []
 @export var border_width: int = 1
+
+# Commander skills available for this map
+@export var commander_skills: Array[int] = []
