@@ -235,8 +235,10 @@ func _create_upgrade_card(upgrade_id: int, tier_color: Color) -> void:
 	btn.add_theme_stylebox_override("focus", empty_style)
 	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	btn.pressed.connect(_on_upgrade_clicked.bind(upgrade_id))
-	btn.mouse_entered.connect(func(): card_bg.texture = np_btn_blue_prs.texture)
-	btn.mouse_exited.connect(func(): card_bg.texture = np_btn_blue.texture)
+	btn.mouse_entered.connect(func(): card.scale = Vector2(1.08, 1.08))
+	btn.mouse_exited.connect(func(): card.scale = Vector2(1.0, 1.0); card_bg.texture = np_btn_blue.texture)
+	btn.button_down.connect(func(): card.scale = Vector2(0.95, 0.95); card_bg.texture = np_btn_blue_prs.texture)
+	btn.button_up.connect(func(): card.scale = Vector2(1.08, 1.08); card_bg.texture = np_btn_blue.texture)
 	card.add_child(btn)
 
 
