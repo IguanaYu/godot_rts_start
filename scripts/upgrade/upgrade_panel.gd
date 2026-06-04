@@ -114,7 +114,12 @@ func _create_ui() -> void:
 	# 标题
 	var title := Label.new()
 	title.name = "TitleLabel"
-	title.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	title.anchor_left = 0.0
+	title.anchor_right = 1.0
+	title.anchor_top = 0.0
+	title.anchor_bottom = 0.0
+	title.offset_left = 0
+	title.offset_right = 0
 	title.offset_top = 20
 	title.offset_bottom = 55
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
