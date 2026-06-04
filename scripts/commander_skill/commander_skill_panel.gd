@@ -289,7 +289,7 @@ func _on_cooldown_updated(skill_id: int, remaining: float, total: float) -> void
 	var ratio := remaining / total
 	var overlay_height := 44.0
 	overlay.offset_top = 6 + overlay_height * (1.0 - ratio)
-	overlay.offset_bottom = 50
+	overlay.offset_bottom = -6
 	if cd_label:
 		cd_label.visible = true
 		cd_label.text = "%.0f" % remaining
