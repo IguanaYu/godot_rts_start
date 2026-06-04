@@ -896,7 +896,7 @@ func _create_pause_menu() -> void:
 		[tr("UI_RESTART"), _on_pause_restart],
 		[tr("UI_LEVEL_SELECT"), _on_pause_level_select],
 		[tr("UI_SETTINGS"), _open_settings_page],
-		[tr("UI_QUIT_GAME"), _on_pause_quit],
+		[tr("UI_MAIN_MENU"), _on_pause_quit],
 	]
 	for data in btn_data:
 		var btn_wrapper := _make_styled_button(data[0], Vector2(0, 44), data[1])
@@ -935,7 +935,8 @@ func _on_pause_level_select() -> void:
 
 
 func _on_pause_quit() -> void:
-	_main_node.get_tree().quit()
+	_main_node.get_tree().paused = false
+	_main_node.get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 
 
 # ============================================================
@@ -1186,6 +1187,27 @@ func _open_settings_page() -> void:
 	# 查看按键绑定按钮
 	vbox.add_child(_make_styled_button(tr("UI_VIEW_KEYBINDS"), Vector2(0, 40), _open_keybinds_page))
 
+	# === Language section ===
+	var spacer5 := Control.new()
+	spacer5.custom_minimum_size = Vector2(0, 6)
+	vbox.add_child(spacer5)
+	vbox.add_child(_make_section_label(tr("UI_LANGUAGE")))
+	var lang_hbox := HBoxContainer.new()
+	lang_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	lang_hbox.add_theme_constant_override("separation", 8)
+	var _supported_locales := ["en", "zh", "ja"]
+	var current_locale := TranslationServer.get_locale()
+	for locale_code in _supported_locales:
+		var btn := Button.new()
+		btn.text = tr("LANG_" + locale_code.to_upper())
+		btn.custom_minimum_size = Vector2(90, 28)
+		btn.add_theme_font_size_override("font_size", 14)
+		btn.set_meta("locale", locale_code)
+		btn.add_theme_color_override("font_color", Color(1, 0.85, 0.0) if locale_code == current_locale or locale_code == current_locale.substr(0, 2) else Color(0.8, 0.8, 0.8))
+		btn.pressed.connect(_on_settings_language_selected.bind(locale_code))
+		lang_hbox.add_child(btn)
+	vbox.add_child(lang_hbox)
+
 	# 返回按钮
 	vbox.add_child(_make_styled_button(tr("UI_BACK"), Vector2(0, 40), _close_settings_page))
 
@@ -1214,6 +1236,16 @@ func _close_settings_page() -> void:
 # ============================================================
 # 按键展示子页面（只读）
 # ============================================================
+func _on_settings_language_selected(locale_code: String) -> void:
+	TranslationServer.set_locale(locale_code)
+	var config := ConfigFile.new()
+	config.load("user://settings.cfg")
+	config.set_value("game", "locale", locale_code)
+	config.save("user://settings.cfg")
+	_close_settings_page()
+	_open_settings_page()
+
+
 func _open_keybinds_page() -> void:
 	# 隐藏设置页
 	for child in _pause_overlay.get_children():

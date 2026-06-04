@@ -14,7 +14,6 @@ const SAVE_SLOTS := 3
 const SETTINGS_PATH := "user://settings.cfg"
 
 var _supported_locales := ["en", "zh", "ja"]
-var _lang_buttons: Array[Button] = []
 var _slot_wrappers: Array[Control] = []
 var _slot_name_labels: Array[Label] = []
 var _slot_score_labels: Array[Label] = []
@@ -25,6 +24,7 @@ var _slot_enter_buttons: Array[Button] = []
 var _slot_bgs: Array[NinePatchRect] = []
 var _delete_confirm_slot: int = -1
 var _confirm_dialog: Control = null
+var _esc_menu: Control = null
 
 # 九宫格纹理
 var np_wood_table: Dictionary
@@ -45,7 +45,6 @@ func _ready() -> void:
 
 	_process_all_textures()
 	_create_title()
-	_create_language_buttons()
 	_create_slot_list()
 	_create_hint_label()
 	_refresh_all_slots()
@@ -133,30 +132,6 @@ func _create_title() -> void:
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(title)
 
-
-func _create_language_buttons() -> void:
-	var BF := preload("res://scripts/ui/button_factory.gd")
-	var hbox := HBoxContainer.new()
-	hbox.anchor_left = 0.0
-	hbox.anchor_right = 1.0
-	hbox.anchor_top = 0.08
-	hbox.anchor_bottom = 0.11
-	hbox.add_theme_constant_override("separation", 8)
-	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	add_child(hbox)
-
-	var current_locale := TranslationServer.get_locale()
-	for locale_code in _supported_locales:
-		var btn := Button.new()
-		btn.text = tr("LANG_" + locale_code.to_upper())
-		btn.custom_minimum_size = Vector2(90, 28)
-		btn.add_theme_font_size_override("font_size", 14)
-		btn.set_meta("locale", locale_code)
-		btn.add_theme_color_override("font_color", Color(1, 0.85, 0.0) if locale_code == current_locale else Color(0.8, 0.8, 0.8))
-		btn.pressed.connect(_on_language_selected.bind(locale_code))
-		hbox.add_child(btn)
-		BF.add_hover_anim_button(btn)
-		_lang_buttons.append(btn)
 
 
 func _create_slot_list() -> void:
@@ -487,7 +462,7 @@ func _cancel_delete() -> void:
 
 func _create_hint_label() -> void:
 	var hint := Label.new()
-	hint.text = tr("LEVEL_PRESS_ESC_QUIT")
+	hint.text = tr("SAVE_PRESS_ESC_MENU")
 	hint.add_theme_font_size_override("font_size", 14)
 	hint.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
 	hint.anchor_left = 0.0
@@ -496,22 +471,6 @@ func _create_hint_label() -> void:
 	hint.anchor_bottom = 0.98
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(hint)
-
-
-func _on_language_selected(locale_code: String) -> void:
-	TranslationServer.set_locale(locale_code)
-	_save_language_preference(locale_code)
-	_refresh_ui()
-
-
-func _refresh_ui() -> void:
-	# 更新语言按钮高亮
-	var current_locale := TranslationServer.get_locale()
-	for btn in _lang_buttons:
-		var bl: String = btn.get_meta("locale")
-		btn.add_theme_color_override("font_color", Color(1, 0.85, 0.0) if bl == current_locale else Color(0.8, 0.8, 0.8))
-		btn.text = tr("LANG_" + bl.to_upper())
-	_refresh_all_slots()
 
 
 func _save_language_preference(locale_code: String) -> void:
@@ -533,7 +492,121 @@ func _input(event: InputEvent) -> void:
 		if _confirm_dialog:
 			_cancel_delete()
 			return
-		get_tree().quit()
+		if _esc_menu:
+			_close_esc_menu()
+			return
+		_show_esc_menu()
+
+
+func _show_esc_menu() -> void:
+	_esc_menu = Control.new()
+	_esc_menu.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_esc_menu.mouse_filter = Control.MOUSE_FILTER_STOP
+
+	var overlay := ColorRect.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.color = Color(0, 0, 0, 0.6)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	_esc_menu.add_child(overlay)
+
+	var panel_wrapper := Control.new()
+	panel_wrapper.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	panel_wrapper.offset_left = -160
+	panel_wrapper.offset_right = 160
+	panel_wrapper.offset_top = -80
+	panel_wrapper.offset_bottom = 80
+	_esc_menu.add_child(panel_wrapper)
+
+	var panel_bg := _make_ninepatch(np_paper)
+	panel_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	panel_wrapper.add_child(panel_bg)
+
+	var vbox := VBoxContainer.new()
+	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	vbox.offset_left = 20
+	vbox.offset_right = -20
+	vbox.offset_top = 16
+	vbox.offset_bottom = -16
+	vbox.add_theme_constant_override("separation", 16)
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	panel_wrapper.add_child(vbox)
+
+	# 继续按钮
+	var resume_wrapper := Control.new()
+	resume_wrapper.custom_minimum_size = Vector2(200, 44)
+	var resume_bg := _make_ninepatch(np_btn_blue)
+	resume_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	resume_wrapper.add_child(resume_bg)
+	var resume_btn := Button.new()
+	resume_btn.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	resume_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	var es := StyleBoxEmpty.new()
+	resume_btn.add_theme_stylebox_override("normal", es)
+	resume_btn.add_theme_stylebox_override("hover", es)
+	resume_btn.add_theme_stylebox_override("pressed", es)
+	resume_btn.add_theme_stylebox_override("focus", es)
+	resume_btn.pressed.connect(_close_esc_menu)
+	resume_wrapper.add_child(resume_btn)
+	var resume_label := Label.new()
+	resume_label.text = tr("ESC_RESUME")
+	resume_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	resume_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	resume_label.add_theme_font_size_override("font_size", 18)
+	resume_label.add_theme_color_override("font_color", Color(1, 1, 1))
+	resume_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	resume_label.add_theme_constant_override("shadow_offset_x", 1)
+	resume_label.add_theme_constant_override("shadow_offset_y", 1)
+	resume_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	resume_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	resume_wrapper.add_child(resume_label)
+	var BF := preload("res://scripts/ui/button_factory.gd")
+	BF.add_hover_anim(resume_wrapper, resume_bg, np_btn_blue_prs.texture, np_btn_blue.texture)
+	vbox.add_child(resume_wrapper)
+
+	# 返回主菜单按钮
+	var back_wrapper := Control.new()
+	back_wrapper.custom_minimum_size = Vector2(200, 44)
+	var back_bg := _make_ninepatch(np_btn_red)
+	back_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	back_wrapper.add_child(back_bg)
+	var back_btn := Button.new()
+	back_btn.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	back_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	var es2 := StyleBoxEmpty.new()
+	back_btn.add_theme_stylebox_override("normal", es2)
+	back_btn.add_theme_stylebox_override("hover", es2)
+	back_btn.add_theme_stylebox_override("pressed", es2)
+	back_btn.add_theme_stylebox_override("focus", es2)
+	back_btn.pressed.connect(_on_esc_back_to_main)
+	back_wrapper.add_child(back_btn)
+	var back_label := Label.new()
+	back_label.text = tr("ESC_BACK_MAIN_MENU")
+	back_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	back_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	back_label.add_theme_font_size_override("font_size", 16)
+	back_label.add_theme_color_override("font_color", Color(1, 1, 1))
+	back_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	back_label.add_theme_constant_override("shadow_offset_x", 1)
+	back_label.add_theme_constant_override("shadow_offset_y", 1)
+	back_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	back_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	back_wrapper.add_child(back_label)
+	var BF2 := preload("res://scripts/ui/button_factory.gd")
+	BF2.add_hover_anim(back_wrapper, back_bg, np_btn_red_prs.texture, np_btn_red.texture)
+	vbox.add_child(back_wrapper)
+
+	add_child(_esc_menu)
+
+
+func _close_esc_menu() -> void:
+	if _esc_menu:
+		_esc_menu.queue_free()
+		_esc_menu = null
+
+
+func _on_esc_back_to_main() -> void:
+	_close_esc_menu()
+	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 
 
 func _get_save_manager() -> Node:

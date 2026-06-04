@@ -145,3 +145,11 @@ UPGRADE_ATK_BOOST_20,Might III,力量 III,剛力 III
 UPGRADE_ATK_BOOST_20_DESC,Combat units +20% Attack,战斗单位 +20% 攻击,戦闘ユニット +20% 攻撃
 UPGRADE_SPAWN_6,Full Mobilization,全军出击,総動員
 UPGRADE_SPAWN_6_DESC,Deploy 3 Soldiers + 2 Archers + 1 Lancer,部署3战士+2弓手+1枪兵,戦士3+アーチャー2+ランサー1を配置
+MAIN_MENU_TITLE,TINY SWORDS RTS,小小剑 RTS,タイニーソード RTS
+MAIN_MENU_START,Start Game,开始游戏,ゲーム開始
+UI_LANGUAGE,Language,语言,言語
+ESC_RESUME,Resume,继续,再開
+ESC_BACK_MAIN_MENU,Back to Main Menu,返回主菜单,メインメニューに戻る
+SAVE_PRESS_ESC_MENU,Press Esc for menu,按 Esc 打开菜单,Escでメニュー
+LEVEL_PRESS_ESC_MENU,Press Esc for menu,按 Esc 打开菜单,Escでメニュー
+UI_MAIN_MENU,Main Menu,主菜单,メインメニュー
