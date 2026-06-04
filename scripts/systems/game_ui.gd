@@ -236,11 +236,13 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	content.add_child(tab_row)
 
 	# 单位标签
+	var BF4 := preload("res://scripts/ui/button_factory.gd")
 	var unit_tab := Button.new()
 	unit_tab.text = tr("TAB_UNITS")
 	unit_tab.custom_minimum_size = Vector2(100, 28)
 	unit_tab.toggle_mode = true
 	unit_tab.pressed.connect(func(): _switch_tab(0))
+	BF4.add_hover_anim_button(unit_tab)
 	tab_row.add_child(unit_tab)
 	tab_buttons.append(unit_tab)
 
@@ -250,6 +252,7 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	build_tab.custom_minimum_size = Vector2(100, 28)
 	build_tab.toggle_mode = true
 	build_tab.pressed.connect(func(): _switch_tab(1))
+	BF4.add_hover_anim_button(build_tab)
 	tab_row.add_child(build_tab)
 	tab_buttons.append(build_tab)
 
@@ -326,8 +329,8 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	upgrade_token_button.disabled = true
 	upgrade_token_button.modulate.a = 0.5
 	upgrade_token_button.pressed.connect(func(): upgrade_button_pressed.emit())
-	upgrade_token_button.button_down.connect(func(): up_bg.texture = np_btn_blue_prs.texture)
-	upgrade_token_button.button_up.connect(func(): up_bg.texture = np_btn_blue.texture)
+	var BF3 := preload("res://scripts/ui/button_factory.gd")
+	BF3.add_hover_anim(upgrade_wrapper, up_bg, np_btn_blue_prs.texture, np_btn_blue.texture)
 	upgrade_wrapper.add_child(upgrade_token_button)
 
 	# --- 放置模式提示（屏幕顶部）---
@@ -494,8 +497,8 @@ func _add_icon_button(mode: int, container: HBoxContainer) -> void:
 	btn.add_theme_stylebox_override("pressed", empty_style)
 	btn.add_theme_stylebox_override("focus", empty_style)
 	btn.pressed.connect(func(): place_mode_requested.emit(mode))
-	btn.button_down.connect(func(): bg.texture = np_btn_blue_prs.texture)
-	btn.button_up.connect(func(): bg.texture = np_btn_blue.texture)
+	var BF2 := preload("res://scripts/ui/button_factory.gd")
+	BF2.add_hover_anim(wrapper, bg, np_btn_blue_prs.texture, np_btn_blue.texture)
 	btn.mouse_entered.connect(_on_icon_hover.bind(mode))
 	btn.mouse_exited.connect(_on_icon_unhover)
 	wrapper.add_child(btn)
@@ -769,8 +772,8 @@ func _make_styled_button(text: String, min_size: Vector2, callback: Callable) ->
 	btn.add_theme_stylebox_override("pressed", empty_style)
 	btn.add_theme_stylebox_override("focus", empty_style)
 	btn.pressed.connect(callback)
-	btn.button_down.connect(func(): bg.texture = np_btn_menu_prs.texture)
-	btn.button_up.connect(func(): bg.texture = np_btn_menu.texture)
+	var BF := preload("res://scripts/ui/button_factory.gd")
+	BF.add_hover_anim(wrapper, bg, np_btn_menu_prs.texture, np_btn_menu.texture)
 	wrapper.add_child(btn)
 
 	var label := Label.new()

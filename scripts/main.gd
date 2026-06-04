@@ -350,6 +350,8 @@ func _show_victory_panel(sm: Node) -> void:
 	btn.add_theme_color_override("font_color", Color(1, 1, 1))
 	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	btn.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/level_select.tscn"))
+	var BF := preload("res://scripts/ui/button_factory.gd")
+	BF.add_hover_anim_button(btn)
 	vbox.add_child(btn)
 
 func _setup_capture_points() -> void:

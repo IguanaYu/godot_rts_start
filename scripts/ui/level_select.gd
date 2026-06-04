@@ -66,6 +66,7 @@ var _supported_locales := ["en", "zh", "ja"]
 # === UI 引用 ===
 var selected_index: int = -1
 var button_backgrounds: Array[NinePatchRect] = []
+var button_wrappers: Array[Control] = []
 var button_labels: Array[Label] = []
 var right_title: Label
 var right_desc: Label
@@ -352,6 +353,8 @@ func _create_level_button(index: int) -> Control:
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	wrapper.add_child(bg)
 	button_backgrounds.append(bg)
+	button_wrappers.append(wrapper)
+	wrapper.item_rect_changed.connect(func(): wrapper.pivot_offset = wrapper.size * 0.5)
 
 	# 透明 Button 接收鼠标事件
 	var btn := Button.new()
@@ -509,8 +512,8 @@ func _create_start_button(parent: VBoxContainer) -> void:
 	btn.add_theme_stylebox_override("pressed", empty_style)
 	btn.add_theme_stylebox_override("focus", empty_style)
 	btn.pressed.connect(_on_start_pressed)
-	btn.button_down.connect(func(): start_button_bg.texture = np_btn_red_prs.texture)
-	btn.button_up.connect(func(): start_button_bg.texture = np_btn_red.texture)
+	var BF := preload("res://scripts/ui/button_factory.gd")
+	BF.add_hover_anim(wrapper, start_button_bg, np_btn_red_prs.texture, np_btn_red.texture)
 	wrapper.add_child(btn)
 
 	start_button_label = Label.new()
@@ -553,8 +556,8 @@ func _create_back_button(parent: VBoxContainer) -> void:
 	btn.add_theme_stylebox_override("pressed", empty_style)
 	btn.add_theme_stylebox_override("focus", empty_style)
 	btn.pressed.connect(_on_back_pressed)
-	btn.button_down.connect(func(): _back_button_bg.texture = np_btn_blue_prs.texture)
-	btn.button_up.connect(func(): _back_button_bg.texture = np_btn_blue.texture)
+	var BF2 := preload("res://scripts/ui/button_factory.gd")
+	BF2.add_hover_anim(wrapper, _back_button_bg, np_btn_blue_prs.texture, np_btn_blue.texture)
 	wrapper.add_child(btn)
 
 	_back_button_label = Label.new()
@@ -615,6 +618,8 @@ func _create_difficulty_selector(parent: VBoxContainer) -> void:
 		else:
 			btn.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
 		btn.pressed.connect(_on_difficulty_selected.bind(diff.level))
+		var BF4 := preload("res://scripts/ui/button_factory.gd")
+		BF4.add_hover_anim_button(btn)
 		hbox.add_child(btn)
 		_difficulty_buttons.append(btn)
 
@@ -724,10 +729,12 @@ func _update_right_panel(index: int) -> void:
 
 
 func _on_button_hover(index: int) -> void:
+	if index < button_wrappers.size(): button_wrappers[index].scale = Vector2(1.08, 1.08)
 	_update_right_panel(index)
 
 
 func _on_button_unhover(_index: int) -> void:
+	if _index < button_wrappers.size(): button_wrappers[_index].scale = Vector2(1.0, 1.0)
 	_update_right_panel(selected_index)
 
 
@@ -736,6 +743,7 @@ func _on_button_clicked(index: int) -> void:
 
 
 func _on_button_down(index: int) -> void:
+	if index < button_wrappers.size(): button_wrappers[index].scale = Vector2(0.95, 0.95)
 	if index == selected_index:
 		button_backgrounds[index].texture = np_btn_red_prs.texture
 		button_backgrounds[index].patch_margin_left = np_btn_red_prs.margin_left
@@ -751,6 +759,7 @@ func _on_button_down(index: int) -> void:
 
 
 func _on_button_up(index: int) -> void:
+	if index < button_wrappers.size(): button_wrappers[index].scale = Vector2(1.08, 1.08)
 	if index == selected_index:
 		button_backgrounds[index].texture = np_btn_red.texture
 		button_backgrounds[index].patch_margin_left = np_btn_red.margin_left

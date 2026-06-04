@@ -256,8 +256,8 @@ func _create_slot_card(index: int) -> Control:
 	enter_btn.add_theme_stylebox_override("pressed", empty_style)
 	enter_btn.add_theme_stylebox_override("focus", empty_style)
 	enter_btn.pressed.connect(_on_slot_selected.bind(index))
-	enter_btn.button_down.connect(func(): enter_bg.texture = np_btn_red_prs.texture)
-	enter_btn.button_up.connect(func(): enter_bg.texture = np_btn_red.texture)
+	var BF2 := preload("res://scripts/ui/button_factory.gd")
+	BF2.add_hover_anim(enter_wrapper, enter_bg, np_btn_red_prs.texture, np_btn_red.texture)
 	enter_wrapper.add_child(enter_btn)
 
 	var enter_label := Label.new()

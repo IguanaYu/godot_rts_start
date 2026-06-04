@@ -240,11 +240,11 @@ func _create_skill_button(skill_id: int, container: HBoxContainer) -> void:
 	btn.add_theme_stylebox_override("focus", empty_style)
 	var pressed_tex: Texture2D = load(PATH_BTN_BLUE_PRS)
 	btn.pressed.connect(func(): skill_button_pressed.emit(skill_id))
-	btn.button_down.connect(func(): bg.texture = pressed_tex)
-	btn.button_up.connect(func(): bg.texture = btn_tex)
+	btn.pressed.connect(func(): skill_button_pressed.emit(skill_id))
+	var BF := preload("res://scripts/ui/button_factory.gd")
+	BF.add_hover_anim(wrapper, bg, pressed_tex, btn_tex)
 	btn.mouse_entered.connect(_on_skill_hover.bind(skill_id))
 	btn.mouse_exited.connect(_on_skill_unhover)
-	wrapper.add_child(btn)
 
 	skill_buttons[skill_id] = wrapper
 
