@@ -173,6 +173,8 @@ func _create_upgrade_card(upgrade_id: int, tier_color: Color) -> void:
 	var card := Control.new()
 	card.custom_minimum_size = Vector2(150, 200)
 	card.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	card.pivot_offset = card.custom_minimum_size * 0.5
+	card.item_rect_changed.connect(func(): card.pivot_offset = card.size * 0.5)
 	_card_row.add_child(card)
 
 	# 蓝色按钮背景（用预处理的九宫格）
