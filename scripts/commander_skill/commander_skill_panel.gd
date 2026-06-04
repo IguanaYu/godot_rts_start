@@ -208,8 +208,14 @@ func _create_skill_button(skill_id: int, container: HBoxContainer) -> void:
 	# 冷却遮罩
 	var cooldown_overlay := ColorRect.new()
 	cooldown_overlay.color = Color(0, 0, 0, 0.6)
-	cooldown_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	cooldown_overlay.offset_top = 28  # 从底部开始遮罩（初始全遮）
+	cooldown_overlay.anchor_left = 0.0
+	cooldown_overlay.anchor_right = 1.0
+	cooldown_overlay.anchor_top = 0.0
+	cooldown_overlay.anchor_bottom = 1.0
+	cooldown_overlay.offset_left = 6
+	cooldown_overlay.offset_right = -6
+	cooldown_overlay.offset_top = 6
+	cooldown_overlay.offset_bottom = -6  # 从底部开始遮罩（初始全遮）
 	cooldown_overlay.visible = false
 	cooldown_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	wrapper.add_child(cooldown_overlay)
@@ -223,7 +229,14 @@ func _create_skill_button(skill_id: int, container: HBoxContainer) -> void:
 	cd_label.add_theme_font_size_override("font_size", 16)
 	cd_label.add_theme_color_override("font_color", Color(1, 1, 1))
 	cd_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
-	cd_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	cd_label.anchor_left = 0.0
+	cd_label.anchor_right = 1.0
+	cd_label.anchor_top = 0.0
+	cd_label.anchor_bottom = 1.0
+	cd_label.offset_left = 6
+	cd_label.offset_right = -6
+	cd_label.offset_top = 6
+	cd_label.offset_bottom = -6
 	cd_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cd_label.visible = false
 	wrapper.add_child(cd_label)
@@ -274,10 +287,9 @@ func _on_cooldown_updated(skill_id: int, remaining: float, total: float) -> void
 	overlay.visible = true
 	# 遮罩从下往上填充（剩余比例越大，遮住越多）
 	var ratio := remaining / total
-	var btn_height := 56.0
-	overlay.offset_top = btn_height * (1.0 - ratio)
-	overlay.offset_bottom = btn_height
-
+	var overlay_height := 44.0
+	overlay.offset_top = 6 + overlay_height * (1.0 - ratio)
+	overlay.offset_bottom = 50
 	if cd_label:
 		cd_label.visible = true
 		cd_label.text = "%.0f" % remaining

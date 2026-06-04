@@ -512,8 +512,6 @@ func _create_start_button(parent: VBoxContainer) -> void:
 	btn.add_theme_stylebox_override("pressed", empty_style)
 	btn.add_theme_stylebox_override("focus", empty_style)
 	btn.pressed.connect(_on_start_pressed)
-	var BF := preload("res://scripts/ui/button_factory.gd")
-	BF.add_hover_anim(wrapper, start_button_bg, np_btn_red_prs.texture, np_btn_red.texture)
 	wrapper.add_child(btn)
 
 	start_button_label = Label.new()
@@ -529,6 +527,8 @@ func _create_start_button(parent: VBoxContainer) -> void:
 	start_button_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	wrapper.add_child(start_button_label)
 
+	var BF := preload("res://scripts/ui/button_factory.gd")
+	BF.add_hover_anim(wrapper, start_button_bg, np_btn_red_prs.texture, np_btn_red.texture)
 	parent.add_child(wrapper)
 
 	# 返回存档选择按钮
@@ -556,8 +556,6 @@ func _create_back_button(parent: VBoxContainer) -> void:
 	btn.add_theme_stylebox_override("pressed", empty_style)
 	btn.add_theme_stylebox_override("focus", empty_style)
 	btn.pressed.connect(_on_back_pressed)
-	var BF2 := preload("res://scripts/ui/button_factory.gd")
-	BF2.add_hover_anim(wrapper, _back_button_bg, np_btn_blue_prs.texture, np_btn_blue.texture)
 	wrapper.add_child(btn)
 
 	_back_button_label = Label.new()
@@ -573,6 +571,8 @@ func _create_back_button(parent: VBoxContainer) -> void:
 	_back_button_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	wrapper.add_child(_back_button_label)
 
+	var BF2 := preload("res://scripts/ui/button_factory.gd")
+	BF2.add_hover_anim(wrapper, _back_button_bg, np_btn_blue_prs.texture, np_btn_blue.texture)
 	parent.add_child(wrapper)
 
 

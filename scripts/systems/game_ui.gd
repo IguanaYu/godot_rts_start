@@ -772,8 +772,6 @@ func _make_styled_button(text: String, min_size: Vector2, callback: Callable) ->
 	btn.add_theme_stylebox_override("pressed", empty_style)
 	btn.add_theme_stylebox_override("focus", empty_style)
 	btn.pressed.connect(callback)
-	var BF := preload("res://scripts/ui/button_factory.gd")
-	BF.add_hover_anim(wrapper, bg, np_btn_menu_prs.texture, np_btn_menu.texture)
 	wrapper.add_child(btn)
 
 	var label := Label.new()
@@ -789,6 +787,8 @@ func _make_styled_button(text: String, min_size: Vector2, callback: Callable) ->
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	wrapper.add_child(label)
 
+	var BF := preload("res://scripts/ui/button_factory.gd")
+	BF.add_hover_anim(wrapper, bg, np_btn_menu_prs.texture, np_btn_menu.texture)
 	return wrapper
 
 

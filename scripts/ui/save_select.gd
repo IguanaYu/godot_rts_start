@@ -135,6 +135,7 @@ func _create_title() -> void:
 
 
 func _create_language_buttons() -> void:
+	var BF := preload("res://scripts/ui/button_factory.gd")
 	var hbox := HBoxContainer.new()
 	hbox.anchor_left = 0.0
 	hbox.anchor_right = 1.0
@@ -154,6 +155,7 @@ func _create_language_buttons() -> void:
 		btn.add_theme_color_override("font_color", Color(1, 0.85, 0.0) if locale_code == current_locale else Color(0.8, 0.8, 0.8))
 		btn.pressed.connect(_on_language_selected.bind(locale_code))
 		hbox.add_child(btn)
+		BF.add_hover_anim_button(btn)
 		_lang_buttons.append(btn)
 
 
@@ -171,6 +173,7 @@ func _create_slot_list() -> void:
 
 
 func _create_slot_card(index: int) -> Control:
+	var BF := preload("res://scripts/ui/button_factory.gd")
 	var wrapper := Control.new()
 	wrapper.custom_minimum_size = Vector2(0, 140)
 	_slot_wrappers.append(wrapper)
@@ -234,16 +237,16 @@ func _create_slot_card(index: int) -> Control:
 	_slot_date_labels.append(date_label)
 
 	# 右侧：操作按钮
-	var btn_vbox := VBoxContainer.new()
-	btn_vbox.size_flags_horizontal = Control.SIZE_SHRINK_END
-	btn_vbox.add_theme_constant_override("separation", 8)
-	btn_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	content.add_child(btn_vbox)
+	var btn_hbox := HBoxContainer.new()
+	btn_hbox.size_flags_horizontal = Control.SIZE_SHRINK_END
+	btn_hbox.add_theme_constant_override("separation", 12)
+	btn_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	content.add_child(btn_hbox)
 
 	# 进入/新建 按钮
 	var enter_wrapper := Control.new()
 	enter_wrapper.custom_minimum_size = Vector2(160, 44)
-	var enter_bg := _make_ninepatch(np_btn_red)
+	var enter_bg := _make_ninepatch(np_btn_blue)
 	enter_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	enter_wrapper.add_child(enter_bg)
 
@@ -256,8 +259,6 @@ func _create_slot_card(index: int) -> Control:
 	enter_btn.add_theme_stylebox_override("pressed", empty_style)
 	enter_btn.add_theme_stylebox_override("focus", empty_style)
 	enter_btn.pressed.connect(_on_slot_selected.bind(index))
-	var BF2 := preload("res://scripts/ui/button_factory.gd")
-	BF2.add_hover_anim(enter_wrapper, enter_bg, np_btn_red_prs.texture, np_btn_red.texture)
 	enter_wrapper.add_child(enter_btn)
 
 	var enter_label := Label.new()
@@ -272,26 +273,47 @@ func _create_slot_card(index: int) -> Control:
 	enter_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	enter_wrapper.add_child(enter_label)
 
-	btn_vbox.add_child(enter_wrapper)
+	var BF2 := preload("res://scripts/ui/button_factory.gd")
+	BF2.add_hover_anim(enter_wrapper, enter_bg, np_btn_blue_prs.texture, np_btn_blue.texture)
+	btn_hbox.add_child(enter_wrapper)
 	_slot_enter_buttons.append(enter_btn)
 	# 存储按钮标签和背景引用用于更新
 	enter_btn.set_meta("label", enter_label)
 	enter_btn.set_meta("bg", enter_bg)
 
 	# 删除按钮（仅已有存档时显示）
+	var del_wrapper := Control.new()
+	del_wrapper.custom_minimum_size = Vector2(100, 36)
+	var del_bg := _make_ninepatch(np_btn_red)
+	del_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	del_wrapper.add_child(del_bg)
+
 	var del_btn := Button.new()
-	del_btn.text = tr("SAVE_DELETE")
-	del_btn.add_theme_font_size_override("font_size", 12)
-	del_btn.custom_minimum_size = Vector2(80, 24)
-	del_btn.add_theme_color_override("font_color", Color(0.9, 0.4, 0.4))
-	del_btn.add_theme_color_override("font_hover_color", Color(1, 0.3, 0.3))
+	del_btn.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var empty_style2 := StyleBoxEmpty.new()
 	del_btn.add_theme_stylebox_override("normal", empty_style2)
 	del_btn.add_theme_stylebox_override("hover", empty_style2)
 	del_btn.add_theme_stylebox_override("pressed", empty_style2)
 	del_btn.add_theme_stylebox_override("focus", empty_style2)
 	del_btn.pressed.connect(_on_delete_pressed.bind(index))
-	btn_vbox.add_child(del_btn)
+	del_wrapper.add_child(del_btn)
+
+	var del_label := Label.new()
+	del_label.text = tr("SAVE_DELETE")
+	del_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	del_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	del_label.add_theme_font_size_override("font_size", 15)
+	del_label.add_theme_color_override("font_color", Color(1.0, 0.5, 0.5))
+	del_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.5))
+	del_label.add_theme_constant_override("shadow_offset_x", 1)
+	del_label.add_theme_constant_override("shadow_offset_y", 1)
+	del_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	del_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	del_wrapper.add_child(del_label)
+
+	BF.add_hover_anim(del_wrapper, del_bg, np_btn_red_prs.texture, np_btn_red.texture)
+	btn_hbox.add_child(del_wrapper)
+	del_btn.set_meta("wrapper", del_wrapper)
 	_slot_delete_buttons.append(del_btn)
 
 	return wrapper
@@ -315,14 +337,14 @@ func _refresh_all_slots() -> void:
 			var last: String = str(data.get("last_played", ""))
 			_slot_date_labels[i].text = tr("SAVE_LAST_PLAYED") % sm.format_date(last)
 			enter_label.text = tr("SAVE_CONTINUE")
-			del_btn.visible = true
+			del_btn.get_meta("wrapper").visible = true
 		else:
 			_slot_name_labels[i].text = tr("SAVE_SLOT_N") % (i + 1) + " - " + tr("SAVE_EMPTY")
 			_slot_score_labels[i].text = ""
 			_slot_progress_labels[i].text = ""
 			_slot_date_labels[i].text = ""
 			enter_label.text = tr("SAVE_NEW_GAME")
-			del_btn.visible = false
+			del_btn.get_meta("wrapper").visible = false
 
 
 func _on_slot_selected(slot: int) -> void:
