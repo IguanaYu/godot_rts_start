@@ -131,23 +131,10 @@ func _create_ui() -> void:
 	_card_row.offset_left = 30
 	_card_row.offset_right = -30
 	_card_row.offset_top = 60
-	_card_row.offset_bottom = -40
+	_card_row.offset_bottom = -15
 	_card_row.add_theme_constant_override("separation", 20)
 	_card_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	_panel.add_child(_card_row)
-
-	# 提示
-	var hint := Label.new()
-	hint.name = "HintLabel"
-	hint.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	hint.offset_top = -35
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-	hint.add_theme_font_size_override("font_size", 14)
-	hint.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1.0))
-	hint.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.5))
-	hint.text = tr("UPGRADE_SELECT_HINT")
-	_panel.add_child(hint)
 
 
 func is_panel_visible() -> bool:
