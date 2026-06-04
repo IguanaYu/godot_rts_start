@@ -103,3 +103,45 @@ SAVE_SCORE_EARNED,+ %d pts,+ %d 分,+ %d ポイント
 SAVE_TOTAL_SCORE,Total: %d / %d,总分: %d / %d,合計: %d / %d
 SAVE_CONTINUE,Continue,继续,続行
 SAVE_BACK_PROFILE,Back to Profile,返回存档,プロファイルに戻る
+UPGRADE_TOKENS,Tokens: %d,升级币: %d,トークン: %d
+UPGRADE_SELECT_TITLE,Choose an Upgrade,选择强化,アップグレード選択
+UPGRADE_SELECT_HINT,Click an upgrade to apply it,点击选择一项强化,クリックして強化を選択
+UPGRADE_TIER_SILVER,Silver,白银,シルバー
+UPGRADE_TIER_GOLD,Gold,黄金,ゴールド
+UPGRADE_TIER_DIAMOND,Diamond,钻石,ダイヤモンド
+UPGRADE_HP_BOOST_5,Vitality I,生命力 I,活力 I
+UPGRADE_HP_BOOST_5_DESC,All units +5% HP,全体单位 +5% 生命,全ユニット +5% HP
+UPGRADE_ATK_BOOST_5,Might I,力量 I,剛力 I
+UPGRADE_ATK_BOOST_5_DESC,Combat units +5% Attack,战斗单位 +5% 攻击,戦闘ユニット +5% 攻撃
+UPGRADE_SPD_BOOST_5,Swiftness I,敏捷 I,迅速 I
+UPGRADE_SPD_BOOST_5_DESC,All units +5% Speed,全体单位 +5% 速度,全ユニット +5% 速度
+UPGRADE_DEF_BOOST_3,Toughness I,坚韧 I,堅牢 I
+UPGRADE_DEF_BOOST_3_DESC,All units +3% Damage Reduction,全体单位 +3% 减伤,全ユニット +3% 被ダメージ軽減
+UPGRADE_HP_FLAT_10,Fortitude,不屈,不屈
+UPGRADE_HP_FLAT_10_DESC,All units +10 HP,全体单位 +10 生命,全ユニット +10 HP
+UPGRADE_ATK_FLAT_2,Sharpness,锋利,鋭利
+UPGRADE_ATK_FLAT_2_DESC,Combat units +2 Attack,战斗单位 +2 攻击,戦闘ユニット +2 攻撃
+UPGRADE_SPAWN_2,Conscription,征召,召集
+UPGRADE_SPAWN_2_DESC,Deploy 2 Soldiers,部署2名战士,戦士を2体配置
+UPGRADE_GOLD_100,Taxes,税收,税収
+UPGRADE_GOLD_100_DESC,Gain +100 Gold,获得 +100 金币,+100 金貨獲得
+UPGRADE_HEAL_5,Devotion I,虔诚 I,献身 I
+UPGRADE_HEAL_5_DESC,Monks +5% Heal Power,僧侣 +5% 治疗量,モンク +5% 回復力
+UPGRADE_HP_BOOST_10,Vitality II,生命力 II,活力 II
+UPGRADE_HP_BOOST_10_DESC,All units +10% HP,全体单位 +10% 生命,全ユニット +10% HP
+UPGRADE_ATK_BOOST_10,Might II,力量 II,剛力 II
+UPGRADE_ATK_BOOST_10_DESC,Combat units +10% Attack,战斗单位 +10% 攻击,戦闘ユニット +10% 攻撃
+UPGRADE_DEF_BOOST_5,Toughness II,坚韧 II,堅牢 II
+UPGRADE_DEF_BOOST_5_DESC,All units +5% Damage Reduction,全体单位 +5% 减伤,全ユニット +5% 被ダメージ軽減
+UPGRADE_CD_10,Haste,急速,急速
+UPGRADE_CD_10_DESC,Combat units -10% Attack Cooldown,战斗单位 -10% 攻击间隔,戦闘ユニット -10% 攻撃間隔
+UPGRADE_SPAWN_3,Reinforcements,增援,増援
+UPGRADE_SPAWN_3_DESC,Deploy 2 Soldiers + 1 Archer,部署2战士+1弓手,戦士2+アーチャー1を配置
+UPGRADE_GOLD_250,War Tax,战争税,戦争税
+UPGRADE_GOLD_250_DESC,Gain +250 Gold,获得 +250 金币,+250 金貨獲得
+UPGRADE_HP_BOOST_20,Vitality III,生命力 III,活力 III
+UPGRADE_HP_BOOST_20_DESC,All units +20% HP,全体单位 +20% 生命,全ユニット +20% HP
+UPGRADE_ATK_BOOST_20,Might III,力量 III,剛力 III
+UPGRADE_ATK_BOOST_20_DESC,Combat units +20% Attack,战斗单位 +20% 攻击,戦闘ユニット +20% 攻撃
+UPGRADE_SPAWN_6,Full Mobilization,全军出击,総動員
+UPGRADE_SPAWN_6_DESC,Deploy 3 Soldiers + 2 Archers + 1 Lancer,部署3战士+2弓手+1枪兵,戦士3+アーチャー2+ランサー1を配置

@@ -11,6 +11,7 @@ var _player_units_node: Node2D
 var _enemy_units_node: Node2D
 var _buildings_node: Node2D
 var _diff_preset: Resource = null  # DifficultyPreset
+var _upgrade_manager: Node = null  # upgrade_manager, duck typing
 
 # Callbacks for building placement (grid module functions)
 var place_building_callback: Callable
@@ -25,6 +26,9 @@ func initialize(main_node: Node2D, player_units: Node2D, enemy_units: Node2D, bu
 
 func set_difficulty(preset: Resource) -> void:
 	_diff_preset = preset
+
+func set_upgrade_manager(mgr: Node) -> void:
+	_upgrade_manager = mgr
 
 # --- 单位创建 ---
 
@@ -129,6 +133,8 @@ func place_player_unit(unit_type: int, click_pos: Vector2) -> void:
 	var unit := create_unit(unit_type, UnitScript.Team.PLAYER, click_pos)
 	_player_units_node.add_child(unit)
 	unit.add_to_group("player_units")
+	if _upgrade_manager:
+		_upgrade_manager.apply_all_stat_upgrades_to_unit(unit)
 	spawn_dust_effect(click_pos)
 
 # --- 阵型计算 ---
@@ -250,6 +256,8 @@ func spawn_unit_near(type: int, pos: Vector2, team: int) -> void:
 	if team == UnitScript.Team.PLAYER:
 		_player_units_node.add_child(unit)
 		unit.add_to_group("player_units")
+		if _upgrade_manager:
+			_upgrade_manager.apply_all_stat_upgrades_to_unit(unit)
 		spawn_dust_effect(pos + offset)
 	else:
 		_enemy_units_node.add_child(unit)

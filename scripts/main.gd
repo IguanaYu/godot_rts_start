@@ -38,6 +38,8 @@ var combat_ctrl: Node
 var input_mode: Node  # InputModeManager
 var commander_skill_manager: Node
 var commander_skill_panel: Node
+var upgrade_manager: Node
+var upgrade_panel: Node
 
 # 控制组管理器
 var ctrl_group_mgr: RefCounted
@@ -147,6 +149,25 @@ func _ready() -> void:
 	add_child(commander_skill_panel)
 	commander_skill_panel.initialize(self, commander_skill_manager)
 	commander_skill_panel.skill_button_pressed.connect(_on_commander_skill_button_pressed)
+
+	# 升级系统
+	upgrade_manager = Node.new()
+	upgrade_manager.set_script(load("res://scripts/upgrade/upgrade_manager.gd"))
+	add_child(upgrade_manager)
+	upgrade_manager.initialize(self)
+	upgrade_manager.set_spawner(spawner_module)
+	spawner_module.set_upgrade_manager(upgrade_manager)
+
+	upgrade_panel = Node.new()
+	upgrade_panel.set_script(load("res://scripts/upgrade/upgrade_panel.gd"))
+	add_child(upgrade_panel)
+	upgrade_panel.initialize(self, upgrade_manager)
+	ui_module.upgrade_button_pressed.connect(_on_upgrade_button_pressed)
+	upgrade_manager.token_count_changed.connect(ui_module.update_upgrade_tokens)
+	# TODO: 测试用初始升级币，测试完毕后删除
+	upgrade_manager.add_token(0)  # 1 白银
+	upgrade_manager.add_token(1)  # 1 黄金
+	upgrade_manager.add_token(2)  # 1 钻石
 
 	# 生成
 	var has_preplaced := _has_preplaced_entities()
@@ -440,12 +461,47 @@ func _handle_number_key(key: int, event: InputEventKey) -> void:
 
 func _on_unit_died(unit: CharacterBody2D) -> void:
 	combat_ctrl.remove_dead_unit(unit)
+	_check_elite_drop(unit)
 	# 通知类型C的CapturePoint
 	for child in get_children():
 		if child is CapturePoint:
 			child.notify_kill()
 
 # --- 每帧更新 ---
+
+func _check_elite_drop(unit: CharacterBody2D) -> void:
+	if not unit is Unit:
+		return
+	if unit.team != Unit.Team.ENEMY:
+		return
+	var stats = unit.get("stats_data")
+	if stats == null:
+		return
+	var category: String = stats.category
+	var roll := randf()
+	var tier := -1
+	match category:
+		"hero":
+			if roll < 0.60:
+				tier = 0  # SILVER
+			elif roll < 0.90:
+				tier = 1  # GOLD
+		"boss":
+			if roll < 0.70:
+				tier = 1  # GOLD
+			else:
+				tier = 2  # DIAMOND
+	if tier < 0:
+		return
+	_spawn_upgrade_token(unit.global_position, tier)
+
+const UpgradeTokenScene := preload("res://scenes/upgrade/upgrade_token.tscn")
+
+func _spawn_upgrade_token(pos: Vector2, tier: int) -> void:
+	var token := UpgradeTokenScene.instantiate()
+	add_child(token)
+	token.global_position = pos + Vector2(randf_range(-8, 8), randf_range(-8, 8))
+	token.tier = tier
 
 var _wave_clear_notified: bool = false
 var _wave_debug_timer: float = 0.0
@@ -534,6 +590,9 @@ func _check_wave_cleared() -> void:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		if upgrade_panel and upgrade_panel.is_panel_visible():
+			upgrade_panel.close()
+			return
 		if ui_module.pause_menu_open:
 			ui_module.close_pause_menu()
 			return
@@ -693,6 +752,11 @@ func _spend_gold(amount: int) -> void:
 
 func _on_commander_skill_button_pressed(skill_id: int) -> void:
 	_start_commander_skill(skill_id)
+
+func _on_upgrade_button_pressed() -> void:
+	if upgrade_manager and upgrade_manager.can_open_selection():
+		var tier: int = upgrade_manager.get_highest_tier_token()
+		upgrade_panel.show_selection(tier)
 
 
 func _start_commander_skill(skill_id: int) -> void:

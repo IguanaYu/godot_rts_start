@@ -15,11 +15,14 @@ signal place_mode_requested(mode: int)
 signal restart_requested
 signal level_select_requested
 signal quit_requested
+signal upgrade_button_pressed
 
 # UI 引用
 var ui_buttons: Dictionary = {}  # mode -> Control wrapper
 var place_mode_label: Label
 var gold_label: Label
+var upgrade_token_label: Label
+var upgrade_token_button: Button
 var wave_countdown_label: Label
 var panel_bg: NinePatchRect  # 底部面板背景，用于高亮
 
@@ -285,6 +288,47 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	gold_label.add_theme_constant_override("shadow_offset_y", 1)
 	gold_label.text = tr("UI_GOLD") % current_gold
 	canvas.add_child(gold_label)
+
+	# --- 升级币按钮（金币下方）---
+	var upgrade_wrapper := Control.new()
+	upgrade_wrapper.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	upgrade_wrapper.offset_left = 10.0
+	upgrade_wrapper.offset_top = 40.0
+	upgrade_wrapper.custom_minimum_size = Vector2(120, 28)
+	canvas.add_child(upgrade_wrapper)
+
+	var up_bg := _make_ninepatch(np_btn_blue)
+	up_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	up_bg.name = "UpgradeButtonBG"
+	upgrade_wrapper.add_child(up_bg)
+
+	upgrade_token_label = Label.new()
+	upgrade_token_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	upgrade_token_label.offset_left = 4
+	upgrade_token_label.offset_right = -4
+	upgrade_token_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	upgrade_token_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	upgrade_token_label.add_theme_font_size_override("font_size", 14)
+	upgrade_token_label.add_theme_color_override("font_color", Color(0.78, 0.78, 0.78, 1.0))
+	upgrade_token_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	upgrade_token_label.text = tr("UPGRADE_TOKENS") % 0
+	upgrade_token_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	upgrade_wrapper.add_child(upgrade_token_label)
+
+	upgrade_token_button = Button.new()
+	upgrade_token_button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	upgrade_token_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	var up_empty := StyleBoxEmpty.new()
+	upgrade_token_button.add_theme_stylebox_override("normal", up_empty)
+	upgrade_token_button.add_theme_stylebox_override("hover", up_empty)
+	upgrade_token_button.add_theme_stylebox_override("pressed", up_empty)
+	upgrade_token_button.add_theme_stylebox_override("focus", up_empty)
+	upgrade_token_button.disabled = true
+	upgrade_token_button.modulate.a = 0.5
+	upgrade_token_button.pressed.connect(func(): upgrade_button_pressed.emit())
+	upgrade_token_button.button_down.connect(func(): up_bg.texture = np_btn_blue_prs.texture)
+	upgrade_token_button.button_up.connect(func(): up_bg.texture = np_btn_blue.texture)
+	upgrade_wrapper.add_child(upgrade_token_button)
 
 	# --- 放置模式提示（屏幕顶部）---
 	place_mode_label = Label.new()
@@ -626,6 +670,25 @@ func update_gold_display(current_gold: int) -> void:
 	if gold_label:
 		gold_label.text = tr("UI_GOLD") % current_gold
 	_update_button_affordability(current_gold)
+
+
+func update_upgrade_tokens(tokens: Dictionary) -> void:
+	var total := 0
+	var best_tier := -1
+	var tier_names := {0: tr("UPGRADE_TIER_SILVER"), 1: tr("UPGRADE_TIER_GOLD"), 2: tr("UPGRADE_TIER_DIAMOND")}
+	for tier in [2, 1, 0]:  # DIAMOND, GOLD, SILVER
+		var count: int = tokens.get(tier, 0)
+		total += count
+		if count > 0 and best_tier < 0:
+			best_tier = tier
+	if upgrade_token_label:
+		if total <= 0:
+			upgrade_token_label.text = tr("UPGRADE_TOKENS") % 0
+		else:
+			upgrade_token_label.text = "x%d %s" % [total, tier_names.get(best_tier, "")]
+	if upgrade_token_button:
+		upgrade_token_button.disabled = (total <= 0)
+		upgrade_token_button.modulate.a = 1.0 if total > 0 else 0.5
 
 
 func _update_button_affordability(current_gold: int) -> void:
