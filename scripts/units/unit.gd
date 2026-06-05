@@ -841,13 +841,9 @@ func _perform_attack() -> void:
 			attack_target.take_damage(damage, self)
 
 func _spawn_arrow(target, damage: int = -1) -> void:
-	var arrow_scene := load("res://scenes/effects/arrow.tscn")
-	var arrow: Node2D = arrow_scene.instantiate()
-	get_tree().current_scene.add_child(arrow)
-	arrow.setup(global_position, target.global_position)
-	arrow.hit_target = target
-	arrow.hit_damage = damage if damage >= 0 else stat_set.get_int(StatSetClass.ATTACK_DAMAGE)
-	arrow.shooter = self
+	var spawner = get_tree().current_scene.get("spawner_module")
+	if spawner:
+		spawner.spawn_projectile(null, global_position, target.global_position, target, self, damage)
 
 func take_damage(amount: int, attacker = null) -> void:
 	if Engine.is_editor_hint():

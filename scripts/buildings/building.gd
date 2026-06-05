@@ -365,13 +365,24 @@ func _tower_process(delta: float) -> void:
 
 func _spawn_arrow(target) -> void:
 	JellyEffect.play(body_sprite, Vector2(sprite_scale_x, sprite_scale_y))
-	var arrow_scene := load("res://scenes/effects/arrow.tscn")
-	var arrow: Node2D = arrow_scene.instantiate()
-	get_tree().current_scene.add_child(arrow)
-	arrow.setup(global_position, target.global_position)
-	arrow.hit_target = target
-	arrow.hit_damage = int(attack_damage)
-	arrow.shooter = self
+	var spawner = get_tree().current_scene.get("spawner_module")
+	if spawner:
+		var data: Resource = null
+		if building_type == BuildingType.TOWER:
+			data = _get_tower_projectile_data()
+		spawner.spawn_projectile(data, global_position, target.global_position, target, self, int(attack_damage))
+
+
+const ProjectileDataScript := preload("res://scripts/resources/projectile_data.gd")
+const SlowEffectScript := preload("res://scripts/resources/slow_effect.gd")
+
+func _get_tower_projectile_data() -> Resource:
+	var data := ProjectileDataScript.new()
+	var slow := SlowEffectScript.new()
+	slow.slow_rate = 0.25
+	slow.duration = 2.0
+	data.effects.append(slow)
+	return data
 
 # ============================================================
 # 生产系统

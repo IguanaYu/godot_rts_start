@@ -299,6 +299,34 @@ func _scale_group_counts(groups: Array) -> Array:
 
 # --- 特效 ---
 
+# --- 弹道 ---
+
+const ArrowScene := preload("res://scenes/effects/arrow.tscn")
+
+func spawn_projectile(data: Resource, from: Vector2, to: Vector2, target, shooter, damage: int) -> void:
+	var count := 1
+	var spread := 0.0
+	if data:
+		count = data.shot_count
+		spread = deg_to_rad(data.spread_angle)
+	for i in count:
+		var offset_angle: float = 0.0
+		if count > 1:
+			offset_angle = -spread + (2.0 * spread * float(i) / float(count - 1))
+		var dir := from.direction_to(to).rotated(offset_angle)
+		var dist := from.distance_to(to)
+		var actual_to := from + dir * dist
+
+		var arrow: Node2D = ArrowScene.instantiate()
+		_main_node.get_tree().current_scene.add_child(arrow)
+		arrow.setup(from, actual_to)
+		arrow.hit_target = target
+		arrow.hit_damage = damage
+		arrow.shooter = shooter
+		arrow.data = data
+
+# --- 特效 ---
+
 func spawn_click_effect(scene: PackedScene, pos: Vector2) -> void:
 	var effect: Node2D = scene.instantiate()
 	_main_node.get_tree().current_scene.add_child(effect)
