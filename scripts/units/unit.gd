@@ -8,9 +8,9 @@ enum Team { PLAYER, ENEMY }
 enum CommandSource { NONE, PLAYER, AUTO }
 
 const HealEffectScene := preload("res://scenes/effects/heal_effect.tscn")
-const OutlineShader := preload("res://shaders/outline.gdshader")
+const UnitEffectsShader := preload("res://shaders/unit_effects.gdshader")
 
-var _glow_material: ShaderMaterial = null
+var _effects_material: ShaderMaterial = null
 
 @export var unit_type: UnitType = UnitType.SOLDIER:
 	set(v): unit_type = v; _refresh_editor()
@@ -126,12 +126,17 @@ func _ready() -> void:
 		_update_hp_bar()
 
 func _init_outline_materials() -> void:
-	if OutlineShader == null:
+	if UnitEffectsShader == null:
 		return
-	_glow_material = ShaderMaterial.new()
-	_glow_material.shader = OutlineShader
-	_glow_material.set_shader_parameter("glow_color", Color(1.0, 0.9, 0.3, 1.0))
-	_glow_material.set_shader_parameter("glow_width", 3.0)
+	_effects_material = ShaderMaterial.new()
+	_effects_material.shader = UnitEffectsShader
+	_effects_material.set_shader_parameter("glow_color", Color(1.0, 0.9, 0.3, 1.0))
+	_effects_material.set_shader_parameter("glow_width", 3.0)
+	_effects_material.set_shader_parameter("outline_enabled", false)
+	_effects_material.set_shader_parameter("slow_enabled", false)
+	_effects_material.set_shader_parameter("slow_tint", Color(0.5, 0.8, 1.0, 1.0))
+	if body_sprite:
+		body_sprite.material = _effects_material
 
 func _setup_stats() -> void:
 	if stats_data == null:
@@ -436,7 +441,11 @@ func _physics_process(delta: float) -> void:
 	if _slow_timer > 0.0:
 		_slow_timer -= delta
 		velocity *= _slow_factor
-
+		if _effects_material:
+			_effects_material.set_shader_parameter("slow_enabled", true)
+	else:
+		if _effects_material and _effects_material.get_shader_parameter("slow_enabled"):
+			_effects_material.set_shader_parameter("slow_enabled", false)
 	if velocity.length_squared() > 1.0:
 		var prev_pos := global_position
 		move_and_slide()
@@ -1074,12 +1083,9 @@ func _update_selection_ring() -> void:
 			selection_ring.team_color = Color(0.3, 0.6, 1.0, 0.6) if team == Team.PLAYER else Color(1.0, 0.3, 0.3, 0.6)
 			if not _was_selected:
 				selection_ring.flash()
-	# 发光 shader material 切换
-	if body_sprite:
-		if selected and _glow_material:
-			body_sprite.material = _glow_material
-		else:
-			body_sprite.material = null
+	# 发光 shader uniform 切换
+	if _effects_material:
+		_effects_material.set_shader_parameter("outline_enabled", selected)
 	_was_selected = selected
 	_update_state_indicator()
 
