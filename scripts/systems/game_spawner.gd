@@ -135,7 +135,7 @@ func place_player_unit(unit_type: int, click_pos: Vector2) -> void:
 	unit.add_to_group("player_units")
 	if _upgrade_manager:
 		_upgrade_manager.apply_all_stat_upgrades_to_unit(unit)
-	spawn_dust_effect(click_pos)
+	spawn_spawn_effect(click_pos, UnitScript.Team.PLAYER, unit)
 
 # --- 阵型计算 ---
 
@@ -241,7 +241,7 @@ func _spawn_enemy_unit_immediate(type: int, pos: Vector2, wave_attack: bool, wav
 	if data.has("variant_hp") or data.has("variant_scale"):
 		unit.health.setup(unit.stat_set.get_int(StatSetClass.MAX_HP), unit.hp_bar)
 		_apply_difficulty_modifiers(unit)
-	spawn_dust_effect(pos)
+	spawn_spawn_effect(pos, UnitScript.Team.ENEMY, unit)
 	unit.add_to_group("enemy_units")
 	var ai := Node2D.new()
 	ai.name = "EnemyAI"
@@ -258,10 +258,10 @@ func spawn_unit_near(type: int, pos: Vector2, team: int) -> void:
 		unit.add_to_group("player_units")
 		if _upgrade_manager:
 			_upgrade_manager.apply_all_stat_upgrades_to_unit(unit)
-		spawn_dust_effect(pos + offset)
+		spawn_spawn_effect(pos + offset, team, unit)
 	else:
 		_enemy_units_node.add_child(unit)
-		spawn_dust_effect(pos + offset)
+		spawn_spawn_effect(pos + offset, team, unit)
 		unit.add_to_group("enemy_units")
 		var ai := Node2D.new()
 		ai.name = "EnemyAI"
@@ -331,6 +331,14 @@ func spawn_click_effect(scene: PackedScene, pos: Vector2) -> void:
 	var effect: Node2D = scene.instantiate()
 	_main_node.get_tree().current_scene.add_child(effect)
 	effect.global_position = pos
+
+
+func spawn_spawn_effect(pos: Vector2, team: int, reveal_target: Node2D = null) -> void:
+	var effect: Node2D = D.SpawnEffectScene.instantiate()
+	effect.global_position = pos
+	effect.team_color = 0 if team == UnitScript.Team.PLAYER else 1
+	effect.reveal_target = reveal_target
+	_main_node.get_tree().current_scene.add_child(effect)
 
 func spawn_dust_effect(pos: Vector2) -> void:
 	var effect: Node2D = D.DustEffectScene.instantiate()

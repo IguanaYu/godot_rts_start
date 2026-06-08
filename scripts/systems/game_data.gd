@@ -173,6 +173,7 @@ const MAX_ZOOM := 2.0
 const MoveClickEffectScene := preload("res://scenes/effects/move_click_effect.tscn")
 const AttackClickEffectScene := preload("res://scenes/effects/attack_click_effect.tscn")
 const DustEffectScene := preload("res://scenes/effects/dust_effect.tscn")
+const SpawnEffectScene := preload("res://scenes/effects/spawn_effect.tscn")
 
 # --- 环境纹理路径 ---
 const TREE_TEXTURES := [
