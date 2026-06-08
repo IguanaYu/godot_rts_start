@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" uid="uid://mmgbo1ded4ro" path="res://scenes/units/soldier.tscn" id="soldier"]
 [ext_resource type="PackedScene" uid="uid://e5by4tc82spk" path="res://scenes/units/archer.tscn" id="archer"]
 [ext_resource type="PackedScene" uid="uid://bxlancer01" path="res://scenes/units/lancer.tscn" id="lancer"]
+[ext_resource type="PackedScene" uid="uid://bxelite001" path="res://scenes/units/elite_archer.tscn" id="elite_archer"]
 [ext_resource type="PackedScene" uid="uid://8rfekrdqs7gf" path="res://scenes/buildings/castle.tscn" id="castle"]
 [ext_resource type="PackedScene" uid="uid://dhyxequcxurbh" path="res://scenes/buildings/barracks.tscn" id="barracks"]
 [ext_resource type="PackedScene" uid="uid://tower0001" path="res://scenes/buildings/tower.tscn" id="tower"]
@@ -109,6 +110,14 @@ team = 1
 
 [node name="EnemyLancer1" parent="EnemyUnits" instance=ExtResource("lancer")]
 position = Vector2(1200, 900)
+team = 1
+
+[node name="EnemyEliteArcher1" parent="EnemyUnits" instance=ExtResource("elite_archer")]
+position = Vector2(400, -350)
+team = 1
+
+[node name="EnemyEliteArcher2" parent="EnemyUnits" instance=ExtResource("elite_archer")]
+position = Vector2(1200, -350)
 team = 1
 
 [node name="Buildings" type="Node2D" parent="."]

@@ -141,6 +141,11 @@ const UNIT_SCENES := {
 	UnitScript.UnitType.MONK: "res://scenes/units/monk.tscn",
 }
 
+# --- 变体单位场景（按 stats id 查找，优先于 UNIT_SCENES） ---
+const ENEMY_VARIANT_SCENES := {
+	&"elite_archer": "res://scenes/units/elite_archer.tscn",
+}
+
 # --- PlaceMode → BuildingType 映射 ---
 const PLACE_MODE_TO_BUILDING := {
 	PlaceMode.WALL: BuildingScript.BuildingType.WALL,

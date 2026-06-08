@@ -35,6 +35,7 @@ var _effects_material: ShaderMaterial = null
 	set(v): sprite_offset_x = v; _refresh_editor()
 @export var sprite_offset_y: float = 0.0:
 	set(v): sprite_offset_y = v; _refresh_editor()
+@export var arrow_scene: PackedScene = null
 
 const StatSetClass = preload("res://scripts/stats/stat_set.gd")
 const UpgradeMgrClass = preload("res://scripts/stats/upgrade_manager.gd")
@@ -864,7 +865,7 @@ func _perform_attack() -> void:
 func _spawn_arrow(target, damage: int = -1) -> void:
 	var spawner = get_tree().current_scene.get("spawner_module")
 	if spawner:
-		spawner.spawn_projectile(null, global_position, target.global_position, target, self, damage)
+		spawner.spawn_projectile(null, global_position, target.global_position, target, self, damage, arrow_scene)
 
 func take_damage(amount: int, attacker = null) -> void:
 	if Engine.is_editor_hint():

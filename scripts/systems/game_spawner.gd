@@ -32,8 +32,12 @@ func set_upgrade_manager(mgr: Node) -> void:
 
 # --- 单位创建 ---
 
-func create_unit(type: int, team: int, pos: Vector2) -> CharacterBody2D:
-	var scene_path: String = D.UNIT_SCENES.get(type, "res://scenes/units/soldier.tscn")
+func create_unit(type: int, team: int, pos: Vector2, stats_id: StringName = &"" ) -> CharacterBody2D:
+	var scene_path: String = ""
+	if stats_id != &"":
+		scene_path = D.ENEMY_VARIANT_SCENES.get(stats_id, "")
+	if scene_path == "":
+		scene_path = D.UNIT_SCENES.get(type, "res://scenes/units/soldier.tscn")
 	var unit_scene := load(scene_path)
 	var unit: CharacterBody2D = unit_scene.instantiate()
 	unit.set("team", team)
@@ -55,7 +59,8 @@ func spawn_from_config(map_config: Resource) -> void:
 
 	# Spawn enemy units
 	for spawn in map_config.enemy_units:
-		var unit := create_unit(spawn.type, UnitScript.Team.ENEMY, spawn.pos)
+		var stats_id: StringName = spawn.get("stats_id", &"")
+		var unit := create_unit(spawn.type, UnitScript.Team.ENEMY, spawn.pos, stats_id)
 		_enemy_units_node.add_child(unit)
 		_apply_difficulty_modifiers(unit)
 		unit.add_to_group("enemy_units")
@@ -221,7 +226,8 @@ func spawn_enemy_wave_v2(groups: Array, spawn_center: Vector2, wave_attack: bool
 		})
 
 func _spawn_enemy_unit_immediate(type: int, pos: Vector2, wave_attack: bool, wave_target: Vector2, data: Dictionary) -> void:
-	var unit := create_unit(type, UnitScript.Team.ENEMY, pos)
+	var stats_id: StringName = data.get("stats_id", &"")
+	var unit := create_unit(type, UnitScript.Team.ENEMY, pos, stats_id)
 	# 先加入场景树触发 _ready()，确保 stat_set 已初始化
 	_enemy_units_node.add_child(unit)
 	# 应用变种修饰器
@@ -303,7 +309,7 @@ func _scale_group_counts(groups: Array) -> Array:
 
 const ArrowScene := preload("res://scenes/effects/arrow.tscn")
 
-func spawn_projectile(data: Resource, from: Vector2, to: Vector2, target, shooter, damage: int) -> void:
+func spawn_projectile(data: Resource, from: Vector2, to: Vector2, target, shooter, damage: int, custom_arrow: PackedScene = null) -> void:
 	var count := 1
 	var spread := 0.0
 	if data:
@@ -317,7 +323,8 @@ func spawn_projectile(data: Resource, from: Vector2, to: Vector2, target, shoote
 		var dist := from.distance_to(to)
 		var actual_to := from + dir * dist
 
-		var arrow: Node2D = ArrowScene.instantiate()
+		var scene: PackedScene = custom_arrow if custom_arrow else ArrowScene
+		var arrow: Node2D = scene.instantiate()
 		_main_node.get_tree().current_scene.add_child(arrow)
 		arrow.setup(from, actual_to)
 		arrow.hit_target = target

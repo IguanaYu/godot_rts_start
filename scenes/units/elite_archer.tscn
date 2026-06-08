@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://bxelite001"]
+
+[ext_resource type="PackedScene" uid="uid://bxunit0001" path="res://scenes/units/unit.tscn" id="base"]
+[ext_resource type="Resource" path="res://resources/stats/elite_archer_stats.tres" id="elite_stats"]
+[ext_resource type="PackedScene" uid="uid://bxtrail001" path="res://scenes/effects/arrow_trail.tscn" id="trail_arrow"]
+
+[node name="EliteArcher" unique_id=991231001 instance=ExtResource("base")]
+unit_type = 1
+stats_data = ExtResource("elite_stats")
+sprite_scale_x = 0.78
+sprite_scale_y = 0.78
+sprite_offset_y = 9.0
+arrow_scene = ExtResource("trail_arrow")
+variant_scale = 1.3
