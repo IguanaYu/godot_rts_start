@@ -12,6 +12,9 @@
 [ext_resource type="PackedScene" uid="uid://8rfekrdqs7gf" path="res://scenes/buildings/castle.tscn" id="castle"]
 [ext_resource type="PackedScene" uid="uid://dhyxequcxurbh" path="res://scenes/buildings/barracks.tscn" id="barracks"]
 [ext_resource type="PackedScene" uid="uid://tower0001" path="res://scenes/buildings/tower.tscn" id="tower"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/terrain_rock.tscn" id="terrain_rock"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/terrain_forest.tscn" id="terrain_forest"]
+[ext_resource type="PackedScene" path="res://scenes/terrain/terrain_river.tscn" id="terrain_river"]
 
 [sub_resource type="NavigationPolygon" id="NavPoly_1"]
 vertices = PackedVector2Array(-500, -500, 2000, -500, 2000, 1700, -500, 1700)
@@ -143,6 +146,24 @@ team = 1
 [node name="EnemyTower4" parent="Buildings" instance=ExtResource("tower")]
 position = Vector2(1312, 864)
 team = 1
+
+[node name="Obstacles" type="Node2D" parent="."]
+
+[node name="CenterForest" parent="Obstacles" instance=ExtResource("terrain_forest")]
+position = Vector2(750, 300)
+obstacle_size = Vector2(320, 256)
+
+[node name="RockNorth" parent="Obstacles" instance=ExtResource("terrain_rock")]
+position = Vector2(600, -100)
+obstacle_size = Vector2(96, 80)
+
+[node name="RockSouth" parent="Obstacles" instance=ExtResource("terrain_rock")]
+position = Vector2(900, 900)
+obstacle_size = Vector2(96, 80)
+
+[node name="RiverEast" parent="Obstacles" instance=ExtResource("terrain_river")]
+position = Vector2(1600, 600)
+obstacle_size = Vector2(128, 320)
 
 [node name="SelectionBox" type="ColorRect" parent="."]
 visible = false

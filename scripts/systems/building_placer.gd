@@ -165,16 +165,29 @@ func _rebuild_navigation() -> void:
 	var source_geom := NavigationMeshSourceGeometryData2D.new()
 	source_geom.traversable_outlines = [PackedVector2Array(_nav_bounds)]
 	var obstructions: Array = []
+	# 建筑遮挡
 	for building in get_tree().get_nodes_in_group("buildings"):
 		if building.is_dead():
 			continue
 		var rect: Rect2 = building.get_rect()
-		var m := 20.0
-		obstructions.append(PackedVector2Array([
-			rect.position - Vector2(m, m), Vector2(rect.end.x + m, rect.position.y - m),
-			rect.end + Vector2(m, m), Vector2(rect.position.x - m, rect.end.y + m)
-		]))
+		obstructions.append(_rect_to_outline(rect, 20.0))
+	# 地形障碍遮挡
+	var obstacles_node = get_tree().current_scene.get_node_or_null("Obstacles")
+	if obstacles_node:
+		for obstacle in obstacles_node.get_children():
+			if obstacle.has_method("get_obstacle_rect"):
+				var rect: Rect2 = obstacle.get_obstacle_rect()
+				obstructions.append(_rect_to_outline(rect, 4.0))
 	source_geom.obstruction_outlines = obstructions
 	var nav_poly := NavigationPolygon.new()
 	NavigationServer2D.bake_from_source_geometry_data(nav_poly, source_geom)
 	_nav_region.navigation_polygon = nav_poly
+
+
+func _rect_to_outline(rect: Rect2, margin: float = 0.0) -> PackedVector2Array:
+	return PackedVector2Array([
+		rect.position - Vector2(margin, margin),
+		Vector2(rect.end.x + margin, rect.position.y - margin),
+		rect.end + Vector2(margin, margin),
+		Vector2(rect.position.x - margin, rect.end.y + margin)
+	])

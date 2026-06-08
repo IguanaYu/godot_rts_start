@@ -87,6 +87,14 @@ func spawn_environment(map_config: Resource, map_bounds: Rect2) -> void:
 	_main_node.add_child(env_node)
 	_main_node.move_child(env_node, 1)
 
+	# 收集地形障碍区域，用于避开
+	var obstacle_rects: Array[Rect2] = []
+	var obstacles_node = _main_node.get_node_or_null("Obstacles")
+	if obstacles_node:
+		for obstacle in obstacles_node.get_children():
+			if obstacle.has_method("get_obstacle_rect"):
+				obstacle_rects.append(obstacle.get_obstacle_rect())
+
 	var spawn_min_x: float = map_bounds.position.x + 100
 	var spawn_max_x: float = map_bounds.end.x - 100
 	var spawn_min_y: float = map_bounds.position.y + 100
@@ -106,31 +114,48 @@ func spawn_environment(map_config: Resource, map_bounds: Rect2) -> void:
 
 	var tree_scene := load("res://scenes/environment/tree.tscn")
 	for i in range(tree_count):
+		var pos := _find_safe_spawn_pos(spawn_min_x, spawn_max_x, spawn_min_y, spawn_max_y, obstacle_rects)
 		var tree: Node2D = tree_scene.instantiate()
-		tree.position = Vector2(randf_range(spawn_min_x, spawn_max_x), randf_range(spawn_min_y, spawn_max_y))
+		tree.position = pos
 		tree.get_node("Sprite").texture = load(D.TREE_TEXTURES[i % 4])
 		tree.get_node("Sprite").frame = randi() % 8
 		env_node.add_child(tree)
 
 	var rock_scene := load("res://scenes/environment/rock.tscn")
 	for i in range(rock_count):
+		var pos := _find_safe_spawn_pos(spawn_min_x, spawn_max_x, spawn_min_y, spawn_max_y, obstacle_rects)
 		var rock: Node2D = rock_scene.instantiate()
-		rock.position = Vector2(randf_range(spawn_min_x, spawn_max_x), randf_range(spawn_min_y, spawn_max_y))
+		rock.position = pos
 		rock.get_node("Sprite").texture = load(D.ROCK_TEXTURES[i % 4])
 		env_node.add_child(rock)
 
 	var bush_scene := load("res://scenes/environment/bush.tscn")
 	for i in range(bush_count):
+		var pos := _find_safe_spawn_pos(spawn_min_x, spawn_max_x, spawn_min_y, spawn_max_y, obstacle_rects)
 		var bush: Node2D = bush_scene.instantiate()
-		bush.position = Vector2(randf_range(spawn_min_x, spawn_max_x), randf_range(spawn_min_y, spawn_max_y))
+		bush.position = pos
 		bush.get_node("Sprite").texture = load(D.BUSH_TEXTURES[i % 4])
 		env_node.add_child(bush)
 
 	var sheep_scene := load("res://scenes/environment/sheep.tscn")
 	for i in range(sheep_count):
+		var pos := _find_safe_spawn_pos(spawn_min_x, spawn_max_x, spawn_min_y, spawn_max_y, obstacle_rects)
 		var sheep: Node2D = sheep_scene.instantiate()
-		sheep.position = Vector2(randf_range(spawn_min_x, spawn_max_x), randf_range(spawn_min_y, spawn_max_y))
+		sheep.position = pos
 		env_node.add_child(sheep)
+
+
+func _find_safe_spawn_pos(min_x: float, max_x: float, min_y: float, max_y: float, avoid_rects: Array[Rect2]) -> Vector2:
+	for _attempt in range(20):
+		var pos := Vector2(randf_range(min_x, max_x), randf_range(min_y, max_y))
+		var blocked := false
+		for r in avoid_rects:
+			if r.has_point(pos):
+				blocked = true
+				break
+		if not blocked:
+			return pos
+	return Vector2(randf_range(min_x, max_x), randf_range(min_y, max_y))
 
 # --- 放置时生成玩家单位 ---
 
