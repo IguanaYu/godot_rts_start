@@ -8,6 +8,9 @@ enum Team { PLAYER, ENEMY }
 enum CommandSource { NONE, PLAYER, AUTO }
 
 const HealEffectScene := preload("res://scenes/effects/heal_effect.tscn")
+const OutlineShader := preload("res://shaders/outline.gdshader")
+
+var _glow_material: ShaderMaterial = null
 
 @export var unit_type: UnitType = UnitType.SOLDIER:
 	set(v): unit_type = v; _refresh_editor()
@@ -114,12 +117,21 @@ signal died(unit: Unit)
 
 func _ready() -> void:
 	_setup_stats()
+	_init_outline_materials()
 	if Engine.is_editor_hint():
 		_setup_editor_visuals()
 	else:
 		_setup_visuals()
 		_update_selection_ring()
 		_update_hp_bar()
+
+func _init_outline_materials() -> void:
+	if OutlineShader == null:
+		return
+	_glow_material = ShaderMaterial.new()
+	_glow_material.shader = OutlineShader
+	_glow_material.set_shader_parameter("glow_color", Color(1.0, 0.9, 0.3, 1.0))
+	_glow_material.set_shader_parameter("glow_width", 3.0)
 
 func _setup_stats() -> void:
 	if stats_data == null:
@@ -1062,6 +1074,12 @@ func _update_selection_ring() -> void:
 			selection_ring.team_color = Color(0.3, 0.6, 1.0, 0.6) if team == Team.PLAYER else Color(1.0, 0.3, 0.3, 0.6)
 			if not _was_selected:
 				selection_ring.flash()
+	# 发光 shader material 切换
+	if body_sprite:
+		if selected and _glow_material:
+			body_sprite.material = _glow_material
+		else:
+			body_sprite.material = null
 	_was_selected = selected
 	_update_state_indicator()
 
