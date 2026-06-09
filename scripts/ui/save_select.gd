@@ -483,6 +483,7 @@ func _show_delete_confirm(slot: int) -> void:
 	yes_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	yes_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	yes_wrapper.add_child(yes_label)
+	BF.add_hover_anim(yes_wrapper, yes_bg, np_btn_red_prs.texture, np_btn_red.texture)
 	hbox.add_child(yes_wrapper)
 
 	# 取消按钮
@@ -511,6 +512,7 @@ func _show_delete_confirm(slot: int) -> void:
 	no_wrapper.add_child(no_label)
 	hbox.add_child(no_wrapper)
 
+	BF.add_hover_anim(no_wrapper, no_bg, np_btn_blue_prs.texture, np_btn_blue.texture)
 	add_child(_confirm_dialog)
 
 

@@ -1282,6 +1282,7 @@ func _open_settings_page() -> void:
 		btn.add_theme_color_override("font_color", Color(1, 0.85, 0.0) if locale_code == current_locale or locale_code == current_locale.substr(0, 2) else Color(0.8, 0.8, 0.8))
 		btn.pressed.connect(_on_settings_language_selected.bind(locale_code))
 		lang_hbox.add_child(btn)
+		BF.add_hover_anim_button(btn)
 	vbox.add_child(lang_hbox)
 
 	# 返回按钮

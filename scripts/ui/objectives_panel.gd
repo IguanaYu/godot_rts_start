@@ -69,6 +69,8 @@ func _create_panel() -> void:
 	toggle_btn.custom_minimum_size = Vector2(40, 20)
 	toggle_btn.pressed.connect(_on_toggle_pressed)
 	_vbox.add_child(toggle_btn)
+	var BF := preload("res://scripts/ui/button_factory.gd")
+	BF.add_hover_anim_button(toggle_btn)
 
 func _on_toggle_pressed() -> void:
 	_is_visible = not _is_visible
