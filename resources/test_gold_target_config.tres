@@ -7,7 +7,7 @@ script = ExtResource("1")
 map_name = "Test: Gold Target"
 map_bounds = Rect2(-100, -100, 800, 600)
 nav_bounds = Array[Vector2]([Vector2(-100, -100), Vector2(700, -100), Vector2(700, 500), Vector2(-100, 500)])
-initial_gold = 500
+initial_gold = 50
 camera_start = Vector2(300, 250)
 
 player_units = Array[Dictionary]( [

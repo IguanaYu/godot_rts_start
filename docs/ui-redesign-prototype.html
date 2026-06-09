@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RTS UI Redesign Prototype</title>
+<style>
+/* === Reset & Base === */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #1a1a2e;
+  font-family: 'Segoe UI', sans-serif;
+  color: #F2E6CC;
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* === Navigation === */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  display: flex; gap: 0; background: #0d0d1a; border-bottom: 2px solid #3a2a1a;
+  padding: 0 8px;
+}
+.nav button {
+  background: none; border: none; color: #888; padding: 10px 16px;
+  font-size: 13px; cursor: pointer; transition: all 0.15s;
+  border-bottom: 2px solid transparent; font-family: inherit;
+}
+.nav button:hover { color: #FFD700; }
+.nav button.active { color: #FFD700; border-bottom-color: #FFD700; background: rgba(255,215,0,0.05); }
+
+/* === Page Container === */
+.pages { margin-top: 40px; height: calc(100vh - 40px); position: relative; }
+.page { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+.page.active { display: flex; }
+
+/* === Design Tokens === */
+:root {
+  --gold: #FFD700;
+  --gold-dim: #B8960F;
+  --text-light: #F2E6CC;
+  --text-white: #FFFFFF;
+  --text-dim: #888;
+  --text-dark: #555;
+  --energy-blue: #4DB8FF;
+  --damage-red: #FF3326;
+  --health-green: #4CAF50;
+  --overlay-dark: rgba(0,0,0,0.6);
+  --panel-bg: rgba(42,28,12,0.92);
+  --panel-bg-dark: rgba(20,14,8,0.95);
+  --wood-border: #5a3a1a;
+  --wood-light: #8b6b3a;
+  --btn-blue: #3a6ea5;
+  --btn-blue-hover: #4a8ec5;
+  --btn-red: #a53a3a;
+  --btn-red-hover: #c54a4a;
+  --tier-silver: #C8C8C8;
+  --tier-gold: #FFD700;
+  --tier-diamond: #4DB8FF;
+}
+
+/* === Shared Components === */
+.wood-panel {
+  background: var(--panel-bg);
+  border: 3px solid var(--wood-border);
+  border-radius: 8px;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.5);
+  position: relative;
+}
+.wood-panel::before {
+  content: '';
+  position: absolute; inset: 2px;
+  border: 1px solid rgba(139,107,58,0.3);
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.game-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 12px 32px; border: 2px solid var(--wood-border);
+  border-radius: 6px; cursor: pointer; font-family: inherit;
+  font-size: 16px; font-weight: bold; transition: all 0.12s;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+  position: relative; min-height: 44px;
+}
+.game-btn:hover { transform: scale(1.08); filter: brightness(1.15); }
+.game-btn:active { transform: scale(0.95); filter: brightness(0.85); }
+
+.btn-blue { background: var(--btn-blue); color: var(--text-white); }
+.btn-red { background: var(--btn-red); color: var(--text-white); }
+.btn-blue:hover { background: var(--btn-blue-hover); }
+.btn-red:hover { background: var(--btn-red-hover); }
+
+.section-label {
+  color: var(--gold); text-align: center; font-size: 15px;
+  font-weight: bold; padding: 6px 0;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+  border-bottom: 1px solid rgba(255,215,0,0.2);
+}
+
+/* Tooltip style */
+.tooltip-demo {
+  background: rgba(26,26,38,0.95); border-radius: 4px;
+  padding: 8px 12px; font-size: 13px; color: white;
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  max-width: 200px;
+}
+
+/* ============================================================ */
+/* PAGE 1: Main Menu                                            */
+/* ============================================================ */
+#page-main-menu {
+  flex-direction: column; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, #0a0a1a 0%, #1a1028 40%, #2a1a0a 100%);
+  position: relative; overflow: hidden;
+}
+/* Subtle atmospheric glow decoration */
+#page-main-menu::before {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0; height: 50%;
+  background:
+    radial-gradient(ellipse 20% 40% at 20% 100%, rgba(90,60,20,0.15) 0%, transparent 70%),
+    radial-gradient(ellipse 30% 50% at 50% 100%, rgba(80,50,15,0.12) 0%, transparent 70%),
+    radial-gradient(ellipse 20% 40% at 80% 100%, rgba(90,60,20,0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+.menu-title {
+  font-size: 56px; font-weight: bold; color: var(--gold);
+  text-shadow: 3px 3px 6px rgba(0,0,0,0.8), 0 0 30px rgba(255,215,0,0.15);
+  letter-spacing: 4px; margin-bottom: 8px;
+}
+.menu-subtitle {
+  font-size: 18px; color: var(--text-dim); margin-bottom: 48px;
+  letter-spacing: 2px;
+}
+.menu-buttons { display: flex; flex-direction: column; gap: 16px; z-index: 1; }
+.menu-buttons .game-btn { min-width: 260px; font-size: 18px; padding: 14px 40px; }
+.menu-bottom {
+  position: absolute; bottom: 20px; display: flex; align-items: center; gap: 16px;
+  z-index: 1;
+}
+.menu-lang {
+  display: flex; gap: 8px;
+}
+.menu-lang button {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-dim); padding: 6px 16px; border-radius: 4px;
+  cursor: pointer; font-size: 13px; transition: all 0.15s;
+}
+.menu-lang button:hover { color: var(--gold); border-color: var(--gold); }
+.menu-lang button.active-lang { color: var(--gold); border-color: var(--gold); background: rgba(255,215,0,0.1); }
+.menu-version { color: var(--text-dark); font-size: 12px; }
+
+/* ============================================================ */
+/* PAGE 2: Save Select                                          */
+/* ============================================================ */
+#page-save-select {
+  flex-direction: column; align-items: center;
+  background: linear-gradient(180deg, #0a0a1a 0%, #1a1028 100%);
+  padding: 30px 40px;
+}
+.save-title {
+  font-size: 32px; color: var(--text-light); margin-bottom: 30px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+}
+.save-cards { display: flex; gap: 24px; width: 100%; max-width: 1100px; }
+.save-card {
+  flex: 1; min-height: 340px; border-radius: 8px; padding: 24px;
+  display: flex; flex-direction: column; gap: 12px;
+  transition: all 0.2s; cursor: pointer;
+}
+.save-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+.save-card.empty {
+  border: 2px dashed rgba(255,255,255,0.15); background: rgba(255,255,255,0.02);
+  align-items: center; justify-content: center;
+}
+.save-card.empty:hover { border-color: var(--gold); background: rgba(255,215,0,0.03); }
+.save-plus { font-size: 48px; color: var(--text-dark); }
+.save-empty-text { font-size: 16px; color: var(--text-dim); }
+.save-thumb {
+  width: 100%; height: 100px; border-radius: 4px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-dark); font-size: 12px;
+}
+.save-name { font-size: 20px; color: var(--gold); font-weight: bold; }
+.save-progress-bar {
+  height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;
+}
+.save-progress-fill { height: 100%; background: var(--gold); border-radius: 4px; transition: width 0.3s; }
+.save-meta { font-size: 13px; color: var(--text-dim); }
+.save-score { font-size: 15px; color: var(--gold); }
+.save-actions { display: flex; gap: 8px; margin-top: auto; }
+.save-actions .game-btn { padding: 8px 16px; font-size: 14px; flex: 1; }
+.save-hint { position: absolute; bottom: 20px; color: var(--text-dark); font-size: 13px; }
+
+/* ============================================================ */
+/* PAGE 3: Level Select                                         */
+/* ============================================================ */
+#page-level-select {
+  background: linear-gradient(180deg, #0a0a1a 0%, #1a1028 100%);
+  padding: 20px 40px; flex-direction: column;
+}
+.level-header {
+  text-align: center; font-size: 28px; color: var(--text-light);
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.6); margin-bottom: 16px;
+}
+.level-layout { display: flex; gap: 24px; flex: 1; min-height: 0; }
+/* Left: Level List */
+.level-list {
+  width: 38%; display: flex; flex-direction: column; gap: 12px;
+  padding: 16px;
+}
+.level-item {
+  padding: 16px 20px; border-radius: 6px; cursor: pointer;
+  display: flex; align-items: center; gap: 12px;
+  background: var(--btn-blue); border: 2px solid rgba(255,255,255,0.1);
+  transition: all 0.12s;
+}
+.level-item:hover { transform: scale(1.03); filter: brightness(1.1); }
+.level-item.selected { background: var(--btn-red); border-color: rgba(255,200,100,0.3); }
+.level-item-icon {
+  width: 40px; height: 40px; border-radius: 4px;
+  background: rgba(255,255,255,0.1);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+.level-item-name { font-size: 17px; font-weight: bold; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+.level-item-check { margin-left: auto; color: var(--gold); font-size: 18px; }
+
+/* Right: Level Preview */
+.level-preview {
+  flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 16px;
+  background: rgba(200,180,150,0.08);
+  border: 2px solid rgba(139,107,58,0.3);
+}
+.preview-title { font-size: 24px; color: var(--gold); text-align: center; font-weight: bold; }
+.preview-image {
+  width: 200px; height: 200px; margin: 0 auto;
+  background: rgba(255,255,255,0.05); border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-dark); font-size: 14px;
+}
+.preview-desc { font-size: 16px; color: var(--text-light); text-align: center; line-height: 1.5; }
+.preview-completion {
+  display: flex; justify-content: center; gap: 20px;
+  font-size: 14px; color: var(--text-dim);
+}
+.preview-completion .completed { color: var(--gold); }
+.difficulty-section { text-align: center; }
+.difficulty-label { font-size: 14px; color: var(--text-dim); margin-bottom: 8px; }
+.difficulty-stars { display: flex; justify-content: center; gap: 6px; }
+.difficulty-stars span {
+  font-size: 22px; cursor: pointer; transition: all 0.12s;
+  color: var(--text-dark);
+}
+.difficulty-stars span.filled { color: var(--gold); }
+.difficulty-stars span:hover { transform: scale(1.2); }
+.level-start-btn {
+  margin: auto auto 0;
+  min-width: 200px; font-size: 20px; padding: 16px 48px;
+}
+.level-back-btn {
+  display: block; margin: 8px auto 0;
+  min-width: 160px; font-size: 14px; padding: 8px 24px;
+}
+
+/* ============================================================ */
+/* PAGE 4: In-Game HUD                                          */
+/* ============================================================ */
+#page-hud {
+  position: relative; overflow: hidden;
+  background: #2a3a1a;
+  background-image:
+    /* Grass-like pattern */
+    radial-gradient(ellipse at 30% 50%, rgba(60,80,30,0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 40%, rgba(50,70,25,0.3) 0%, transparent 50%);
+}
+
+/* Resource Bar - Top Left */
+.hud-resources {
+  position: absolute; top: 12px; left: 12px;
+  display: flex; flex-direction: column; gap: 6px; z-index: 10;
+}
+.resource-row {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(0,0,0,0.5); padding: 6px 14px; border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.resource-icon {
+  width: 22px; height: 22px; border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: bold;
+}
+.gold-icon { background: var(--gold); color: #333; }
+.upgrade-token-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--btn-blue); padding: 6px 12px; border-radius: 6px;
+  cursor: pointer; font-size: 13px; color: #aaa;
+  border: 1px solid rgba(255,255,255,0.1); transition: all 0.12s;
+}
+.upgrade-token-btn:hover { filter: brightness(1.2); transform: scale(1.05); }
+.upgrade-token-btn.has-tokens { color: white; background: rgba(75,184,255,0.3); border-color: rgba(75,184,255,0.4); }
+.resource-value { font-size: 20px; color: var(--gold); font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.6); }
+.hud-fps { position: absolute; top: 90px; left: 12px; font-size: 12px; color: #777; z-index: 10; }
+
+/* Skill Bar - Top Center */
+.hud-skills {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 10px; z-index: 10;
+  background: rgba(0,0,0,0.5); padding: 8px 16px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.skill-energy {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 80px;
+}
+.skill-energy-label { font-size: 11px; color: var(--energy-blue); }
+.skill-energy-bar {
+  width: 80px; height: 10px; background: rgba(255,255,255,0.1);
+  border-radius: 5px; overflow: hidden;
+}
+.skill-energy-fill {
+  height: 100%; width: 75%; background: linear-gradient(90deg, #3388cc, var(--energy-blue));
+  border-radius: 5px; transition: width 0.3s;
+}
+.skill-sep { width: 2px; height: 44px; background: rgba(255,255,255,0.15); }
+.skill-btn {
+  width: 52px; height: 52px; border-radius: 6px;
+  background: var(--btn-blue); border: 2px solid rgba(255,255,255,0.15);
+  position: relative; cursor: pointer; transition: all 0.12s;
+  display: flex; align-items: center; justify-content: center;
+}
+.skill-btn:hover { transform: scale(1.1); border-color: var(--energy-blue); }
+.skill-btn:active { transform: scale(0.92); }
+.skill-btn-icon { font-size: 22px; }
+.skill-btn-hotkey {
+  position: absolute; top: 2px; left: 4px; font-size: 10px;
+  color: white; text-shadow: 1px 1px 1px rgba(0,0,0,0.8);
+}
+.skill-btn-cost {
+  position: absolute; bottom: 2px; right: 3px; font-size: 9px;
+  color: var(--energy-blue); text-shadow: 1px 1px 1px rgba(0,0,0,0.8);
+}
+.skill-btn-cd {
+  position: absolute; inset: 3px; background: rgba(0,0,0,0.6);
+  border-radius: 3px; display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: bold; color: white;
+}
+
+/* Selection Info - Bottom Center Above Panel */
+.hud-selection {
+  position: absolute; bottom: 148px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.5); padding: 6px 16px; border-radius: 6px;
+  font-size: 14px; color: #CCE0FF; z-index: 10;
+  border: 1px solid rgba(255,255,255,0.08);
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+}
+
+/* Wave Countdown - Above Selection */
+.hud-wave {
+  position: absolute; bottom: 178px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 4px; z-index: 10;
+}
+.hud-wave-text { font-size: 17px; color: var(--damage-red); font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.6); }
+.hud-wave-bar {
+  width: 200px; height: 4px; background: rgba(255,255,255,0.1);
+  border-radius: 2px; overflow: hidden;
+}
+.hud-wave-fill {
+  height: 100%; width: 60%; background: var(--damage-red);
+  border-radius: 2px; transition: width 0.5s;
+}
+
+/* Building Panel - Bottom Center */
+.hud-build-panel {
+  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  width: 60%; min-height: 130px; z-index: 10;
+  padding: 10px 16px;
+}
+.build-tabs {
+  display: flex; justify-content: center; gap: 8px; margin-bottom: 8px;
+}
+.build-tab {
+  padding: 5px 20px; border-radius: 4px; cursor: pointer;
+  font-size: 13px; background: rgba(255,255,255,0.05); color: var(--text-dim);
+  border: 1px solid rgba(255,255,255,0.08); transition: all 0.12s;
+}
+.build-tab:hover { color: var(--text-light); }
+.build-tab.active { background: var(--btn-blue); color: white; border-color: rgba(255,255,255,0.2); }
+.build-grid {
+  display: flex; justify-content: center; gap: 10px; flex-wrap: nowrap;
+}
+.build-icon {
+  width: 72px; height: 72px; border-radius: 6px;
+  background: var(--btn-blue); border: 2px solid rgba(255,255,255,0.1);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.12s; position: relative;
+}
+.build-icon:hover { transform: scale(1.08); filter: brightness(1.15); }
+.build-icon:active { transform: scale(0.95); }
+.build-icon.dim { opacity: 0.4; cursor: default; }
+.build-icon .icon-img { font-size: 24px; }
+.build-icon .icon-hotkey {
+  position: absolute; top: 2px; left: 4px; font-size: 11px;
+  color: white; text-shadow: 1px 1px 1px rgba(0,0,0,0.8);
+}
+.build-icon .icon-cost {
+  position: absolute; bottom: 2px; right: 3px; font-size: 9px;
+  color: var(--gold); text-shadow: 1px 1px 1px rgba(0,0,0,0.8);
+}
+
+/* Minimap - Bottom Right */
+.hud-minimap {
+  position: absolute; bottom: 12px; right: 12px;
+  width: 180px; height: 180px; z-index: 10;
+  background: rgba(0,0,0,0.6); border-radius: 6px;
+  border: 2px solid var(--wood-border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-dark); font-size: 13px;
+}
+
+/* ============================================================ */
+/* PAGE 5: Pause Menu                                           */
+/* ============================================================ */
+#page-pause {
+  align-items: center; justify-content: center;
+  background: var(--overlay-dark); position: relative;
+}
+/* Background - show dimmed game */
+#page-pause::before {
+  content: ''; position: absolute; inset: 0;
+  background: #2a3a1a; opacity: 0.3;
+}
+.pause-panel {
+  width: 320px; z-index: 1; overflow: hidden;
+}
+/* Banner decoration */
+.pause-banner {
+  background: linear-gradient(135deg, #5a3a1a, #8b6b3a, #5a3a1a);
+  padding: 14px 20px; text-align: center;
+  border-bottom: 2px solid var(--wood-light);
+  position: relative;
+}
+.pause-banner::before, .pause-banner::after {
+  content: ''; position: absolute; top: 6px; bottom: 6px;
+  width: 20px; background: rgba(255,215,0,0.2); border-radius: 2px;
+}
+.pause-banner::before { left: 12px; }
+.pause-banner::after { right: 12px; }
+.pause-banner-title {
+  font-size: 26px; color: var(--text-light); font-weight: bold;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+}
+.pause-content { padding: 20px 24px; display: flex; flex-direction: column; gap: 10px; }
+.pause-divider {
+  height: 1px; background: rgba(255,255,255,0.08); margin: 6px 0;
+  position: relative;
+}
+.pause-divider::after {
+  content: ''; position: absolute; left: 50%; top: -3px;
+  width: 6px; height: 6px; background: var(--wood-light);
+  transform: translateX(-50%) rotate(45deg);
+}
+.pause-group-label {
+  font-size: 11px; color: var(--text-dark); text-align: center;
+  text-transform: uppercase; letter-spacing: 2px;
+}
+.pause-content .game-btn { width: 100%; }
+.pause-hint {
+  text-align: center; font-size: 11px; color: var(--text-dark);
+  padding-top: 4px;
+}
+
+/* ============================================================ */
+/* PAGE 6: Settings                                             */
+/* ============================================================ */
+#page-settings {
+  align-items: center; justify-content: center;
+  background: var(--overlay-dark);
+}
+.settings-panel {
+  width: 500px; max-height: 580px; z-index: 1;
+  display: flex; flex-direction: column;
+}
+.settings-header {
+  padding: 16px 24px 0; text-align: center;
+}
+.settings-title { font-size: 22px; color: var(--text-light); font-weight: bold; }
+.settings-tabs {
+  display: flex; justify-content: center; gap: 4px; margin-top: 12px;
+}
+.settings-tab {
+  padding: 6px 16px; border-radius: 4px 4px 0 0; cursor: pointer;
+  font-size: 13px; color: var(--text-dim); background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05); border-bottom: none;
+  transition: all 0.12s;
+}
+.settings-tab:hover { color: var(--text-light); }
+.settings-tab.active { background: rgba(255,255,255,0.08); color: var(--gold); border-color: rgba(255,215,0,0.2); }
+.settings-body {
+  padding: 16px 24px; flex: 1; overflow-y: auto;
+}
+.settings-section { display: none; }
+.settings-section.active { display: flex; flex-direction: column; gap: 12px; }
+.setting-row {
+  display: flex; align-items: center; gap: 12px;
+}
+.setting-label {
+  min-width: 100px; font-size: 14px; color: var(--text-light);
+}
+.setting-slider { flex: 1; }
+.setting-slider input[type="range"] {
+  width: 100%; accent-color: var(--gold);
+}
+.setting-value {
+  min-width: 40px; text-align: right; font-size: 13px; color: var(--text-dim);
+}
+.setting-select {
+  flex: 1; padding: 4px 8px; background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;
+  color: var(--text-light); font-size: 14px;
+}
+.setting-toggle {
+  width: 40px; height: 22px; background: rgba(255,255,255,0.1);
+  border-radius: 11px; cursor: pointer; position: relative;
+  transition: all 0.2s; border: none;
+}
+.setting-toggle::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 18px; height: 18px; background: white; border-radius: 50%;
+  transition: all 0.2s;
+}
+.setting-toggle.on { background: var(--gold); }
+.setting-toggle.on::after { left: 20px; }
+.lang-row { display: flex; justify-content: center; gap: 8px; }
+.lang-btn {
+  padding: 8px 20px; border-radius: 4px; cursor: pointer;
+  font-size: 14px; background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1); color: var(--text-dim);
+  transition: all 0.12s;
+}
+.lang-btn:hover { color: var(--gold); border-color: var(--gold); }
+.lang-btn.active { color: var(--gold); border-color: var(--gold); background: rgba(255,215,0,0.1); }
+.settings-back { padding: 12px 24px 16px; text-align: center; }
+
+/* ============================================================ */
+/* PAGE 7: Upgrade Panel                                        */
+/* ============================================================ */
+#page-upgrade {
+  align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.5); position: relative;
+}
+#page-upgrade::before {
+  content: ''; position: absolute; inset: 0;
+  background: #2a3a1a; opacity: 0.3;
+}
+.upgrade-container { z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+.upgrade-title { font-size: 24px; color: var(--tier-gold); font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.6); }
+.upgrade-cards { display: flex; gap: 24px; }
+.upgrade-card {
+  width: 200px; height: 280px; border-radius: 10px;
+  background: var(--panel-bg); padding: 20px;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  cursor: pointer; transition: all 0.2s; position: relative;
+  border: 3px solid transparent;
+}
+.upgrade-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+}
+.upgrade-card.tier-silver { border-color: var(--tier-silver); }
+.upgrade-card.tier-silver:hover { box-shadow: 0 12px 32px rgba(200,200,200,0.2); }
+.upgrade-card.tier-gold { border-color: var(--tier-gold); }
+.upgrade-card.tier-gold:hover { box-shadow: 0 12px 32px rgba(255,215,0,0.2); }
+.upgrade-card.tier-diamond { border-color: var(--tier-diamond); }
+.upgrade-card.tier-diamond:hover { box-shadow: 0 12px 32px rgba(77,184,255,0.2); }
+.upgrade-card-bg {
+  position: absolute; inset: 0; border-radius: 8px;
+  background: var(--btn-blue); opacity: 0.15; pointer-events: none;
+}
+.upgrade-card.tier-silver .upgrade-card-bg { background: var(--tier-silver); }
+.upgrade-card.tier-gold .upgrade-card-bg { background: var(--tier-gold); }
+.upgrade-card.tier-diamond .upgrade-card-bg { background: var(--tier-diamond); }
+.upgrade-icon {
+  width: 64px; height: 64px; border-radius: 8px;
+  background: rgba(255,255,255,0.1);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px;
+}
+.upgrade-name { font-size: 17px; color: white; font-weight: bold; text-align: center; }
+.upgrade-desc {
+  font-size: 14px; color: var(--text-light); text-align: center;
+  line-height: 1.4; flex: 1;
+}
+.upgrade-card.tier-silver .upgrade-desc { color: var(--tier-silver); }
+.upgrade-card.tier-gold .upgrade-desc { color: var(--tier-gold); }
+.upgrade-card.tier-diamond .upgrade-desc { color: var(--tier-diamond); }
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<div class="nav">
+  <button onclick="showPage('main-menu')" class="active" data-page="main-menu">Main Menu</button>
+  <button onclick="showPage('save-select')" data-page="save-select">Save Select</button>
+  <button onclick="showPage('level-select')" data-page="level-select">Level Select</button>
+  <button onclick="showPage('hud')" data-page="hud">Game HUD</button>
+  <button onclick="showPage('pause')" data-page="pause">Pause Menu</button>
+  <button onclick="showPage('settings')" data-page="settings">Settings</button>
+  <button onclick="showPage('upgrade')" data-page="upgrade">Upgrade</button>
+</div>
+
+<div class="pages">
+
+<!-- ==================== PAGE 1: Main Menu ==================== -->
+<div id="page-main-menu" class="page active">
+  <div class="menu-title">TINY SWORDS</div>
+  <div class="menu-subtitle">A Medieval RTS Adventure</div>
+  <div class="menu-buttons">
+    <button class="game-btn btn-red">Start Game</button>
+    <button class="game-btn btn-blue">Settings</button>
+    <button class="game-btn btn-blue">Quit</button>
+  </div>
+  <div class="menu-bottom">
+    <div class="menu-lang">
+      <button>EN</button>
+      <button class="active-lang">中文</button>
+      <button>日本語</button>
+    </div>
+    <div class="menu-version">v0.3.0 alpha</div>
+  </div>
+</div>
+
+<!-- ==================== PAGE 2: Save Select ==================== -->
+<div id="page-save-select" class="page">
+  <div class="save-title">Select Profile</div>
+  <div class="save-cards">
+    <!-- Slot 1 - Existing save -->
+    <div class="save-card wood-panel">
+      <div class="save-thumb">Map Thumbnail</div>
+      <div class="save-name">Slot 1 - Commander</div>
+      <div class="save-progress-bar"><div class="save-progress-fill" style="width:75%"></div></div>
+      <div class="save-meta">Progress: 3/4 levels &middot; Last played: 2026-06-07</div>
+      <div class="save-score">Score: 85/100</div>
+      <div class="save-actions">
+        <button class="game-btn btn-blue">Continue</button>
+        <button class="game-btn btn-red" style="min-width:auto;padding:8px 12px;font-size:13px">Delete</button>
+      </div>
+    </div>
+    <!-- Slot 2 - Existing save -->
+    <div class="save-card wood-panel">
+      <div class="save-thumb">Map Thumbnail</div>
+      <div class="save-name">Slot 2 - Knight</div>
+      <div class="save-progress-bar"><div class="save-progress-fill" style="width:25%"></div></div>
+      <div class="save-meta">Progress: 1/4 levels &middot; Last played: 2026-05-20</div>
+      <div class="save-score">Score: 40/100</div>
+      <div class="save-actions">
+        <button class="game-btn btn-blue">Continue</button>
+        <button class="game-btn btn-red" style="min-width:auto;padding:8px 12px;font-size:13px">Delete</button>
+      </div>
+    </div>
+    <!-- Slot 3 - Empty -->
+    <div class="save-card empty">
+      <div class="save-plus">+</div>
+      <div class="save-empty-text">New Game</div>
+    </div>
+  </div>
+  <div class="save-hint">Press ESC to return to main menu</div>
+</div>
+
+<!-- ==================== PAGE 3: Level Select ==================== -->
+<div id="page-level-select" class="page">
+  <div class="level-header">Mission Select</div>
+  <div class="level-layout">
+    <!-- Left: Level List -->
+    <div class="level-list wood-panel">
+      <div class="level-item selected" onclick="selectLevel(this, 0)">
+        <div class="level-item-icon">&#9876;</div>
+        <div class="level-item-name">Blitz Attack</div>
+        <div class="level-item-check">&#10003;</div>
+      </div>
+      <div class="level-item" onclick="selectLevel(this, 1)">
+        <div class="level-item-icon">&#127919;</div>
+        <div class="level-item-name">Basic Attack</div>
+      </div>
+      <div class="level-item" onclick="selectLevel(this, 2)">
+        <div class="level-item-icon">&#128981;</div>
+        <div class="level-item-name">Tower Defense</div>
+      </div>
+      <div class="level-item" onclick="selectLevel(this, 3)">
+        <div class="level-item-icon">&#127968;</div>
+        <div class="level-item-name">Expand & Defend</div>
+      </div>
+    </div>
+    <!-- Right: Level Preview -->
+    <div class="level-preview wood-panel">
+      <div class="preview-title">Blitz Attack</div>
+      <div class="preview-image">Level Preview Image</div>
+      <div class="preview-desc">A lightning assault on the enemy fortress. Destroy their castle before reinforcements arrive!</div>
+      <div class="preview-completion">
+        <span class="completed">&#10003; Completed</span>
+        <span>Score: 90</span>
+        <span>Best: 2:34</span>
+        <span>Plays: 5</span>
+      </div>
+      <div class="difficulty-section">
+        <div class="difficulty-label">Difficulty</div>
+        <div class="difficulty-stars">
+          <span class="filled" onclick="setDifficulty(1)">&#9733;</span>
+          <span class="filled" onclick="setDifficulty(2)">&#9733;</span>
+          <span onclick="setDifficulty(3)">&#9733;</span>
+        </div>
+      </div>
+      <button class="game-btn btn-red level-start-btn">Start Mission</button>
+      <button class="game-btn btn-blue level-back-btn">Back to Profile</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PAGE 4: Game HUD ==================== -->
+<div id="page-hud" class="page">
+  <!-- Resources -->
+  <div class="hud-resources">
+    <div class="resource-row">
+      <div class="resource-icon gold-icon">$</div>
+      <div class="resource-value">1,250</div>
+    </div>
+    <div class="upgrade-token-btn has-tokens">x2 Diamond Token</div>
+    <div class="hud-fps">FPS: 60</div>
+  </div>
+
+  <!-- Skill Bar -->
+  <div class="hud-skills">
+    <div class="skill-energy">
+      <div class="skill-energy-label">75/100</div>
+      <div class="skill-energy-bar"><div class="skill-energy-fill"></div></div>
+    </div>
+    <div class="skill-sep"></div>
+    <div class="skill-btn" title="Orbital Strike">
+      <span class="skill-btn-hotkey">Z</span>
+      <span class="skill-btn-icon">&#128165;</span>
+      <span class="skill-btn-cost">30E</span>
+    </div>
+    <div class="skill-btn" title="Heal Field">
+      <span class="skill-btn-hotkey">X</span>
+      <span class="skill-btn-icon">&#10010;</span>
+      <span class="skill-btn-cost">20E</span>
+    </div>
+    <div class="skill-btn" title="Shield Wall">
+      <span class="skill-btn-hotkey">C</span>
+      <span class="skill-btn-icon">&#128737;</span>
+      <span class="skill-btn-cost">25E</span>
+      <div class="skill-btn-cd">3</div>
+    </div>
+    <div class="skill-btn" title="Unit Drop">
+      <span class="skill-btn-hotkey">V</span>
+      <span class="skill-btn-icon">&#128196;</span>
+      <span class="skill-btn-cost">$50</span>
+    </div>
+  </div>
+
+  <!-- Wave Countdown -->
+  <div class="hud-wave">
+    <div class="hud-wave-text">Wave 3/5 - 12s</div>
+    <div class="hud-wave-bar"><div class="hud-wave-fill"></div></div>
+  </div>
+
+  <!-- Selection Info -->
+  <div class="hud-selection">
+    Soldier x3 | Archer x2 (5)
+  </div>
+
+  <!-- Building Panel -->
+  <div class="hud-build-panel wood-panel">
+    <div class="build-tabs">
+      <div class="build-tab active" onclick="switchBuildTab(this, 'units')">Units [Q]</div>
+      <div class="build-tab" onclick="switchBuildTab(this, 'buildings')">Buildings [W]</div>
+    </div>
+    <div class="build-grid" id="build-units">
+      <div class="build-icon"><span class="icon-hotkey">1</span><span class="icon-img">&#9876;</span><span class="icon-cost">$50</span></div>
+      <div class="build-icon"><span class="icon-hotkey">2</span><span class="icon-img">&#127993;</span><span class="icon-cost">$60</span></div>
+      <div class="build-icon"><span class="icon-hotkey">3</span><span class="icon-img">&#128160;</span><span class="icon-cost">$80</span></div>
+      <div class="build-icon"><span class="icon-hotkey">4</span><span class="icon-img">&#128154;</span><span class="icon-cost">$70</span></div>
+    </div>
+    <div class="build-grid" id="build-buildings" style="display:none">
+      <div class="build-icon"><span class="icon-hotkey">1</span><span class="icon-img">&#127968;</span><span class="icon-cost">$200</span></div>
+      <div class="build-icon"><span class="icon-hotkey">2</span><span class="icon-img">&#127981;</span><span class="icon-cost">$100</span></div>
+      <div class="build-icon"><span class="icon-hotkey">3</span><span class="icon-img">&#128163;</span><span class="icon-cost">$150</span></div>
+      <div class="build-icon dim"><span class="icon-hotkey">4</span><span class="icon-img">&#9634;</span><span class="icon-cost">$50</span></div>
+    </div>
+  </div>
+
+  <!-- Minimap -->
+  <div class="hud-minimap">Minimap</div>
+</div>
+
+<!-- ==================== PAGE 5: Pause Menu ==================== -->
+<div id="page-pause" class="page">
+  <div class="pause-panel wood-panel">
+    <div class="pause-banner">
+      <div class="pause-banner-title">Paused</div>
+    </div>
+    <div class="pause-content">
+      <div class="pause-group-label">GAME</div>
+      <button class="game-btn btn-blue">Resume</button>
+      <button class="game-btn btn-blue">Restart</button>
+      <button class="game-btn btn-blue">Level Select</button>
+      <div class="pause-divider"></div>
+      <div class="pause-group-label">SYSTEM</div>
+      <button class="game-btn btn-blue">Settings</button>
+      <button class="game-btn btn-red">Main Menu</button>
+      <div class="pause-hint">Press ESC to resume</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PAGE 6: Settings ==================== -->
+<div id="page-settings" class="page">
+  <div class="settings-panel wood-panel">
+    <div class="settings-header">
+      <div class="settings-title">Settings</div>
+      <div class="settings-tabs">
+        <div class="settings-tab active" onclick="switchSettingsTab(this, 'display')">Display</div>
+        <div class="settings-tab" onclick="switchSettingsTab(this, 'audio')">Audio</div>
+        <div class="settings-tab" onclick="switchSettingsTab(this, 'gameplay')">Gameplay</div>
+        <div class="settings-tab" onclick="switchSettingsTab(this, 'language')">Language</div>
+      </div>
+    </div>
+    <div class="settings-body">
+      <!-- Display -->
+      <div class="settings-section active" id="settings-display">
+        <div class="setting-row">
+          <div class="setting-label">Resolution</div>
+          <select class="setting-select">
+            <option>1280x720</option>
+            <option>1366x768</option>
+            <option>1600x900</option>
+            <option selected>1920x1080</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Display Mode</div>
+          <select class="setting-select">
+            <option>Fullscreen</option>
+            <option>Borderless</option>
+            <option selected>Windowed</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Brightness</div>
+          <div class="setting-slider"><input type="range" min="30" max="150" value="100" oninput="this.nextElementSibling.textContent=this.value+'%'"></div>
+          <div class="setting-value">100%</div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Show FPS</div>
+          <button class="setting-toggle on" onclick="this.classList.toggle('on')"></button>
+        </div>
+      </div>
+      <!-- Audio -->
+      <div class="settings-section" id="settings-audio">
+        <div class="setting-row">
+          <div class="setting-label">Master</div>
+          <div class="setting-slider"><input type="range" min="0" max="100" value="80" oninput="this.nextElementSibling.textContent=this.value+'%'"></div>
+          <div class="setting-value">80%</div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Music</div>
+          <div class="setting-slider"><input type="range" min="0" max="100" value="60" oninput="this.nextElementSibling.textContent=this.value+'%'"></div>
+          <div class="setting-value">60%</div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">SFX</div>
+          <div class="setting-slider"><input type="range" min="0" max="100" value="90" oninput="this.nextElementSibling.textContent=this.value+'%'"></div>
+          <div class="setting-value">90%</div>
+        </div>
+      </div>
+      <!-- Gameplay -->
+      <div class="settings-section" id="settings-gameplay">
+        <div class="setting-row">
+          <div class="setting-label">Damage Numbers</div>
+          <button class="setting-toggle on" onclick="this.classList.toggle('on')"></button>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Camera Speed</div>
+          <div class="setting-slider"><input type="range" min="20" max="300" value="100" oninput="this.nextElementSibling.textContent=this.value+'%'"></div>
+          <div class="setting-value">100%</div>
+        </div>
+      </div>
+      <!-- Language -->
+      <div class="settings-section" id="settings-language">
+        <div style="text-align:center;padding:8px 0;color:var(--text-dim);font-size:14px">Select Language</div>
+        <div class="lang-row">
+          <button class="lang-btn">English</button>
+          <button class="lang-btn active">中文</button>
+          <button class="lang-btn">日本語</button>
+        </div>
+      </div>
+    </div>
+    <div class="settings-back">
+      <button class="game-btn btn-blue" style="min-width:160px">Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PAGE 7: Upgrade ==================== -->
+<div id="page-upgrade" class="page">
+  <div class="upgrade-container">
+    <div class="upgrade-title">Gold Upgrade Selection</div>
+    <div class="upgrade-cards">
+      <div class="upgrade-card tier-gold">
+        <div class="upgrade-card-bg"></div>
+        <div class="upgrade-icon">&#9876;</div>
+        <div class="upgrade-name">Sharp Blades</div>
+        <div class="upgrade-desc">All melee units deal +25% damage. Soldiers and Lancers hit harder on every strike.</div>
+      </div>
+      <div class="upgrade-card tier-gold">
+        <div class="upgrade-card-bg"></div>
+        <div class="upgrade-icon">&#128737;</div>
+        <div class="upgrade-name">Iron Armor</div>
+        <div class="upgrade-desc">All units gain +30% max HP and take 10% less damage from all sources.</div>
+      </div>
+      <div class="upgrade-card tier-gold">
+        <div class="upgrade-card-bg"></div>
+        <div class="upgrade-icon">&#127919;</div>
+        <div class="upgrade-name">Quick March</div>
+        <div class="upgrade-desc">All units move 20% faster. Arrive at battles sooner and retreat more effectively.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- .pages -->
+
+<script>
+// Page navigation
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelector(`.nav button[data-page="${name}"]`).classList.add('active');
+}
+
+// Level select
+function selectLevel(el, index) {
+  el.parentElement.querySelectorAll('.level-item').forEach(i => i.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function setDifficulty(level) {
+  const stars = document.querySelectorAll('.difficulty-stars span');
+  stars.forEach((s, i) => s.classList.toggle('filled', i < level));
+}
+
+// Build tabs
+function switchBuildTab(el, tab) {
+  el.parentElement.querySelectorAll('.build-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('build-units').style.display = tab === 'units' ? 'flex' : 'none';
+  document.getElementById('build-buildings').style.display = tab === 'buildings' ? 'flex' : 'none';
+}
+
+// Settings tabs
+function switchSettingsTab(el, tab) {
+  el.parentElement.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('settings-' + tab).classList.add('active');
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const currentPage = document.querySelector('.page.active');
+    if (currentPage.id === 'page-hud') showPage('pause');
+    else if (currentPage.id === 'page-pause') showPage('hud');
+  }
+});
+</script>
+</body>
+</html>

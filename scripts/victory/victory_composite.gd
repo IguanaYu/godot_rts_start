@@ -74,7 +74,7 @@ func check() -> int:
 	return 0
 
 func get_objectives() -> Array[Dictionary]:
-	var all_objectives := []
+	var all_objectives: Array[Dictionary] = []
 
 	# 收集所有子条件的目标
 	for condition in _sub_conditions:
@@ -101,6 +101,12 @@ func get_progress_fraction() -> float:
 		return -1.0
 
 	return total_progress / float(valid_count)
+
+
+func set_game_controller(gc: Node) -> void:
+	super.set_game_controller(gc)
+	for child in _sub_conditions:
+		child.set_game_controller(gc)
 
 func reset() -> void:
 	for condition in _sub_conditions:

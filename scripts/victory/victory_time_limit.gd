@@ -22,11 +22,14 @@ func check() -> int:
 	if elapsed >= time_limit:
 		_time_expired = true
 		if victory_on_expire:
-			return 1  # 胜利
+			return 1  # 限时生存：倒计时结束=胜利
 		else:
-			return 2  # 失败
+			return 2  # 限时约束：超时=失败
 
-	return 0  # 进行中
+	# 时间未到
+	if not victory_on_expire:
+		return 1  # 限时约束：约束满足（配合AND组合使用）
+	return 0  # 限时生存：还在倒计时
 
 func get_objectives() -> Array[Dictionary]:
 	var elapsed := Time.get_ticks_msec() / 1000.0 - _start_time

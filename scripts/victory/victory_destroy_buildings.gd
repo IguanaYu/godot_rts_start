@@ -14,10 +14,19 @@ const BuildingScript := preload("res://scripts/buildings/building.gd")
 var _targets: Array = []
 var _destroyed_count: int = 0
 var _total_targets: int = 0
+var _initialized := false
 
 func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
+	# 延迟初始化到第一次 check()，确保所有建筑的分组注册已完成
+	if target_building_type < 0:
+		_init_targets()
+
+func _init_targets() -> void:
+	if _initialized:
+		return
+	_initialized = true
 
 	if target_building_type < 0:
 		# 使用指定的目标建筑
@@ -28,7 +37,6 @@ func _ready() -> void:
 				if node.has_signal("died"):
 					node.died.connect(_on_building_died)
 				_total_targets += 1
-				# 检查是否初始已摧毁
 				if node.has_method("is_dead") and node.is_dead():
 					_destroyed_count += 1
 	else:
@@ -54,6 +62,10 @@ func _on_building_died(building: Node) -> void:
 		objective_updated.emit()
 
 func check() -> int:
+	# 延迟初始化（第一次 check 时分组已就绪）
+	if not _initialized:
+		_init_targets()
+
 	# 胜利条件
 	if _destroyed_count >= _total_targets and _total_targets > 0:
 		return 1  # 胜利
@@ -72,13 +84,16 @@ func check() -> int:
 	return 0  # 进行中
 
 func get_objectives() -> Array[Dictionary]:
+	if not _initialized:
+		_init_targets()
+
 	var state := 0
 	if _destroyed_count >= _total_targets and _total_targets > 0:
 		state = 1  # 完成
 
 	var type_name := ""
 	if target_building_type >= 0:
-		type_name = BuildingType.keys()[target_building_type]
+		type_name = "Tower"
 
 	return [{
 		"text": tr(description_key) if target_building_type < 0 else ("Destroy: " + type_name),

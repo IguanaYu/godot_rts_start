@@ -17,21 +17,18 @@ const PATH_WOOD_TABLE := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free
 func initialize(main_node: Node2D) -> void:
 	_main_node = main_node
 	_victory_condition = null
-
-	if main_node != null and main_node.has_method("get"):
-		_victory_condition = main_node.get("victory_condition")
-
 	_create_panel()
-
-	# 连接信号更新
-	if _victory_condition != null:
-		if _victory_condition.has_signal("objective_updated"):
-			_victory_condition.objective_updated.connect(_on_objective_updated)
-		if _victory_condition.has_signal("stage_advanced"):
-			_victory_condition.stage_advanced.connect(_on_stage_advanced)
-
-	# 初始更新
 	_update_objectives()
+
+func _connect_victory_condition() -> void:
+	if _victory_condition == null and _main_node != null and is_instance_valid(_main_node):
+		_victory_condition = _main_node.get("victory_condition")
+		if _victory_condition != null:
+			if _victory_condition.has_signal("objective_updated"):
+				_victory_condition.objective_updated.connect(_on_objective_updated)
+			if _victory_condition.has_signal("stage_advanced"):
+				_victory_condition.stage_advanced.connect(_on_stage_advanced)
+			_update_objectives()
 
 func _create_panel() -> void:
 	# 创建CanvasLayer（layer 8，低于主UI的10）
@@ -85,7 +82,29 @@ func _on_objective_updated() -> void:
 func _on_stage_advanced(stage: int, total: int) -> void:
 	_update_objectives()
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		# 面板销毁时清理 CanvasLayer（挂在 /root 上不会随场景自动销毁）
+		if _canvas != null and is_instance_valid(_canvas):
+			# 先清理子节点避免泄漏
+			for child in _canvas.get_children():
+				child.queue_free()
+			_canvas.queue_free()
+			_canvas = null
+
 func _process(delta: float) -> void:
+	# 如果主节点不在场景树中（切回了选关界面），隐藏面板
+	if _main_node == null or not is_instance_valid(_main_node) or not _main_node.is_inside_tree():
+		if _canvas and _canvas.visible:
+			_canvas.visible = false
+		return
+	elif _canvas and not _canvas.visible:
+		_canvas.visible = true
+
+	# 延迟连接 victory_condition
+	if _victory_condition == null:
+		_connect_victory_condition()
+
 	# 每秒更新一次时间类目标
 	_update_timer += delta
 	if _update_timer >= 1.0:
