@@ -9,6 +9,7 @@ const PATH_BTN_RED_REG := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Fre
 const PATH_BTN_RED_PRS := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Buttons/BigRedButton_Pressed.png"
 const PATH_SPECIAL_PAPER := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Papers/SpecialPaper.png"
 const PATH_SMALL_RIBBONS := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Ribbons/SmallRibbons.png"
+const PATH_BANNER := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Banners/Banner_Slots.png"
 
 const SAVE_SLOTS := 3
 const SETTINGS_PATH := "user://settings.cfg"
@@ -21,6 +22,7 @@ var _slot_meta_labels: Array[Label] = []
 var _slot_progress_bars: Array[ProgressBar] = []
 var _slot_delete_buttons: Array[Button] = []
 var _slot_enter_buttons: Array[Button] = []
+var _slot_thumbs: Array[NinePatchRect] = []
 var _slot_bgs: Array[NinePatchRect] = []
 var _slot_empty_borders: Array[Panel] = []
 var _delete_confirm_slot: int = -1
@@ -34,6 +36,7 @@ var np_btn_blue_prs: Dictionary
 var np_btn_red: Dictionary
 var np_btn_red_prs: Dictionary
 var np_paper: Dictionary
+var np_banner: Dictionary
 
 
 func _ready() -> void:
@@ -70,6 +73,9 @@ func _process_all_textures() -> void:
 	np_paper = _process_ninepatch(PATH_SPECIAL_PAPER,
 		[[20, 63], [128, 191], [256, 298]],
 		[[9, 63], [128, 191], [256, 310]])
+	np_banner = _process_ninepatch(PATH_BANNER,
+		[[0, 63], [64, 127], [128, 191]],
+		[[0, 63], [64, 127], [128, 191]])
 
 
 func _process_ninepatch(source_path: String, content_rows: Array, content_cols: Array) -> Dictionary:
@@ -199,21 +205,12 @@ func _create_slot_card(index: int) -> Control:
 	content_vbox.add_theme_constant_override("separation", 10)
 	wrapper.add_child(content_vbox)
 
-	# 缩略图占位
-	var thumb := ColorRect.new()
+	# 横幅缩略图
+	var thumb := _make_ninepatch(np_banner)
 	thumb.custom_minimum_size = Vector2(0, 80)
-	thumb.color = Color(0.15, 0.15, 0.2, 0.6)
+	thumb.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content_vbox.add_child(thumb)
-
-	var thumb_label := Label.new()
-	thumb_label.text = "Thumbnail"
-	thumb_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	thumb_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	thumb_label.add_theme_font_size_override("font_size", 11)
-	thumb_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.55))
-	thumb_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	thumb_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	thumb.add_child(thumb_label)
+	_slot_thumbs.append(thumb)
 
 	# 名称
 	var name_label := Label.new()
@@ -377,6 +374,7 @@ func _refresh_all_slots() -> void:
 			_slot_score_labels[i].visible = true
 			_slot_meta_labels[i].visible = true
 			progress_bar.visible = true
+			_slot_thumbs[i].visible = true
 		else:
 			_slot_name_labels[i].text = ""
 			_slot_score_labels[i].text = ""
@@ -392,6 +390,7 @@ func _refresh_all_slots() -> void:
 			_slot_score_labels[i].visible = false
 			_slot_meta_labels[i].visible = false
 			progress_bar.visible = false
+			_slot_thumbs[i].visible = false
 
 
 func _on_slot_selected(slot: int) -> void:
