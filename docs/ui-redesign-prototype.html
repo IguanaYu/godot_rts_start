@@ -205,12 +205,21 @@ body {
 .level-header {
   text-align: center; font-size: 28px; color: var(--text-light);
   text-shadow: 2px 2px 4px rgba(0,0,0,0.6); margin-bottom: 16px;
+  display: flex; align-items: center; justify-content: center;
 }
+.mode-tab {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-dim); padding: 5px 16px; font-size: 13px;
+  cursor: pointer; transition: all 0.12s; font-family: inherit;
+}
+.mode-tab:first-child { border-radius: 4px 0 0 4px; }
+.mode-tab:last-child { border-radius: 0 4px 4px 0; }
+.mode-tab.active { background: var(--btn-blue); color: white; border-color: rgba(255,255,255,0.2); }
 .level-layout { display: flex; gap: 24px; flex: 1; min-height: 0; }
 /* Left: Level List */
 .level-list {
   width: 38%; display: flex; flex-direction: column; gap: 12px;
-  padding: 16px;
+  padding: 16px; overflow-y: auto; justify-content: flex-start;
 }
 .level-item {
   padding: 16px 20px; border-radius: 6px; cursor: pointer;
@@ -672,26 +681,88 @@ body {
 
 <!-- ==================== PAGE 3: Level Select ==================== -->
 <div id="page-level-select" class="page">
-  <div class="level-header">Mission Select</div>
+  <div class="level-header">
+    <span>Mission Select</span>
+    <span style="margin-left:16px;display:inline-flex;gap:0">
+      <button class="mode-tab active" onclick="toggleTestMode(false)" id="tab-campaign">Campaign</button>
+      <button class="mode-tab" onclick="toggleTestMode(true)" id="tab-test">Test Levels</button>
+    </span>
+  </div>
   <div class="level-layout">
-    <!-- Left: Level List -->
+    <!-- Left: Level List with Scroll -->
     <div class="level-list wood-panel">
-      <div class="level-item selected" onclick="selectLevel(this, 0)">
-        <div class="level-item-icon">&#9876;</div>
-        <div class="level-item-name">Blitz Attack</div>
-        <div class="level-item-check">&#10003;</div>
+      <div id="level-list-campaign">
+        <div class="level-item selected" onclick="selectLevel(this, 0)">
+          <div class="level-item-icon">&#9876;</div>
+          <div class="level-item-name">Blitz Attack</div>
+          <div class="level-item-check">&#10003;</div>
+        </div>
+        <div class="level-item" onclick="selectLevel(this, 1)">
+          <div class="level-item-icon">&#127919;</div>
+          <div class="level-item-name">Basic Attack</div>
+        </div>
+        <div class="level-item" onclick="selectLevel(this, 2)">
+          <div class="level-item-icon">&#128981;</div>
+          <div class="level-item-name">Tower Defense</div>
+        </div>
+        <div class="level-item" onclick="selectLevel(this, 3)">
+          <div class="level-item-icon">&#127968;</div>
+          <div class="level-item-name">Expand & Defend</div>
+        </div>
       </div>
-      <div class="level-item" onclick="selectLevel(this, 1)">
-        <div class="level-item-icon">&#127919;</div>
-        <div class="level-item-name">Basic Attack</div>
-      </div>
-      <div class="level-item" onclick="selectLevel(this, 2)">
-        <div class="level-item-icon">&#128981;</div>
-        <div class="level-item-name">Tower Defense</div>
-      </div>
-      <div class="level-item" onclick="selectLevel(this, 3)">
-        <div class="level-item-icon">&#127968;</div>
-        <div class="level-item-name">Expand & Defend</div>
+      <div id="level-list-test" style="display:none">
+        <div class="level-item selected" onclick="selectLevel(this, 0)">
+          <div class="level-item-icon" style="color:#4DB8FF">&#9733;</div>
+          <div class="level-item-name">T1: VIP Survival</div>
+        </div>
+        <div class="level-item" onclick="selectLevel(this, 1)">
+          <div class="level-item-icon" style="color:#FF3326">&#9733;</div>
+          <div class="level-item-name">T2: Assassinate</div>
+        </div>
+        <div class="level-item" onclick="selectLevel(this, 2)">
+          <div class="level-item-icon" style="color:#FFD700">&#9733;</div>
+          <div class="level-item-name">T3: Destroy Buildings</div>
+        </div>
+        <div class="level-item" onclick="selectLevel(this, 3)">
+          <div class="level-item-icon" style="color:#4CAF50">&#9733;</div>
+          <div class="level-item-name">T4: Protect Building</div>
+        </div>
+        <div class="level-item" onclick="selectLevel(this, 4)">
+          <div class="level-item-icon" style="color:#FF9800">&#9733;</div>
+          <div class="level-item-name">T5: Kill Count</div>
+        </div>
+        <div class="level-item" onclick="selectLevel(this, 5)">
+          <div class="level-item-icon" style="color:#FFD700">$</div>
+          <div class="level-item-name">T6: Gold Target</div>
+        </div>
+        <div class="level-item" onclick="selectLevel(this, 6)">
+          <div class="level-item-icon" style="color:#FF3326">&#9201;</div>
+          <div class="level-item-name">T7: Time Limit</div>
+        </div>
+        <div class="level-item" onclick="selectLevel(this, 7)">
+          <div class="level-item-icon" style="color:#4DB8FF">&#9201;</div>
+          <div class="level-item-name">T8: Survive Timer</div>
+        </div>
+        <div class="level-item" onclick="selectLevel(this, 8)">
+          <div class="level-item-icon" style="color:#4CAF50">&#9752;</div>
+          <div class="level-item-name">T9: Reach Location</div>
+        </div>
+        <div class="level-item" onclick="selectLevel(this, 9)">
+          <div class="level-item-icon" style="color:#9C27B0">&#9733;</div>
+          <div class="level-item-name">T10: Composite AND</div>
+        </div>
+        <div class="level-item" onclick="selectLevel(this, 10)">
+          <div class="level-item-icon" style="color:#E91E63">&#9881;</div>
+          <div class="level-item-name">T11: Multi Stage</div>
+        </div>
+        <div class="level-item" onclick="selectLevel(this, 11)">
+          <div class="level-item-icon" style="color:#00BCD4">&#9670;</div>
+          <div class="level-item-name">T12: Territory Score</div>
+        </div>
+        <div class="level-item" onclick="selectLevel(this, 12)">
+          <div class="level-item-icon" style="color:#FF5722">&#8734;</div>
+          <div class="level-item-name">T13: Endless</div>
+        </div>
       </div>
     </div>
     <!-- Right: Level Preview -->
@@ -699,13 +770,13 @@ body {
       <div class="preview-title">Blitz Attack</div>
       <div class="preview-image">Level Preview Image</div>
       <div class="preview-desc">A lightning assault on the enemy fortress. Destroy their castle before reinforcements arrive!</div>
-      <div class="preview-completion">
+      <div class="preview-completion" id="level-completion">
         <span class="completed">&#10003; Completed</span>
         <span>Score: 90</span>
         <span>Best: 2:34</span>
         <span>Plays: 5</span>
       </div>
-      <div class="difficulty-section">
+      <div class="difficulty-section" id="level-difficulty">
         <div class="difficulty-label">Difficulty</div>
         <div class="difficulty-stars">
           <span class="filled" onclick="setDifficulty(1)">&#9733;</span>
@@ -794,6 +865,16 @@ body {
 
   <!-- Minimap -->
   <div class="hud-minimap">Minimap</div>
+
+  <!-- Objectives Panel - Top Right -->
+  <div style="position:absolute;top:12px;right:12px;z-index:10;background:rgba(0,0,0,0.5);padding:10px 14px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);max-width:220px">
+    <div style="font-size:13px;color:#FFD700;font-weight:bold;margin-bottom:6px;text-shadow:1px 1px 2px rgba(0,0,0,0.6)">Objectives</div>
+    <div style="font-size:12px;color:#CCE0FF;line-height:1.6">
+      <div style="color:#4CAF50">&#10003; Destroy enemy castle</div>
+      <div>&#9744; Survive wave 5</div>
+      <div>&#9744; Kill 50 enemies</div>
+    </div>
+  </div>
 </div>
 
 <!-- ==================== PAGE 5: Pause Menu ==================== -->
@@ -966,6 +1047,16 @@ function switchSettingsTab(el, tab) {
   el.classList.add('active');
   document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
   document.getElementById('settings-' + tab).classList.add('active');
+}
+
+// Test/Campaign mode toggle
+function toggleTestMode(testMode) {
+  document.getElementById('level-list-campaign').style.display = testMode ? 'none' : '';
+  document.getElementById('level-list-test').style.display = testMode ? '' : 'none';
+  document.getElementById('tab-campaign').classList.toggle('active', !testMode);
+  document.getElementById('tab-test').classList.toggle('active', testMode);
+  document.getElementById('level-completion').style.display = testMode ? 'none' : '';
+  document.getElementById('level-difficulty').style.display = testMode ? 'none' : '';
 }
 
 // Keyboard shortcuts

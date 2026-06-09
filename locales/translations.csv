@@ -94,6 +94,7 @@ SAVE_NEW_GAME,New Game,新游戏,ニューゲーム
 SAVE_LAST_PLAYED,Last played: %s,上次游玩: %s,最終プレイ: %s
 SAVE_SCORE,Score: %d / %d,得分: %d / %d,スコア: %d / %d
 SAVE_PROGRESS,%d / %d completed,已通关 %d / %d,クリア %d / %d
+SAVE_META,Progress: %d/%d levels - Last: %s,进度: %d/%d 关卡 - 上次: %s,進度: %d/%d - 最終: %s
 SAVE_DELETE,Delete,删除,削除
 SAVE_DELETE_CONFIRM,Delete this save?,确认删除此存档？,このセーブを削除しますか？
 SAVE_COMPLETED,Completed ★,已通关 ★,クリア済み ★
