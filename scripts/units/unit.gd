@@ -82,11 +82,15 @@ var follow_target = null
 # Alt血条
 static var show_all_health_bars: bool = false
 
+# 寻路路径线
+static var show_path_lines: bool = true
+
 @onready var nav_agent: NavigationAgent2D = $NavigationAgent2D
 @onready var selection_ring: Node2D = $SelectionRing
 @onready var hp_bar: ProgressBar = $HPBar
 @onready var body_sprite: Sprite2D = $BodySprite
 @onready var aggro_line: Line2D = $AggroLine
+@onready var path_line: Line2D = $PathLine
 
 # 动画
 var _anim_state: String = ""
@@ -476,6 +480,7 @@ func _physics_process(delta: float) -> void:
 
 	attack_timer = max(0.0, attack_timer - delta)
 	_update_aggro_line()
+	_update_path_line()
 	_update_animation()
 	_update_state_indicator()
 
@@ -1128,6 +1133,26 @@ func _update_aggro_line() -> void:
 		aggro_line.add_point(attack_target.global_position - global_position)
 	else:
 		aggro_line.visible = false
+
+func _update_path_line() -> void:
+	if path_line == null:
+		return
+	if not show_path_lines or not selected or state == UnitState.DEAD:
+		path_line.visible = false
+		return
+	if nav_agent.is_navigation_finished():
+		path_line.visible = false
+		return
+	var path := nav_agent.get_current_navigation_path()
+	var idx := nav_agent.get_current_navigation_path_index()
+	if idx >= path.size():
+		path_line.visible = false
+		return
+	path_line.visible = true
+	path_line.clear_points()
+	path_line.add_point(Vector2.ZERO)
+	for i in range(idx, path.size()):
+		path_line.add_point(path[i] - global_position)
 
 func is_dead() -> bool:
 	return health.is_dead() if health else state == UnitState.DEAD

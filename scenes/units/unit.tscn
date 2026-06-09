@@ -43,6 +43,12 @@ show_percentage = false
 avoidance_enabled = true
 radius = 16.0
 
+[node name="PathLine" type="Line2D" parent="." unique_id=998877665]
+visible = false
+width = 2.0
+default_color = Color(0.2, 1.0, 0.2, 0.7)
+z_index = 10
+
 [node name="AggroLine" type="Line2D" parent="." unique_id=1137931396]
 visible = false
 width = 2.0

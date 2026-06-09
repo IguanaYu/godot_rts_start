@@ -149,6 +149,7 @@ func register_preplaced_buildings(buildings_node: Node2D) -> void:
 		for dx in range(gsize.x):
 			for dy in range(gsize.y):
 				occupied_cells[Vector2i(gpos.x + dx, gpos.y + dy)] = building
+	_rebuild_navigation()
 
 
 func _on_building_died(building: Node2D) -> void:
@@ -182,12 +183,14 @@ func _rebuild_navigation() -> void:
 	var nav_poly := NavigationPolygon.new()
 	NavigationServer2D.bake_from_source_geometry_data(nav_poly, source_geom)
 	_nav_region.navigation_polygon = nav_poly
+	print("[Nav] rebuilt: %d obstructions, %d vertices" % [obstructions.size(), nav_poly.vertices.size()])
 
 
 func _rect_to_outline(rect: Rect2, margin: float = 0.0) -> PackedVector2Array:
+	# 逆时针 (CCW)：obstruction_outlines 要求逆时针环绕
 	return PackedVector2Array([
 		rect.position - Vector2(margin, margin),
-		Vector2(rect.end.x + margin, rect.position.y - margin),
+		Vector2(rect.position.x - margin, rect.end.y + margin),
 		rect.end + Vector2(margin, margin),
-		Vector2(rect.position.x - margin, rect.end.y + margin)
+		Vector2(rect.end.x + margin, rect.position.y - margin)
 	])

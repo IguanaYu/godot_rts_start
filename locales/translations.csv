@@ -204,3 +204,4 @@ TEST_T13_NAME,T13: Endless,T13: 无尽模式,T13: エンドレス
 TEST_T13_DESC,"Survive as long as possible. Game ends when your castle falls.","尽可能长时间存活。城堡被毁时游戏结束。","できるだけ長く生き残れ。城が落ちたら終了。"
 TAB_CAMPAIGN,Campaign,战役,キャンペーン
 TAB_TEST_LEVELS,Test Levels,测试关卡,テストステージ
+UI_PATH_LINES,Path Lines,寻路路径线,パス表示

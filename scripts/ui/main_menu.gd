@@ -408,8 +408,29 @@ func _show_settings_overlay() -> void:
 	vbox.add_child(_make_slider_row(tr("UI_SFX_VOLUME"), sfx_val, 0.0, 1.0, _on_settings_sfx_volume_changed))
 
 	var spacer3 := Control.new()
-	spacer3.custom_minimum_size = Vector2(0, 8)
+	spacer3.custom_minimum_size = Vector2(0, 6)
 	vbox.add_child(spacer3)
+
+	# 游戏区域
+	vbox.add_child(_make_section_label(tr("UI_GAMEPLAY")))
+
+	# 寻路路径线
+	var path_row := HBoxContainer.new()
+	path_row.add_theme_constant_override("separation", 8)
+	var path_label := Label.new()
+	path_label.text = tr("UI_PATH_LINES")
+	path_label.add_theme_font_size_override("font_size", 14)
+	path_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
+	path_row.add_child(path_label)
+	var path_toggle := CheckButton.new()
+	path_toggle.button_pressed = config.get_value("game", "show_path_lines", true)
+	path_toggle.toggled.connect(_on_settings_path_lines_toggled)
+	path_row.add_child(path_toggle)
+	vbox.add_child(path_row)
+
+	var spacer4 := Control.new()
+	spacer4.custom_minimum_size = Vector2(0, 8)
+	vbox.add_child(spacer4)
 
 	# 返回按钮
 	vbox.add_child(_make_styled_button(tr("UI_BACK"), Vector2(0, 44), _close_settings_overlay))
@@ -544,6 +565,11 @@ func _on_settings_brightness_changed(value: float) -> void:
 
 func _on_settings_fps_toggled(pressed: bool) -> void:
 	_save_setting("display", "show_fps", pressed)
+
+
+func _on_settings_path_lines_toggled(pressed: bool) -> void:
+	Unit.show_path_lines = pressed
+	_save_setting("game", "show_path_lines", pressed)
 
 
 func _on_settings_master_volume_changed(value: float) -> void:

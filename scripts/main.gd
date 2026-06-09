@@ -790,6 +790,7 @@ func _load_damage_number_setting() -> void:
 	var config := ConfigFile.new()
 	if config.load("user://settings.cfg") == OK:
 		show_damage_numbers = config.get_value("game", "show_damage_numbers", true)
+		Unit.show_path_lines = config.get_value("game", "show_path_lines", true)
 
 
 func _load_display_settings() -> void:

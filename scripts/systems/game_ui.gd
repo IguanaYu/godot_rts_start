@@ -1030,6 +1030,11 @@ func _on_damage_numbers_toggled(pressed: bool) -> void:
 	_save_setting("game", "show_damage_numbers", pressed)
 
 
+func _on_path_lines_toggled(pressed: bool) -> void:
+	Unit.show_path_lines = pressed
+	_save_setting("game", "show_path_lines", pressed)
+
+
 func _on_resolution_selected(index: int) -> void:
 	var new_size := RESOLUTION_PRESETS[index]
 	if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_WINDOWED:
@@ -1251,6 +1256,20 @@ func _open_settings_page() -> void:
 	dmg_toggle.toggled.connect(_on_damage_numbers_toggled)
 	dmg_row.add_child(dmg_toggle)
 	vbox.add_child(dmg_row)
+
+	# 寻路路径线
+	var path_row := HBoxContainer.new()
+	path_row.add_theme_constant_override("separation", 8)
+	var path_label := Label.new()
+	path_label.text = tr("UI_PATH_LINES")
+	path_label.add_theme_font_size_override("font_size", 14)
+	path_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
+	path_row.add_child(path_label)
+	var path_toggle := CheckButton.new()
+	path_toggle.button_pressed = config.get_value("game", "show_path_lines", true)
+	path_toggle.toggled.connect(_on_path_lines_toggled)
+	path_row.add_child(path_toggle)
+	vbox.add_child(path_row)
 
 	# 鼠标灵敏度
 	var sens_val: float = config.get_value("gameplay", "camera_sensitivity", 1.0)
