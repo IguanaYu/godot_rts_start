@@ -237,9 +237,9 @@ func _create_upgrade_card(upgrade_id: int, tier_color: Color) -> void:
 	btn.add_theme_stylebox_override("focus", empty_style)
 	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	btn.pressed.connect(_on_upgrade_clicked.bind(upgrade_id))
+	card.add_child(btn)
 	var BF := preload("res://scripts/ui/button_factory.gd")
 	BF.add_hover_anim(card, card_bg, np_btn_blue_prs.texture, np_btn_blue.texture)
-	card.add_child(btn)
 
 
 func _on_upgrade_clicked(upgrade_id: int) -> void:

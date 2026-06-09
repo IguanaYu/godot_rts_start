@@ -340,9 +340,9 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	upgrade_token_button.disabled = true
 	upgrade_token_button.modulate.a = 0.5
 	upgrade_token_button.pressed.connect(func(): upgrade_button_pressed.emit())
+	upgrade_wrapper.add_child(upgrade_token_button)
 	var BF3 := preload("res://scripts/ui/button_factory.gd")
 	BF3.add_hover_anim(upgrade_wrapper, up_bg, np_btn_blue_prs.texture, np_btn_blue.texture)
-	upgrade_wrapper.add_child(upgrade_token_button)
 
 	# --- 放置模式提示（屏幕顶部）---
 	place_mode_label = Label.new()
@@ -447,9 +447,9 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	_speed_button.add_theme_stylebox_override("pressed", speed_empty)
 	_speed_button.add_theme_stylebox_override("focus", speed_empty)
 	_speed_button.pressed.connect(_on_speed_button_pressed)
+	_speed_wrapper.add_child(_speed_button)
 	var BF5 := preload("res://scripts/ui/button_factory.gd")
 	BF5.add_hover_anim(_speed_wrapper, speed_bg, np_btn_blue_prs.texture, np_btn_blue.texture)
-	_speed_wrapper.add_child(_speed_button)
 
 
 func _process(_delta: float) -> void:

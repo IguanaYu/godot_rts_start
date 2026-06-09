@@ -313,7 +313,68 @@ body {
 .upgrade-token-btn:hover { filter: brightness(1.2); transform: scale(1.05); }
 .upgrade-token-btn.has-tokens { color: white; background: rgba(75,184,255,0.3); border-color: rgba(75,184,255,0.4); }
 .resource-value { font-size: 20px; color: var(--gold); font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.6); }
-.hud-fps { position: absolute; top: 90px; left: 12px; font-size: 12px; color: #777; z-index: 10; }
+.hud-fps { position: absolute; top: 68px; left: 26px; font-size: 12px; color: #777; z-index: 10; }
+
+/* Speed Control - Bottom Left */
+.hud-speed {
+  position: absolute; bottom: 40px; left: 12px; z-index: 10;
+  width: 48px; height: 30px; border-radius: 6px;
+  background: var(--btn-blue); border: 1px solid rgba(255,255,255,0.1);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.12s;
+}
+.hud-speed:hover { filter: brightness(1.2); transform: scale(1.05); }
+.hud-speed:active { transform: scale(0.95); }
+.hud-speed-text {
+  font-size: 16px; color: var(--gold); font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+}
+
+/* Info Panel - Top Right (waves + objectives) */
+.hud-info-panel {
+  position: absolute; top: 12px; right: 12px; z-index: 10;
+  background: rgba(0,0,0,0.5); padding: 10px 14px; border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.08); max-width: 220px;
+}
+.hud-info-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.hud-info-title {
+  font-size: 13px; color: var(--gold); font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+}
+.hud-info-toggle {
+  background: none; border: none; color: var(--text-dim);
+  cursor: pointer; font-size: 12px; padding: 2px 4px;
+  transition: transform 0.2s;
+}
+.hud-info-toggle.collapsed { transform: rotate(-90deg); }
+.hud-info-section-label {
+  font-size: 11px; color: var(--text-dark); text-transform: uppercase;
+  letter-spacing: 1px; margin-top: 8px; margin-bottom: 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+/* Wave rows inside info panel */
+.info-wave-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; margin-bottom: 3px;
+}
+.info-wave-label { color: var(--damage-red); font-weight: bold; min-width: 56px; }
+.info-wave-bar {
+  flex: 1; height: 3px; background: rgba(255,255,255,0.1);
+  border-radius: 2px; overflow: hidden;
+}
+.info-wave-fill {
+  height: 100%; background: var(--damage-red);
+  border-radius: 2px; transition: width 0.5s;
+}
+/* Objective items */
+.hud-obj-item { font-size: 12px; line-height: 1.6; }
+.hud-obj-item.completed { color: #4CAF50; }
+.hud-obj-item.failed { color: var(--damage-red); }
+.hud-obj-item.active { color: #CCE0FF; }
+.hud-obj-progress { font-size: 10px; color: var(--text-dim); padding-left: 12px; }
 
 /* Skill Bar - Top Center */
 .hud-skills {
@@ -358,32 +419,8 @@ body {
   font-size: 16px; font-weight: bold; color: white;
 }
 
-/* Selection Info - Bottom Center Above Panel */
-.hud-selection {
-  position: absolute; bottom: 148px; left: 50%; transform: translateX(-50%);
-  background: rgba(0,0,0,0.5); padding: 6px 16px; border-radius: 6px;
-  font-size: 14px; color: #CCE0FF; z-index: 10;
-  border: 1px solid rgba(255,255,255,0.08);
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
-}
-
-/* Wave Countdown - Above Selection */
-.hud-wave {
-  position: absolute; bottom: 178px; left: 50%; transform: translateX(-50%);
-  display: flex; flex-direction: column; align-items: center; gap: 4px; z-index: 10;
-}
-.hud-wave-text { font-size: 17px; color: var(--damage-red); font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.6); }
-.hud-wave-bar {
-  width: 200px; height: 4px; background: rgba(255,255,255,0.1);
-  border-radius: 2px; overflow: hidden;
-}
-.hud-wave-fill {
-  height: 100%; width: 60%; background: var(--damage-red);
-  border-radius: 2px; transition: width 0.5s;
-}
-
-/* Building Panel - Bottom Center */
-.hud-build-panel {
+/* Bottom Panel - shared for build & selection */
+.hud-bottom-panel {
   position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
   width: 60%; min-height: 130px; z-index: 10;
   padding: 10px 16px;
@@ -799,8 +836,8 @@ body {
       <div class="resource-value">1,250</div>
     </div>
     <div class="upgrade-token-btn has-tokens">x2 Diamond Token</div>
-    <div class="hud-fps">FPS: 60</div>
   </div>
+  <div class="hud-fps">FPS: 60</div>
 
   <!-- Skill Bar -->
   <div class="hud-skills">
@@ -832,19 +869,8 @@ body {
     </div>
   </div>
 
-  <!-- Wave Countdown -->
-  <div class="hud-wave">
-    <div class="hud-wave-text">Wave 3/5 - 12s</div>
-    <div class="hud-wave-bar"><div class="hud-wave-fill"></div></div>
-  </div>
-
-  <!-- Selection Info -->
-  <div class="hud-selection">
-    Soldier x3 | Archer x2 (5)
-  </div>
-
-  <!-- Building Panel -->
-  <div class="hud-build-panel wood-panel">
+  <!-- Bottom Panel: Build / Selection toggle -->
+  <div class="hud-bottom-panel wood-panel">
     <div class="build-tabs">
       <div class="build-tab active" onclick="switchBuildTab(this, 'units')">Units [Q]</div>
       <div class="build-tab" onclick="switchBuildTab(this, 'buildings')">Buildings [W]</div>
@@ -863,16 +889,47 @@ body {
     </div>
   </div>
 
+  <!-- Speed Control -->
+  <div class="hud-speed" onclick="cycleSpeed()">
+    <span class="hud-speed-text" id="speed-text">1x</span>
+  </div>
+
   <!-- Minimap -->
   <div class="hud-minimap">Minimap</div>
 
-  <!-- Objectives Panel - Top Right -->
-  <div style="position:absolute;top:12px;right:12px;z-index:10;background:rgba(0,0,0,0.5);padding:10px 14px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);max-width:220px">
-    <div style="font-size:13px;color:#FFD700;font-weight:bold;margin-bottom:6px;text-shadow:1px 1px 2px rgba(0,0,0,0.6)">Objectives</div>
-    <div style="font-size:12px;color:#CCE0FF;line-height:1.6">
-      <div style="color:#4CAF50">&#10003; Destroy enemy castle</div>
-      <div>&#9744; Survive wave 5</div>
-      <div>&#9744; Kill 50 enemies</div>
+  <!-- Info Panel (waves + objectives) -->
+  <div class="hud-info-panel">
+    <div class="hud-info-header">
+      <span class="hud-info-title">Info</span>
+      <button class="hud-info-toggle" id="info-toggle" onclick="toggleInfoPanel()">&#9660;</button>
+    </div>
+    <div id="info-body">
+      <!-- Waves section -->
+      <div class="hud-info-section-label">Waves</div>
+      <div class="info-wave-item">
+        <span class="info-wave-label">Wave 3</span>
+        <div class="info-wave-bar"><div class="info-wave-fill" style="width:60%"></div></div>
+        <span style="font-size:11px;color:#888">12s</span>
+      </div>
+      <div class="info-wave-item">
+        <span class="info-wave-label">Wave 4</span>
+        <div class="info-wave-bar"><div class="info-wave-fill" style="width:25%"></div></div>
+        <span style="font-size:11px;color:#888">45s</span>
+      </div>
+      <div class="info-wave-item">
+        <span class="info-wave-label">Wave 5</span>
+        <div class="info-wave-bar"><div class="info-wave-fill" style="width:5%"></div></div>
+        <span style="font-size:11px;color:#888">1:23</span>
+      </div>
+
+      <!-- Objectives section -->
+      <div class="hud-info-section-label">Objectives</div>
+      <div class="hud-obj-item completed">&#10003; Destroy enemy castle</div>
+      <div class="hud-obj-progress">1/1 targets destroyed</div>
+      <div class="hud-obj-item active">&#9744; Survive wave 5</div>
+      <div class="hud-obj-progress">Wave 3/5</div>
+      <div class="hud-obj-item active">&#9744; Kill 50 enemies</div>
+      <div class="hud-obj-progress">23/50</div>
     </div>
   </div>
 </div>
@@ -1057,6 +1114,24 @@ function toggleTestMode(testMode) {
   document.getElementById('tab-test').classList.toggle('active', testMode);
   document.getElementById('level-completion').style.display = testMode ? 'none' : '';
   document.getElementById('level-difficulty').style.display = testMode ? 'none' : '';
+}
+
+// Speed control cycle (1x -> 2x -> 4x)
+var currentSpeed = 1;
+var speedOptions = [1, 2, 4];
+function cycleSpeed() {
+  var idx = speedOptions.indexOf(currentSpeed);
+  currentSpeed = speedOptions[(idx + 1) % speedOptions.length];
+  document.getElementById('speed-text').textContent = currentSpeed + 'x';
+}
+
+// Info panel (waves + objectives) toggle
+var infoPanelVisible = true;
+function toggleInfoPanel() {
+  infoPanelVisible = !infoPanelVisible;
+  document.getElementById('info-body').style.display = infoPanelVisible ? '' : 'none';
+  var btn = document.getElementById('info-toggle');
+  btn.classList.toggle('collapsed', !infoPanelVisible);
 }
 
 // Keyboard shortcuts
