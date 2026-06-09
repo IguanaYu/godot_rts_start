@@ -408,6 +408,7 @@ func _on_delete_pressed(slot: int) -> void:
 
 
 func _show_delete_confirm(slot: int) -> void:
+	var BF := preload("res://scripts/ui/button_factory.gd")
 	if _confirm_dialog != null:
 		_confirm_dialog.queue_free()
 	_confirm_dialog = Control.new()

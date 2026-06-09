@@ -1096,6 +1096,7 @@ func _on_camera_sensitivity_changed(value: float) -> void:
 # 设置子页面（九宫格风格，分区布局）
 # ============================================================
 func _open_settings_page() -> void:
+	var BF := preload("res://scripts/ui/button_factory.gd")
 	# 隐藏暂停主菜单
 	for child in _pause_overlay.get_children():
 		if child.name == "PauseMenuCenter":
