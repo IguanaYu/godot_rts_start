@@ -19,7 +19,7 @@ const DifficultyClass := preload("res://scripts/difficulty.gd")
 
 var cursor_manager: Node = null
 var _difficulty: int = 1  # 默认 NORMAL
-var _difficulty_buttons: Array[Button] = []
+var _star_labels: Array[Label] = []
 var _back_button_bg: NinePatchRect
 var _back_button_label: Label
 
@@ -80,9 +80,12 @@ var test_levels := [
 # === 模式切换 ===
 var _is_test_mode: bool = false
 var _current_levels: Array = []
-var _mode_button_bg: NinePatchRect
-var _mode_button_label: Label
-var _mode_button_wrapper: Control
+var _campaign_tab_bg: NinePatchRect
+var _campaign_tab_label: Label
+var _campaign_tab_wrapper: Control
+var _test_tab_bg: NinePatchRect
+var _test_tab_label: Label
+var _test_tab_wrapper: Control
 
 # === 支持的语言 ===
 var _supported_locales := ["en", "zh", "ja"]
@@ -92,6 +95,7 @@ var selected_index: int = -1
 var button_backgrounds: Array[NinePatchRect] = []
 var button_wrappers: Array[Control] = []
 var button_labels: Array[Label] = []
+var button_icons: Array[TextureRect] = []
 var right_title: Label
 var right_desc: Label
 var right_icon: TextureRect
@@ -236,10 +240,6 @@ func _refresh_ui() -> void:
 		button_labels[i].text = tr(_current_levels[i].name_key)
 	_update_right_panel(selected_index)
 
-	# 更新难度按钮
-	var diff_keys := ["DIFFICULTY_EASY", "DIFFICULTY_NORMAL", "DIFFICULTY_HARD"]
-	for i in range(_difficulty_buttons.size()):
-		_difficulty_buttons[i].text = tr(diff_keys[i])
 	_update_difficulty_highlight()
 
 	# 更新返回按钮文本
@@ -261,21 +261,96 @@ func _make_ninepatch(np: Dictionary) -> NinePatchRect:
 # 顶部横幅 + 语言按钮
 # ============================================================
 func _create_banner() -> void:
-	# 标题
-	_banner_title = Label.new()
-	_banner_title.text = tr("LEVEL_SELECT_TITLE")
-	_banner_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_banner_title.add_theme_font_size_override("font_size", 36)
-	_banner_title.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
-	_banner_title.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
-	_banner_title.add_theme_constant_override("shadow_offset_x", 2)
-	_banner_title.add_theme_constant_override("shadow_offset_y", 2)
-	_banner_title.anchor_left = 0.0
-	_banner_title.anchor_right = 1.0
-	_banner_title.anchor_top = 0.01
-	_banner_title.anchor_bottom = 0.06
-	_banner_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_banner_title)
+		# 标题
+		_banner_title = Label.new()
+		_banner_title.text = tr("LEVEL_SELECT_TITLE")
+		_banner_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_banner_title.add_theme_font_size_override("font_size", 36)
+		_banner_title.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
+		_banner_title.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+		_banner_title.add_theme_constant_override("shadow_offset_x", 2)
+		_banner_title.add_theme_constant_override("shadow_offset_y", 2)
+		_banner_title.anchor_left = 0.0
+		_banner_title.anchor_right = 1.0
+		_banner_title.anchor_top = 0.01
+		_banner_title.anchor_bottom = 0.055
+		_banner_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(_banner_title)
+
+		# Tab 按钮行
+		var tab_row := HBoxContainer.new()
+		tab_row.anchor_left = 0.0
+		tab_row.anchor_right = 1.0
+		tab_row.anchor_top = 0.06
+		tab_row.anchor_bottom = 0.10
+		tab_row.alignment = BoxContainer.ALIGNMENT_CENTER
+		tab_row.add_theme_constant_override("separation", 8)
+		tab_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(tab_row)
+
+		var BF := preload("res://scripts/ui/button_factory.gd")
+
+		# 战役 Tab
+		_campaign_tab_wrapper = Control.new()
+		_campaign_tab_wrapper.custom_minimum_size = Vector2(140, 36)
+		_campaign_tab_bg = _make_ninepatch(np_btn_red)
+		_campaign_tab_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_campaign_tab_wrapper.add_child(_campaign_tab_bg)
+		var campaign_btn := Button.new()
+		campaign_btn.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		campaign_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		var es := StyleBoxEmpty.new()
+		campaign_btn.add_theme_stylebox_override("normal", es)
+		campaign_btn.add_theme_stylebox_override("hover", es)
+		campaign_btn.add_theme_stylebox_override("pressed", es)
+		campaign_btn.add_theme_stylebox_override("focus", es)
+		campaign_btn.pressed.connect(_switch_to_campaign_mode)
+		_campaign_tab_wrapper.add_child(campaign_btn)
+		_campaign_tab_label = Label.new()
+		_campaign_tab_label.text = tr("TAB_CAMPAIGN")
+		_campaign_tab_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_campaign_tab_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		_campaign_tab_label.add_theme_font_size_override("font_size", 16)
+		_campaign_tab_label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
+		_campaign_tab_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+		_campaign_tab_label.add_theme_constant_override("shadow_offset_x", 1)
+		_campaign_tab_label.add_theme_constant_override("shadow_offset_y", 1)
+		_campaign_tab_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_campaign_tab_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_campaign_tab_wrapper.add_child(_campaign_tab_label)
+		BF.add_hover_anim_button(campaign_btn)
+		tab_row.add_child(_campaign_tab_wrapper)
+
+		# 测试关卡 Tab
+		_test_tab_wrapper = Control.new()
+		_test_tab_wrapper.custom_minimum_size = Vector2(140, 36)
+		_test_tab_bg = _make_ninepatch(np_btn_blue)
+		_test_tab_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_test_tab_wrapper.add_child(_test_tab_bg)
+		var test_btn := Button.new()
+		test_btn.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		test_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		var es2 := StyleBoxEmpty.new()
+		test_btn.add_theme_stylebox_override("normal", es2)
+		test_btn.add_theme_stylebox_override("hover", es2)
+		test_btn.add_theme_stylebox_override("pressed", es2)
+		test_btn.add_theme_stylebox_override("focus", es2)
+		test_btn.pressed.connect(_switch_to_test_mode)
+		_test_tab_wrapper.add_child(test_btn)
+		_test_tab_label = Label.new()
+		_test_tab_label.text = tr("TAB_TEST_LEVELS")
+		_test_tab_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_test_tab_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		_test_tab_label.add_theme_font_size_override("font_size", 16)
+		_test_tab_label.add_theme_color_override("font_color", Color(1, 1, 1))
+		_test_tab_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+		_test_tab_label.add_theme_constant_override("shadow_offset_x", 1)
+		_test_tab_label.add_theme_constant_override("shadow_offset_y", 1)
+		_test_tab_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_test_tab_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_test_tab_wrapper.add_child(_test_tab_label)
+		BF.add_hover_anim_button(test_btn)
+		tab_row.add_child(_test_tab_wrapper)
 
 
 # ============================================================
@@ -283,9 +358,10 @@ func _create_banner() -> void:
 # ============================================================
 func _create_main_layout() -> void:
 	var hbox := HBoxContainer.new()
+	hbox.name = "MainLayout"
 	hbox.anchor_left = 0.05
 	hbox.anchor_right = 0.95
-	hbox.anchor_top = 0.12
+	hbox.anchor_top = 0.14
 	hbox.anchor_bottom = 0.93
 	hbox.add_theme_constant_override("separation", 20)
 	add_child(hbox)
@@ -300,7 +376,7 @@ func _create_main_layout() -> void:
 func _create_left_panel(parent: HBoxContainer) -> void:
 	var wrapper := Control.new()
 	wrapper.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	wrapper.size_flags_stretch_ratio = 0.35
+	wrapper.size_flags_stretch_ratio = 0.38
 	parent.add_child(wrapper)
 
 	# WoodTable 九宫格底板
@@ -337,49 +413,73 @@ func _create_left_panel(parent: HBoxContainer) -> void:
 # 关卡按钮工厂
 # ============================================================
 func _create_level_button(index: int) -> Control:
-	var wrapper := Control.new()
-	wrapper.custom_minimum_size = Vector2(0, 100)
+		var wrapper := Control.new()
+		wrapper.custom_minimum_size = Vector2(0, 100)
 
-	# 九宫格按钮底板（初始蓝色）
-	var bg := _make_ninepatch(np_btn_blue)
-	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	wrapper.add_child(bg)
-	button_backgrounds.append(bg)
-	button_wrappers.append(wrapper)
-	wrapper.item_rect_changed.connect(func(): wrapper.pivot_offset = wrapper.size * 0.5)
+		# 九宫格按钮底板（初始蓝色）
+		var bg := _make_ninepatch(np_btn_blue)
+		bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		wrapper.add_child(bg)
+		button_backgrounds.append(bg)
+		button_wrappers.append(wrapper)
+		wrapper.item_rect_changed.connect(func(): wrapper.pivot_offset = wrapper.size * 0.5)
 
-	# 透明 Button 接收鼠标事件
-	var btn := Button.new()
-	btn.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	var empty_style := StyleBoxEmpty.new()
-	btn.add_theme_stylebox_override("normal", empty_style)
-	btn.add_theme_stylebox_override("hover", empty_style)
-	btn.add_theme_stylebox_override("pressed", empty_style)
-	btn.add_theme_stylebox_override("focus", empty_style)
-	btn.mouse_entered.connect(_on_button_hover.bind(index))
-	btn.mouse_exited.connect(_on_button_unhover.bind(index))
-	btn.pressed.connect(_on_button_clicked.bind(index))
-	btn.button_down.connect(_on_button_down.bind(index))
-	btn.button_up.connect(_on_button_up.bind(index))
-	wrapper.add_child(btn)
+		# 透明 Button 接收鼠标事件
+		var btn := Button.new()
+		btn.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		var empty_style := StyleBoxEmpty.new()
+		btn.add_theme_stylebox_override("normal", empty_style)
+		btn.add_theme_stylebox_override("hover", empty_style)
+		btn.add_theme_stylebox_override("pressed", empty_style)
+		btn.add_theme_stylebox_override("focus", empty_style)
+		btn.mouse_entered.connect(_on_button_hover.bind(index))
+		btn.mouse_exited.connect(_on_button_unhover.bind(index))
+		btn.pressed.connect(_on_button_clicked.bind(index))
+		btn.button_down.connect(_on_button_down.bind(index))
+		btn.button_up.connect(_on_button_up.bind(index))
+		wrapper.add_child(btn)
 
-	# 文字标签
-	var label := Label.new()
-	label.text = tr(_current_levels[index].name_key)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 20)
-	label.add_theme_color_override("font_color", Color(1, 1, 1))
-	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
-	label.add_theme_constant_override("shadow_offset_x", 1)
-	label.add_theme_constant_override("shadow_offset_y", 1)
-	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	wrapper.add_child(label)
-	button_labels.append(label)
+		# 内容行：图标 + 文字
+		var content_row := HBoxContainer.new()
+		content_row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		content_row.offset_left = 12
+		content_row.offset_right = -12
+		content_row.offset_top = 8
+		content_row.offset_bottom = -8
+		content_row.add_theme_constant_override("separation", 8)
+		content_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		wrapper.add_child(content_row)
 
-	return wrapper
+		# 图标
+		var icon := TextureRect.new()
+		icon.custom_minimum_size = Vector2(64, 64)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		var icon_path: String = _current_levels[index].get("icon", "")
+		if icon_path != "":
+			icon.texture = load(icon_path)
+		else:
+			icon.visible = false
+		content_row.add_child(icon)
+		button_icons.append(icon)
+
+		# 文字标签
+		var label := Label.new()
+		label.text = tr(_current_levels[index].name_key)
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.add_theme_font_size_override("font_size", 20)
+		label.add_theme_color_override("font_color", Color(1, 1, 1))
+		label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+		label.add_theme_constant_override("shadow_offset_x", 1)
+		label.add_theme_constant_override("shadow_offset_y", 1)
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		content_row.add_child(label)
+		button_labels.append(label)
+
+		return wrapper
 
 
 # ============================================================
@@ -388,7 +488,7 @@ func _create_level_button(index: int) -> Control:
 func _create_right_panel(parent: HBoxContainer) -> void:
 	var wrapper := Control.new()
 	wrapper.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	wrapper.size_flags_stretch_ratio = 0.65
+	wrapper.size_flags_stretch_ratio = 0.62
 	parent.add_child(wrapper)
 
 	# SpecialPaper 九宫格底板
@@ -479,8 +579,6 @@ func _create_right_panel(parent: HBoxContainer) -> void:
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(spacer)
 
-	# 7) 测试关卡/返回战役 按钮
-	_create_mode_button(vbox)
 
 	# 8) START 按钮
 	_create_start_button(vbox)
@@ -524,16 +622,20 @@ func _create_start_button(parent: VBoxContainer) -> void:
 
 	var BF := preload("res://scripts/ui/button_factory.gd")
 	BF.add_hover_anim(wrapper, start_button_bg, np_btn_red_prs.texture, np_btn_red.texture)
-	parent.add_child(wrapper)
+	# 按钮行：开始 + 返回
+	var btn_row := HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.add_theme_constant_override("separation", 16)
+	btn_row.add_child(wrapper)
+	_create_back_button(btn_row)
+	parent.add_child(btn_row)
 
-	# 返回存档选择按钮
-	_create_back_button(parent)
 
 
 # ============================================================
 # 返回存档选择按钮
 # ============================================================
-func _create_back_button(parent: VBoxContainer) -> void:
+func _create_back_button(parent: BoxContainer) -> void:
 	var wrapper := Control.new()
 	wrapper.custom_minimum_size = Vector2(160, 50)
 	wrapper.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -579,60 +681,67 @@ func _on_back_pressed() -> void:
 # 难度选择器
 # ============================================================
 func _create_difficulty_selector(parent: VBoxContainer) -> void:
-	# 标签
-	var label := Label.new()
-	label.text = tr("DIFFICULTY_LABEL")
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 18)
-	label.add_theme_color_override("font_color", Color(1, 0.95, 0.8))
-	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.5))
-	label.add_theme_constant_override("shadow_offset_x", 1)
-	label.add_theme_constant_override("shadow_offset_y", 1)
-	parent.add_child(label)
+		# 标签
+		var label := Label.new()
+		label.text = tr("DIFFICULTY_LABEL")
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.add_theme_font_size_override("font_size", 18)
+		label.add_theme_color_override("font_color", Color(1, 0.95, 0.8))
+		label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.5))
+		label.add_theme_constant_override("shadow_offset_x", 1)
+		label.add_theme_constant_override("shadow_offset_y", 1)
+		parent.add_child(label)
 
-	# 按钮行
-	var hbox := HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 8)
-	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	parent.add_child(hbox)
+		# 星星行
+		var hbox := HBoxContainer.new()
+		hbox.add_theme_constant_override("separation", 4)
+		hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+		parent.add_child(hbox)
 
-	var difficulties := [
-		{"key": "DIFFICULTY_EASY", "level": 0},
-		{"key": "DIFFICULTY_NORMAL", "level": 1},
-		{"key": "DIFFICULTY_HARD", "level": 2},
-	]
+		for i in range(3):
+			var star_wrapper := Control.new()
+			star_wrapper.custom_minimum_size = Vector2(40, 40)
+			hbox.add_child(star_wrapper)
 
-	for diff in difficulties:
-		var btn := Button.new()
-		btn.text = tr(diff.key)
-		btn.custom_minimum_size = Vector2(90, 28)
-		btn.add_theme_font_size_override("font_size", 14)
-		btn.set_meta("difficulty_level", diff.level)
-		if diff.level == _difficulty:
-			btn.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
-		else:
-			btn.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
-		btn.pressed.connect(_on_difficulty_selected.bind(diff.level))
-		var BF4 := preload("res://scripts/ui/button_factory.gd")
-		BF4.add_hover_anim_button(btn)
-		hbox.add_child(btn)
-		_difficulty_buttons.append(btn)
+			var star_btn := Button.new()
+			star_btn.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			star_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+			var es := StyleBoxEmpty.new()
+			star_btn.add_theme_stylebox_override("normal", es)
+			star_btn.add_theme_stylebox_override("hover", es)
+			star_btn.add_theme_stylebox_override("pressed", es)
+			star_btn.add_theme_stylebox_override("focus", es)
+			star_btn.pressed.connect(_on_difficulty_selected.bind(i))
+			star_wrapper.add_child(star_btn)
+
+			var star_label := Label.new()
+			star_label.text = "★"
+			star_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			star_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			star_label.add_theme_font_size_override("font_size", 28)
+			star_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			star_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			star_wrapper.add_child(star_label)
+			_star_labels.append(star_label)
+
+			var BF4 := preload("res://scripts/ui/button_factory.gd")
+			BF4.add_hover_anim_button(star_btn)
+
+		_update_difficulty_highlight()
 
 
 func _on_difficulty_selected(level: int) -> void:
-	_difficulty = level
-	DifficultyClass.save_to_config(level)
-	_update_difficulty_highlight()
+		_difficulty = level
+		DifficultyClass.save_to_config(level)
+		_update_difficulty_highlight()
 
 
 func _update_difficulty_highlight() -> void:
-	for btn in _difficulty_buttons:
-		var btn_level: int = btn.get_meta("difficulty_level")
-		if btn_level == _difficulty:
-			btn.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
+	for i in range(_star_labels.size()):
+		if i <= _difficulty:
+			_star_labels[i].add_theme_color_override("font_color", Color(1, 0.85, 0.0))
 		else:
-			btn.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
-
+			_star_labels[i].add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
 
 # ============================================================
 # 底部提示
@@ -660,7 +769,7 @@ func _select_level(index: int) -> void:
 
 
 func _update_button_appearances() -> void:
-	for i in range(_current_levels.size()):
+	for i in range(button_backgrounds.size()):
 		if i == selected_index:
 			button_backgrounds[i].texture = np_btn_red.texture
 			button_backgrounds[i].patch_margin_left = np_btn_red.margin_left
@@ -731,20 +840,28 @@ func _update_right_panel(index: int) -> void:
 
 
 func _on_button_hover(index: int) -> void:
+	if index >= button_backgrounds.size():
+		return
 	if index < button_wrappers.size(): button_wrappers[index].scale = Vector2(1.08, 1.08)
 	_update_right_panel(index)
 
 
 func _on_button_unhover(_index: int) -> void:
+	if _index >= button_backgrounds.size():
+		return
 	if _index < button_wrappers.size(): button_wrappers[_index].scale = Vector2(1.0, 1.0)
 	_update_right_panel(selected_index)
 
 
 func _on_button_clicked(index: int) -> void:
+	if index >= button_backgrounds.size():
+		return
 	_select_level(index)
 
 
 func _on_button_down(index: int) -> void:
+	if index >= button_backgrounds.size():
+		return
 	if index < button_wrappers.size(): button_wrappers[index].scale = Vector2(0.95, 0.95)
 	if index == selected_index:
 		button_backgrounds[index].texture = np_btn_red_prs.texture
@@ -761,6 +878,8 @@ func _on_button_down(index: int) -> void:
 
 
 func _on_button_up(index: int) -> void:
+	if index >= button_backgrounds.size():
+		return
 	if index < button_wrappers.size(): button_wrappers[index].scale = Vector2(1.08, 1.08)
 	if index == selected_index:
 		button_backgrounds[index].texture = np_btn_red.texture
@@ -990,58 +1109,11 @@ func _on_esc_back_to_main() -> void:
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 
 
-# ============================================================
-# 模式切换按钮（测试关卡 / 返回战役）
-# ============================================================
-func _create_mode_button(parent: VBoxContainer) -> void:
-	_mode_button_wrapper = Control.new()
-	_mode_button_wrapper.custom_minimum_size = Vector2(160, 50)
-	_mode_button_wrapper.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-
-	_mode_button_bg = _make_ninepatch(np_btn_blue)
-	_mode_button_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_mode_button_wrapper.add_child(_mode_button_bg)
-
-	var btn := Button.new()
-	btn.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	var empty_style := StyleBoxEmpty.new()
-	btn.add_theme_stylebox_override("normal", empty_style)
-	btn.add_theme_stylebox_override("hover", empty_style)
-	btn.add_theme_stylebox_override("pressed", empty_style)
-	btn.add_theme_stylebox_override("focus", empty_style)
-	btn.pressed.connect(_on_mode_button_pressed)
-	_mode_button_wrapper.add_child(btn)
-
-	_mode_button_label = Label.new()
-	_mode_button_label.text = tr("BTN_TEST_LEVELS")
-	_mode_button_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_mode_button_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_mode_button_label.add_theme_font_size_override("font_size", 16)
-	_mode_button_label.add_theme_color_override("font_color", Color(1, 1, 1))
-	_mode_button_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
-	_mode_button_label.add_theme_constant_override("shadow_offset_x", 1)
-	_mode_button_label.add_theme_constant_override("shadow_offset_y", 1)
-	_mode_button_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_mode_button_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_mode_button_wrapper.add_child(_mode_button_label)
-
-	var BF := preload("res://scripts/ui/button_factory.gd")
-	BF.add_hover_anim(_mode_button_wrapper, _mode_button_bg, np_btn_blue_prs.texture, np_btn_blue.texture)
-	parent.add_child(_mode_button_wrapper)
-
-
-func _on_mode_button_pressed() -> void:
-	if _is_test_mode:
-		_switch_to_campaign_mode()
-	else:
-		_switch_to_test_mode()
-
 
 func _switch_to_test_mode() -> void:
 	_is_test_mode = true
 	_current_levels = test_levels
-	_mode_button_label.text = tr("BTN_CAMPAIGN")
+	_update_tab_appearance()
 	_rebuild_left_panel()
 	_select_level(0)
 
@@ -1049,9 +1121,38 @@ func _switch_to_test_mode() -> void:
 func _switch_to_campaign_mode() -> void:
 	_is_test_mode = false
 	_current_levels = levels
-	_mode_button_label.text = tr("BTN_TEST_LEVELS")
+	_update_tab_appearance()
 	_rebuild_left_panel()
 	_select_level(0)
+
+
+func _update_tab_appearance() -> void:
+	if _is_test_mode:
+		_test_tab_bg.texture = np_btn_red.texture
+		_test_tab_bg.patch_margin_left = np_btn_red.margin_left
+		_test_tab_bg.patch_margin_right = np_btn_red.margin_right
+		_test_tab_bg.patch_margin_top = np_btn_red.margin_top
+		_test_tab_bg.patch_margin_bottom = np_btn_red.margin_bottom
+		_test_tab_label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
+		_campaign_tab_bg.texture = np_btn_blue.texture
+		_campaign_tab_bg.patch_margin_left = np_btn_blue.margin_left
+		_campaign_tab_bg.patch_margin_right = np_btn_blue.margin_right
+		_campaign_tab_bg.patch_margin_top = np_btn_blue.margin_top
+		_campaign_tab_bg.patch_margin_bottom = np_btn_blue.margin_bottom
+		_campaign_tab_label.add_theme_color_override("font_color", Color(1, 1, 1))
+	else:
+		_campaign_tab_bg.texture = np_btn_red.texture
+		_campaign_tab_bg.patch_margin_left = np_btn_red.margin_left
+		_campaign_tab_bg.patch_margin_right = np_btn_red.margin_right
+		_campaign_tab_bg.patch_margin_top = np_btn_red.margin_top
+		_campaign_tab_bg.patch_margin_bottom = np_btn_red.margin_bottom
+		_campaign_tab_label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
+		_test_tab_bg.texture = np_btn_blue.texture
+		_test_tab_bg.patch_margin_left = np_btn_blue.margin_left
+		_test_tab_bg.patch_margin_right = np_btn_blue.margin_right
+		_test_tab_bg.patch_margin_top = np_btn_blue.margin_top
+		_test_tab_bg.patch_margin_bottom = np_btn_blue.margin_bottom
+		_test_tab_label.add_theme_color_override("font_color", Color(1, 1, 1))
 
 
 func _rebuild_left_panel() -> void:
@@ -1059,11 +1160,12 @@ func _rebuild_left_panel() -> void:
 	button_backgrounds.clear()
 	button_wrappers.clear()
 	button_labels.clear()
+	button_icons.clear()
 
 	# 找到主 HBoxContainer（遍历子节点查找）
 	var hbox: HBoxContainer = null
 	for child in get_children():
-		if child is HBoxContainer:
+		if child.name == "MainLayout":
 			hbox = child
 			break
 	if hbox == null:
