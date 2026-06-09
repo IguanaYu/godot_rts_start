@@ -514,7 +514,7 @@ var _wave_clear_notified: bool = false
 var _wave_debug_timer: float = 0.0
 
 func _process(delta: float) -> void:
-	camera_module.process_camera(delta)
+	camera_module.process_camera(delta / Engine.time_scale)
 	_check_victory()
 	_check_wave_cleared()
 	combat_ctrl.update_selection(get_global_mouse_position(), selection_box)
@@ -676,6 +676,10 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventKey and event.pressed:
 		var key: int = event.keycode
 		match key:
+			KEY_MINUS, KEY_KP_SUBTRACT:
+				ui_module.decrease_game_speed()
+			KEY_EQUAL, KEY_KP_ADD:
+				ui_module.increase_game_speed()
 			KEY_Q:
 				if not event.ctrl_pressed:
 					input_mode.enter_unit_production()

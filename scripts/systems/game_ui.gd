@@ -26,6 +26,13 @@ var upgrade_token_button: Button
 var wave_countdown_label: Label
 var panel_bg: NinePatchRect  # 底部面板背景，用于高亮
 
+# 倍速控制
+var _game_speed: float = 1.0
+const SPEED_OPTIONS: Array[float] = [1.0, 2.0, 4.0]
+var _speed_button: Button
+var _speed_label: Label
+var _speed_wrapper: Control
+
 # 标签页
 var active_tab: int = 0  # 0=单位, 1=建筑
 var tab_buttons: Array[Button] = []
@@ -86,6 +93,8 @@ var _settings_res_option: OptionButton
 var _settings_display_mode_option: OptionButton
 
 func initialize(main_node: Node2D, map_config: Resource, gold: int) -> void:
+	Engine.time_scale = 1.0
+	_game_speed = 1.0
 	_main_node = main_node
 	_preprocess_textures()
 	_create_ui(map_config, gold)
@@ -399,10 +408,75 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	_fps_label.visible = _main_node.show_fps
 	canvas.add_child(_fps_label)
 
+	# --- 倍速按钮（右上角，独立 canvas 确保不被遮挡）---
+	var speed_canvas := CanvasLayer.new()
+	speed_canvas.layer = 50
+	_main_node.add_child(speed_canvas)
+
+	_speed_wrapper = Control.new()
+	_speed_wrapper.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	_speed_wrapper.position = Vector2(10, -40)
+	_speed_wrapper.size = Vector2(48, 30)
+	speed_canvas.add_child(_speed_wrapper)
+
+	var speed_bg := _make_ninepatch(np_btn_blue)
+	speed_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_speed_wrapper.add_child(speed_bg)
+
+	_speed_label = Label.new()
+	_speed_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_speed_label.offset_left = 4
+	_speed_label.offset_right = -4
+	_speed_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_speed_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_speed_label.add_theme_font_size_override("font_size", 16)
+	_speed_label.add_theme_color_override("font_color", Color(1, 0.9, 0.3))
+	_speed_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	_speed_label.add_theme_constant_override("shadow_offset_x", 1)
+	_speed_label.add_theme_constant_override("shadow_offset_y", 1)
+	_speed_label.text = "1x"
+	_speed_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_speed_wrapper.add_child(_speed_label)
+
+	_speed_button = Button.new()
+	_speed_button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_speed_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	var speed_empty := StyleBoxEmpty.new()
+	_speed_button.add_theme_stylebox_override("normal", speed_empty)
+	_speed_button.add_theme_stylebox_override("hover", speed_empty)
+	_speed_button.add_theme_stylebox_override("pressed", speed_empty)
+	_speed_button.add_theme_stylebox_override("focus", speed_empty)
+	_speed_button.pressed.connect(_on_speed_button_pressed)
+	var BF5 := preload("res://scripts/ui/button_factory.gd")
+	BF5.add_hover_anim(_speed_wrapper, speed_bg, np_btn_blue_prs.texture, np_btn_blue.texture)
+	_speed_wrapper.add_child(_speed_button)
+
 
 func _process(_delta: float) -> void:
 	if _fps_label and _fps_label.visible:
 		_fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
+
+
+func _on_speed_button_pressed() -> void:
+	var idx := SPEED_OPTIONS.find(_game_speed)
+	var next_idx := (idx + 1) % SPEED_OPTIONS.size()
+	set_game_speed(SPEED_OPTIONS[next_idx])
+
+func set_game_speed(speed: float) -> void:
+	_game_speed = speed
+	Engine.time_scale = speed
+	if _speed_label:
+		_speed_label.text = "%dx" % int(speed)
+
+func increase_game_speed() -> void:
+	var idx := SPEED_OPTIONS.find(_game_speed)
+	if idx < SPEED_OPTIONS.size() - 1:
+		set_game_speed(SPEED_OPTIONS[idx + 1])
+
+func decrease_game_speed() -> void:
+	var idx := SPEED_OPTIONS.find(_game_speed)
+	if idx > 0:
+		set_game_speed(SPEED_OPTIONS[idx - 1])
 
 
 # ============================================================
