@@ -60,6 +60,30 @@ var levels := [
 	},
 ]
 
+# === 测试关卡数据 ===
+var test_levels := [
+	{"name_key": "TEST_T1_NAME", "desc_key": "TEST_T1_DESC", "scene": "res://scenes/maps/test_vip_survival.tscn"},
+	{"name_key": "TEST_T2_NAME", "desc_key": "TEST_T2_DESC", "scene": "res://scenes/maps/test_assassinate.tscn"},
+	{"name_key": "TEST_T3_NAME", "desc_key": "TEST_T3_DESC", "scene": "res://scenes/maps/test_destroy_buildings.tscn"},
+	{"name_key": "TEST_T4_NAME", "desc_key": "TEST_T4_DESC", "scene": "res://scenes/maps/test_protect_building.tscn"},
+	{"name_key": "TEST_T5_NAME", "desc_key": "TEST_T5_DESC", "scene": "res://scenes/maps/test_kill_count.tscn"},
+	{"name_key": "TEST_T6_NAME", "desc_key": "TEST_T6_DESC", "scene": "res://scenes/maps/test_gold_target.tscn"},
+	{"name_key": "TEST_T7_NAME", "desc_key": "TEST_T7_DESC", "scene": "res://scenes/maps/test_time_limit.tscn"},
+	{"name_key": "TEST_T8_NAME", "desc_key": "TEST_T8_DESC", "scene": "res://scenes/maps/test_survive_timer.tscn"},
+	{"name_key": "TEST_T9_NAME", "desc_key": "TEST_T9_DESC", "scene": "res://scenes/maps/test_reach_location.tscn"},
+	{"name_key": "TEST_T10_NAME", "desc_key": "TEST_T10_DESC", "scene": "res://scenes/maps/test_composite_and.tscn"},
+	{"name_key": "TEST_T11_NAME", "desc_key": "TEST_T11_DESC", "scene": "res://scenes/maps/test_multi_stage.tscn"},
+	{"name_key": "TEST_T12_NAME", "desc_key": "TEST_T12_DESC", "scene": "res://scenes/maps/test_territory_score.tscn"},
+	{"name_key": "TEST_T13_NAME", "desc_key": "TEST_T13_DESC", "scene": "res://scenes/maps/test_endless.tscn"},
+]
+
+# === 模式切换 ===
+var _is_test_mode: bool = false
+var _current_levels: Array = []
+var _mode_button_bg: NinePatchRect
+var _mode_button_label: Label
+var _mode_button_wrapper: Control
+
 # === 支持的语言 ===
 var _supported_locales := ["en", "zh", "ja"]
 
@@ -180,6 +204,7 @@ func _ready() -> void:
 		[[14, 63], [128, 191], [256, 305]])
 
 	# 构建 UI
+	_current_levels = levels
 	_create_banner()
 	_create_main_layout()
 	_create_hint_label()
@@ -207,8 +232,8 @@ func _refresh_ui() -> void:
 	_banner_title.text = tr("LEVEL_SELECT_TITLE")
 	start_button_label.text = tr("LEVEL_START_MISSION")
 	_hint_label.text = tr("LEVEL_PRESS_ESC_MENU")
-	for i in range(levels.size()):
-		button_labels[i].text = tr(levels[i].name_key)
+	for i in range(_current_levels.size()):
+		button_labels[i].text = tr(_current_levels[i].name_key)
 	_update_right_panel(selected_index)
 
 	# 更新难度按钮
@@ -283,17 +308,23 @@ func _create_left_panel(parent: HBoxContainer) -> void:
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	wrapper.add_child(bg)
 
+	# ScrollContainer 包裹按钮列表
+	var scroll := ScrollContainer.new()
+	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	scroll.offset_left = 20
+	scroll.offset_right = -20
+	scroll.offset_top = 20
+	scroll.offset_bottom = -20
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	wrapper.add_child(scroll)
+
 	# 内容容器
 	var vbox := VBoxContainer.new()
-	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	vbox.offset_left = 20
-	vbox.offset_right = -20
-	vbox.offset_top = 20
-	vbox.offset_bottom = -20
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	vbox.add_theme_constant_override("separation", 12)
-	wrapper.add_child(vbox)
+	scroll.add_child(vbox)
 
-	for i in range(levels.size()):
+	for i in range(_current_levels.size()):
 		vbox.add_child(_create_level_button(i))
 
 	# 弹性间距，把按钮推到顶部
@@ -335,7 +366,7 @@ func _create_level_button(index: int) -> Control:
 
 	# 文字标签
 	var label := Label.new()
-	label.text = tr(levels[index].name_key)
+	label.text = tr(_current_levels[index].name_key)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 20)
@@ -448,7 +479,10 @@ func _create_right_panel(parent: HBoxContainer) -> void:
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(spacer)
 
-	# 6) START 按钮
+	# 7) 测试关卡/返回战役 按钮
+	_create_mode_button(vbox)
+
+	# 8) START 按钮
 	_create_start_button(vbox)
 
 
@@ -626,7 +660,7 @@ func _select_level(index: int) -> void:
 
 
 func _update_button_appearances() -> void:
-	for i in range(levels.size()):
+	for i in range(_current_levels.size()):
 		if i == selected_index:
 			button_backgrounds[i].texture = np_btn_red.texture
 			button_backgrounds[i].patch_margin_left = np_btn_red.margin_left
@@ -644,43 +678,50 @@ func _update_button_appearances() -> void:
 
 
 func _update_right_panel(index: int) -> void:
-	if index < 0 or index >= levels.size():
+	if index < 0 or index >= _current_levels.size():
 		return
-	var level: Dictionary = levels[index]
+	var level: Dictionary = _current_levels[index]
 	right_title.text = tr(level.name_key)
 	right_desc.text = tr(level.desc_key)
-	right_icon.texture = load(level.icon)
 
-	# 通关信息
-	var sm := _get_save_manager()
-	var level_id := "map_%d" % (index + 1)
-	var save_data: Dictionary = sm.get_current_data()
-	var lvl_data: Dictionary = save_data.get("levels", {}).get(level_id, {})
-	if lvl_data.get("completed", false):
-		var score_val: int = sm.get_level_score_value(level_id)
-		_completion_status_label.text = tr("SAVE_COMPLETED") + "  " + tr("SAVE_SCORE_EARNED") % score_val
-		var best_time = lvl_data.get("best_time_seconds")
-		if best_time != null:
-			_completion_time_label.text = tr("SAVE_BEST_TIME") % sm.format_time(float(best_time))
-		else:
-			_completion_time_label.text = ""
-		_completion_play_count_label.text = tr("SAVE_PLAY_COUNT") % int(lvl_data.get("play_count", 0))
+	# 图标：测试关卡无 icon，用默认图标
+	if level.has("icon") and level.icon:
+		right_icon.texture = load(level.icon)
 	else:
+		right_icon.texture = load(PATH_ICON_01)
+
+	# 通关信息（测试关卡不显示）
+	if _is_test_mode:
 		_completion_status_label.text = ""
 		_completion_time_label.text = ""
-		_completion_play_count_label.text = tr("SAVE_PLAY_COUNT") % int(lvl_data.get("play_count", 0))
+		_completion_play_count_label.text = ""
+	else:
+		var sm := _get_save_manager()
+		var level_id := "map_%d" % (index + 1)
+		var save_data: Dictionary = sm.get_current_data()
+		var lvl_data: Dictionary = save_data.get("levels", {}).get(level_id, {})
+		if lvl_data.get("completed", false):
+			var score_val: int = sm.get_level_score_value(level_id)
+			_completion_status_label.text = tr("SAVE_COMPLETED") + "  " + tr("SAVE_SCORE_EARNED") % score_val
+			var best_time = lvl_data.get("best_time_seconds")
+			if best_time != null:
+				_completion_time_label.text = tr("SAVE_BEST_TIME") % sm.format_time(float(best_time))
+			else:
+				_completion_time_label.text = ""
+			_completion_play_count_label.text = tr("SAVE_PLAY_COUNT") % int(lvl_data.get("play_count", 0))
+		else:
+			_completion_status_label.text = ""
+			_completion_time_label.text = ""
+			_completion_play_count_label.text = tr("SAVE_PLAY_COUNT") % int(lvl_data.get("play_count", 0))
 
-	# 更新丝带（从 SmallRibbons 图集提取对应行）
-	var ribbon_row: int = int(level.ribbon_row)
-	# SmallRibbons 行的 content 区域：交替 60px 和 54px
-	# row 0: 4-63(60), row 1: 68-121(54), row 2: 132-191(60), ...
+	# 更新丝带（从 SmallRibbons 图集提取对应行，测试关卡用第一行）
+	var ribbon_row: int = int(level.get("ribbon_row", 0))
 	var ribbon_starts := [4, 68, 132, 196, 260, 324, 388, 452, 516, 580]
 	var ribbon_ends := [63, 121, 191, 249, 319, 377, 447, 505, 575, 633]
 	if ribbon_row < ribbon_starts.size():
 		var rh: int = ribbon_ends[ribbon_row] - ribbon_starts[ribbon_row] + 1
 		var ribbon_atlas := AtlasTexture.new()
 		ribbon_atlas.atlas = load(PATH_SMALL_RIBBONS)
-		# 提取中间列（128-191, 64px 宽）作为丝带纹理
 		ribbon_atlas.region = Rect2(128, ribbon_starts[ribbon_row], 64, rh)
 		right_ribbon.texture = ribbon_atlas
 		right_ribbon.patch_margin_left = 0
@@ -736,13 +777,14 @@ func _on_button_up(index: int) -> void:
 
 
 func _on_start_pressed() -> void:
-	if selected_index >= 0 and selected_index < levels.size():
-		# 通知 SaveManager 开始游戏会话
-		var sm := _get_save_manager()
-		if sm:
-			var level_id := "map_%d" % (selected_index + 1)
-			sm.start_game_session(level_id)
-		_load_level(levels[selected_index].scene)
+	if selected_index >= 0 and selected_index < _current_levels.size():
+		# 正式关卡才存档
+		if not _is_test_mode:
+			var sm := _get_save_manager()
+			if sm:
+				var level_id := "map_%d" % (selected_index + 1)
+				sm.start_game_session(level_id)
+		_load_level(_current_levels[selected_index].scene)
 
 
 func _load_level(scene_path: String) -> void:
@@ -946,6 +988,116 @@ func _close_esc_menu() -> void:
 func _on_esc_back_to_main() -> void:
 	_close_esc_menu()
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+
+
+# ============================================================
+# 模式切换按钮（测试关卡 / 返回战役）
+# ============================================================
+func _create_mode_button(parent: VBoxContainer) -> void:
+	_mode_button_wrapper = Control.new()
+	_mode_button_wrapper.custom_minimum_size = Vector2(160, 50)
+	_mode_button_wrapper.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+
+	_mode_button_bg = _make_ninepatch(np_btn_blue)
+	_mode_button_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_mode_button_wrapper.add_child(_mode_button_bg)
+
+	var btn := Button.new()
+	btn.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	var empty_style := StyleBoxEmpty.new()
+	btn.add_theme_stylebox_override("normal", empty_style)
+	btn.add_theme_stylebox_override("hover", empty_style)
+	btn.add_theme_stylebox_override("pressed", empty_style)
+	btn.add_theme_stylebox_override("focus", empty_style)
+	btn.pressed.connect(_on_mode_button_pressed)
+	_mode_button_wrapper.add_child(btn)
+
+	_mode_button_label = Label.new()
+	_mode_button_label.text = tr("BTN_TEST_LEVELS")
+	_mode_button_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_mode_button_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_mode_button_label.add_theme_font_size_override("font_size", 16)
+	_mode_button_label.add_theme_color_override("font_color", Color(1, 1, 1))
+	_mode_button_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	_mode_button_label.add_theme_constant_override("shadow_offset_x", 1)
+	_mode_button_label.add_theme_constant_override("shadow_offset_y", 1)
+	_mode_button_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_mode_button_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_mode_button_wrapper.add_child(_mode_button_label)
+
+	var BF := preload("res://scripts/ui/button_factory.gd")
+	BF.add_hover_anim(_mode_button_wrapper, _mode_button_bg, np_btn_blue_prs.texture, np_btn_blue.texture)
+	parent.add_child(_mode_button_wrapper)
+
+
+func _on_mode_button_pressed() -> void:
+	if _is_test_mode:
+		_switch_to_campaign_mode()
+	else:
+		_switch_to_test_mode()
+
+
+func _switch_to_test_mode() -> void:
+	_is_test_mode = true
+	_current_levels = test_levels
+	_mode_button_label.text = tr("BTN_CAMPAIGN")
+	_rebuild_left_panel()
+	_select_level(0)
+
+
+func _switch_to_campaign_mode() -> void:
+	_is_test_mode = false
+	_current_levels = levels
+	_mode_button_label.text = tr("BTN_TEST_LEVELS")
+	_rebuild_left_panel()
+	_select_level(0)
+
+
+func _rebuild_left_panel() -> void:
+	# 清空旧的左侧面板按钮
+	button_backgrounds.clear()
+	button_wrappers.clear()
+	button_labels.clear()
+
+	# 找到主 HBoxContainer（遍历子节点查找）
+	var hbox: HBoxContainer = null
+	for child in get_children():
+		if child is HBoxContainer:
+			hbox = child
+			break
+	if hbox == null:
+		return
+
+	var left_wrapper: Control = hbox.get_child(0)
+	if left_wrapper == null:
+		return
+
+	# left_wrapper 里有 WoodTable bg 和 ScrollContainer -> VBoxContainer
+	var vbox: VBoxContainer = null
+	for child in left_wrapper.get_children():
+		if child is ScrollContainer:
+			for sc_child in child.get_children():
+				if sc_child is VBoxContainer:
+					vbox = sc_child
+					break
+			break
+	if vbox == null:
+		return
+
+	# 清空 VBoxContainer 内容
+	for child in vbox.get_children():
+		vbox.remove_child(child)
+		child.queue_free()
+
+	# 重建按钮
+	for i in range(_current_levels.size()):
+		vbox.add_child(_create_level_button(i))
+
+	# 弹性间距
+	var spacer := Control.new()
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(spacer)
 
 
 func _get_save_manager() -> Node:

@@ -35,3 +35,8 @@ extends Resource
 
 # Commander skills available for this map
 @export var commander_skills: Array[int] = []
+## Star rating thresholds
+@export var star_time_3: float = 180.0  # 3星时限
+@export var star_time_2: float = 300.0  # 2星时限
+@export var star_deaths_3: int = 0  # 3星死亡上限
+@export var star_deaths_2: int = 3  # 2星死亡上限

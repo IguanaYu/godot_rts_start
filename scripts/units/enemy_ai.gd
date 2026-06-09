@@ -167,6 +167,17 @@ func _scan_for_targets() -> void:
 			closest = b
 			closest_dist = d
 
+	# 扫描中立单位（护送NPC等）
+	for n in get_tree().get_nodes_in_group("neutral_units"):
+		if not (n is CharacterBody2D):
+			continue
+		if n.has_method("is_dead") and n.is_dead():
+			continue
+		var d: float = unit.global_position.distance_to(n.global_position)
+		if d < vision_range and d < closest_dist:
+			closest = n
+			closest_dist = d
+
 	if closest != null:
 		chase_target = closest
 		previous_state = ai_state

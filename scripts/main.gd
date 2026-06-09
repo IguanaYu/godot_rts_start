@@ -61,6 +61,7 @@ var show_damage_numbers: bool = true
 var _diff_preset: Resource = null  # DifficultyPreset
 var show_fps: bool = false
 var canvas_modulate: CanvasModulate = null
+var _units_lost: int = 0  # 星级评价用：玩家损失单位数
 
 func _ready() -> void:
 	result_label.visible = false
@@ -254,6 +255,7 @@ func _setup_victory_condition() -> void:
 		if child is VictoryCondition:
 			victory_condition = child
 			victory_condition.game_ended.connect(_on_game_ended)
+			victory_condition.set_game_controller(self)
 			break
 
 var _game_result_saved := false
@@ -462,6 +464,9 @@ func _handle_number_key(key: int, event: InputEventKey) -> void:
 # --- 单位死亡 ---
 
 func _on_unit_died(unit: CharacterBody2D) -> void:
+	# 星级评价：玩家单位死亡计数
+	if unit.is_in_group("player_units"):
+		_units_lost += 1
 	combat_ctrl.remove_dead_unit(unit)
 	_check_elite_drop(unit)
 	# 通知类型C的CapturePoint

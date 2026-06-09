@@ -42,6 +42,7 @@ var tooltip_target_mode: int = -1
 var pause_menu_open: bool = false
 var pause_canvas: CanvasLayer
 
+var objectives_panel: Node = null
 # 选择信息
 var selection_info_label: Label
 var _pause_overlay: ColorRect  # 用于切换主菜单/设置页
@@ -90,6 +91,7 @@ func initialize(main_node: Node2D, map_config: Resource, gold: int) -> void:
 	_create_ui(map_config, gold)
 	_create_tooltip()
 	_create_pause_menu()
+	_create_objectives_panel()
 
 
 # ============================================================
@@ -1350,3 +1352,16 @@ func _close_keybinds_page() -> void:
 
 func close_pause_menu() -> void:
 	_close_pause_menu()
+
+# ============================================================
+# 目标面板
+# ============================================================
+
+func _create_objectives_panel() -> void:
+	if objectives_panel != null:
+		return
+
+	objectives_panel = Node.new()
+	objectives_panel.set_script(load("res://scripts/ui/objectives_panel.gd"))
+	add_child(objectives_panel)
+	objectives_panel.initialize(_main_node)

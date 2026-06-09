@@ -89,6 +89,8 @@ func _empty_level_entry() -> Dictionary:
 		"completion_date": null,
 		"difficulty": null,
 		"play_count": 0,
+	"stars": 0,
+	"bonus_objectives": {},
 	}
 
 

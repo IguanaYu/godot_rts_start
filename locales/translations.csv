@@ -153,3 +153,51 @@ ESC_BACK_MAIN_MENU,Back to Main Menu,返回主菜单,メインメニューに戻
 SAVE_PRESS_ESC_MENU,Press Esc for menu,按 Esc 打开菜单,Escでメニュー
 LEVEL_PRESS_ESC_MENU,Press Esc for menu,按 Esc 打开菜单,Escでメニュー
 UI_MAIN_MENU,Main Menu,主菜单,メインメニュー
+OBJ_VIP_SURVIVAL,Protect the VIP,保护VIP,VIPを守れ
+OBJ_ASSASSINATE,Eliminate targets,消灭目标,ターゲットを排除せよ
+OBJ_DESTROY_BUILDINGS,Destroy enemy buildings,摧毁敌方建筑,敵の建物を破壊せよ
+OBJ_PROTECT_BUILDING,Protect the building,保护建筑,建物を守れ
+OBJ_KILL_COUNT,Kill enemies: %d/%d,击杀敌人: %d/%d,敵を倒せ: %d/%d
+OBJ_GOLD_TARGET,Accumulate gold: %d/%d,积累金币: %d/%d,金貨を貯めろ: %d/%d
+OBJ_TIME_LIMIT,Time limit: %s,时间限制: %s,制限時間: %s
+OBJ_SURVIVE_TIMER,Survive: %s remaining,生存计时: %s 剩余,生存: %s 残り
+OBJ_REACH_LOCATION,Reach the destination,到达目的地,目的地に到達せよ
+OBJ_ESCORT,Escort to destination,护送到目的地,護送せよ
+OBJ_COLLECT_ITEMS,Collect items: %d/%d,收集物品: %d/%d,アイテム収集: %d/%d
+OBJ_TERRITORY,Territory score: %d/%d,领土得分: %d/%d,領土スコア: %d/%d
+OBJ_STAGE,Stage %d: %s,阶段 %d: %s,フェーズ %d: %s
+OBJ_BONUS,Bonus: %s,奖励: %s,ボーナス: %s
+OBJ_COMPLETED,Completed,已完成,完了
+OBJ_FAILED,Failed,已失败,失敗
+OBJ_TIME_REMAINING,Time: %s,时间: %s,時間: %s
+OBJ_DEFEAT_REASON_VIP,VIP has fallen!,VIP阵亡！,VIPが倒された！
+OBJ_DEFEAT_REASON_BUILDING,Critical building destroyed!,关键建筑被摧毁！,重要建物が破壊された！
+OBJ_DEFEAT_REASON_TIME,Time's up!,时间到！,時間切れ！
+BTN_TEST_LEVELS,Test Levels,测试关卡,テストステージ
+BTN_CAMPAIGN,Back to Campaign,返回战役,キャンペーンに戻る
+TEST_T1_NAME,T1: VIP Survival,T1: VIP存活,T1: VIP生存
+TEST_T1_DESC,"Protect VIP archers while capturing a stronghold. Lose if all VIPs die.","保护弓箭手VIP的同时占领据点。VIP全灭则失败。","VIPアーチャーを守りつつ拠点を占領せよ。VIP全滅で敗北。"
+TEST_T2_NAME,T2: Assassinate,T2: 刺杀,T2: 暗殺
+TEST_T2_DESC,"Eliminate the enemy Boss unit guarded by escorts. Full wipe = defeat.","消灭有护卫保护的敌方Boss。全灭则失败。","護衛付きの敵ボスを排除せよ。全滅で敗北。"
+TEST_T3_NAME,T3: Destroy Buildings,T3: 摧毁建筑,T3: 建物破壊
+TEST_T3_DESC,"Destroy 2 enemy towers. Lose if your castle falls.","摧毁2座敌方箭塔。自己城堡被毁则失败。","敵の矢塔を2つ破壊せよ。自城が落ちたら敗北。"
+TEST_T4_NAME,T4: Protect Building,T4: 保护建筑,T4: 建物防衛
+TEST_T4_DESC,"Protect the designated tower for 60 seconds against enemy waves.","在敌方波次进攻中保护指定箭塔60秒。","敵の波状攻撃から指定矢塔を60秒守れ。"
+TEST_T5_NAME,T5: Kill Count,T5: 击杀计数,T5: キルカウント
+TEST_T5_DESC,"Kill 10 enemies. Lose if your castle falls.","击杀10个敌人。城堡被毁则失败。","敵を10体倒せ。城が落ちたら敗北。"
+TEST_T6_NAME,T6: Gold Target,T6: 金币目标,T6: 金貨目標
+TEST_T6_DESC,"Accumulate 2000 gold while defending your base.","积累2000金币同时守住基地。","基地を守りつつ金貨を2000貯めろ。"
+TEST_T7_NAME,T7: Time Limit,T7: 限时进攻,T7: 時間制限
+TEST_T7_DESC,"Destroy the enemy castle within 120 seconds.","在120秒内摧毁敌方城堡。","120秒以内に敵の城を破壊せよ。"
+TEST_T8_NAME,T8: Survive Timer,T8: 限时生存,T8: 生存タイマー
+TEST_T8_DESC,"Survive 90 seconds against enemy waves. Protect your castle!","在敌方波次进攻中存活90秒。保护你的城堡！","敵の波状攻撃を90秒耐えろ。城を守れ！"
+TEST_T9_NAME,T9: Reach Location,T9: 到达位置,T9: 目標地点到達
+TEST_T9_DESC,"Send at least one unit to the destination. Full wipe = defeat.","派至少一个单位到达目的地。全灭则失败。","最低1ユニットを目的地に到達させよ。全滅で敗北。"
+TEST_T10_NAME,T10: Composite AND,T10: 组合条件,T10: 複合条件
+TEST_T10_DESC,"Kill the Boss AND complete within 120 seconds.","击杀Boss并在120秒内完成。","ボスを倒し、かつ120秒以内にクリアせよ。"
+TEST_T11_NAME,T11: Multi-Stage,T11: 多阶段,T11: マルチステージ
+TEST_T11_DESC,"Complete 3 stages in order: Kill 3 enemies → Destroy tower → Kill Boss.","依次完成3个阶段：杀3敌→摧毁箭塔→杀Boss。","3段階を順番にクリア：敵3体→矢塔破壊→ボス撃破。"
+TEST_T12_NAME,T12: Territory Score,T12: 领土积分,T12: 領土スコア
+TEST_T12_DESC,"Reach 100 territory score by capturing control points.","通过占领据点获得100领土积分。","拠点を占領して領土スコア100に達せよ。"
+TEST_T13_NAME,T13: Endless,T13: 无尽模式,T13: エンドレス
+TEST_T13_DESC,"Survive as long as possible. Game ends when your castle falls.","尽可能长时间存活。城堡被毁时游戏结束。","できるだけ長く生き残れ。城が落ちたら終了。"

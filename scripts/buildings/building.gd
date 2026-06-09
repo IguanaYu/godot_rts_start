@@ -92,6 +92,9 @@ func _ready() -> void:
 	else:
 		_setup_visuals()
 		_update_hp_bar()
+		# 注册到分组（确保 VictoryCondition 在 _ready 时就能找到）
+		add_to_group("buildings")
+		add_to_group("player_buildings" if team == Team.PLAYER else "enemy_buildings")
 		# 预放置建筑（已建造状态）直接创建生产圆圈
 		if is_constructed:
 			_create_production_circle()

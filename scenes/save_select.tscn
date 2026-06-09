@@ -1,8 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://saveselect0001"]
+[gd_scene format=3 uid="uid://b7xa6n5jl2qa7"]
 
-[ext_resource type="Script" path="res://scripts/ui/save_select.gd" id="save_select_script"]
+[ext_resource type="Script" uid="uid://cx6jpeecilwjd" path="res://scripts/ui/save_select.gd" id="save_select_script"]
 
-[node name="SaveSelect" type="Control"]
+[node name="SaveSelect" type="Control" unique_id=1380468194]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -11,7 +11,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("save_select_script")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=796117598]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0

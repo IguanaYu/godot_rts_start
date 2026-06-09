@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="MapConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/map_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+map_name = "Test: Survive Timer"
+map_bounds = Rect2(-100, -100, 800, 600)
+nav_bounds = Array[Vector2]([Vector2(-100, -100), Vector2(700, -100), Vector2(700, 500), Vector2(-100, 500)])
+initial_gold = 3000
+camera_start = Vector2(300, 250)
+
+player_units = Array[Dictionary]( [
+		{"type": 0, "pos": Vector2(100, 200)}, {"type": 0, "pos": Vector2(100, 260)}, {"type": 0, "pos": Vector2(100, 320)}, {"type": 1, "pos": Vector2(70, 260)}
+	] )
+
+player_buildings = Array[Dictionary]([])
+
+enemy_units = Array[Dictionary]([])
+
+enemy_buildings = Array[Dictionary]([])
+
+environment = {"trees": 5, "rocks": 3, "bushes": 4, "sheep": 2}
+
+available_items = Array[int]([])
+
+terrain_theme = 0
+border_width = 1
+map_description = ""
+
+star_time_3 = 180.0
+star_time_2 = 300.0
+star_deaths_3 = 0
+star_deaths_2 = 3

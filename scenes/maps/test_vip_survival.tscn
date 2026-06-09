@@ -1,0 +1,116 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" uid="uid://cg2igjmusi0dq" path="res://scripts/main.gd" id="main_script"]
+[ext_resource type="Resource" path="res://resources/test_vip_survival_config.tres" id="map_config"]
+[ext_resource type="PackedScene" uid="uid://mmgbo1ded4ro" path="res://scenes/units/soldier.tscn" id="soldier"]
+[ext_resource type="PackedScene" uid="uid://e5by4tc82spk" path="res://scenes/units/archer.tscn" id="archer"]
+[ext_resource type="Script" path="res://scripts/victory/victory_composite.gd" id="victory_composite"]
+[ext_resource type="Script" uid="uid://bl6nwwaua5wpn" path="res://scripts/victory/victory_blitz.gd" id="victory_blitz"]
+[ext_resource type="Script" path="res://scripts/victory/victory_vip_survival.gd" id="victory_vip"]
+[ext_resource type="Script" uid="uid://cmp1bdjkabfkb" path="res://scripts/systems_game/capture_point.gd" id="capture_point"]
+
+[sub_resource type="NavigationPolygon" id="NavPoly_1"]
+vertices = PackedVector2Array(-100, -100, 700, -100, 700, 500, -100, 500)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
+
+[node name="TestVIPSurvival" type="Node2D"]
+script = ExtResource("main_script")
+map_config = ExtResource("map_config")
+
+[node name="Ground" type="ColorRect" parent="."]
+offset_left = -100.0
+offset_top = -100.0
+offset_right = 700.0
+offset_bottom = 500.0
+color = Color(0.35, 0.55, 0.25, 1)
+
+[node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
+navigation_polygon = SubResource("NavPoly_1")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+
+[node name="PlayerUnits" type="Node2D" parent="."]
+
+[node name="PlayerSoldier1" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(100, 180)
+
+[node name="PlayerSoldier2" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(100, 220)
+
+[node name="PlayerSoldier3" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(100, 260)
+
+[node name="PlayerArcher1" parent="PlayerUnits" instance=ExtResource("archer")]
+position = Vector2(70, 200)
+
+[node name="PlayerArcher2" parent="PlayerUnits" instance=ExtResource("archer")]
+position = Vector2(70, 240)
+
+[node name="EnemyUnits" type="Node2D" parent="."]
+
+[node name="EnemySoldier1" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(400, 200)
+team = 1
+
+[node name="EnemySoldier2" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(400, 240)
+team = 1
+
+[node name="EnemySoldier3" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(500, 220)
+team = 1
+
+[node name="Buildings" type="Node2D" parent="."]
+
+[node name="SelectionBox" type="ColorRect" parent="."]
+visible = false
+mouse_filter = 2
+color = Color(0.4, 0.7, 1, 0.25)
+
+[node name="PreviewRect" type="ColorRect" parent="."]
+visible = false
+mouse_filter = 2
+color = Color(0, 1, 0, 0.3)
+
+[node name="ResultLabel" type="Label" parent="."]
+offset_left = 200.0
+offset_top = 180.0
+offset_right = 400.0
+offset_bottom = 280.0
+theme_override_font_sizes/font_size = 48
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AttackMoveIndicator" type="Label" parent="."]
+visible = false
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 200.0
+offset_bottom = 40.0
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+theme_override_font_sizes/font_size = 20
+text = "Attack Move (Click)"
+
+[node name="VictoryComposite" type="Node" parent="."]
+script = ExtResource("victory_composite")
+logic_mode = 0
+description_key = "OBJ_VIP_SURVIVAL"
+
+[node name="VictoryBlitz" type="Node" parent="VictoryComposite"]
+script = ExtResource("victory_blitz")
+capture_points = Array[NodePath]([NodePath("../../CapturePoint")])
+
+[node name="VictoryVipSurvival" type="Node" parent="VictoryComposite"]
+script = ExtResource("victory_vip")
+vip_units = Array[NodePath]([NodePath("../../PlayerUnits/PlayerArcher1"), NodePath("../../PlayerUnits/PlayerArcher2")])
+
+[node name="DetectionArea" type="Marker2D" parent="."]
+position = Vector2(480, 220)
+
+[node name="CapturePoint" type="Area2D" parent="."]
+position = Vector2(500, 220)
+script = ExtResource("capture_point")
+detection_area = NodePath("../DetectionArea")
+detection_radius = 150.0
+can_enemy_capture = false
+reward_gold = 0

@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3 uid="uid://collectible_item_001"]
+
+[ext_resource type="Script" path="res://scripts/systems_game/collectible_item.gd" id="collectible_item_script"]
+
+[sub_resource type="CircleShape2D" id="collectible_shape"]
+radius = 20.0
+
+[node name="CollectibleItem" type="Area2D"]
+script = ExtResource("collectible_item_script")
+collision_layer = 8
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D"]
+shape = SubResource("collectible_shape")
+
+[node name="Sprite2D" type="Sprite2D"]
+modulate = Color(1, 1, 0, 1)  # 金色

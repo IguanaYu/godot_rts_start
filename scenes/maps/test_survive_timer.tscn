@@ -1,0 +1,93 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" uid="uid://cg2igjmusi0dq" path="res://scripts/main.gd" id="main_script"]
+[ext_resource type="Resource" path="res://resources/test_survive_timer_config.tres" id="map_config"]
+[ext_resource type="PackedScene" uid="uid://mmgbo1ded4ro" path="res://scenes/units/soldier.tscn" id="soldier"]
+[ext_resource type="PackedScene" uid="uid://e5by4tc82spk" path="res://scenes/units/archer.tscn" id="archer"]
+[ext_resource type="PackedScene" uid="uid://8rfekrdqs7gf" path="res://scenes/buildings/castle.tscn" id="castle"]
+[ext_resource type="Script" path="res://scripts/victory/victory_survive_timer.gd" id="victory_survive_timer"]
+[ext_resource type="Script" path="res://scripts/systems_game/wave_manager.gd" id="wave_manager"]
+
+[sub_resource type="NavigationPolygon" id="NavPoly_1"]
+vertices = PackedVector2Array(-100, -100, 700, -100, 700, 500, -100, 500)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
+
+[node name="TestSurviveTimer" type="Node2D"]
+script = ExtResource("main_script")
+map_config = ExtResource("map_config")
+
+[node name="Ground" type="ColorRect" parent="."]
+offset_left = -100.0
+offset_top = -100.0
+offset_right = 700.0
+offset_bottom = 500.0
+color = Color(0.35, 0.55, 0.25, 1)
+
+[node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
+navigation_polygon = SubResource("NavPoly_1")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+
+[node name="PlayerUnits" type="Node2D" parent="."]
+
+[node name="PlayerSoldier1" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(100, 200)
+
+[node name="PlayerSoldier2" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(100, 260)
+
+[node name="PlayerSoldier3" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(100, 320)
+
+[node name="PlayerArcher1" parent="PlayerUnits" instance=ExtResource("archer")]
+position = Vector2(70, 260)
+
+[node name="EnemyUnits" type="Node2D" parent="."]
+
+[node name="Buildings" type="Node2D" parent="."]
+
+[node name="PlayerCastle" parent="Buildings" instance=ExtResource("castle")]
+position = Vector2(160, 224)
+
+[node name="SelectionBox" type="ColorRect" parent="."]
+visible = false
+mouse_filter = 2
+color = Color(0.4, 0.7, 1, 0.25)
+
+[node name="PreviewRect" type="ColorRect" parent="."]
+visible = false
+mouse_filter = 2
+color = Color(0, 1, 0, 0.3)
+
+[node name="ResultLabel" type="Label" parent="."]
+offset_left = 200.0
+offset_top = 180.0
+offset_right = 400.0
+offset_bottom = 280.0
+theme_override_font_sizes/font_size = 48
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AttackMoveIndicator" type="Label" parent="."]
+visible = false
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 200.0
+offset_bottom = 40.0
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+theme_override_font_sizes/font_size = 20
+text = "Attack Move (Click)"
+
+[node name="WaveManager" type="Node" parent="."]
+script = ExtResource("wave_manager")
+clear_then_next = true
+waves = Array[Dictionary]( [
+		{"delay": 10.0, "wave_attack": true, "wave_target": Vector2(200, 250), "units": Array[Dictionary]( [{"type": 0, "pos": Vector2(700, 200)}, {"type": 0, "pos": Vector2(700, 250)}, {"type": 0, "pos": Vector2(700, 300)}] )},
+		{"delay": 10.0, "wave_attack": true, "wave_target": Vector2(200, 250), "units": Array[Dictionary]( [{"type": 0, "pos": Vector2(700, 150)}, {"type": 0, "pos": Vector2(700, 200)}, {"type": 0, "pos": Vector2(700, 250)}, {"type": 0, "pos": Vector2(700, 300)}, {"type": 0, "pos": Vector2(700, 350)}] )},
+		{"delay": 10.0, "wave_attack": true, "wave_target": Vector2(200, 250), "units": Array[Dictionary]( [{"type": 0, "pos": Vector2(700, 100)}, {"type": 0, "pos": Vector2(700, 150)}, {"type": 0, "pos": Vector2(700, 200)}, {"type": 0, "pos": Vector2(700, 250)}, {"type": 0, "pos": Vector2(700, 300)}, {"type": 0, "pos": Vector2(700, 350)}, {"type": 0, "pos": Vector2(700, 400)}] )}
+	] )
+
+[node name="VictorySurviveTimer" type="Node" parent="."]
+script = ExtResource("victory_survive_timer")
+survival_time = 90.0
+description_key = "OBJ_SURVIVE_TIMER" 

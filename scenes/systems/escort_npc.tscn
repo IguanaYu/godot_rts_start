@@ -1,0 +1,22 @@
+[gd_scene load_steps=5 format=3 uid="uid://escort_npc_001"]
+
+[ext_resource type="Script" path="res://scripts/systems_game/escort_npc.gd" id="escort_npc_script"]
+
+[sub_resource type="CircleShape2D" id="collision_shape"]
+radius = 16.0
+
+[node name="EscortNPC" type="CharacterBody2D"]
+script = ExtResource("escort_npc_script")
+collision_layer = 4
+collision_mask = 7
+
+[node name="NavigationAgent2D" type="NavigationAgent2D" parent="."]
+path_desired_distance = 10.0
+target_desired_distance = 10.0
+path_max_distance = 100.0
+
+[node name="CollisionShape2D" type="CollisionShape2D"]
+shape = SubResource("collision_shape")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+modulate = Color(0.8, 0.6, 1, 1)  # 紫色区分NPC

@@ -8,6 +8,8 @@
 [ext_resource type="PackedScene" uid="uid://tower0001" path="res://scenes/buildings/tower.tscn" id="tower"]
 [ext_resource type="Script" uid="uid://bl6nwwaua5wpn" path="res://scripts/victory/victory_blitz.gd" id="victory_blitz"]
 [ext_resource type="PackedScene" uid="uid://wall00001" path="res://scenes/buildings/wall.tscn" id="wall"]
+[ext_resource type="Script" path="res://scripts/victory/victory_composite.gd" id="victory_composite"]
+[ext_resource type="Script" path="res://scripts/victory/victory_vip_survival.gd" id="victory_vip"]
 
 [sub_resource type="NavigationPolygon" id="NavPoly_1"]
 vertices = PackedVector2Array(-100, -100, 2100, -100, 2100, 500, -100, 500)
@@ -139,9 +141,18 @@ theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
 theme_override_font_sizes/font_size = 20
 text = "Attack Move (Click)"
 
-[node name="VictoryBlitz" type="Node" parent="." unique_id=215613943]
+[node name="VictoryComposite" type="Node" parent="."]
+script = ExtResource("victory_composite")
+logic_mode = 0
+description_key = "OBJ_VIP_SURVIVAL"
+
+[node name="VictoryBlitz" type="Node" parent="VictoryComposite"]
 script = ExtResource("victory_blitz")
-capture_points = Array[NodePath]([NodePath("../CapturePoint1"), NodePath("../CapturePoint2"), NodePath("../CapturePoint3")])
+capture_points = Array[NodePath]([NodePath("../../CapturePoint1"), NodePath("../../CapturePoint2"), NodePath("../../CapturePoint3")])
+
+[node name="VictoryVipSurvival" type="Node" parent="VictoryComposite"]
+script = ExtResource("victory_vip")
+vip_units = Array[NodePath]([NodePath("../../PlayerUnits/PlayerArcher1"), NodePath("../../PlayerUnits/PlayerArcher2")])
 
 [node name="DetectionArea1" type="Marker2D" parent="." unique_id=900000001]
 position = Vector2(582, 240)
