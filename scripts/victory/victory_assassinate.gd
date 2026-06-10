@@ -7,8 +7,13 @@ extends VictoryCondition
 
 @export var target_units: Array[NodePath] = []
 @export var target_category: String = ""  # 为空时使用target_units，非空时扫描enemy_units匹配category
+## 标记等级：0=普通(简约骷髅), 1=重要(骷髅+交叉骨), 2=关键(大骷髅+火焰)
+@export var marker_level: int = 0
+
+const ObjectiveMarker := preload("res://scripts/effects/objective_marker.gd")
 
 var _targets: Array = []
+var _markers: Array = []
 var _killed_count: int = 0
 var _total_targets: int = 0
 
@@ -28,6 +33,8 @@ func _ready() -> void:
 				# 检查是否初始已死亡
 				if node.has_method("is_dead") and node.is_dead():
 					_killed_count += 1
+				else:
+					_add_marker(node, ObjectiveMarker.MarkerType.SKULL, marker_level)
 	else:
 		# 扫描enemy_units分组，匹配category
 		for unit in get_tree().get_nodes_in_group("enemy_units"):
@@ -40,12 +47,20 @@ func _ready() -> void:
 					_total_targets += 1
 					if unit.has_method("is_dead") and unit.is_dead():
 						_killed_count += 1
+					else:
+						_add_marker(unit, ObjectiveMarker.MarkerType.SKULL, marker_level)
 
 	if _total_targets == 0:
 		push_warning("VictoryAssassinate: No targets found!")
 
 func _on_target_died(target: Node) -> void:
 	_killed_count += 1
+	# 移除对应标记
+	for i in range(_markers.size() - 1, -1, -1):
+		var m = _markers[i]
+		if is_instance_valid(m) and m.belongs_to(target):
+			m.dismiss()
+			_markers.remove_at(i)
 	if _killed_count >= _total_targets:
 		# 所有目标已击杀，但暂不宣布胜利，需配合其他条件
 		pass
@@ -89,3 +104,20 @@ func get_progress_fraction() -> float:
 
 func reset() -> void:
 	_killed_count = 0
+	for m in _markers:
+		if is_instance_valid(m):
+			m.queue_free()
+	_markers.clear()
+
+
+# ============================================================
+# 标记管理
+# ============================================================
+func _add_marker(target: Node, type: int, level: int) -> void:
+	var marker := Node2D.new()
+	marker.set_script(ObjectiveMarker)
+	marker.marker_type = type
+	marker.marker_level = level
+	marker.setup(target)
+	add_child(marker)
+	_markers.append(marker)
