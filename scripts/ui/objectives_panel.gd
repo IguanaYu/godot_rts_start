@@ -11,6 +11,7 @@ var _main_node: Node2D = null
 var _victory_condition: VictoryCondition = null
 var _update_timer: float = 0.0
 var _is_visible: bool = true
+var _toggle_btn: Button
 
 const PATH_WOOD_TABLE := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Wood Table/WoodTable.png"
 
@@ -64,19 +65,22 @@ func _create_panel() -> void:
 	_vbox.add_child(title)
 
 	# 折叠按钮
-	var toggle_btn := Button.new()
-	toggle_btn.text = "▼"
-	toggle_btn.custom_minimum_size = Vector2(40, 20)
-	toggle_btn.pressed.connect(_on_toggle_pressed)
-	_vbox.add_child(toggle_btn)
+	_toggle_btn = Button.new()
+	_toggle_btn.text = "▼"
+	_toggle_btn.custom_minimum_size = Vector2(40, 20)
+	_toggle_btn.pressed.connect(_on_toggle_pressed)
+	_vbox.add_child(_toggle_btn)
 	var BF := preload("res://scripts/ui/button_factory.gd")
-	BF.add_hover_anim_button(toggle_btn)
+	BF.add_hover_anim_button(_toggle_btn)
 
 func _on_toggle_pressed() -> void:
 	_is_visible = not _is_visible
-	for i in range(2, _objective_labels.size()):  # 跳过标题和按钮
+	_toggle_btn.text = "▲" if not _is_visible else "▼"
+	for i in range(_objective_labels.size()):
 		if _objective_labels[i] != null:
 			_objective_labels[i].visible = _is_visible
+	# 收起时缩小面板，展开时恢复
+	_panel.offset_bottom = 200 if _is_visible else 65
 
 func _on_objective_updated() -> void:
 	_update_objectives()
@@ -154,3 +158,10 @@ func _update_objectives() -> void:
 			progress_label.modulate = Color(0.7, 0.7, 0.7)
 			_vbox.add_child(progress_label)
 			_objective_labels.append(progress_label)
+
+	# 重建后重新应用折叠状态
+	if not _is_visible:
+		for i in range(_objective_labels.size()):
+			if _objective_labels[i] != null:
+				_objective_labels[i].visible = false
+		_panel.offset_bottom = 65
