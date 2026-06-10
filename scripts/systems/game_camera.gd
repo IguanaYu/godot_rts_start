@@ -127,3 +127,17 @@ func zoom_out() -> void:
 	var new_zoom := clampf(camera.zoom.x - zoom_step, min_zoom, max_zoom)
 	camera.zoom = Vector2(new_zoom, new_zoom)
 	clamp_camera()
+
+
+func get_camera_view_rect() -> Rect2:
+	if camera == null:
+		return Rect2()
+	var vp_size: Vector2 = camera.get_viewport().get_visible_rect().size
+	var half_w := vp_size.x / 2.0 / camera.zoom.x
+	var half_h := vp_size.y / 2.0 / camera.zoom.y
+	return Rect2(
+		camera.position.x - half_w,
+		camera.position.y - half_h,
+		half_w * 2.0,
+		half_h * 2.0,
+	)

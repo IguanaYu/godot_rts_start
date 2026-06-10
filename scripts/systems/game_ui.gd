@@ -408,6 +408,35 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	_fps_label.visible = _main_node.show_fps
 	canvas.add_child(_fps_label)
 
+	# --- 小地图（右下角）---
+	var minimap_wrapper := Control.new()
+	minimap_wrapper.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	minimap_wrapper.offset_left = -186
+	minimap_wrapper.offset_top = -186
+	minimap_wrapper.offset_right = -6
+	minimap_wrapper.offset_bottom = -6
+	canvas.add_child(minimap_wrapper)
+
+	var minimap_bg := _make_ninepatch(np_wood_table)
+	minimap_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	minimap_wrapper.add_child(minimap_bg)
+
+	var minimap := Control.new()
+	minimap.set_script(preload("res://scripts/ui/minimap_panel.gd"))
+	minimap.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	minimap.offset_left = 7
+	minimap.offset_top = 7
+	minimap.offset_right = -7
+	minimap.offset_bottom = -7
+	minimap_wrapper.add_child(minimap)
+	minimap.initialize(_main_node, _main_node.camera_module, _main_node.map_bounds)
+
+
+	# 将小地图区域注册为相机豁免区域
+	var mm_vp := _main_node.get_viewport().get_visible_rect().size
+	_main_node.camera_module.ui_exclusion_rects.append(
+		Rect2(mm_vp.x - 186, mm_vp.y - 186, 180, 180)
+	)
 	# --- 倍速按钮（右上角，独立 canvas 确保不被遮挡）---
 	var speed_canvas := CanvasLayer.new()
 	speed_canvas.layer = 50
