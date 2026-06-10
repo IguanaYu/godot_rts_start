@@ -6,8 +6,13 @@ extends VictoryCondition
 ## 失败：任一VIP死亡
 
 @export var vip_units: Array[NodePath] = []
+## 标记等级：0=普通(3尖皇冠), 1=重要(5尖+宝石), 2=关键(5尖+十字)
+@export var marker_level: int = 0
+
+const ObjectiveMarker := preload("res://scripts/effects/objective_marker.gd")
 
 var _vips: Array = []
+var _markers: Array = []
 var _cached_result: int = 0
 
 func _ready() -> void:
@@ -21,6 +26,7 @@ func _ready() -> void:
 			_vips.append(node)
 			if node.has_signal("died"):
 				node.died.connect(_on_vip_died)
+			_add_marker(node, ObjectiveMarker.MarkerType.CROWN, marker_level)
 
 	if _vips.is_empty():
 		push_error("VictoryVipSurvival: No VIP units assigned!")
@@ -62,3 +68,22 @@ func get_progress_fraction() -> float:
 
 func reset() -> void:
 	_cached_result = 0
+	for m in _markers:
+		if is_instance_valid(m):
+			m.queue_free()
+	_markers.clear()
+
+
+# ============================================================
+# 标记管理
+# ============================================================
+func _add_marker(target: Node, type: int, level: int) -> void:
+	var marker := Node2D.new()
+	marker.set_script(ObjectiveMarker)
+	marker.marker_type = type
+	marker.marker_level = level
+	marker.setup(target)
+	add_child(marker)
+	_markers.append(marker)
+	if target.has_signal("died"):
+		target.died.connect(func(_t): marker.dismiss())

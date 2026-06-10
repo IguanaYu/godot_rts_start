@@ -10,8 +10,15 @@ const BuildingScript := preload("res://scripts/buildings/building.gd")
 @export var protected_buildings: Array[NodePath] = []
 @export var wave_manager_path: NodePath = ^""
 @export var survival_time: float = 0.0  # 0表示不使用计时
+## 标记等级：0=普通(圆盾), 1=重要(十字盾), 2=关键(大盾+闪电)
+@export var marker_level: int = 0
+## 建筑HP低于此比例时标记变为危险红色（0=禁用）
+@export var danger_hp_threshold: float = 0.3
+
+const ObjectiveMarker := preload("res://scripts/effects/objective_marker.gd")
 
 var _protected: Array = []
+var _markers: Array = []
 var _wave_manager: Node = null
 var _all_waves_done: bool = false
 var _start_time: float = 0.0
@@ -28,6 +35,7 @@ func _ready() -> void:
 			_protected.append(node)
 			if node.has_signal("died"):
 				node.died.connect(_on_building_died)
+			_add_marker(node, ObjectiveMarker.MarkerType.SHIELD, marker_level)
 
 	if _protected.is_empty():
 		push_error("VictoryProtectBuilding: No protected buildings assigned!")
@@ -44,7 +52,12 @@ func _ready() -> void:
 
 func _on_building_died(_building: Node = null) -> void:
 	# 保护建筑被毁不直接判负，但无法再达成胜利条件
-	pass
+	# 移除对应标记
+	for i in range(_markers.size() - 1, -1, -1):
+		var m = _markers[i]
+		if is_instance_valid(m) and m.belongs_to(_building):
+			m.dismiss()
+			_markers.remove_at(i)
 
 func _on_all_waves_completed() -> void:
 	_all_waves_done = true
@@ -52,6 +65,9 @@ func _on_all_waves_completed() -> void:
 func check() -> int:
 	if _cached_result != 0:
 		return _cached_result
+
+	# 检查保护建筑濒危状态
+	_update_danger_state()
 
 	# 失败条件：玩家城堡被毁
 	var player_castle_alive := false
@@ -121,3 +137,39 @@ func reset() -> void:
 	_cached_result = 0
 	_all_waves_done = false
 	_start_time = Time.get_ticks_msec() / 1000.0
+	for m in _markers:
+		if is_instance_valid(m):
+			m.queue_free()
+	_markers.clear()
+
+
+# ============================================================
+# 标记管理
+# ============================================================
+func _add_marker(target: Node, type: int, level: int) -> void:
+	var marker := Node2D.new()
+	marker.set_script(ObjectiveMarker)
+	marker.marker_type = type
+	marker.marker_level = level
+	marker.setup(target)
+	add_child(marker)
+	_markers.append(marker)
+	if target.has_signal("died"):
+		target.died.connect(func(_t): marker.dismiss())
+
+func _update_danger_state() -> void:
+	if danger_hp_threshold <= 0:
+		return
+	for m in _markers:
+		if not is_instance_valid(m):
+			continue
+		var parent = m.get_target()
+		if parent == null or not is_instance_valid(parent):
+			continue
+		# duck typing: 获取HP比例
+		if parent.has_method("get"):
+			var hp = parent.get("hp")
+			var max_hp = parent.get("max_hp")
+			if hp != null and max_hp != null and max_hp > 0:
+				var ratio: float = float(hp) / float(max_hp)
+				m.set_danger(ratio <= danger_hp_threshold)

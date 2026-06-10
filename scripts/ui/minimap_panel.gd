@@ -26,6 +26,12 @@ const COLOR_DESTINATION := Color(0.2, 0.9, 0.3)
 const COLOR_SPAWN_POINT := Color(1.0, 0.85, 0.0)
 const COLOR_BORDER := Color(0.4, 0.3, 0.2, 0.8)
 
+# === 目标标记颜色（星际2风格闪烁） ===
+const COLOR_OBJ_PROTECT := Color(0.2, 0.9, 0.2)    # 绿色=保护
+const COLOR_OBJ_KILL    := Color(0.9, 0.15, 0.15)   # 红色=击杀
+const COLOR_OBJ_PRIMARY := Color(1.0, 0.85, 0.0)    # 金色=主目标
+const COLOR_OBJ_NAV     := Color(0.2, 0.6, 1.0)     # 蓝色=导航
+
 # === 刷新控制 ===
 var _update_interval: float = 0.1
 var _update_timer: float = 0.0
@@ -81,6 +87,7 @@ func _draw() -> void:
 	_draw_capture_points()
 	_draw_collectibles()
 	_draw_spawn_points()
+	_draw_objective_markers()
 	_draw_camera_view()
 
 	draw_rect(Rect2(Vector2.ZERO, _minimap_size), COLOR_BORDER, false, 1.5)
@@ -186,6 +193,25 @@ func _draw_spawn_points() -> void:
 				_draw_triangle(pos, 3.0, COLOR_SPAWN_POINT)
 
 
+func _draw_objective_markers() -> void:
+	# 闪烁频率约1Hz（每5帧切换，0.1s×5=0.5s周期，显示2帧隐藏3帧）
+	if _anim_frame % 5 >= 2:
+		return
+	for marker in get_tree().get_nodes_in_group("objective_markers"):
+		if not is_instance_valid(marker):
+			continue
+		var parent = marker.get_target() if marker.has_method("get_target") else null
+		if parent == null or not is_instance_valid(parent):
+			continue
+		if parent.has_method("is_dead") and parent.is_dead():
+			continue
+		var pos := world_to_minimap(parent.global_position)
+		if not _in_bounds(pos):
+			continue
+		var color := _marker_color(marker.marker_type)
+		_draw_diamond(pos, 4.0, color)
+
+
 func _draw_camera_view() -> void:
 	if _camera_module == null or not _camera_module.has_method("get_camera_view_rect"):
 		return
@@ -221,6 +247,18 @@ func _draw_triangle(center: Vector2, size: float, color: Color) -> void:
 		center + Vector2(size * 0.8, -size * 0.6),
 	])
 	draw_colored_polygon(pts, color)
+
+
+# ============================================================
+# 目标标记颜色映射
+# ============================================================
+func _marker_color(type: int) -> Color:
+	match type:
+		0, 1: return COLOR_OBJ_PROTECT   # CROWN, SHIELD
+		2, 3: return COLOR_OBJ_KILL       # SKULL, CROSSHAIR
+		4:    return COLOR_OBJ_PRIMARY     # STAR
+		5, 6: return COLOR_OBJ_NAV        # FLAG, DIAMOND
+		_:    return COLOR_OBJ_PRIMARY
 
 
 # ============================================================
