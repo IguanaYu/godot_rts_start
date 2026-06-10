@@ -2,6 +2,8 @@ extends Node
 ## UI 模块：底部建造面板（标签页）+ 金币显示 + 放置模式提示 + 波次倒计时 + 暂停菜单
 
 const D := preload("res://scripts/systems/game_data.gd")
+const StatSetClass := preload("res://scripts/stats/stat_set.gd")
+const UnitScript := preload("res://scripts/units/unit.gd")
 
 # === 素材路径常量 ===
 const PATH_WOOD_TABLE := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Wood Table/WoodTable.png"
@@ -34,10 +36,23 @@ var _speed_label: Label
 var _speed_wrapper: Control
 
 # 标签页
-var active_tab: int = 0  # 0=单位, 1=建筑
+var active_tab: int = 0  # 0=单位, 1=建筑, 2=信息
 var tab_buttons: Array[Button] = []
 var unit_container: HBoxContainer
 var building_container: HBoxContainer
+
+# 信息面板 (Info tab)
+var info_container: HBoxContainer
+var _info_count_label: Label
+var _info_hp_bar_bg: ColorRect
+var _info_hp_bar_fill: ColorRect
+var _info_hp_label: Label
+var _info_atk_label: Label
+var _info_spd_label: Label
+var _info_type_container: HBoxContainer
+var _tracked_units: Array = []
+var _tracked_building = null
+var _info_refresh_timer: float = 0.0
 
 # Tooltip
 var tooltip_panel: PanelContainer
@@ -267,6 +282,103 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	tab_row.add_child(build_tab)
 	tab_buttons.append(build_tab)
 
+	# 信息标签
+	var info_tab := Button.new()
+	info_tab.text = tr("TAB_INFO")
+	info_tab.custom_minimum_size = Vector2(100, 28)
+	info_tab.toggle_mode = true
+	info_tab.pressed.connect(func(): _switch_tab(2))
+	BF4.add_hover_anim_button(info_tab)
+	tab_row.add_child(info_tab)
+	tab_buttons.append(info_tab)
+
+	# --- 信息面板容器 (Info tab) ---
+	info_container = HBoxContainer.new()
+	info_container.add_theme_constant_override("separation", 24)
+	info_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	info_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	info_container.visible = false
+	content.add_child(info_container)
+
+	# 左块: 数量 + 总HP条
+	var info_left := HBoxContainer.new()
+	info_left.add_theme_constant_override("separation", 8)
+	info_left.alignment = BoxContainer.ALIGNMENT_CENTER
+	info_left.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	info_container.add_child(info_left)
+
+	_info_count_label = Label.new()
+	_info_count_label.add_theme_font_size_override("font_size", 18)
+	_info_count_label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
+	_info_count_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	_info_count_label.add_theme_constant_override("shadow_offset_x", 1)
+	_info_count_label.add_theme_constant_override("shadow_offset_y", 1)
+	_info_count_label.text = ""
+	info_left.add_child(_info_count_label)
+
+	# HP条背景
+	var hp_bar_wrapper := Control.new()
+	hp_bar_wrapper.custom_minimum_size = Vector2(120, 14)
+	hp_bar_wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	info_left.add_child(hp_bar_wrapper)
+	_info_hp_bar_bg = ColorRect.new()
+	_info_hp_bar_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_info_hp_bar_bg.color = Color(0.2, 0.2, 0.2, 0.8)
+	_info_hp_bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hp_bar_wrapper.add_child(_info_hp_bar_bg)
+	_info_hp_bar_fill = ColorRect.new()
+	_info_hp_bar_fill.anchor_left = 0.0
+	_info_hp_bar_fill.anchor_right = 0.0
+	_info_hp_bar_fill.anchor_top = 0.0
+	_info_hp_bar_fill.anchor_bottom = 1.0
+	_info_hp_bar_fill.offset_left = 0.0
+	_info_hp_bar_fill.offset_right = 0.0
+	_info_hp_bar_fill.color = Color(0.2, 0.8, 0.2)
+	_info_hp_bar_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hp_bar_wrapper.add_child(_info_hp_bar_fill)
+
+	_info_hp_label = Label.new()
+	_info_hp_label.add_theme_font_size_override("font_size", 14)
+	_info_hp_label.add_theme_color_override("font_color", Color(0.8, 0.9, 1.0))
+	_info_hp_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	_info_hp_label.add_theme_constant_override("shadow_offset_x", 1)
+	_info_hp_label.add_theme_constant_override("shadow_offset_y", 1)
+	_info_hp_label.text = ""
+	info_left.add_child(_info_hp_label)
+
+	# 中块: ATK + SPD
+	var info_mid := HBoxContainer.new()
+	info_mid.add_theme_constant_override("separation", 16)
+	info_mid.alignment = BoxContainer.ALIGNMENT_CENTER
+	info_mid.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	info_container.add_child(info_mid)
+
+	_info_atk_label = Label.new()
+	_info_atk_label.add_theme_font_size_override("font_size", 14)
+	_info_atk_label.add_theme_color_override("font_color", Color(1, 0.6, 0.4))
+	_info_atk_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	_info_atk_label.add_theme_constant_override("shadow_offset_x", 1)
+	_info_atk_label.add_theme_constant_override("shadow_offset_y", 1)
+	_info_atk_label.text = ""
+	info_mid.add_child(_info_atk_label)
+
+	_info_spd_label = Label.new()
+	_info_spd_label.add_theme_font_size_override("font_size", 14)
+	_info_spd_label.add_theme_color_override("font_color", Color(0.5, 0.8, 1.0))
+	_info_spd_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	_info_spd_label.add_theme_constant_override("shadow_offset_x", 1)
+	_info_spd_label.add_theme_constant_override("shadow_offset_y", 1)
+	_info_spd_label.text = ""
+	info_mid.add_child(_info_spd_label)
+
+	# 右块: 分类型明细
+	_info_type_container = HBoxContainer.new()
+	_info_type_container.add_theme_constant_override("separation", 16)
+	_info_type_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	_info_type_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	info_container.add_child(_info_type_container)
+
+
 	# --- 单位图标容器 ---
 	unit_container = HBoxContainer.new()
 	unit_container.add_theme_constant_override("separation", 16)
@@ -481,9 +593,14 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	BF5.add_hover_anim(_speed_wrapper, speed_bg, np_btn_blue_prs.texture, np_btn_blue.texture)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if _fps_label and _fps_label.visible:
 		_fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
+	# 信息面板定期刷新
+	_info_refresh_timer += delta
+	if _info_refresh_timer >= 0.33:
+		_info_refresh_timer = 0.0
+		_update_info_panel()
 
 
 func _on_speed_button_pressed() -> void:
@@ -619,6 +736,10 @@ func _switch_tab(tab_index: int) -> void:
 	active_tab = tab_index
 	unit_container.visible = (tab_index == 0)
 	building_container.visible = (tab_index == 1)
+	if info_container:
+		info_container.visible = (tab_index == 2)
+		if tab_index == 2:
+			_update_info_panel()
 	for i in range(tab_buttons.size()):
 		tab_buttons[i].button_pressed = (i == tab_index)
 	# 活动标签页按钮脉冲动画
@@ -748,12 +869,35 @@ func _show_tooltip() -> void:
 # ============================================================
 # 更新方法
 # ============================================================
-func update_selection_info(units: Array) -> void:
+func update_selection_info(units: Array, building = null) -> void:
+	# 存储追踪数据供 info 面板使用
+	_tracked_units = units.duplicate()
+	_tracked_building = building
+	_info_refresh_timer = 0.0  # 立即刷新
+
+	# 有选中内容时自动切换到 Info 标签页
+	if not units.is_empty() or building != null:
+		if active_tab != 2:
+			_switch_tab(2)
+	else:
+		# 无选中时切回 Units 页
+		if active_tab == 2:
+			_switch_tab(0)
+
+	_update_info_panel()
+
+	# 旧的浮动标签（保留兼容）
 	if selection_info_label == null:
 		return
-	if units.is_empty():
+	if units.is_empty() and building == null:
 		selection_info_label.visible = false
 		return
+
+	# 旧标签：只显示单位类型统计（建筑不显示）
+	if building != null:
+		selection_info_label.visible = false
+		return
+
 	var type_counts := {}
 	for u in units:
 		var ut: int = u.unit_type
@@ -778,6 +922,95 @@ func update_gold_display(current_gold: int) -> void:
 	if gold_label:
 		gold_label.text = tr("UI_GOLD") % current_gold
 	_update_button_affordability(current_gold)
+
+
+func _update_info_panel() -> void:
+	if info_container == null:
+		return
+
+	# 清空右侧类型容器
+	for c in _info_type_container.get_children():
+		c.queue_free()
+
+	# ---- 建筑选择 ----
+	if _tracked_building != null and is_instance_valid(_tracked_building) and not _tracked_building.is_dead():
+		var b = _tracked_building
+		info_container.visible = true
+		_info_count_label.text = tr("ENTITY_BUILDING")
+		var hp_ratio := float(b.health.hp) / float(b.health.max_hp) if b.health.max_hp > 0 else 0.0
+		_info_hp_bar_fill.color = Color(1.0 - hp_ratio * 0.8, 0.2 + hp_ratio * 0.6, 0.2)
+		_info_hp_bar_fill.size.x = _info_hp_bar_fill.get_parent().size.x * hp_ratio
+		_info_hp_label.text = "%d / %d" % [b.health.hp, b.health.max_hp]
+		_info_atk_label.text = ""
+		_info_spd_label.text = ""
+		return
+
+	# ---- 无选择 ----
+	if _tracked_units.is_empty():
+		info_container.visible = false
+		return
+
+	# ---- 单位选择 ----
+	info_container.visible = true
+	var total_hp := 0
+	var total_max_hp := 0
+	var total_atk := 0
+	var total_spd := 0.0
+	var type_counts := {}
+	var count := 0
+
+	for u in _tracked_units:
+		if not is_instance_valid(u) or u.is_dead():
+			continue
+		count += 1
+		if u.health:
+			total_hp += u.health.hp
+			total_max_hp += u.health.max_hp
+		if u.stat_set:
+			total_atk += u.stat_set.get_int(StatSetClass.ATTACK_DAMAGE)
+			total_spd += u.stat_set.get_value(StatSetClass.MOVE_SPEED)
+		var name_key := ""
+		match u.unit_type:
+			UnitScript.UnitType.SOLDIER: name_key = "ENTITY_SOLDIER"
+			UnitScript.UnitType.ARCHER: name_key = "ENTITY_ARCHER"
+			UnitScript.UnitType.LANCER: name_key = "ENTITY_LANCER"
+			UnitScript.UnitType.MONK: name_key = "ENTITY_MONK"
+		if not name_key.is_empty():
+			var name_str := tr(name_key)
+			type_counts[name_str] = type_counts.get(name_str, 0) + 1
+
+	# 数量
+	_info_count_label.text = "%d" % count
+
+	# HP 条
+	if total_max_hp > 0:
+		var hp_ratio := float(total_hp) / float(total_max_hp)
+		_info_hp_bar_fill.color = Color(1.0 - hp_ratio * 0.8, 0.2 + hp_ratio * 0.6, 0.2)
+		_info_hp_bar_fill.size.x = _info_hp_bar_fill.get_parent().size.x * hp_ratio
+	_info_hp_label.text = "%d / %d" % [total_hp, total_max_hp]
+
+	# ATK / SPD（平均值）
+	if count > 0:
+		_info_atk_label.text = tr("UI_INFO_ATK") % int(total_atk / count)
+		_info_spd_label.text = tr("UI_INFO_SPD") % (total_spd / count)
+	else:
+		_info_atk_label.text = ""
+		_info_spd_label.text = ""
+
+	# 右侧：分类型明细
+	for name_str in type_counts:
+		var lbl := Label.new()
+		lbl.text = "%s x%d" % [name_str, type_counts[name_str]]
+		lbl.add_theme_font_size_override("font_size", 14)
+		lbl.add_theme_color_override("font_color", Color(0.8, 0.9, 1.0))
+		lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+		lbl.add_theme_constant_override("shadow_offset_x", 1)
+		lbl.add_theme_constant_override("shadow_offset_y", 1)
+		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_info_type_container.add_child(lbl)
+
+	# 清理已死亡的单位引用
+	_tracked_units = _tracked_units.filter(func(u): return is_instance_valid(u) and not u.is_dead())
 
 
 func update_upgrade_tokens(tokens: Dictionary) -> void:

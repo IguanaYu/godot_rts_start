@@ -16,6 +16,7 @@ var _pending_double_click: bool = false
 var selected_building = null
 
 signal selection_changed(units: Array)
+signal building_selected(building)
 
 var _spawner_module: Node
 
@@ -83,6 +84,7 @@ func release_selection(end_pos: Vector2, selection_box: ColorRect, shift_held: b
 			_deselect_all()
 			clicked_unit.set_selected(true)
 			selected_units.append(clicked_unit)
+			selection_changed.emit(selected_units)
 	else:
 		# 框选模式
 		if not shift_held:
@@ -93,6 +95,8 @@ func release_selection(end_pos: Vector2, selection_box: ColorRect, shift_held: b
 				if rect.has_point(sp) and not u.selected:
 					u.set_selected(true)
 					selected_units.append(u)
+
+		selection_changed.emit(selected_units)
 
 	_pending_double_click = false
 
@@ -287,6 +291,7 @@ func _find_player_building_at(pos: Vector2):
 
 func select_building(building) -> void:
 	selected_building = building
+	building_selected.emit(building)
 
 func _find_enemy_at(pos: Vector2):
 	for u in get_tree().get_nodes_in_group("enemy_units"):

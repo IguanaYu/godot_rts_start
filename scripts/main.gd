@@ -121,6 +121,7 @@ func _ready() -> void:
 	add_child(combat_ctrl)
 	combat_ctrl.initialize(spawner_module)
 	combat_ctrl.selection_changed.connect(_on_selection_changed)
+	combat_ctrl.building_selected.connect(_on_building_selected)
 
 	# 输入模式管理器 (Q/W)
 	input_mode = Node.new()
@@ -388,6 +389,10 @@ func _on_place_mode_requested(mode: int) -> void:
 
 func _on_selection_changed(units: Array) -> void:
 	ui_module.update_selection_info(units)
+
+
+func _on_building_selected(building) -> void:
+	ui_module.update_selection_info([], building)
 
 
 func _on_input_mode_changed(new_mode: int) -> void:
