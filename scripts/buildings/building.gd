@@ -148,7 +148,7 @@ func _setup_stats() -> void:
 			aura_type = "range_bonus"
 			aura_value = 25.0
 	if health and not Engine.is_editor_hint():
-		health.setup(max_hp, hp_bar)
+		health.setup(max_hp, hp_bar, team)
 
 func _setup_editor_visuals() -> void:
 	_setup_texture()
