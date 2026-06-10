@@ -270,7 +270,7 @@ func _spawn_enemy_unit_immediate(type: int, pos: Vector2, wave_attack: bool, wav
 		if unit.body_sprite:
 			unit.body_sprite.scale = Vector2(unit.sprite_scale_x, unit.sprite_scale_y)
 	if data.has("variant_hp") or data.has("variant_scale"):
-		unit.health.setup(unit.stat_set.get_int(StatSetClass.MAX_HP), unit.hp_bar)
+		unit.health.setup(unit.stat_set.get_int(StatSetClass.MAX_HP), unit.hp_bar, unit.team)
 		_apply_difficulty_modifiers(unit)
 	spawn_spawn_effect(pos, UnitScript.Team.ENEMY, unit)
 	unit.add_to_group("enemy_units")
@@ -314,7 +314,7 @@ func _apply_difficulty_modifiers(unit: CharacterBody2D) -> void:
 	if speed_mult != 1.0:
 		unit.stat_set.add_modifier("difficulty", StatSetClass.MOVE_SPEED, 0.0, speed_mult)
 	if hp_mult != 1.0:
-		unit.health.setup(unit.stat_set.get_int(StatSetClass.MAX_HP), unit.hp_bar)
+		unit.health.setup(unit.stat_set.get_int(StatSetClass.MAX_HP), unit.hp_bar, unit.team)
 
 func _scale_group_counts(groups: Array) -> Array:
 	if _diff_preset == null or _diff_preset.count_mult == 1.0:

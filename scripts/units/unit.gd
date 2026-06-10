@@ -151,7 +151,7 @@ func _setup_stats() -> void:
 	upgrade_mgr.setup_from_data(stats_data)
 	var max_hp = stat_set.get_int(StatSetClass.MAX_HP)
 	if health and not Engine.is_editor_hint():
-		health.setup(max_hp, hp_bar)
+		health.setup(max_hp, hp_bar, team)
 	if stats_data.sprite_scale != 1.0:
 		sprite_scale_x *= stats_data.sprite_scale
 		sprite_scale_y *= stats_data.sprite_scale
@@ -167,7 +167,7 @@ func _setup_stats() -> void:
 		sprite_scale_y *= variant_scale
 	# 同步 HP（修饰器可能改了 max_hp）
 	if (variant_hp_bonus != 0) and health and not Engine.is_editor_hint():
-		health.setup(stat_set.get_int(StatSetClass.MAX_HP), hp_bar)
+		health.setup(stat_set.get_int(StatSetClass.MAX_HP), hp_bar, team)
 
 func _setup_editor_visuals() -> void:
 	_setup_texture()
