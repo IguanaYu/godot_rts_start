@@ -25,7 +25,6 @@ var place_mode_label: Label
 var gold_label: Label
 var upgrade_token_label: Label
 var upgrade_token_button: Button
-var wave_countdown_label: Label
 var panel_bg: NinePatchRect  # 底部面板背景，用于高亮
 
 # 倍速控制
@@ -229,8 +228,8 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 
 	# --- 底部建造面板 ---
 	var panel_wrapper := Control.new()
-	panel_wrapper.anchor_left = 0.1
-	panel_wrapper.anchor_right = 0.9
+	panel_wrapper.anchor_left = 0.2
+	panel_wrapper.anchor_right = 0.8
 	panel_wrapper.anchor_top = 1.0
 	panel_wrapper.anchor_bottom = 1.0
 	panel_wrapper.offset_top = -140.0
@@ -381,14 +380,14 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 
 	# --- 单位图标容器 ---
 	unit_container = HBoxContainer.new()
-	unit_container.add_theme_constant_override("separation", 16)
+	unit_container.add_theme_constant_override("separation", 10)
 	unit_container.alignment = BoxContainer.ALIGNMENT_CENTER
 	unit_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content.add_child(unit_container)
 
 	# --- 建筑图标容器 ---
 	building_container = HBoxContainer.new()
-	building_container.add_theme_constant_override("separation", 16)
+	building_container.add_theme_constant_override("separation", 10)
 	building_container.alignment = BoxContainer.ALIGNMENT_CENTER
 	building_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content.add_child(building_container)
@@ -402,26 +401,42 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	# 默认显示单位页
 	_switch_tab(0)
 
-	# --- 金币显示（左上角）---
+	# --- 资源栏面板（左上角）---
+	var resource_panel := PanelContainer.new()
+	resource_panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	resource_panel.offset_left = 6.0
+	resource_panel.offset_top = 6.0
+	resource_panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	resource_panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	var res_style := StyleBoxFlat.new()
+	res_style.bg_color = Color(0, 0, 0, 0.5)
+	res_style.set_corner_radius_all(6)
+	res_style.set_content_margin_all(10)
+	res_style.set_border_width_all(1)
+	res_style.border_color = Color(1, 1, 1, 0.08)
+	resource_panel.add_theme_stylebox_override("panel", res_style)
+	canvas.add_child(resource_panel)
+
+	var res_vbox := VBoxContainer.new()
+	res_vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	res_vbox.add_theme_constant_override("separation", 6)
+	res_vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	resource_panel.add_child(res_vbox)
+
+	# 金币显示
 	gold_label = Label.new()
-	gold_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	gold_label.offset_left = 10.0
-	gold_label.offset_top = 10.0
 	gold_label.add_theme_font_size_override("font_size", 22)
 	gold_label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
 	gold_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
 	gold_label.add_theme_constant_override("shadow_offset_x", 1)
 	gold_label.add_theme_constant_override("shadow_offset_y", 1)
 	gold_label.text = tr("UI_GOLD") % current_gold
-	canvas.add_child(gold_label)
+	res_vbox.add_child(gold_label)
 
-	# --- 升级币按钮（金币下方）---
+	# 升级币按钮
 	var upgrade_wrapper := Control.new()
-	upgrade_wrapper.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	upgrade_wrapper.offset_left = 10.0
-	upgrade_wrapper.offset_top = 40.0
 	upgrade_wrapper.custom_minimum_size = Vector2(120, 28)
-	canvas.add_child(upgrade_wrapper)
+	res_vbox.add_child(upgrade_wrapper)
 
 	var up_bg := _make_ninepatch(np_btn_blue)
 	up_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -456,69 +471,15 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	var BF3 := preload("res://scripts/ui/button_factory.gd")
 	BF3.add_hover_anim(upgrade_wrapper, up_bg, np_btn_blue_prs.texture, np_btn_blue.texture)
 
-	# --- 放置模式提示（屏幕顶部）---
-	place_mode_label = Label.new()
-	place_mode_label.anchor_left = 0.5
-	place_mode_label.anchor_right = 0.5
-	place_mode_label.anchor_top = 0.0
-	place_mode_label.anchor_bottom = 0.0
-	place_mode_label.offset_top = 10.0
-	place_mode_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	place_mode_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	place_mode_label.add_theme_font_size_override("font_size", 18)
-	place_mode_label.add_theme_color_override("font_color", Color(1, 0.9, 0.3))
-	place_mode_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
-	place_mode_label.add_theme_constant_override("shadow_offset_x", 1)
-	place_mode_label.add_theme_constant_override("shadow_offset_y", 1)
-	place_mode_label.visible = false
-	canvas.add_child(place_mode_label)
-
-	# --- 波次倒计时（底部面板上方）---
-	wave_countdown_label = Label.new()
-	wave_countdown_label.anchor_left = 0.5
-	wave_countdown_label.anchor_right = 0.5
-	wave_countdown_label.anchor_top = 1.0
-	wave_countdown_label.anchor_bottom = 1.0
-	wave_countdown_label.offset_top = -155.0
-	wave_countdown_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	wave_countdown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	wave_countdown_label.add_theme_font_size_override("font_size", 20)
-	wave_countdown_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
-	wave_countdown_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
-	wave_countdown_label.add_theme_constant_override("shadow_offset_x", 1)
-	wave_countdown_label.add_theme_constant_override("shadow_offset_y", 1)
-	wave_countdown_label.visible = false
-	canvas.add_child(wave_countdown_label)
-
-	# --- 选择信息（底部面板上方）---
-	selection_info_label = Label.new()
-	selection_info_label.anchor_left = 0.5
-	selection_info_label.anchor_right = 0.5
-	selection_info_label.anchor_top = 1.0
-	selection_info_label.anchor_bottom = 1.0
-	selection_info_label.offset_top = -168.0
-	selection_info_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	selection_info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	selection_info_label.add_theme_font_size_override("font_size", 16)
-	selection_info_label.add_theme_color_override("font_color", Color(0.8, 0.9, 1.0))
-	selection_info_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
-	selection_info_label.add_theme_constant_override("shadow_offset_x", 1)
-	selection_info_label.add_theme_constant_override("shadow_offset_y", 1)
-	selection_info_label.visible = false
-	canvas.add_child(selection_info_label)
-
-	# --- FPS 显示（左上角，金币下方）---
+	# FPS 显示
 	_fps_label = Label.new()
-	_fps_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	_fps_label.offset_left = 10.0
-	_fps_label.offset_top = 38.0
 	_fps_label.add_theme_font_size_override("font_size", 14)
 	_fps_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 	_fps_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
 	_fps_label.add_theme_constant_override("shadow_offset_x", 1)
 	_fps_label.add_theme_constant_override("shadow_offset_y", 1)
 	_fps_label.visible = _main_node.show_fps
-	canvas.add_child(_fps_label)
+	res_vbox.add_child(_fps_label)
 
 	# --- 小地图（右下角）---
 	var minimap_wrapper := Control.new()
@@ -546,9 +507,10 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 
 	# 将小地图区域注册为相机豁免区域
 	var mm_vp := _main_node.get_viewport().get_visible_rect().size
-	_main_node.camera_module.ui_exclusion_rects.append(
-		Rect2(mm_vp.x - 186, mm_vp.y - 186, 180, 180)
-	)
+	if _main_node.camera_module != null:
+		_main_node.camera_module.ui_exclusion_rects.append(
+			Rect2(mm_vp.x - 186, mm_vp.y - 186, 180, 180)
+		)
 	# --- 倍速按钮（右上角，独立 canvas 确保不被遮挡）---
 	var speed_canvas := CanvasLayer.new()
 	speed_canvas.layer = 50
@@ -671,7 +633,7 @@ func _add_icon_button(mode: int, container: HBoxContainer) -> void:
 	key_to_mode[hotkey] = mode
 
 	var wrapper := Control.new()
-	wrapper.custom_minimum_size = Vector2(80, 80)
+	wrapper.custom_minimum_size = Vector2(72, 72)
 
 	var bg := _make_ninepatch(np_btn_blue)
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -916,7 +878,7 @@ func update_selection_info(units: Array, building = null) -> void:
 	for name_str in type_counts:
 		parts.append("%s x%d" % [name_str, type_counts[name_str]])
 	selection_info_label.text = " | ".join(parts) + "  (%d)" % units.size()
-	selection_info_label.visible = true
+	#selection_info_label.visible = true  # 暂时隐藏，后续按需恢复
 
 func update_gold_display(current_gold: int) -> void:
 	if gold_label:
@@ -1044,24 +1006,13 @@ func _update_button_affordability(current_gold: int) -> void:
 
 
 func update_wave_countdown(wave_number: int, remaining: float, total: int) -> void:
-	if wave_countdown_label == null:
-		return
-	if remaining <= 0:
-		wave_countdown_label.visible = false
-		return
-	var display_wave := wave_number + 1
-	var secs := ceili(remaining)
-	wave_countdown_label.text = tr("UI_WAVE_COUNTDOWN") % [display_wave, total, secs]
-	wave_countdown_label.visible = true
-	if remaining <= 5.0:
-		wave_countdown_label.add_theme_color_override("font_color", Color(1, 0.1, 0.1))
-	else:
-		wave_countdown_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
+	if objectives_panel != null and objectives_panel.has_method("update_wave_countdown"):
+		objectives_panel.update_wave_countdown(wave_number, remaining, total)
 
 
 func hide_wave_countdown() -> void:
-	if wave_countdown_label:
-		wave_countdown_label.visible = false
+	if objectives_panel != null and objectives_panel.has_method("hide_wave_countdown"):
+		objectives_panel.hide_wave_countdown()
 
 
 func set_place_mode_text(text: String) -> void:

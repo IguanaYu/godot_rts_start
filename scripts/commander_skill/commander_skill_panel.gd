@@ -62,24 +62,36 @@ func _create_panel() -> void:
 	_ui_canvas.layer = 10
 	_main_node.add_child(_ui_canvas)
 
-	# 主容器：屏幕顶部居中
+	# 背景面板
+	var bg_panel := PanelContainer.new()
+	bg_panel.anchor_left = 0.5
+	bg_panel.anchor_right = 0.5
+	bg_panel.anchor_top = 0.0
+	bg_panel.anchor_bottom = 0.0
+	bg_panel.offset_top = 10.0
+	bg_panel.offset_left = -200.0
+	bg_panel.offset_right = 200.0
+	bg_panel.offset_bottom = 66.0
+	bg_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	var skill_bg_style := StyleBoxFlat.new()
+	skill_bg_style.bg_color = Color(0, 0, 0, 0.5)
+	skill_bg_style.set_corner_radius_all(8)
+	skill_bg_style.set_content_margin_all(8)
+	skill_bg_style.set_border_width_all(1)
+	skill_bg_style.border_color = Color(1, 1, 1, 0.08)
+	bg_panel.add_theme_stylebox_override("panel", skill_bg_style)
+	_ui_canvas.add_child(bg_panel)
+
+	# 主容器
 	var main_container := HBoxContainer.new()
-	main_container.anchor_left = 0.5
-	main_container.anchor_right = 0.5
-	main_container.anchor_top = 0.0
-	main_container.anchor_bottom = 0.0
-	main_container.offset_top = 10.0
-	main_container.offset_left = -200.0
-	main_container.offset_right = 200.0
-	main_container.offset_bottom = 60.0
-	main_container.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	main_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	main_container.alignment = BoxContainer.ALIGNMENT_CENTER
 	main_container.add_theme_constant_override("separation", 10)
-	_ui_canvas.add_child(main_container)
+	bg_panel.add_child(main_container)
 
 	# --- 能量条区域 ---
 	var energy_container := VBoxContainer.new()
-	energy_container.custom_minimum_size = Vector2(100, 50)
+	energy_container.custom_minimum_size = Vector2(80, 50)
 	energy_container.add_theme_constant_override("separation", 2)
 	main_container.add_child(energy_container)
 
@@ -98,7 +110,7 @@ func _create_panel() -> void:
 	energy_bar = ProgressBar.new()
 	energy_bar.max_value = SD.MAX_ENERGY
 	energy_bar.value = SD.MAX_ENERGY
-	energy_bar.custom_minimum_size = Vector2(100, 12)
+	energy_bar.custom_minimum_size = Vector2(80, 12)
 	energy_bar.show_percentage = false
 	var bg_style := StyleBoxFlat.new()
 	bg_style.bg_color = Color(0.15, 0.15, 0.2, 0.8)
@@ -112,7 +124,7 @@ func _create_panel() -> void:
 
 	# --- 分隔线 ---
 	var sep := ColorRect.new()
-	sep.custom_minimum_size = Vector2(2, 40)
+	sep.custom_minimum_size = Vector2(2, 44)
 	sep.color = Color(0.5, 0.5, 0.5, 0.4)
 	sep.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	main_container.add_child(sep)
@@ -131,7 +143,7 @@ func _create_skill_button(skill_id: int, container: HBoxContainer) -> void:
 	var hotkey_name: String = OS.get_keycode_string(hotkey)
 
 	var wrapper := Control.new()
-	wrapper.custom_minimum_size = Vector2(56, 56)
+	wrapper.custom_minimum_size = Vector2(52, 52)
 	container.add_child(wrapper)
 
 	# 蓝色按钮背景
@@ -212,10 +224,10 @@ func _create_skill_button(skill_id: int, container: HBoxContainer) -> void:
 	cooldown_overlay.anchor_right = 1.0
 	cooldown_overlay.anchor_top = 0.0
 	cooldown_overlay.anchor_bottom = 1.0
-	cooldown_overlay.offset_left = 6
-	cooldown_overlay.offset_right = -6
-	cooldown_overlay.offset_top = 6
-	cooldown_overlay.offset_bottom = -6  # 从底部开始遮罩（初始全遮）
+	cooldown_overlay.offset_left = 3
+	cooldown_overlay.offset_right = -3
+	cooldown_overlay.offset_top = 3
+	cooldown_overlay.offset_bottom = -3
 	cooldown_overlay.visible = false
 	cooldown_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	wrapper.add_child(cooldown_overlay)
@@ -233,10 +245,10 @@ func _create_skill_button(skill_id: int, container: HBoxContainer) -> void:
 	cd_label.anchor_right = 1.0
 	cd_label.anchor_top = 0.0
 	cd_label.anchor_bottom = 1.0
-	cd_label.offset_left = 6
-	cd_label.offset_right = -6
-	cd_label.offset_top = 6
-	cd_label.offset_bottom = -6
+	cd_label.offset_left = 3
+	cd_label.offset_right = -3
+	cd_label.offset_top = 3
+	cd_label.offset_bottom = -3
 	cd_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cd_label.visible = false
 	wrapper.add_child(cd_label)
@@ -252,7 +264,6 @@ func _create_skill_button(skill_id: int, container: HBoxContainer) -> void:
 	btn.add_theme_stylebox_override("pressed", empty_style)
 	btn.add_theme_stylebox_override("focus", empty_style)
 	var pressed_tex: Texture2D = load(PATH_BTN_BLUE_PRS)
-	btn.pressed.connect(func(): skill_button_pressed.emit(skill_id))
 	btn.pressed.connect(func(): skill_button_pressed.emit(skill_id))
 	var BF := preload("res://scripts/ui/button_factory.gd")
 	BF.add_hover_anim(wrapper, bg, pressed_tex, btn_tex)
@@ -287,9 +298,9 @@ func _on_cooldown_updated(skill_id: int, remaining: float, total: float) -> void
 	overlay.visible = true
 	# 遮罩从下往上填充（剩余比例越大，遮住越多）
 	var ratio := remaining / total
-	var overlay_height := 44.0
-	overlay.offset_top = 6 + overlay_height * (1.0 - ratio)
-	overlay.offset_bottom = -6
+	var overlay_height := 46.0
+	overlay.offset_top = 3 + overlay_height * (1.0 - ratio)
+	overlay.offset_bottom = -3
 	if cd_label:
 		cd_label.visible = true
 		cd_label.text = "%.0f" % remaining
