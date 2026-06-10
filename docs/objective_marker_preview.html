@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RTS 任务目标标记 - 视觉预览</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #1a1a2e; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; padding: 20px; }
+h1 { text-align: center; margin-bottom: 6px; font-size: 24px; }
+.subtitle { text-align: center; color: #888; margin-bottom: 30px; font-size: 13px; }
+
+.section { margin-bottom: 40px; }
+.section h2 { font-size: 18px; border-bottom: 1px solid #333; padding-bottom: 6px; margin-bottom: 16px; color: #ffd700; }
+
+.marker-grid { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+.marker-card {
+  background: #16213e; border: 1px solid #2a2a4a; border-radius: 10px;
+  padding: 20px; width: 170px; text-align: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.marker-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+.marker-canvas-wrap { width: 120px; height: 120px; margin: 0 auto 12px; }
+.marker-canvas-wrap canvas { display: block; margin: 0 auto; }
+.marker-name { font-size: 15px; font-weight: bold; margin-bottom: 4px; }
+.marker-desc { font-size: 11px; color: #999; line-height: 1.4; }
+.marker-usage { font-size: 10px; color: #777; margin-top: 6px; font-style: italic; }
+.marker-type-tag { font-size: 10px; margin-top: 2px; }
+
+.comparison { display: flex; gap: 20px; flex-wrap: wrap; }
+.comp-col {
+  flex: 1; min-width: 280px; background: #16213e; border: 1px solid #2a2a4a;
+  border-radius: 10px; padding: 20px;
+}
+.comp-col h3 { font-size: 15px; margin-bottom: 12px; }
+.comp-col ul { list-style: none; padding: 0; }
+.comp-col li { padding: 3px 0; font-size: 12px; color: #bbb; }
+.comp-col li::before { content: "• "; color: #ffd700; }
+
+.scene-demo {
+  background: #16213e; border: 1px solid #2a2a4a; border-radius: 10px;
+  padding: 24px; position: relative; overflow: hidden; height: 320px;
+}
+.scene-label { position: absolute; top: 8px; left: 12px; font-size: 11px; color: #666; }
+.scene-ground {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 100px;
+  background: linear-gradient(to bottom, #2d5a1e, #1a3a0f);
+  border-radius: 0 0 9px 9px;
+}
+.scene-unit {
+  position: absolute; width: 36px; height: 36px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: bold; z-index: 2;
+}
+
+.anim-pulse { animation: pulse 1.5s ease-in-out infinite; }
+@keyframes pulse {
+  0%, 100% { opacity: 0.7; transform: translateY(0px); }
+  50% { opacity: 1.0; transform: translateY(-4px); }
+}
+</style>
+</head>
+<body>
+
+<h1>RTS 任务目标标记 — 视觉预览</h1>
+<p class="subtitle">参考星际争霸2 / 魔兽争霸3 / 帝国时代4 的任务标记设计</p>
+
+<!-- ========== 标记类型预览 ========== -->
+<div class="section">
+  <h2>一、标记图标类型（全部7种）</h2>
+  <div class="marker-grid" id="markerGrid"></div>
+</div>
+
+<!-- ========== 游戏场景模拟 ========== -->
+<div class="section">
+  <h2>二、游戏场景模拟（标记悬浮在单位/建筑头顶）</h2>
+  <div class="scene-demo" id="sceneDemo">
+    <div class="scene-label">俯视视角 — 标记在单位头顶浮动</div>
+    <div class="scene-ground"></div>
+  </div>
+</div>
+
+<!-- ========== SC2 vs WC3 对比 ========== -->
+<div class="section">
+  <h2>三、星际2 vs 魔兽3 任务标记系统对比</h2>
+  <div class="comparison">
+    <div class="comp-col">
+      <h3>⭐ 星际争霸2（自由之翼/虫群之心/虚空之遗）</h3>
+      <ul>
+        <li><b>3D信标模型</b>悬浮在目标头顶，带向上发射的光柱</li>
+        <li><b>Beacon_Shield</b>：蓝绿色旋转盾牌 → "必须存活"</li>
+        <li><b>Beacon_Attack</b>：红色准星十字 → "击杀目标"</li>
+        <li><b>Beacon_Objective</b>：金色星形 → "到达/收集"</li>
+        <li><b>Beacon_Defend</b>：类似盾牌 → "防守此区域"</li>
+        <li><b>Beacon_Explore</b>：问号 → "探索区域"</li>
+        <li>所有信标<b>始终可见</b>，战争迷雾中半透明</li>
+        <li>信标跟随目标单位<b>移动</b>，自带旋转动画</li>
+        <li>小地图上对应<b>闪烁彩色圆点</b></li>
+        <li>右侧面板有<b>文字任务列表</b>：绿色=完成 红色=失败</li>
+        <li>任务变更时有<b>指挥官头像弹窗</b>播报</li>
+        <li>代表任务："黑暗深处"保护神器、"究极黑暗"坚守</li>
+      </ul>
+    </div>
+    <div class="comp-col">
+      <h3>🗡️ 魔兽争霸3（混乱之治/冰封王座）</h3>
+      <ul>
+        <li><b>没有3D信标</b>，主要靠文字和简单2D图标</li>
+        <li><b>感叹号 !</b>（金色）：2D面片悬在任务NPC头顶 → 接任务</li>
+        <li><b>问号 ?</b>：任务完成可交还</li>
+        <li>英雄有<b>特殊脚底光圈</b>（比普通单位更大更华丽）</li>
+        <li>英雄血条<b>更大、有装饰边框</b></li>
+        <li>英雄有<b>彩色光环</b>（玩家颜色）</li>
+        <li>左上角有<b>英雄头像</b>始终可见</li>
+        <li><b>没有</b>专门的"必须存活"标记 — 靠<b>任务文字</b>传达</li>
+        <li>F9打开<b>任务日志</b>：金币图标=主线，银币=可选</li>
+        <li>小地图有<b>黄色 !</b> 标记任务位置</li>
+        <li>关键目标通过<b>过场动画+对话</b>传达</li>
+        <li>任务物品有<b>金色光效</b></li>
+      </ul>
+    </div>
+    <div class="comp-col">
+      <h3>🏰 帝国时代4（战役任务系统）</h3>
+      <ul>
+        <li><b>2D面片图标</b>悬浮在目标头顶（类似本方案）</li>
+        <li><b>绿色盾牌</b>：需保护的目标</li>
+        <li><b>红色骷髅/准星</b>：需击杀/摧毁的目标</li>
+        <li><b>黄色菱形</b>：移动/到达目标点</li>
+        <li>图标<b>脉冲闪烁</b>吸引注意力</li>
+        <li>英雄单位有<b>金色名牌</b> + <b>装饰血条</b></li>
+        <li>小地图上<b>闪烁彩色图标</b>（形状+颜色）</li>
+        <li>左侧面板<b>始终显示</b>任务列表</li>
+        <li>主线金色高亮，支线白色</li>
+        <li>完成任务显示<b>绿色勾号</b></li>
+      </ul>
+    </div>
+    <div class="comp-col">
+      <h3>⚡ 命令与征服系列</h3>
+      <ul>
+        <li><b>泰伯利亚之日/红警2</b>：无世界空间标记，纯靠任务简报文字</li>
+        <li><b>将军/绝命时刻</b>：屏幕边缘2D箭头指向目标</li>
+        <li><b>C&C3 泰伯利亚战争</b>：首次引入<b>脉冲黄色菱形路点</b></li>
+        <li><b>红警3</b>：最完善 — 浮动目标图标（星/盾/准星）+ 小地图彩色图标</li>
+        <li>侧边栏<b>文字任务列表</b>，完成后绿色划线</li>
+        <li>任务变更时<b>NPC头像弹窗</b>播报（与SC2类似）</li>
+      </ul>
+    </div>
+    <div class="comp-col">
+      <h3>🎖️ 英雄连 / 铁收割</h3>
+      <ul>
+        <li>2D面片图标悬浮在目标头顶（盾牌/骷髅/星/旗帜）</li>
+        <li><b>屏幕边缘箭头</b>：目标不在视野时出现方向指示（大多数RTS没有）</li>
+        <li>小地图用<b>图标形状+颜色</b>（旗帜/盾牌/骷髅/星），不仅圆点</li>
+        <li>所有标记有<b>脉冲动画</b></li>
+        <li>Iron Harvest沿用CoH设计，开发者来自CoH团队</li>
+        <li>战役结构采用"WC3模式"：三个阵营组成一个大叙事</li>
+        <li>头顶信息（overhead info）可缩放或隐藏</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 跨游戏对比总表 ========== -->
+<div class="section">
+  <h2>四、跨游戏功能对比总表</h2>
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:12px;background:#16213e;border-radius:8px;">
+      <thead>
+        <tr style="background:#2a2a4a;">
+          <th style="padding:8px;text-align:left;border-bottom:1px solid #444;">功能</th>
+          <th style="padding:8px;text-align:center;border-bottom:1px solid #444;">星际2</th>
+          <th style="padding:8px;text-align:center;border-bottom:1px solid #444;">魔兽3</th>
+          <th style="padding:8px;text-align:center;border-bottom:1px solid #444;">帝国4</th>
+          <th style="padding:8px;text-align:center;border-bottom:1px solid #444;">C&C3/RA3</th>
+          <th style="padding:8px;text-align:center;border-bottom:1px solid #444;">CoH/IH</th>
+          <th style="padding:8px;text-align:center;border-bottom:1px solid #444;color:#ffd700;">本方案</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td style="padding:6px;border-bottom:1px solid #333;">世界空间浮动图标</td><td style="text-align:center;border-bottom:1px solid #333;">3D信标</td><td style="text-align:center;border-bottom:1px solid #333;color:#ff5252;">无</td><td style="text-align:center;border-bottom:1px solid #333;">2D面片</td><td style="text-align:center;border-bottom:1px solid #333;">2D路点</td><td style="text-align:center;border-bottom:1px solid #333;">2D面片</td><td style="text-align:center;border-bottom:1px solid #333;color:#ffd700;">2D程序化</td></tr>
+        <tr><td style="padding:6px;border-bottom:1px solid #333;">盾牌=保护标记</td><td style="text-align:center;border-bottom:1px solid #333;">✅</td><td style="text-align:center;border-bottom:1px solid #333;color:#ff5252;">❌</td><td style="text-align:center;border-bottom:1px solid #333;">✅</td><td style="text-align:center;border-bottom:1px solid #333;">✅(RA3)</td><td style="text-align:center;border-bottom:1px solid #333;">✅</td><td style="text-align:center;border-bottom:1px solid #333;color:#ffd700;">✅</td></tr>
+        <tr><td style="padding:6px;border-bottom:1px solid #333;">骷髅/准星=击杀标记</td><td style="text-align:center;border-bottom:1px solid #333;">✅</td><td style="text-align:center;border-bottom:1px solid #333;color:#ff5252;">❌</td><td style="text-align:center;border-bottom:1px solid #333;">✅</td><td style="text-align:center;border-bottom:1px solid #333;">✅(RA3)</td><td style="text-align:center;border-bottom:1px solid #333;">✅</td><td style="text-align:center;border-bottom:1px solid #333;color:#ffd700;">✅</td></tr>
+        <tr><td style="padding:6px;border-bottom:1px solid #333;">光柱效果</td><td style="text-align:center;border-bottom:1px solid #333;">✅</td><td style="text-align:center;border-bottom:1px solid #333;color:#ff5252;">❌</td><td style="text-align:center;border-bottom:1px solid #333;color:#ff5252;">❌</td><td style="text-align:center;border-bottom:1px solid #333;color:#ff5252;">❌</td><td style="text-align:center;border-bottom:1px solid #333;color:#ff5252;">❌</td><td style="text-align:center;border-bottom:1px solid #333;color:#ffd700;">可选</td></tr>
+        <tr><td style="padding:6px;border-bottom:1px solid #333;">脉冲动画</td><td style="text-align:center;border-bottom:1px solid #333;">✅</td><td style="text-align:center;border-bottom:1px solid #333;">❌</td><td style="text-align:center;border-bottom:1px solid #333;">✅</td><td style="text-align:center;border-bottom:1px solid #333;">✅</td><td style="text-align:center;border-bottom:1px solid #333;">✅</td><td style="text-align:center;border-bottom:1px solid #333;color:#ffd700;">✅</td></tr>
+        <tr><td style="padding:6px;border-bottom:1px solid #333;">小地图图标</td><td style="text-align:center;border-bottom:1px solid #333;">闪烁圆点</td><td style="text-align:center;border-bottom:1px solid #333;">! 标记</td><td style="text-align:center;border-bottom:1px solid #333;">形状+颜色</td><td style="text-align:center;border-bottom:1px solid #333;">彩色圆点</td><td style="text-align:center;border-bottom:1px solid #333;">形状+颜色</td><td style="text-align:center;border-bottom:1px solid #333;color:#ff5252;">暂无</td></tr>
+        <tr><td style="padding:6px;border-bottom:1px solid #333;">屏幕边缘箭头</td><td style="text-align:center;border-bottom:1px solid #333;color:#ff5252;">❌</td><td style="text-align:center;border-bottom:1px solid #333;color:#ff5252;">❌</td><td style="text-align:center;border-bottom:1px solid #333;color:#ff5252;">❌</td><td style="text-align:center;border-bottom:1px solid #333;">✅(C&C:G)</td><td style="text-align:center;border-bottom:1px solid #333;">✅</td><td style="text-align:center;border-bottom:1px solid #333;color:#ff5252;">暂无</td></tr>
+        <tr><td style="padding:6px;border-bottom:1px solid #333;">文字任务面板</td><td style="text-align:center;border-bottom:1px solid #333;">右侧</td><td style="text-align:center;border-bottom:1px solid #333;">F9日志</td><td style="text-align:center;border-bottom:1px solid #333;">左侧</td><td style="text-align:center;border-bottom:1px solid #333;">侧边栏</td><td style="text-align:center;border-bottom:1px solid #333;">左上</td><td style="text-align:center;border-bottom:1px solid #333;color:#ffd700;">✅已有</td></tr>
+        <tr><td style="padding:6px;">战争迷雾中可见</td><td style="text-align:center;">半透明</td><td style="text-align:center;">不可见</td><td style="text-align:center;">淡化</td><td style="text-align:center;">不可见</td><td style="text-align:center;">不可见</td><td style="text-align:center;color:#ff5252;">暂无迷雾</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ========== 调研来源 ========== -->
+<div class="section">
+  <h2>五、调研来源</h2>
+  <div class="comparison">
+    <div class="comp-col">
+      <h3>SC2 相关</h3>
+      <ul>
+        <li><a href="https://mapster.talv.space/galaxy/reference" style="color:#42A5F5;">Galaxy API Reference — Beacon Functions</a> (SC2信标API文档)</li>
+        <li><a href="https://s2editor-guides.readthedocs.io/New_Tutorials/04_Data_Editor/064_Doodad_Actors" style="color:#42A5F5;">SC2 Editor Tutorials — Doodad Actors</a> (信标/装饰物模型)</li>
+        <li><a href="https://liquipedia.net/starcraft2/Campaign/All-In" style="color:#42A5F5;">Liquipedia — All-In Mission</a> ("保护神器"任务详情)</li>
+        <li><a href="https://www.ign.com/wikis/starcraft-2/All_In" style="color:#42A5F5;">IGN — All-In Walkthrough</a> (凯瑞甘在地图上显示为特殊图标)</li>
+      </ul>
+    </div>
+    <div class="comp-col">
+      <h3>WC3 相关</h3>
+      <ul>
+        <li><a href="https://www.youtube.com/watch?v=G9J3RAGcTjU" style="color:#42A5F5;">Creating a Quest in WC3 Part 3: Objective Markers</a> (小地图Ping+图标)</li>
+        <li><a href="https://www.hiveworkshop.com/threads/minimap-icon.255028" style="color:#42A5F5;">HIVE — Minimap Icon</a> (WC3小地图图标API: SetAltMinimapIcon)</li>
+        <li><a href="https://world-editor-tutorials.thehelper.net/uniteditor.php" style="color:#42A5F5;">WC3 Unit Editor Fields</a> (Selection Circle/Scale/Glow配置)</li>
+      </ul>
+    </div>
+    <div class="comp-col">
+      <h3>通用UI/UX</h3>
+      <ul>
+        <li><a href="https://thewingless.com/index.php/2023/12/01/a-glossary-of-game-ui-ux-design-terms-for-absolute-beginners-the-hud" style="color:#42A5F5;">Game UI/UX术语: Objective Marker</a> ("simply have a floating icon in the world")</li>
+        <li><a href="https://www.gamedeveloper.com/design/ui-strategy-game-design-dos-and-don-ts" style="color:#42A5F5;">Strategy Game UI Design Dos and Don'ts</a></li>
+        <li><a href="https://waywardstrategy.com/2015/05/04/lets-talk-rts-user-interface-part-1-interview-with-dave-pottinger" style="color:#42A5F5;">Let's Talk RTS UI (AoE设计师访谈)</a></li>
+        <li><a href="https://medium.com/@treeform/strategy-game-battle-ui-3b313ffd3769" style="color:#42A5F5;">Strategy Game Battle UI 演变史</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 推荐方案 ========== -->
+<div class="section">
+  <h2>六、推荐采用的标记体系（适合你的游戏）</h2>
+  <div class="comparison">
+    <div class="comp-col">
+      <h3>🔰 保护类</h3>
+      <ul>
+        <li><b>皇冠 Crown</b>（金色 #FFD700）→ VIP英雄/首领</li>
+        <li><b>盾牌 Shield</b>（绿色 #4CAF50）→ 需保护的单位/建筑</li>
+      </ul>
+    </div>
+    <div class="comp-col">
+      <h3>⚔️ 击杀类</h3>
+      <ul>
+        <li><b>骷髅 Skull</b>（红色 #FF4444）→ 刺杀/击杀目标</li>
+        <li><b>准星 Crosshair</b>（橙红 #FF6D00）→ 摧毁建筑</li>
+      </ul>
+    </div>
+    <div class="comp-col">
+      <h3>📍 导航类</h3>
+      <ul>
+        <li><b>星形 Star</b>（金色 #FFD740）→ 主要目标位置</li>
+        <li><b>旗帜 Flag</b>（蓝色 #42A5F5）→ 护送/占领/到达</li>
+        <li><b>菱形 Diamond</b>（黄色 #FFC107）→ 次要路径点</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+function createCanvas(w, h) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  return c;
+}
+
+function drawShield(ctx, cx, cy, size, color) {
+  ctx.fillStyle = color;
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  const s = size * 0.4;
+  ctx.moveTo(cx - s, cy - s * 0.5);
+  ctx.lineTo(cx - s, cy - s * 0.2);
+  ctx.quadraticCurveTo(cx - s, cy - s * 1.1, cx, cy + s * 0.8);
+  ctx.quadraticCurveTo(cx + s, cy - s * 1.1, cx + s, cy - s * 0.2);
+  ctx.lineTo(cx + s, cy - s * 0.5);
+  ctx.quadraticCurveTo(cx, cy - s * 1.3, cx - s, cy - s * 0.5);
+  ctx.fill();
+  ctx.stroke();
+  // 十字
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - s * 0.6);
+  ctx.lineTo(cx, cy + s * 0.3);
+  ctx.moveTo(cx - s * 0.4, cy - s * 0.1);
+  ctx.lineTo(cx + s * 0.4, cy - s * 0.1);
+  ctx.stroke();
+}
+
+function drawCrosshair(ctx, cx, cy, size, color) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.arc(cx, cy, size * 0.35, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - size * 0.45);
+  ctx.lineTo(cx, cy + size * 0.45);
+  ctx.moveTo(cx - size * 0.45, cy);
+  ctx.lineTo(cx + size * 0.45, cy);
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(cx, cy, size * 0.08, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawCrown(ctx, cx, cy, size, color) {
+  ctx.fillStyle = color;
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.5;
+  const s = size * 0.35;
+  ctx.beginPath();
+  ctx.moveTo(cx - s * 0.9, cy + s * 0.5);
+  ctx.lineTo(cx - s * 0.9, cy - s * 0.1);
+  ctx.lineTo(cx - s * 0.7, cy - s * 0.9);
+  ctx.lineTo(cx - s * 0.35, cy - s * 0.2);
+  ctx.lineTo(cx, cy - s * 1.2);
+  ctx.lineTo(cx + s * 0.35, cy - s * 0.2);
+  ctx.lineTo(cx + s * 0.7, cy - s * 0.9);
+  ctx.lineTo(cx + s * 0.9, cy - s * 0.1);
+  ctx.lineTo(cx + s * 0.9, cy + s * 0.5);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(cx, cy + s * 0.15, s * 0.12, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawSkull(ctx, cx, cy, size, color) {
+  const s = size * 0.3;
+  // 交叉骨
+  ctx.strokeStyle = '#ccc';
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx - s * 0.9, cy + s * 1.1);
+  ctx.lineTo(cx + s * 0.9, cy + s * 0.3);
+  ctx.moveTo(cx + s * 0.9, cy + s * 1.1);
+  ctx.lineTo(cx - s * 0.9, cy + s * 0.3);
+  ctx.stroke();
+  // 头骨
+  ctx.fillStyle = '#eee';
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(cx, cy - s * 0.15, s * 0.65, Math.PI * 0.8, Math.PI * 0.2, true);
+  ctx.lineTo(cx + s * 0.55, cy + s * 0.45);
+  ctx.lineTo(cx + s * 0.35, cy + s * 0.55);
+  ctx.lineTo(cx + s * 0.15, cy + s * 0.3);
+  ctx.lineTo(cx + s * 0.12, cy + s * 0.7);
+  ctx.lineTo(cx - s * 0.12, cy + s * 0.7);
+  ctx.lineTo(cx - s * 0.15, cy + s * 0.3);
+  ctx.lineTo(cx - s * 0.35, cy + s * 0.55);
+  ctx.lineTo(cx - s * 0.55, cy + s * 0.45);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  // 眼窝
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(cx - s * 0.22, cy - s * 0.05, s * 0.17, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx + s * 0.22, cy - s * 0.05, s * 0.17, 0, Math.PI * 2);
+  ctx.fill();
+  // 鼻洞
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(cx - s * 0.08, cy + s * 0.2);
+  ctx.lineTo(cx, cy + s * 0.1);
+  ctx.lineTo(cx + s * 0.08, cy + s * 0.2);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawStar(ctx, cx, cy, size, color) {
+  ctx.fillStyle = color;
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.5;
+  const s = size * 0.4;
+  const spikes = 5;
+  const outerR = s;
+  const innerR = s * 0.4;
+  ctx.beginPath();
+  for (let i = 0; i < spikes * 2; i++) {
+    const r = i % 2 === 0 ? outerR : innerR;
+    const angle = (i * Math.PI) / spikes - Math.PI / 2;
+    const x = cx + Math.cos(angle) * r;
+    const y = cy + Math.sin(angle) * r;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+}
+
+function drawFlag(ctx, cx, cy, size, color) {
+  const s = size * 0.4;
+  ctx.strokeStyle = '#ccc';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cx - s * 0.1, cy + s * 0.7);
+  ctx.lineTo(cx - s * 0.1, cy - s * 0.9);
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - s * 0.9);
+  ctx.lineTo(cx + s * 0.9, cy - s * 0.5);
+  ctx.lineTo(cx, cy - s * 0.2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+}
+
+function drawDiamond(ctx, cx, cy, size, color) {
+  ctx.fillStyle = color;
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.5;
+  const s = size * 0.4;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - s);
+  ctx.lineTo(cx + s * 0.6, cy);
+  ctx.lineTo(cx, cy + s);
+  ctx.lineTo(cx - s * 0.6, cy);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+}
+
+// ====== 标记定义 ======
+const markers = [
+  { name: '皇冠', en: 'Crown', color: '#FFD700', usage: 'VIP/英雄/首领', desc: '最重要单位，必须存活', type: 'protect', draw: drawCrown },
+  { name: '盾牌', en: 'Shield', color: '#4CAF50', usage: '保护目标', desc: '需保护的单位或建筑', type: 'protect', draw: drawShield },
+  { name: '骷髅', en: 'Skull', color: '#FF4444', usage: '刺杀目标', desc: '需击杀的敌方单位', type: 'kill', draw: drawSkull },
+  { name: '准星', en: 'Crosshair', color: '#FF6D00', usage: '摧毁目标', desc: '需摧毁的敌方建筑', type: 'kill', draw: drawCrosshair },
+  { name: '星形', en: 'Star', color: '#FFD740', usage: '主要目标', desc: '主要任务目标位置', type: 'nav', draw: drawStar },
+  { name: '旗帜', en: 'Flag', color: '#42A5F5', usage: '到达/占领/护送', desc: '需到达或占领的点', type: 'nav', draw: drawFlag },
+  { name: '菱形', en: 'Diamond', color: '#FFC107', usage: '路径点/次要', desc: '次要路径点或标记', type: 'nav', draw: drawDiamond },
+];
+
+const typeColors = { protect: '#4CAF50', kill: '#FF4444', nav: '#42A5F5' };
+const typeNames = { protect: '🛡️ 保护类', kill: '⚔️ 击杀类', nav: '📍 导航类' };
+
+// ====== 渲染标记卡片 ======
+const grid = document.getElementById('markerGrid');
+markers.forEach(m => {
+  const card = document.createElement('div');
+  card.className = 'marker-card';
+  const wrap = document.createElement('div');
+  wrap.className = 'marker-canvas-wrap';
+  const c = createCanvas(120, 120);
+  const ctx = c.getContext('2d');
+  // 光晕背景
+  const grad = ctx.createRadialGradient(60, 60, 0, 60, 60, 45);
+  grad.addColorStop(0, m.color + '33');
+  grad.addColorStop(1, 'transparent');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 120, 120);
+  m.draw(ctx, 60, 58, 80, m.color);
+  wrap.appendChild(c);
+  const tag = document.createElement('div');
+  tag.className = 'marker-type-tag';
+  tag.style.color = typeColors[m.type];
+  tag.textContent = typeNames[m.type];
+  const name = document.createElement('div');
+  name.className = 'marker-name';
+  name.textContent = m.name + ' / ' + m.en;
+  const desc = document.createElement('div');
+  desc.className = 'marker-desc';
+  desc.textContent = m.desc;
+  const usage = document.createElement('div');
+  usage.className = 'marker-usage';
+  usage.textContent = '用途: ' + m.usage;
+  card.append(wrap, tag, name, desc, usage);
+  grid.appendChild(card);
+});
+
+// ====== 场景模拟 ======
+const scene = document.getElementById('sceneDemo');
+const sceneUnits = [
+  { x: 70,  y: 150, emoji: '🏰', bg: '#5d4037', marker: 'crown',      color: '#FFD700', label: 'VIP城堡' },
+  { x: 230, y: 185, emoji: '🏠', bg: '#33691e', marker: 'shield',     color: '#4CAF50', label: '保护建筑' },
+  { x: 430, y: 155, emoji: '🏚️', bg: '#795548', marker: 'crosshair',  color: '#FF6D00', label: '摧毁目标' },
+  { x: 600, y: 195, emoji: '💀', bg: '#b71c1c', marker: 'skull',      color: '#FF4444', label: '刺杀目标' },
+  { x: 310, y: 210, emoji: '⭐', bg: '#1b5e20', marker: 'crown',      color: '#FFD700', label: '英雄单位' },
+  { x: 730, y: 170, emoji: '🚩', bg: '#0d47a1', marker: 'flag',       color: '#42A5F5', label: '护送终点' },
+];
+
+sceneUnits.forEach((u, idx) => {
+  // 单位方块
+  const el = document.createElement('div');
+  el.className = 'scene-unit';
+  el.style.cssText = `left:${u.x}px;top:${u.y}px;background:${u.bg};border:2px solid #888;`;
+  el.textContent = u.emoji;
+  scene.appendChild(el);
+
+  // 标记画布
+  const mc = createCanvas(64, 64);
+  mc.style.cssText = `position:absolute;left:${u.x-14}px;top:${u.y-58}px;pointer-events:none;z-index:3;`;
+  mc.className = 'anim-pulse';
+  mc.style.animationDelay = (idx * 0.2) + 's';
+  const mx = mc.getContext('2d');
+  // 虚线光柱
+  mx.strokeStyle = u.color + '55';
+  mx.lineWidth = 1;
+  mx.setLineDash([3, 4]);
+  mx.beginPath();
+  mx.moveTo(32, 58);
+  mx.lineTo(32, 30);
+  mx.stroke();
+  mx.setLineDash([]);
+  // 图标
+  const fn = markers.find(m => m.en.toLowerCase() === u.marker);
+  if (fn) fn.draw(mx, 32, 22, 40, u.color);
+  // 文字
+  mx.fillStyle = '#ffffffcc';
+  mx.font = 'bold 9px "Segoe UI"';
+  mx.textAlign = 'center';
+  mx.fillText(u.label, 32, 45);
+  scene.appendChild(mc);
+});
+
+// 图例
+const legend = document.createElement('div');
+legend.style.cssText = 'position:absolute;bottom:10px;right:14px;font-size:10px;color:#555;';
+legend.textContent = '虚线 = SC2光柱效果 | 图标脉冲浮动';
+scene.appendChild(legend);
+</script>
+</body>
+</html>
