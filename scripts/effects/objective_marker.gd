@@ -71,11 +71,6 @@ func _draw() -> void:
 	var s := icon_size
 	var color := _get_color()
 
-	# 深色背景圆，提高对比度
-	var bg_r := s * 0.7
-	draw_circle(Vector2.ZERO, bg_r, Color(0.0, 0.0, 0.0, 0.6))
-	draw_arc(Vector2.ZERO, bg_r, 0.0, TAU, 24, Color(0.3, 0.3, 0.3, 0.9), 1.5)
-
 	match marker_type:
 		MarkerType.CROWN:
 			_draw_crown(s, color)
