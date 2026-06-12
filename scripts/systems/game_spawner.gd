@@ -68,7 +68,6 @@ func spawn_from_config(map_config: Resource) -> void:
 		ai.name = "EnemyAI"
 		ai.set_script(load("res://scripts/units/enemy_ai.gd"))
 		unit.add_child(ai)
-		unit.add_child(ai)
 
 	# Spawn player buildings
 	for spawn in map_config.player_buildings:
@@ -382,3 +381,8 @@ func show_floating_text(text: String, color: Color, world_pos: Vector2) -> void:
 	ft.set_script(load("res://scripts/effects/floating_text.gd"))
 	_main_node.add_child(ft)
 	ft.setup(text, color, world_pos)
+
+# --- 情绪系统节点 ---
+
+
+

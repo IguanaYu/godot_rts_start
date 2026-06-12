@@ -28,6 +28,12 @@ func _physics_process(_delta: float) -> void:
 	if unit.state == Unit.UnitState.DEAD:
 		return
 
+	# 如果情绪系统正在控制单位行为，AI 不干预
+	var emotion_node = unit.get_node_or_null("Emotion")
+	if emotion_node and emotion_node.has_method("is_emotion_active"):
+		if emotion_node.is_emotion_active():
+			return
+
 	# 如果单位正在攻击且目标已死，恢复之前状态
 	if unit.state == Unit.UnitState.ATTACK:
 		var target = unit.attack_target
@@ -199,3 +205,7 @@ func on_attacked(attacker) -> void:
 	# 打断当前巡逻移动，让AI立即接管
 	if unit.state == Unit.UnitState.MOVE:
 		unit.state = Unit.UnitState.GUARD
+	# 记录攻击者给情绪系统
+	var emotion_node = unit.get_node_or_null("Emotion")
+	if emotion_node and emotion_node.has_method("set_last_attacker"):
+		emotion_node.set_last_attacker(attacker)

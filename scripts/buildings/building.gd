@@ -77,6 +77,7 @@ var _rally_indicator: Node2D = null
 var _production_circle: Node2D = null
 
 signal died(building)
+signal damaged(amount, attacker)
 
 @onready var static_body: StaticBody2D = $StaticBody2D
 @onready var collision_shape: CollisionShape2D = $StaticBody2D/CollisionShape2D
@@ -561,6 +562,7 @@ func take_damage(amount: int, attacker = null) -> void:
 	if health.is_dead():
 		return
 	health.take_damage(amount)
+	damaged.emit(amount, attacker)
 	# 伤害飘字
 	if amount > 0:
 		var main_node := get_tree().current_scene

@@ -5,6 +5,7 @@
 [ext_resource type="Script" path="res://scripts/core/shadow_component.gd" id="shadow_script"]
 [ext_resource type="Script" path="res://scripts/core/health_component.gd" id="health_script"]
 [ext_resource type="Script" path="res://scripts/ui/selection_circle.gd" id="selection_circle_script"]
+[ext_resource type="Script" path="res://scripts/systems_game/unit_emotion.gd" id="emotion_script"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1"]
 radius = 16.0
@@ -53,3 +54,6 @@ z_index = 10
 visible = false
 width = 2.0
 default_color = Color(1, 0.3, 0.3, 0.7)
+
+[node name="Emotion" type="Node" parent="."]
+script = ExtResource("emotion_script")
