@@ -30,35 +30,119 @@ var _completion_play_count_label: Label
 
 # === 关卡数据（翻译键） ===
 var levels := [
-	{
-		"name_key": "LEVEL_1_NAME",
-		"desc_key": "LEVEL_1_DESC",
-		"scene": "res://scenes/maps/map_1.tscn",
-		"icon": PATH_ICON_01,
-		"ribbon_row": 0,
-	},
-	{
-		"name_key": "LEVEL_2_NAME",
-		"desc_key": "LEVEL_2_DESC",
-		"scene": "res://scenes/maps/map_2.tscn",
-		"icon": PATH_ICON_02,
-		"ribbon_row": 2,
-	},
-	{
-		"name_key": "LEVEL_3_NAME",
-		"desc_key": "LEVEL_3_DESC",
-		"scene": "res://scenes/maps/map_3.tscn",
-		"icon": PATH_ICON_03,
-		"ribbon_row": 4,
-	},
-	{
-		"name_key": "LEVEL_4_NAME",
-		"desc_key": "LEVEL_4_DESC",
-		"scene": "res://scenes/maps/map_4.tscn",
-		"icon": PATH_ICON_04,
-		"ribbon_row": 6,
-	},
-]
+		{
+			"name_key": "LEVEL_1_NAME",
+			"desc_key": "LEVEL_1_DESC",
+			"scene": "res://scenes/maps/map_1.tscn",
+			"icon": PATH_ICON_01,
+			"ribbon_row": 0,
+		},
+		{
+			"name_key": "LEVEL_2_NAME",
+			"desc_key": "LEVEL_2_DESC",
+			"scene": "res://scenes/maps/map_2.tscn",
+			"icon": PATH_ICON_02,
+			"ribbon_row": 2,
+		},
+		{
+			"name_key": "LEVEL_3_NAME",
+			"desc_key": "LEVEL_3_DESC",
+			"scene": "res://scenes/maps/map_3.tscn",
+			"icon": PATH_ICON_03,
+			"ribbon_row": 4,
+		},
+		{
+			"name_key": "LEVEL_4_NAME",
+			"desc_key": "LEVEL_4_DESC",
+			"scene": "res://scenes/maps/map_4.tscn",
+			"icon": PATH_ICON_04,
+			"ribbon_row": 6,
+		},
+		{
+			"name_key": "LEVEL_5_NAME",
+			"desc_key": "LEVEL_5_DESC",
+			"scene": "res://scenes/maps/map_5.tscn",
+			"icon": PATH_ICON_01,
+			"ribbon_row": 1,
+		},
+		{
+			"name_key": "LEVEL_6_NAME",
+			"desc_key": "LEVEL_6_DESC",
+			"scene": "res://scenes/maps/map_6.tscn",
+			"icon": PATH_ICON_02,
+			"ribbon_row": 3,
+		},
+		{
+			"name_key": "LEVEL_7_NAME",
+			"desc_key": "LEVEL_7_DESC",
+			"scene": "res://scenes/maps/map_7.tscn",
+			"icon": PATH_ICON_03,
+			"ribbon_row": 5,
+		},
+		{
+			"name_key": "LEVEL_8_NAME",
+			"desc_key": "LEVEL_8_DESC",
+			"scene": "res://scenes/maps/map_8.tscn",
+			"icon": PATH_ICON_04,
+			"ribbon_row": 7,
+		},
+		{
+			"name_key": "LEVEL_9_NAME",
+			"desc_key": "LEVEL_9_DESC",
+			"scene": "res://scenes/maps/map_9.tscn",
+			"icon": PATH_ICON_01,
+			"ribbon_row": 8,
+		},
+		{
+			"name_key": "LEVEL_10_NAME",
+			"desc_key": "LEVEL_10_DESC",
+			"scene": "res://scenes/maps/map_10.tscn",
+			"icon": PATH_ICON_02,
+			"ribbon_row": 9,
+		},
+		{
+			"name_key": "LEVEL_11_NAME",
+			"desc_key": "LEVEL_11_DESC",
+			"scene": "res://scenes/maps/map_11.tscn",
+			"icon": PATH_ICON_03,
+			"ribbon_row": 0,
+		},
+		{
+			"name_key": "LEVEL_12_NAME",
+			"desc_key": "LEVEL_12_DESC",
+			"scene": "res://scenes/maps/map_12.tscn",
+			"icon": PATH_ICON_04,
+			"ribbon_row": 2,
+		},
+		{
+			"name_key": "LEVEL_13_NAME",
+			"desc_key": "LEVEL_13_DESC",
+			"scene": "res://scenes/maps/map_13.tscn",
+			"icon": PATH_ICON_01,
+			"ribbon_row": 4,
+		},
+		{
+			"name_key": "LEVEL_14_NAME",
+			"desc_key": "LEVEL_14_DESC",
+			"scene": "res://scenes/maps/map_14.tscn",
+			"icon": PATH_ICON_02,
+			"ribbon_row": 6,
+		},
+		{
+			"name_key": "LEVEL_15_NAME",
+			"desc_key": "LEVEL_15_DESC",
+			"scene": "res://scenes/maps/map_15.tscn",
+			"icon": PATH_ICON_03,
+			"ribbon_row": 8,
+		},
+		{
+			"name_key": "LEVEL_16_NAME",
+			"desc_key": "LEVEL_16_DESC",
+			"scene": "res://scenes/maps/map_16.tscn",
+			"icon": PATH_ICON_04,
+			"ribbon_row": 9,
+		},
+	]
 
 # === 测试关卡数据 ===
 var test_levels := [
@@ -414,7 +498,7 @@ func _create_left_panel(parent: HBoxContainer) -> void:
 # ============================================================
 func _create_level_button(index: int) -> Control:
 		var wrapper := Control.new()
-		wrapper.custom_minimum_size = Vector2(0, 100)
+		wrapper.custom_minimum_size = Vector2(0, 72)
 
 		# 九宫格按钮底板（初始蓝色）
 		var bg := _make_ninepatch(np_btn_blue)
@@ -768,14 +852,32 @@ func _select_level(index: int) -> void:
 	_update_right_panel(index)
 
 
+func _is_level_locked(index: int) -> bool:
+	if _is_test_mode:
+		return false
+	var sm := _get_save_manager()
+	if not sm:
+		return false
+	return not sm.is_level_unlocked(sm.get_current_data(), index)
+
+
 func _update_button_appearances() -> void:
 	for i in range(button_backgrounds.size()):
-		if i == selected_index:
+		if not _is_test_mode and _is_level_locked(i):
+			button_backgrounds[i].texture = np_btn_blue.texture
+			button_backgrounds[i].patch_margin_left = np_btn_blue.margin_left
+			button_backgrounds[i].patch_margin_right = np_btn_blue.margin_right
+			button_backgrounds[i].patch_margin_top = np_btn_blue.margin_top
+			button_backgrounds[i].patch_margin_bottom = np_btn_blue.margin_bottom
+			button_backgrounds[i].modulate = Color(0.4, 0.4, 0.4, 1.0)
+			button_labels[i].add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+		elif i == selected_index:
 			button_backgrounds[i].texture = np_btn_red.texture
 			button_backgrounds[i].patch_margin_left = np_btn_red.margin_left
 			button_backgrounds[i].patch_margin_right = np_btn_red.margin_right
 			button_backgrounds[i].patch_margin_top = np_btn_red.margin_top
 			button_backgrounds[i].patch_margin_bottom = np_btn_red.margin_bottom
+			button_backgrounds[i].modulate = Color(1, 1, 1, 1)
 			button_labels[i].add_theme_color_override("font_color", Color(1, 1, 0.8))
 		else:
 			button_backgrounds[i].texture = np_btn_blue.texture
@@ -783,6 +885,7 @@ func _update_button_appearances() -> void:
 			button_backgrounds[i].patch_margin_right = np_btn_blue.margin_right
 			button_backgrounds[i].patch_margin_top = np_btn_blue.margin_top
 			button_backgrounds[i].patch_margin_bottom = np_btn_blue.margin_bottom
+			button_backgrounds[i].modulate = Color(1, 1, 1, 1)
 			button_labels[i].add_theme_color_override("font_color", Color(1, 1, 1))
 
 
@@ -790,6 +893,19 @@ func _update_right_panel(index: int) -> void:
 	if index < 0 or index >= _current_levels.size():
 		return
 	var level: Dictionary = _current_levels[index]
+	if not _is_test_mode and _is_level_locked(index):
+		right_title.text = tr(level.name_key)
+		right_desc.text = tr("LEVEL_LOCKED_DESC")
+		if level.has("icon") and level.icon:
+			right_icon.texture = load(level.icon)
+		right_icon.modulate = Color(0.4, 0.4, 0.4)
+		_completion_status_label.text = ""
+		_completion_time_label.text = ""
+		_completion_play_count_label.text = ""
+		start_button_bg.modulate = Color(0.5, 0.5, 0.5)
+		return
+	right_icon.modulate = Color(1, 1, 1)
+	start_button_bg.modulate = Color(1, 1, 1)
 	right_title.text = tr(level.name_key)
 	right_desc.text = tr(level.desc_key)
 
@@ -842,8 +958,11 @@ func _update_right_panel(index: int) -> void:
 func _on_button_hover(index: int) -> void:
 	if index >= button_backgrounds.size():
 		return
+	if not _is_test_mode and _is_level_locked(index):
+		return
 	if index < button_wrappers.size(): button_wrappers[index].scale = Vector2(1.08, 1.08)
 	_update_right_panel(index)
+
 
 
 func _on_button_unhover(_index: int) -> void:
@@ -856,7 +975,10 @@ func _on_button_unhover(_index: int) -> void:
 func _on_button_clicked(index: int) -> void:
 	if index >= button_backgrounds.size():
 		return
+	if not _is_test_mode and _is_level_locked(index):
+		return
 	_select_level(index)
+
 
 
 func _on_button_down(index: int) -> void:

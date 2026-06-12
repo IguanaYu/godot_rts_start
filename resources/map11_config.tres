@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="MapConfig" format=3 uid="uid://map11cfg"]
+
+[ext_resource type="Script" uid="uid://cjdi3j0utrwrk" path="res://scripts/map_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+map_name = "Endless Reinforcements"
+initial_gold = 5000
+player_units = Array[Dictionary]([{
+"pos": Vector2(200, 200),
+"type": 0
+}, {
+"pos": Vector2(200, 280),
+"type": 0
+}, {
+"pos": Vector2(150, 240),
+"type": 1
+}])
+player_buildings = Array[Dictionary]([{
+"grid_pos": Vector2i(1, 2),
+"type": 2
+}])
+enemy_units = Array[Dictionary]([{
+"pos": Vector2(800, 200),
+"type": 0
+}, {
+"pos": Vector2(800, 300),
+"type": 0
+}])
+enemy_buildings = Array[Dictionary]([{
+"grid_pos": Vector2i(10, 2),
+"type": 3
+}])
+available_items = Array[int]([1, 2, 5, 6, 3, 4])
+map_description = "Placeholder map for Endless Reinforcements"

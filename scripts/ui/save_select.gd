@@ -359,11 +359,11 @@ func _refresh_all_slots() -> void:
 		if exists:
 			_slot_name_labels[i].text = tr("SAVE_SLOT_N") % (i + 1) + " - " + str(data.get("slot_name", "Commander"))
 			var total: int = sm.calc_total_score(data)
-			_slot_score_labels[i].text = tr("SAVE_SCORE") % [total, 100]
+			_slot_score_labels[i].text = tr("SAVE_SCORE") % [total, 530]
 			var completed: int = sm.get_completed_count(data)
 			var last: String = str(data.get("last_played", ""))
-			_slot_meta_labels[i].text = tr("SAVE_META") % [completed, 4, sm.format_date(last)]
-			progress_bar.value = (completed * 100.0) / 4.0
+			_slot_meta_labels[i].text = tr("SAVE_META") % [completed, 16, sm.format_date(last)]
+			progress_bar.value = (completed * 100.0) / 16.0
 			enter_label.text = tr("SAVE_CONTINUE")
 			enter_label.add_theme_font_size_override("font_size", 15)
 			del_btn.get_meta("wrapper").visible = true

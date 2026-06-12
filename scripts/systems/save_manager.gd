@@ -6,8 +6,18 @@ signal save_updated(slot: int)
 
 const SAVE_DIR := "user://saves/"
 const SLOTS := 3
-const LEVELS := ["map_1", "map_2", "map_3", "map_4"]
-const LEVEL_SCORES := {"map_1": 10, "map_2": 20, "map_3": 30, "map_4": 40}
+const LEVELS := [
+	"map_1", "map_2", "map_3", "map_4",
+	"map_5", "map_6", "map_7", "map_8",
+	"map_9", "map_10", "map_11", "map_12",
+	"map_13", "map_14", "map_15", "map_16",
+]
+const LEVEL_SCORES := {
+	"map_1": 10, "map_2": 15, "map_3": 20, "map_4": 25,
+	"map_5": 20, "map_6": 30, "map_7": 30, "map_8": 35,
+	"map_9": 40, "map_10": 40, "map_11": 40, "map_12": 45,
+	"map_13": 45, "map_14": 45, "map_15": 50, "map_16": 50,
+}
 
 var _current_slot: int = -1
 var _session_start_time: float = 0.0
@@ -96,6 +106,13 @@ func _empty_level_entry() -> Dictionary:
 
 func get_level_score_value(level_id: String) -> int:
 	return LEVEL_SCORES.get(level_id, 0)
+
+
+func is_level_unlocked(data: Dictionary, level_index: int) -> bool:
+	if level_index <= 0:
+		return true
+	var prev_id: String = LEVELS[level_index - 1]
+	return data.get("levels", {}).get(prev_id, {}).get("completed", false)
 
 
 func calc_total_score(data: Dictionary) -> int:

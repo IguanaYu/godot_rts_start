@@ -208,3 +208,28 @@ TEST_T13_DESC,"Survive as long as possible. Game ends when your castle falls.","
 TAB_CAMPAIGN,Campaign,战役,キャンペーン
 TAB_TEST_LEVELS,Test Levels,测试关卡,テストステージ
 UI_PATH_LINES,Path Lines,寻路路径线,パス表示
+LEVEL_5_NAME,Map 5: Skill Awakening,关卡5: 技能觉醒,マップ5: スキル覚醒
+LEVEL_5_DESC,Learn to use Orbital Strike and Shield Wall commander skills. Survive 3 waves of enemies.,学习使用轨道轰炸和护盾墙指挥官技能。抵御3波敌军进攻。,軌道爆撃とシールドウォールの指揮官スキルを学べ。3波の敵を耐えろ。
+LEVEL_6_NAME,Map 6: Resource Drain,关卡6: 资源枯竭,マップ6: 資源枯渇
+LEVEL_6_DESC,Limited gold. Capture enemy points to gain reinforcements and resources.,金币有限。占领敌方据点获取增援和资源。,金貨は限られている。敵の拠点を占領して増援と資源を得よ。
+LEVEL_7_NAME,Map 7: Tomb Defense,关卡7: 古墓防御,マップ7: 古墓防衛
+LEVEL_7_DESC,Defend against 4 waves. Capture ancient tombs for rewards but enemies grow stronger.,抵御4波敌军。占领古墓获取奖励但敌军会变强。,4波の防衛戦。古墓を占領して報酬を得るが敵は強くなる。
+LEVEL_8_NAME,Map 8: Tug of War,关卡8: 拉锯战,マップ8: 一進一退
+LEVEL_8_DESC,Classic RTS battle. Both sides have bases. Destroy the enemy castle to win.,经典RTS对战。双方都有基地。摧毁敌方城堡即可获胜。,クラシックRTS対戦。双方に基地あり。敵の城を破壊して勝利せよ。
+LEVEL_9_NAME,Map 9: Siege from All Sides,关卡9: 四方围攻,マップ9: 四方包囲
+LEVEL_9_DESC,Enemies attack from 4 directions. Elite units buff nearby allies. Prioritize elite targets.,敌人从四面八方进攻。精英单位会强化周围敌军。优先击杀精英。,敵が四方から攻める。エリートユニットは周囲を強化する。エリートを優先せよ。
+LEVEL_10_NAME,Map 10: Timed Assault,关卡10: 限时清除,マップ10: 時限攻略
+LEVEL_10_DESC,Destroy 3 enemy bases before time runs out. Each base destroyed extends the timer.,在时间耗尽前摧毁3个敌方据点。每摧毁一个据点延长倒计时。,時間切れ前に敵拠点を3つ破壊せよ。拠点破壊で時間延長。
+LEVEL_11_NAME,Map 11: Endless Reinforcements,关卡11: 源源不绝,マップ11: 源源不絶
+LEVEL_11_DESC,Fewer units means faster and larger reinforcements. Push through a fortified enemy base.,部队越少援军越多越快。突破敌方多层防御基地。,ユニットが少ないほど増援が早く多い。敵の多重防御基地を突破せよ。
+LEVEL_12_NAME,Map 12: Steady Advance,关卡12: 步步推进,マップ12: 着実な進撃
+LEVEL_12_DESC,Advance through 3 enemy strongholds. Build forward bases as you push forward.,依次攻克3个敌方据点。推进时建立前线基地。,3つの敵拠点を順次攻略せよ。前進しながら前線基地を築け。
+LEVEL_13_NAME,Map 13: Intercept the Courier,关卡13: 截杀密使,マップ13: 密使を討て
+LEVEL_13_DESC,Kill 3 enemy VIP couriers while defending your base from attacks.,击杀3个敌方VIP密使，同时防守基地抵御进攻。,3人の敵VIP密使を討ちつつ基地を防衛せよ。
+LEVEL_14_NAME,Map 14: Temple Guard,关卡14: 圣殿守护,マップ14: 聖殿守護
+LEVEL_14_DESC,Protect 3 elite units with monks. No base no buildings — pure micro management.,用僧侣保护3个精英单位。无基地无建筑——纯微操关卡。,モンクで3体のエリートを守れ。基地も建物もない純粋なマイクロ操作。
+LEVEL_15_NAME,Map 15: Point Assault,关卡15: 据点攻防,マップ15: 拠点攻防
+LEVEL_15_DESC,Capture 3 strongholds and defend each for 60 seconds. Enemies will counterattack.,占领3个据点并各防守60秒。敌人会反击。,3つの拠点を占領し各60秒防衛せよ。敵は反撃してくる。
+LEVEL_16_NAME,Map 16: Final Battle,关卡16: 终极决战,マップ16: 最終決戦
+LEVEL_16_DESC,Defeat the final Boss. Destroy shield generators to remove its invulnerability.,击败最终Boss。摧毁护盾发生器解除其无敌状态。,最終ボスを倒せ。シールドジェネレーターを破壊して無敵を解除せよ。
+LEVEL_LOCKED_DESC,Complete the previous level to unlock.,通关前一关后解锁。,前のレベルをクリアして解放。

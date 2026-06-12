@@ -1,0 +1,90 @@
+[gd_scene format=3 uid="uid://map5scene"]
+
+[ext_resource type="PackedScene" uid="uid://dhyxequcxurbh" path="res://scenes/buildings/castle.tscn" id="castle"]
+[ext_resource type="Script" uid="uid://cg2igjmusi0dq" path="res://scripts/main.gd" id="main_script"]
+[ext_resource type="Resource" uid="uid://map5cfg" path="res://resources/map5_config.tres" id="map5_config"]
+[ext_resource type="PackedScene" uid="uid://mmgbo1ded4ro" path="res://scenes/units/soldier.tscn" id="soldier"]
+[ext_resource type="PackedScene" uid="uid://e5by4tc82spk" path="res://scenes/units/archer.tscn" id="archer"]
+[ext_resource type="Script" uid="uid://jhcf43ds1dy6" path="res://scripts/victory/victory_destroy_base.gd" id="victory_destroy_base"]
+
+[sub_resource type="NavigationPolygon" id="NavPoly_1"]
+vertices = PackedVector2Array(-500, -500, 1500, -500, 1500, 1200, -500, 1200)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
+
+[node name="Map5" type="Node2D" unique_id=558617633]
+script = ExtResource("main_script")
+map_config = ExtResource("map5_config")
+
+[node name="Ground" type="ColorRect" parent="." unique_id=673886639]
+offset_left = -537.0
+offset_top = -468.0
+offset_right = 1463.0
+offset_bottom = 1232.0
+color = Color(0.35, 0.55, 0.25, 1)
+
+[node name="NavigationRegion2D" type="NavigationRegion2D" parent="." unique_id=358250019]
+navigation_polygon = SubResource("NavPoly_1")
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=495281884]
+
+[node name="PlayerUnits" type="Node2D" parent="." unique_id=104853480]
+
+[node name="PlayerSoldier1" parent="PlayerUnits" unique_id=635804391 instance=ExtResource("soldier")]
+position = Vector2(200, 200)
+
+[node name="PlayerSoldier2" parent="PlayerUnits" unique_id=788664010 instance=ExtResource("soldier")]
+position = Vector2(200, 280)
+
+[node name="PlayerArcher1" parent="PlayerUnits" unique_id=283679807 instance=ExtResource("archer")]
+position = Vector2(150, 240)
+
+[node name="EnemyUnits" type="Node2D" parent="." unique_id=598331374]
+
+[node name="EnemySoldier1" parent="EnemyUnits" unique_id=214916288 instance=ExtResource("soldier")]
+position = Vector2(800, 200)
+team = 1
+
+[node name="EnemySoldier2" parent="EnemyUnits" unique_id=784609899 instance=ExtResource("soldier")]
+position = Vector2(800, 300)
+team = 1
+
+[node name="Buildings" type="Node2D" parent="." unique_id=779984405]
+
+[node name="PlayerCastle" parent="Buildings" unique_id=947113750 instance=ExtResource("castle")]
+position = Vector2(160, 224)
+
+[node name="EnemyBarracks" parent="Buildings" unique_id=653845343 instance=ExtResource("castle")]
+position = Vector2(800, 224)
+team = 1
+
+[node name="SelectionBox" type="ColorRect" parent="." unique_id=302417167]
+visible = false
+mouse_filter = 2
+color = Color(0.4, 0.7, 1, 0.25)
+
+[node name="PreviewRect" type="ColorRect" parent="." unique_id=618114159]
+visible = false
+mouse_filter = 2
+color = Color(0, 1, 0, 0.3)
+
+[node name="ResultLabel" type="Label" parent="." unique_id=707227321]
+offset_left = 350.0
+offset_top = 300.0
+offset_right = 650.0
+offset_bottom = 400.0
+theme_override_font_sizes/font_size = 48
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AttackMoveIndicator" type="Label" parent="." unique_id=859565094]
+visible = false
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 200.0
+offset_bottom = 40.0
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+theme_override_font_sizes/font_size = 20
+text = "Attack Move (Click)"
+
+[node name="VictoryDestroyBase" type="Node" parent="." unique_id=779703013]
+script = ExtResource("victory_destroy_base")
