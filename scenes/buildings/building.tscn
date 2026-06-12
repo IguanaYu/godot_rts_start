@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://brxgc8ols7de3" path="res://scripts/buildings/building.gd" id="bld_script"]
 [ext_resource type="Script" path="res://scripts/core/shadow_component.gd" id="shadow_script"]
 [ext_resource type="Script" path="res://scripts/core/health_component.gd" id="health_script"]
+[ext_resource type="Script" path="res://scripts/buildings/building_garrison.gd" id="garrison_script"]
 
 [node name="Building" type="Node2D" unique_id=90714510]
 script = ExtResource("bld_script")
@@ -32,3 +33,6 @@ show_percentage = false
 visible = false
 width = 2.0
 default_color = Color(1, 0.3, 0.3, 0.7)
+
+[node name="Garrison" type="Node" parent="."]
+script = ExtResource("garrison_script")

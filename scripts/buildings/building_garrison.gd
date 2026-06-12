@@ -16,6 +16,7 @@ const UnitScript := preload("res://scripts/units/unit.gd")
 @export var trigger_hp_low: float = 0.40     # 强制触发血量阈值
 
 # ── 内部状态 ──
+var _disabled: bool = false
 var garrison: Array[Dictionary] = []         # 有序列表 [{"type": int, "stats_id": ""}, ...]
 var release_timer: float = 0.0               # 释放CD
 var production_timer: float = 0.0
@@ -29,16 +30,68 @@ var _garrison_bar: ProgressBar = null
 
 func _ready() -> void:
 	_building = get_parent() as Node2D
-	# 连接建筑信号
+	# 判断是否启用：仅敌方 + 非箭塔
+	var bteam: int = _building.get("team")
+	var btype: int = _building.get("building_type")
+	if bteam != 1 or btype == 1:  # PLAYER=0, ENEMY=1; TOWER=1
+		_disabled = true
+		return
+	# 按建筑类型设置默认配置（编辑器 @export 值会被覆盖）
+	if garrison_config.is_empty():
+		_apply_default_config(btype)
+	# 初始填满驻军
+	_fill_garrison_to_capacity()
+	# 连接信号
 	if _building.has_signal("damaged"):
 		_building.damaged.connect(_on_building_damaged)
 	if _building.has_signal("died"):
 		_building.died.connect(_on_building_died)
-	# 延迟创建UI（等待建筑 _setup_visuals 完成）
 	call_deferred("_create_garrison_bar")
 
 
+func _apply_default_config(btype: int) -> void:
+	match btype:
+		2:  # CASTLE
+			garrison_config = [{"type": 0, "weight": 3}, {"type": 1, "weight": 1}, {"type": 2, "weight": 1}]
+			max_capacity = 12
+			production_cooldown = 12.0
+			release_batch_size = 4
+		3:  # BARRACKS
+			garrison_config = [{"type": 0, "weight": 3}, {"type": 1, "weight": 1}]
+			max_capacity = 8
+			production_cooldown = 10.0
+			release_batch_size = 3
+		5:  # ARCHERY
+			garrison_config = [{"type": 1, "weight": 2}, {"type": 0, "weight": 1}]
+			max_capacity = 6
+			production_cooldown = 10.0
+			release_batch_size = 3
+		4:  # MONASTERY
+			garrison_config = [{"type": 3, "weight": 1}]
+			max_capacity = 4
+			production_cooldown = 15.0
+			release_batch_size = 2
+		0:  # WALL
+			garrison_config = [{"type": 0, "weight": 1}]
+			max_capacity = 3
+			production_cooldown = 20.0
+			release_batch_size = 2
+
+
+func _fill_garrison_to_capacity() -> void:
+	while garrison.size() < max_capacity:
+		var chosen := _weighted_random_pick(garrison_config)
+		if chosen.is_empty():
+			break
+		garrison.append({
+			"type": chosen.get("type", 0),
+			"stats_id": chosen.get("stats_id", ""),
+		})
+
+
 func _process(delta: float) -> void:
+	if _disabled:
+		return
 	if _building == null or not is_instance_valid(_building) or _building.is_dead():
 		return
 	_production_tick(delta)
