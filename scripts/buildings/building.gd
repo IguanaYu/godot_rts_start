@@ -57,6 +57,7 @@ var attack_timer: float = 0.0
 var production_timer: float = 0.0
 var production_cooldown: float = 0.0
 var production_unit_type: int = -1  # UnitType 枚举值，-1 = 不生产
+@export var disable_production: bool = false
 
 # 光环系统
 var aura_range: float = 0.0
@@ -392,6 +393,8 @@ func _get_tower_projectile_data() -> Resource:
 # 生产系统
 # ============================================================
 func _production_process(delta: float) -> void:
+	if disable_production:
+		return
 	if production_cooldown <= 0.0:
 		return
 	production_timer += delta

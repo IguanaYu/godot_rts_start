@@ -79,7 +79,7 @@ func check() -> int:
 
 	for child in current_stage.get_children():
 		if child is VictoryCondition:
-			var result := child.check()
+			var result: int = child.check()
 			if result == 1:
 				stage_victory = true
 			elif result == 2:
@@ -102,7 +102,7 @@ func check() -> int:
 	return 0  # 进行中
 
 func get_objectives() -> Array[Dictionary]:
-	var all_objectives := []
+	var all_objectives: Array[Dictionary] = []
 
 	# 显示已完成阶段
 	for i in range(_current_stage_index):
@@ -128,7 +128,7 @@ func get_objectives() -> Array[Dictionary]:
 		# 添加当前阶段的具体目标
 		for child in current_stage.get_children():
 			if child is VictoryCondition:
-				var sub_objs := child.get_objectives()
+				var sub_objs: Array[Dictionary] = child.get_objectives()
 				for obj in sub_objs:
 					# 缩进显示
 					obj["text"] = "  " + obj["text"]
@@ -154,3 +154,10 @@ func get_progress_fraction() -> float:
 func reset() -> void:
 	_current_stage_index = 0
 	_activate_stage(0)
+
+func set_game_controller(gc: Node) -> void:
+	super.set_game_controller(gc)
+	for stage in _stages:
+		for child in stage.get_children():
+			if child is VictoryCondition:
+				child.set_game_controller(gc)

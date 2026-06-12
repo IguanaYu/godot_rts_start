@@ -28,6 +28,7 @@ enum TriggerType { CLEAR_AREA, KILL_TARGETS, MISSION_COUNTER }
 	set(v): capture_radius = v; queue_redraw()
 @export var capture_speed: float = 50.0
 @export var can_enemy_capture: bool = true
+@export var allow_recapture: bool = false
 
 # --- 奖励效果 ---
 @export var reward_gold: int = 0
@@ -54,6 +55,7 @@ var _trigger_initialized: bool = false
 var game_controller: Node2D = null
 
 signal captured(team: int)
+signal lost(previous_team: int)
 signal zone_triggered()
 
 func _ready() -> void:
@@ -197,12 +199,19 @@ func _process_capture(delta: float) -> void:
 		capturing_team = dominant_team
 
 		if capture_progress >= 100.0 and captured_by != capturing_team:
+			var was_previously_captured := captured_by != -1
+			var previous_team := captured_by
 			captured_by = capturing_team
+			if allow_recapture:
+				if was_previously_captured:
+					lost.emit(previous_team)
+				capture_progress = 0.0
+			else:
+				is_enabled = false
+				is_active = false
+				visible = false
 			captured.emit(captured_by)
 			_grant_reward()
-			is_enabled = false
-			is_active = false
-			visible = false
 	else:
 		if captured_by == -1:
 			capture_progress = max(0.0, capture_progress - capture_speed * delta * 0.5)

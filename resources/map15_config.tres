@@ -5,31 +5,128 @@
 [resource]
 script = ExtResource("1_cfg")
 map_name = "Point Assault"
-initial_gold = 5000
+initial_gold = 6000
 player_units = Array[Dictionary]([{
-"pos": Vector2(200, 200),
+"pos": Vector2(100, 200),
 "type": 0
 }, {
-"pos": Vector2(200, 280),
+"pos": Vector2(100, 280),
 "type": 0
 }, {
-"pos": Vector2(150, 240),
+"pos": Vector2(100, 360),
+"type": 0
+}, {
+"pos": Vector2(100, 440),
+"type": 0
+}, {
+"pos": Vector2(100, 520),
+"type": 0
+}, {
+"pos": Vector2(50, 240),
 "type": 1
+}, {
+"pos": Vector2(50, 320),
+"type": 1
+}, {
+"pos": Vector2(50, 400),
+"type": 1
+}, {
+"pos": Vector2(150, 280),
+"type": 2
+}, {
+"pos": Vector2(150, 380),
+"type": 2
+}, {
+"pos": Vector2(200, 320),
+"type": 3
+}, {
+"pos": Vector2(200, 420),
+"type": 3
 }])
 player_buildings = Array[Dictionary]([{
 "grid_pos": Vector2i(1, 2),
 "type": 2
+}, {
+"grid_pos": Vector2i(4, 4),
+"type": 3
+}, {
+"grid_pos": Vector2i(4, 2),
+"type": 5
+}, {
+"grid_pos": Vector2i(7, 3),
+"type": 4
 }])
 enemy_units = Array[Dictionary]([{
-"pos": Vector2(800, 200),
+"pos": Vector2(500, 250),
 "type": 0
 }, {
-"pos": Vector2(800, 300),
+"pos": Vector2(500, 330),
 "type": 0
+}, {
+"pos": Vector2(530, 280),
+"type": 0
+}, {
+"pos": Vector2(480, 290),
+"type": 1
+}, {
+"pos": Vector2(480, 320),
+"type": 1
+}, {
+"pos": Vector2(900, 440),
+"type": 0
+}, {
+"pos": Vector2(900, 530),
+"type": 0
+}, {
+"pos": Vector2(930, 470),
+"type": 0
+}, {
+"pos": Vector2(930, 540),
+"type": 0
+}, {
+"pos": Vector2(880, 480),
+"type": 1
+}, {
+"pos": Vector2(880, 520),
+"type": 1
+}, {
+"pos": Vector2(920, 500),
+"type": 2
+}, {
+"pos": Vector2(1300, 630),
+"type": 0
+}, {
+"pos": Vector2(1300, 710),
+"type": 0
+}, {
+"pos": Vector2(1300, 780),
+"type": 0
+}, {
+"pos": Vector2(1330, 660),
+"type": 0
+}, {
+"pos": Vector2(1330, 740),
+"type": 0
+}, {
+"pos": Vector2(1280, 680),
+"type": 1
+}, {
+"pos": Vector2(1280, 750),
+"type": 1
+}, {
+"pos": Vector2(1320, 710),
+"type": 2
 }])
-enemy_buildings = Array[Dictionary]([{
-"grid_pos": Vector2i(10, 2),
-"type": 3
-}])
-available_items = Array[int]([1, 2, 5, 6, 3, 4])
-map_description = "Placeholder map for Point Assault"
+enemy_buildings = Array[Dictionary]([])
+available_items = Array[int]([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+commander_skills = Array[int]([0, 2, 3])
+star_time_3 = 600.0
+star_time_2 = 780.0
+star_deaths_3 = 3
+star_deaths_2 = 6
+terrain_theme = 1
+map_bounds = Rect2(-500, -500, 2000, 1700)
+nav_bounds = [Vector2(-500, -500), Vector2(1500, -500), Vector2(1500, 1200), Vector2(-500, 1200)]
+camera_start = Vector2(200, 350)
+border_width = 1
+map_description = "Capture 3 strongholds and hold each for 60 seconds against counterattacks!"

@@ -233,3 +233,13 @@ LEVEL_15_DESC,Capture 3 strongholds and defend each for 60 seconds. Enemies will
 LEVEL_16_NAME,Map 16: Final Battle,关卡16: 终极决战,マップ16: 最終決戦
 LEVEL_16_DESC,Defeat the final Boss. Destroy shield generators to remove its invulnerability.,击败最终Boss。摧毁护盾发生器解除其无敌状态。,最終ボスを倒せ。シールドジェネレーターを破壊して無敵を解除せよ。
 LEVEL_LOCKED_DESC,Complete the previous level to unlock.,通关前一关后解锁。,前のレベルをクリアして解放。
+OBJ_HOLD_POINT,Capture and hold the point,占领并坚守据点,拠点を占領して防衛せよ
+OBJ_HOLD_REMAINING,Hold: %ds remaining,坚守: %ds 剩余,防衛: %s 残り
+OBJ_CAPTURE_FIRST,Capture the point first,先占领据点,まず拠点を占領せよ
+OBJ_TIME_EXTENDER,Time bonus: %ds,时间奖励: %ds,時間ボーナス: %ds
+OBJ_STAGE_1,Stage 1: Capture North Point,阶段1: 占领北据点,フェーズ1: 北拠点を占領
+OBJ_STAGE_2,Stage 2: Capture Central Point,阶段2: 占领中据点,フェーズ2: 中央拠点を占領
+OBJ_STAGE_3,Stage 3: Capture South Point,阶段3: 占领南据点,フェーズ3: 南拠点を占領
+OBJ_HOLD_CP1,Capture and hold Point 1,占领并坚守据点1,拠点1を占領して防衛
+OBJ_HOLD_CP2,Capture and hold Point 2,占领并坚守据点2,拠点2を占領して防衛
+OBJ_HOLD_CP3,Capture and hold Point 3,占领并坚守据点3,拠点3を占領して防衛

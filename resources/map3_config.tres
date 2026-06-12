@@ -4,35 +4,69 @@
 
 [resource]
 script = ExtResource("1_cfg34")
-map_name = "Tower Defense"
-map_bounds = Rect2(-500, -500, 2000, 1700)
-nav_bounds = Array[Vector2]([Vector2(-500, -500), Vector2(1500, -500), Vector2(1500, 1200), Vector2(-500, 1200)])
+map_name = "Storm Front"
 initial_gold = 6000
-camera_start = Vector2(200, 350)
-
-player_units = Array[Dictionary]( [
-	{"type": 0, "pos": Vector2(100, 200)},
-	{"type": 0, "pos": Vector2(100, 280)},
-	{"type": 0, "pos": Vector2(100, 360)},
-	{"type": 1, "pos": Vector2(50, 240)},
-	{"type": 1, "pos": Vector2(50, 320)}
-] )
-
-player_buildings = Array[Dictionary]( [
-	{"type": 2, "grid_pos": Vector2i(1, 2)},
-	{"type": 3, "grid_pos": Vector2i(5, 3)},
-	{"type": 5, "grid_pos": Vector2i(5, 1)},
-	{"type": 1, "grid_pos": Vector2i(7, 2)}
-] )
-
-enemy_units = Array[Dictionary]( [] )
-
-enemy_buildings = Array[Dictionary]( [] )
-
-environment = {"trees": 10, "rocks": 8, "bushes": 6, "sheep": 3}
-
-available_items = Array[int]( [1, 2, 5, 6, 9] )
-
+player_units = Array[Dictionary]([{
+"pos": Vector2(100, 200),
+"type": 0
+}, {
+"pos": Vector2(100, 280),
+"type": 0
+}, {
+"pos": Vector2(100, 360),
+"type": 0
+}, {
+"pos": Vector2(50, 240),
+"type": 1
+}, {
+"pos": Vector2(50, 320),
+"type": 1
+}])
+player_buildings = Array[Dictionary]([{
+"grid_pos": Vector2i(1, 2),
+"type": 2
+}, {
+"grid_pos": Vector2i(5, 3),
+"type": 3
+}])
+enemy_units = Array[Dictionary]([{
+"pos": Vector2(700, 150),
+"type": 0
+}, {
+"pos": Vector2(700, 220),
+"type": 0
+}, {
+"pos": Vector2(730, 180),
+"type": 0
+}, {
+"pos": Vector2(700, 450),
+"type": 0
+}, {
+"pos": Vector2(700, 520),
+"type": 0
+}, {
+"pos": Vector2(730, 480),
+"type": 0
+}, {
+"pos": Vector2(700, 700),
+"type": 0
+}, {
+"pos": Vector2(700, 770),
+"type": 0
+}, {
+"pos": Vector2(730, 730),
+"type": 0
+}])
+enemy_buildings = Array[Dictionary]([])
+available_items = Array[int]([1, 2, 5, 6, 4, 7])
+commander_skills = Array[int]([0, 2])
+star_time_3 = 480.0
+star_time_2 = 600.0
+star_deaths_3 = 3
+star_deaths_2 = 5
 terrain_theme = 2
+map_bounds = Rect2(-500, -500, 2000, 1700)
+nav_bounds = [Vector2(-500, -500), Vector2(1500, -500), Vector2(1500, 1200), Vector2(-500, 1200)]
+camera_start = Vector2(200, 350)
 border_width = 1
-map_description = "Survive 3 waves of enemy attacks! Build defenses and hold your ground."
+map_description = "Capture 3 points to weaken the final wave! Survive 4 waves."

@@ -58,3 +58,8 @@ func get_progress_fraction() -> float:
 func reset() -> void:
 	_start_time = Time.get_ticks_msec() / 1000.0
 	_time_expired = false
+
+
+func add_time(seconds: float) -> void:
+	time_limit += seconds
+	objective_updated.emit()

@@ -5,31 +5,137 @@
 [resource]
 script = ExtResource("1_cfg")
 map_name = "Timed Assault"
-initial_gold = 5000
+initial_gold = 4000
 player_units = Array[Dictionary]([{
-"pos": Vector2(200, 200),
+"pos": Vector2(200, 300),
 "type": 0
 }, {
-"pos": Vector2(200, 280),
+"pos": Vector2(200, 380),
 "type": 0
 }, {
-"pos": Vector2(150, 240),
+"pos": Vector2(200, 460),
+"type": 0
+}, {
+"pos": Vector2(200, 540),
+"type": 0
+}, {
+"pos": Vector2(140, 340),
 "type": 1
-}])
-player_buildings = Array[Dictionary]([{
-"grid_pos": Vector2i(1, 2),
+}, {
+"pos": Vector2(140, 420),
+"type": 1
+}, {
+"pos": Vector2(140, 500),
+"type": 1
+}, {
+"pos": Vector2(280, 360),
+"type": 2
+}, {
+"pos": Vector2(280, 460),
 "type": 2
 }])
+player_buildings = Array[Dictionary]([{
+"grid_pos": Vector2i(2, 5),
+"type": 2
+}, {
+"grid_pos": Vector2i(6, 5),
+"type": 3
+}, {
+"grid_pos": Vector2i(9, 4),
+"type": 5
+}])
 enemy_units = Array[Dictionary]([{
-"pos": Vector2(800, 200),
+"pos": Vector2(800, 280),
 "type": 0
 }, {
-"pos": Vector2(800, 300),
+"pos": Vector2(800, 360),
 "type": 0
+}, {
+"pos": Vector2(830, 320),
+"type": 0
+}, {
+"pos": Vector2(780, 320),
+"type": 1
+}, {
+"pos": Vector2(1300, 280),
+"type": 0
+}, {
+"pos": Vector2(1300, 360),
+"type": 0
+}, {
+"pos": Vector2(1330, 300),
+"type": 0
+}, {
+"pos": Vector2(1330, 380),
+"type": 0
+}, {
+"pos": Vector2(1280, 320),
+"type": 1
+}, {
+"pos": Vector2(1280, 360),
+"type": 1
+}, {
+"pos": Vector2(1800, 250),
+"type": 0
+}, {
+"pos": Vector2(1800, 320),
+"type": 0
+}, {
+"pos": Vector2(1800, 390),
+"type": 0
+}, {
+"pos": Vector2(1800, 460),
+"type": 0
+}, {
+"pos": Vector2(1830, 280),
+"type": 0
+}, {
+"pos": Vector2(1780, 350),
+"type": 1
+}, {
+"pos": Vector2(1780, 420),
+"type": 1
+}, {
+"pos": Vector2(1830, 370),
+"type": 2
 }])
 enemy_buildings = Array[Dictionary]([{
-"grid_pos": Vector2i(10, 2),
+"grid_pos": Vector2i(12, 4),
 "type": 3
+}, {
+"grid_pos": Vector2i(11, 3),
+"type": 1
+}, {
+"grid_pos": Vector2i(11, 6),
+"type": 0
+}, {
+"grid_pos": Vector2i(19, 4),
+"type": 3
+}, {
+"grid_pos": Vector2i(18, 3),
+"type": 1
+}, {
+"grid_pos": Vector2i(18, 6),
+"type": 0
+}, {
+"grid_pos": Vector2i(27, 4),
+"type": 2
+}, {
+"grid_pos": Vector2i(26, 3),
+"type": 1
+}, {
+"grid_pos": Vector2i(26, 6),
+"type": 0
 }])
-available_items = Array[int]([1, 2, 5, 6, 3, 4])
-map_description = "Placeholder map for Timed Assault"
+available_items = Array[int]([1, 2, 4, 5, 6, 7, 8, 9])
+commander_skills = Array[int]([0, 3])
+star_time_3 = 240.0
+star_time_2 = 360.0
+star_deaths_3 = 2
+star_deaths_2 = 5
+terrain_theme = 1
+map_bounds = Rect2(-200, -200, 2400, 1000)
+nav_bounds = [Vector2(-200, -200), Vector2(2200, -200), Vector2(2200, 800), Vector2(-200, 800)]
+camera_start = Vector2(400, 300)
+border_width = 1
+map_description = "Destroy 3 enemy strongholds before time runs out! Each kill grants +90s."

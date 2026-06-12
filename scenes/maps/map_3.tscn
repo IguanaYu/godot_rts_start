@@ -2,14 +2,14 @@
 
 [ext_resource type="Script" uid="uid://cg2igjmusi0dq" path="res://scripts/main.gd" id="main_script"]
 [ext_resource type="Resource" path="res://resources/map3_config.tres" id="map3_config"]
-[ext_resource type="Script" path="res://scripts/victory/victory_survive_waves.gd" id="victory_survive"]
-[ext_resource type="Script" path="res://scripts/systems_game/wave_manager.gd" id="wave_manager"]
 [ext_resource type="PackedScene" uid="uid://mmgbo1ded4ro" path="res://scenes/units/soldier.tscn" id="soldier"]
 [ext_resource type="PackedScene" uid="uid://e5by4tc82spk" path="res://scenes/units/archer.tscn" id="archer"]
 [ext_resource type="PackedScene" uid="uid://8rfekrdqs7gf" path="res://scenes/buildings/castle.tscn" id="castle"]
 [ext_resource type="PackedScene" uid="uid://dhyxequcxurbh" path="res://scenes/buildings/barracks.tscn" id="barracks"]
-[ext_resource type="PackedScene" uid="uid://bxarchery01" path="res://scenes/buildings/archery_building.tscn" id="archery"]
-[ext_resource type="PackedScene" uid="uid://tower0001" path="res://scenes/buildings/tower.tscn" id="tower"]
+[ext_resource type="Script" path="res://scripts/systems_game/wave_manager.gd" id="wave_manager"]
+[ext_resource type="Script" path="res://scripts/victory/victory_survive_waves.gd" id="victory_survive"]
+[ext_resource type="Script" uid="uid://cmp1bdjkabfkb" path="res://scripts/systems_game/capture_point.gd" id="capture_point"]
+[ext_resource type="Script" path="res://scripts/systems_game/wave_modifier.gd" id="wave_modifier"]
 
 [sub_resource type="NavigationPolygon" id="NavPoly_1"]
 vertices = PackedVector2Array(-500, -500, 1500, -500, 1500, 1200, -500, 1200)
@@ -24,7 +24,7 @@ offset_left = -500.0
 offset_top = -500.0
 offset_right = 1500.0
 offset_bottom = 1200.0
-color = Color(0.35, 0.55, 0.25, 1)
+color = Color(0.45, 0.38, 0.25, 1)
 
 [node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
 navigation_polygon = SubResource("NavPoly_1")
@@ -50,6 +50,42 @@ position = Vector2(50, 320)
 
 [node name="EnemyUnits" type="Node2D" parent="."]
 
+[node name="CP1Guard1" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(700, 150)
+team = 1
+
+[node name="CP1Guard2" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(700, 220)
+team = 1
+
+[node name="CP1Guard3" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(730, 180)
+team = 1
+
+[node name="CP2Guard1" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(700, 450)
+team = 1
+
+[node name="CP2Guard2" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(700, 520)
+team = 1
+
+[node name="CP2Guard3" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(730, 480)
+team = 1
+
+[node name="CP3Guard1" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(700, 700)
+team = 1
+
+[node name="CP3Guard2" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(700, 770)
+team = 1
+
+[node name="CP3Guard3" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(730, 730)
+team = 1
+
 [node name="Buildings" type="Node2D" parent="."]
 
 [node name="PlayerCastle" parent="Buildings" instance=ExtResource("castle")]
@@ -57,12 +93,6 @@ position = Vector2(160, 224)
 
 [node name="PlayerBarracks" parent="Buildings" instance=ExtResource("barracks")]
 position = Vector2(384, 256)
-
-[node name="PlayerArchery" parent="Buildings" instance=ExtResource("archery")]
-position = Vector2(384, 128)
-
-[node name="PlayerTower" parent="Buildings" instance=ExtResource("tower")]
-position = Vector2(480, 160)
 
 [node name="SelectionBox" type="ColorRect" parent="."]
 visible = false
@@ -99,59 +129,119 @@ script = ExtResource("wave_manager")
 clear_then_next = true
 waves = Array[Dictionary]( [
 	{
-		"delay": 30.0,
-		"post_clear_delay": 60.0,
+		"delay": 45.0,
+		"post_clear_delay": 30.0,
 		"wave_attack": true,
-		"wave_target": Vector2(200, 350),
-		"spawn_point_path": NodePath("../Wave1Spawn"),
-		"formation": "column",
-		"spacing": 50.0,
-		"groups": Array[Dictionary]( [
-			{"type": 0, "count": 3},
-			{"type": 1, "count": 2},
-			{"type": 0, "count": 1, "variant_hp": 150, "variant_atk": 5, "variant_speed_mult": 0.85, "variant_scale": 1.3}
-		] )
-	},
-	{
-		"delay": 60.0,
-		"post_clear_delay": 60.0,
-		"wave_attack": true,
-		"wave_target": Vector2(200, 350),
-		"spawn_point_path": NodePath("../Wave2Spawn"),
+		"wave_target": Vector2(100, 350),
+		"spawn_point_path": NodePath("../WaveSpawnUpper"),
 		"formation": "column",
 		"spacing": 50.0,
 		"groups": Array[Dictionary]( [
 			{"type": 0, "count": 5},
-			{"type": 1, "count": 3},
-			{"type": 2, "count": 1},
-			{"type": 0, "count": 1, "variant_hp": 200, "variant_atk": 8, "variant_speed_mult": 0.8, "variant_scale": 1.5}
+			{"type": 1, "count": 2}
 		] )
 	},
 	{
-		"delay": 90.0,
-		"post_clear_delay": 0.0,
+		"delay": 30.0,
+		"post_clear_delay": 25.0,
 		"wave_attack": true,
-		"wave_target": Vector2(200, 350),
-		"spawn_point_path": NodePath("../Wave3Spawn"),
-		"formation": "grid",
+		"wave_target": Vector2(100, 350),
+		"spawn_point_path": NodePath("../WaveSpawnLower"),
+		"formation": "column",
+		"spacing": 50.0,
+		"groups": Array[Dictionary]( [
+			{"type": 0, "count": 7},
+			{"type": 1, "count": 4}
+		] )
+	},
+	{
+		"delay": 25.0,
+		"post_clear_delay": 20.0,
+		"wave_attack": true,
+		"wave_target": Vector2(100, 350),
+		"spawn_point_path": NodePath("../WaveSpawnUpper"),
+		"formation": "column",
 		"spacing": 50.0,
 		"groups": Array[Dictionary]( [
 			{"type": 0, "count": 8},
-			{"type": 1, "count": 4},
-			{"type": 2, "count": 2},
-			{"type": 2, "count": 1, "variant_hp": 300, "variant_atk": 10, "variant_speed_mult": 0.75, "variant_scale": 1.8}
+			{"type": 1, "count": 5},
+			{"type": 2, "count": 2}
+		] )
+	},
+	{
+		"delay": 20.0,
+		"post_clear_delay": 0.0,
+		"wave_attack": true,
+		"wave_target": Vector2(100, 350),
+		"spawn_point_path": NodePath("../WaveSpawnLower"),
+		"formation": "grid",
+		"spacing": 50.0,
+		"groups": Array[Dictionary]( [
+			{"type": 0, "count": 12},
+			{"type": 1, "count": 6},
+			{"type": 2, "count": 3}
 		] )
 	}
 ] )
 
-[node name="Wave1Spawn" type="Marker2D" parent="."]
-position = Vector2(1400, 350)
+[node name="WaveSpawnUpper" type="Marker2D" parent="."]
+position = Vector2(1400, 200)
 
-[node name="Wave2Spawn" type="Marker2D" parent="."]
-position = Vector2(1400, 350)
+[node name="WaveSpawnLower" type="Marker2D" parent="."]
+position = Vector2(1400, 800)
 
-[node name="Wave3Spawn" type="Marker2D" parent="."]
-position = Vector2(1400, 350)
+[node name="CapturePoint1" type="Area2D" parent="."]
+position = Vector2(700, 180)
+script = ExtResource("capture_point")
+trigger_type = 0
+detection_radius = 150.0
+capture_radius = 80.0
+can_enemy_capture = false
+reward_gold = 300
+reward_soldiers = 2
+
+[node name="DetectionArea1" type="Marker2D" parent="."]
+position = Vector2(700, 180)
+
+[node name="CapturePoint2" type="Area2D" parent="."]
+position = Vector2(700, 480)
+script = ExtResource("capture_point")
+trigger_type = 0
+detection_radius = 150.0
+capture_radius = 80.0
+can_enemy_capture = false
+reward_gold = 300
+reward_archers = 2
+
+[node name="DetectionArea2" type="Marker2D" parent="."]
+position = Vector2(700, 480)
+
+[node name="CapturePoint3" type="Area2D" parent="."]
+position = Vector2(700, 730)
+script = ExtResource("capture_point")
+trigger_type = 0
+detection_radius = 150.0
+capture_radius = 80.0
+can_enemy_capture = false
+reward_gold = 500
+reward_soldiers = 2
+reward_archers = 1
+
+[node name="DetectionArea3" type="Marker2D" parent="."]
+position = Vector2(700, 730)
+
+[node name="WaveModifier" type="Node" parent="."]
+script = ExtResource("wave_modifier")
+wave_manager_path = NodePath("../WaveManager")
+target_wave = 3
+modifiers_per_capture = Array[Dictionary]([{
+"type": 0,
+"delta": -3
+}, {
+"type": 1,
+"delta": -1
+}])
+capture_points = Array[NodePath]([NodePath("../CapturePoint1"), NodePath("../CapturePoint2"), NodePath("../CapturePoint3")])
 
 [node name="VictorySurviveWaves" type="Node" parent="."]
 script = ExtResource("victory_survive")

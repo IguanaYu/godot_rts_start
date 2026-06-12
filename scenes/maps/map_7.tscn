@@ -1,73 +1,106 @@
 [gd_scene format=3 uid="uid://map7scene"]
 
-[ext_resource type="PackedScene" uid="uid://dhyxequcxurbh" path="res://scenes/buildings/castle.tscn" id="castle"]
 [ext_resource type="Script" uid="uid://cg2igjmusi0dq" path="res://scripts/main.gd" id="main_script"]
-[ext_resource type="Resource" uid="uid://map7cfg" path="res://resources/map7_config.tres" id="map7_config"]
+[ext_resource type="Resource" path="res://resources/map7_config.tres" id="map7_config"]
 [ext_resource type="PackedScene" uid="uid://mmgbo1ded4ro" path="res://scenes/units/soldier.tscn" id="soldier"]
 [ext_resource type="PackedScene" uid="uid://e5by4tc82spk" path="res://scenes/units/archer.tscn" id="archer"]
-[ext_resource type="Script" uid="uid://jhcf43ds1dy6" path="res://scripts/victory/victory_destroy_base.gd" id="victory_destroy_base"]
+[ext_resource type="PackedScene" uid="uid://bxmonk001" path="res://scenes/units/monk.tscn" id="monk"]
+[ext_resource type="PackedScene" uid="uid://8rfekrdqs7gf" path="res://scenes/buildings/castle.tscn" id="castle"]
+[ext_resource type="PackedScene" uid="uid://dhyxequcxurbh" path="res://scenes/buildings/barracks.tscn" id="barracks"]
+[ext_resource type="PackedScene" uid="uid://bxmonastery01" path="res://scenes/buildings/monastery.tscn" id="monastery"]
+[ext_resource type="Script" path="res://scripts/systems_game/wave_manager.gd" id="wave_manager"]
+[ext_resource type="Script" path="res://scripts/victory/victory_survive_waves.gd" id="victory_survive"]
+[ext_resource type="Script" uid="uid://cmp1bdjkabfkb" path="res://scripts/systems_game/capture_point.gd" id="capture_point"]
+[ext_resource type="Script" path="res://scripts/systems_game/wave_modifier.gd" id="wave_modifier"]
 
 [sub_resource type="NavigationPolygon" id="NavPoly_1"]
 vertices = PackedVector2Array(-500, -500, 1500, -500, 1500, 1200, -500, 1200)
-polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
+polygons = [PackedInt32Array(0, 1, 2, 3)]
 
-[node name="Map7" type="Node2D" unique_id=554561726]
+[node name="Map7" type="Node2D"]
 script = ExtResource("main_script")
 map_config = ExtResource("map7_config")
 
-[node name="Ground" type="ColorRect" parent="." unique_id=985594947]
-offset_left = -537.0
-offset_top = -468.0
-offset_right = 1463.0
-offset_bottom = 1232.0
+[node name="Ground" type="ColorRect" parent="."]
+offset_left = -500.0
+offset_top = -500.0
+offset_right = 1500.0
+offset_bottom = 1200.0
 color = Color(0.30, 0.40, 0.35, 1)
 
-[node name="NavigationRegion2D" type="NavigationRegion2D" parent="." unique_id=629379387]
+[node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
 navigation_polygon = SubResource("NavPoly_1")
 
-[node name="Camera2D" type="Camera2D" parent="." unique_id=638235981]
+[node name="Camera2D" type="Camera2D" parent="."]
 
-[node name="PlayerUnits" type="Node2D" parent="." unique_id=969780528]
+[node name="PlayerUnits" type="Node2D" parent="."]
 
-[node name="PlayerSoldier1" parent="PlayerUnits" unique_id=789437463 instance=ExtResource("soldier")]
-position = Vector2(200, 200)
+[node name="PlayerSoldier1" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(100, 200)
 
-[node name="PlayerSoldier2" parent="PlayerUnits" unique_id=811409168 instance=ExtResource("soldier")]
-position = Vector2(200, 280)
+[node name="PlayerSoldier2" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(100, 280)
 
-[node name="PlayerArcher1" parent="PlayerUnits" unique_id=713590985 instance=ExtResource("archer")]
-position = Vector2(150, 240)
+[node name="PlayerSoldier3" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(100, 360)
 
-[node name="EnemyUnits" type="Node2D" parent="." unique_id=832859451]
+[node name="PlayerArcher1" parent="PlayerUnits" instance=ExtResource("archer")]
+position = Vector2(50, 240)
 
-[node name="EnemySoldier1" parent="EnemyUnits" unique_id=498940687 instance=ExtResource("soldier")]
-position = Vector2(800, 200)
+[node name="PlayerArcher2" parent="PlayerUnits" instance=ExtResource("archer")]
+position = Vector2(50, 320)
+
+[node name="PlayerMonk1" parent="PlayerUnits" instance=ExtResource("monk")]
+position = Vector2(150, 280)
+
+[node name="EnemyUnits" type="Node2D" parent="."]
+
+[node name="Tomb1Guard1" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(600, 260)
 team = 1
 
-[node name="EnemySoldier2" parent="EnemyUnits" unique_id=128485640 instance=ExtResource("soldier")]
-position = Vector2(800, 300)
+[node name="Tomb1Guard2" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(600, 330)
 team = 1
 
-[node name="Buildings" type="Node2D" parent="." unique_id=526099673]
+[node name="Tomb1Guard3" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(630, 290)
+team = 1
 
-[node name="PlayerCastle" parent="Buildings" unique_id=757348958 instance=ExtResource("castle")]
+[node name="Tomb2Guard1" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(600, 660)
+team = 1
+
+[node name="Tomb2Guard2" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(600, 730)
+team = 1
+
+[node name="Tomb2Guard3" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(630, 690)
+team = 1
+
+[node name="Buildings" type="Node2D" parent="."]
+
+[node name="PlayerCastle" parent="Buildings" instance=ExtResource("castle")]
 position = Vector2(160, 224)
 
-[node name="EnemyBarracks" parent="Buildings" unique_id=483484193 instance=ExtResource("castle")]
-position = Vector2(800, 224)
-team = 1
+[node name="PlayerBarracks" parent="Buildings" instance=ExtResource("barracks")]
+position = Vector2(320, 320)
 
-[node name="SelectionBox" type="ColorRect" parent="." unique_id=860637613]
+[node name="PlayerMonastery" parent="Buildings" instance=ExtResource("monastery")]
+position = Vector2(320, 192)
+
+[node name="SelectionBox" type="ColorRect" parent="."]
 visible = false
-mouse_filter = 2
 color = Color(0.4, 0.7, 1, 0.25)
-
-[node name="PreviewRect" type="ColorRect" parent="." unique_id=422625191]
-visible = false
 mouse_filter = 2
-color = Color(0, 1, 0, 0.3)
 
-[node name="ResultLabel" type="Label" parent="." unique_id=802940587]
+[node name="PreviewRect" type="ColorRect" parent="."]
+visible = false
+color = Color(0, 1, 0, 0.3)
+mouse_filter = 2
+
+[node name="ResultLabel" type="Label" parent="."]
 offset_left = 350.0
 offset_top = 300.0
 offset_right = 650.0
@@ -75,9 +108,9 @@ offset_bottom = 400.0
 theme_override_font_sizes/font_size = 48
 horizontal_alignment = 1
 vertical_alignment = 1
+text = ""
 
-[node name="AttackMoveIndicator" type="Label" parent="." unique_id=390252180]
-visible = false
+[node name="AttackMoveIndicator" type="Label" parent="."]
 offset_left = 10.0
 offset_top = 10.0
 offset_right = 200.0
@@ -85,6 +118,126 @@ offset_bottom = 40.0
 theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
 theme_override_font_sizes/font_size = 20
 text = "Attack Move (Click)"
+visible = false
 
-[node name="VictoryDestroyBase" type="Node" parent="." unique_id=781570395]
-script = ExtResource("victory_destroy_base")
+[node name="WaveManager" type="Node" parent="."]
+script = ExtResource("wave_manager")
+clear_then_next = true
+waves = Array[Dictionary]( [
+	{
+		"delay": 50.0,
+		"post_clear_delay": 30.0,
+		"wave_attack": true,
+		"wave_target": Vector2(200, 350),
+		"spawn_point_path": NodePath("../WaveSpawnUpper"),
+		"formation": "column",
+		"spacing": 50.0,
+		"groups": Array[Dictionary]( [
+			{"type": 0, "count": 5},
+			{"type": 1, "count": 3}
+		] )
+	},
+	{
+		"delay": 30.0,
+		"post_clear_delay": 25.0,
+		"wave_attack": true,
+		"wave_target": Vector2(200, 350),
+		"spawn_point_path": NodePath("../WaveSpawnLower"),
+		"formation": "column",
+		"spacing": 50.0,
+		"groups": Array[Dictionary]( [
+			{"type": 0, "count": 7},
+			{"type": 1, "count": 4}
+		] )
+	},
+	{
+		"delay": 25.0,
+		"post_clear_delay": 20.0,
+		"wave_attack": true,
+		"wave_target": Vector2(200, 350),
+		"spawn_point_path": NodePath("../WaveSpawnUpper"),
+		"formation": "column",
+		"spacing": 50.0,
+		"groups": Array[Dictionary]( [
+			{"type": 0, "count": 8},
+			{"type": 1, "count": 5},
+			{"type": 2, "count": 2}
+		] )
+	},
+	{
+		"delay": 20.0,
+		"post_clear_delay": 0.0,
+		"wave_attack": true,
+		"wave_target": Vector2(200, 350),
+		"spawn_point_path": NodePath("../WaveSpawnLower"),
+		"formation": "grid",
+		"spacing": 50.0,
+		"groups": Array[Dictionary]( [
+			{"type": 0, "count": 10},
+			{"type": 1, "count": 6},
+			{"type": 2, "count": 3}
+		] )
+	}
+] )
+
+[node name="WaveSpawnUpper" type="Marker2D" parent="."]
+position = Vector2(1400, 200)
+
+[node name="WaveSpawnLower" type="Marker2D" parent="."]
+position = Vector2(1400, 800)
+
+[node name="CapturePointTomb1" type="Area2D" parent="."]
+position = Vector2(600, 300)
+script = ExtResource("capture_point")
+trigger_type = 0
+detection_radius = 150.0
+capture_radius = 80.0
+can_enemy_capture = false
+reward_gold = 400
+reward_monks = 1
+
+[node name="Tomb1DetectMarker" type="Marker2D" parent="."]
+position = Vector2(600, 300)
+
+[node name="CapturePointTomb2" type="Area2D" parent="."]
+position = Vector2(600, 700)
+script = ExtResource("capture_point")
+trigger_type = 0
+detection_radius = 150.0
+capture_radius = 80.0
+can_enemy_capture = false
+reward_gold = 500
+reward_monks = 1
+
+[node name="Tomb2DetectMarker" type="Marker2D" parent="."]
+position = Vector2(600, 700)
+
+[node name="WaveModifierWave3" type="Node" parent="."]
+script = ExtResource("wave_modifier")
+wave_manager_path = NodePath("../WaveManager")
+target_wave = 2
+modifiers_per_capture = Array[Dictionary]([{
+"type": 0,
+"delta": 3
+}, {
+"type": 1,
+"delta": 2
+}])
+capture_points = Array[NodePath]([NodePath("../CapturePointTomb1"), NodePath("../CapturePointTomb2")])
+
+[node name="WaveModifierWave4" type="Node" parent="."]
+script = ExtResource("wave_modifier")
+wave_manager_path = NodePath("../WaveManager")
+target_wave = 3
+modifiers_per_capture = Array[Dictionary]([{
+"type": 0,
+"delta": 3
+}, {
+"type": 1,
+"delta": 2
+}])
+capture_points = Array[NodePath]([NodePath("../CapturePointTomb1"), NodePath("../CapturePointTomb2")])
+
+[node name="VictorySurviveWaves" type="Node" parent="."]
+script = ExtResource("victory_survive")
+wave_manager_path = NodePath("../WaveManager")

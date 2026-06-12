@@ -1,73 +1,184 @@
 [gd_scene format=3 uid="uid://map15scene"]
 
-[ext_resource type="PackedScene" uid="uid://dhyxequcxurbh" path="res://scenes/buildings/castle.tscn" id="castle"]
 [ext_resource type="Script" uid="uid://cg2igjmusi0dq" path="res://scripts/main.gd" id="main_script"]
-[ext_resource type="Resource" uid="uid://map15cfg" path="res://resources/map15_config.tres" id="map15_config"]
+[ext_resource type="Resource" path="res://resources/map15_config.tres" id="map15_config"]
 [ext_resource type="PackedScene" uid="uid://mmgbo1ded4ro" path="res://scenes/units/soldier.tscn" id="soldier"]
 [ext_resource type="PackedScene" uid="uid://e5by4tc82spk" path="res://scenes/units/archer.tscn" id="archer"]
-[ext_resource type="Script" uid="uid://jhcf43ds1dy6" path="res://scripts/victory/victory_destroy_base.gd" id="victory_destroy_base"]
+[ext_resource type="PackedScene" uid="uid://bxlancer01" path="res://scenes/units/lancer.tscn" id="lancer"]
+[ext_resource type="PackedScene" uid="uid://bxmonk001" path="res://scenes/units/monk.tscn" id="monk"]
+[ext_resource type="PackedScene" uid="uid://8rfekrdqs7gf" path="res://scenes/buildings/castle.tscn" id="castle"]
+[ext_resource type="PackedScene" uid="uid://dhyxequcxurbh" path="res://scenes/buildings/barracks.tscn" id="barracks"]
+[ext_resource type="PackedScene" uid="uid://bxmonastery01" path="res://scenes/buildings/monastery.tscn" id="monastery"]
+[ext_resource type="PackedScene" uid="uid://bxarchery01" path="res://scenes/buildings/archery_building.tscn" id="archery"]
+[ext_resource type="Script" uid="uid://cmp1bdjkabfkb" path="res://scripts/systems_game/capture_point.gd" id="capture_point"]
+[ext_resource type="Script" path="res://scripts/victory/victory_multi_stage.gd" id="victory_multi_stage"]
+[ext_resource type="Script" path="res://scripts/victory/victory_hold_point.gd" id="victory_hold_point"]
 
 [sub_resource type="NavigationPolygon" id="NavPoly_1"]
 vertices = PackedVector2Array(-500, -500, 1500, -500, 1500, 1200, -500, 1200)
-polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
+polygons = [PackedInt32Array(0, 1, 2, 3)]
 
-[node name="Map15" type="Node2D" unique_id=677588135]
+[node name="Map15" type="Node2D"]
 script = ExtResource("main_script")
 map_config = ExtResource("map15_config")
 
-[node name="Ground" type="ColorRect" parent="." unique_id=514330679]
-offset_left = -537.0
-offset_top = -468.0
-offset_right = 1463.0
-offset_bottom = 1232.0
+[node name="Ground" type="ColorRect" parent="."]
+offset_left = -500.0
+offset_top = -500.0
+offset_right = 1500.0
+offset_bottom = 1200.0
 color = Color(0.55, 0.50, 0.30, 1)
 
-[node name="NavigationRegion2D" type="NavigationRegion2D" parent="." unique_id=573561235]
+[node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
 navigation_polygon = SubResource("NavPoly_1")
 
-[node name="Camera2D" type="Camera2D" parent="." unique_id=953173882]
+[node name="Camera2D" type="Camera2D" parent="."]
 
-[node name="PlayerUnits" type="Node2D" parent="." unique_id=481223910]
+[node name="PlayerUnits" type="Node2D" parent="."]
 
-[node name="PlayerSoldier1" parent="PlayerUnits" unique_id=278887411 instance=ExtResource("soldier")]
-position = Vector2(200, 200)
+[node name="PlayerSoldier1" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(100, 200)
 
-[node name="PlayerSoldier2" parent="PlayerUnits" unique_id=738118767 instance=ExtResource("soldier")]
-position = Vector2(200, 280)
+[node name="PlayerSoldier2" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(100, 280)
 
-[node name="PlayerArcher1" parent="PlayerUnits" unique_id=378513119 instance=ExtResource("archer")]
-position = Vector2(150, 240)
+[node name="PlayerSoldier3" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(100, 360)
 
-[node name="EnemyUnits" type="Node2D" parent="." unique_id=344452239]
+[node name="PlayerSoldier4" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(100, 440)
 
-[node name="EnemySoldier1" parent="EnemyUnits" unique_id=420563919 instance=ExtResource("soldier")]
-position = Vector2(800, 200)
+[node name="PlayerSoldier5" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(100, 520)
+
+[node name="PlayerArcher1" parent="PlayerUnits" instance=ExtResource("archer")]
+position = Vector2(50, 240)
+
+[node name="PlayerArcher2" parent="PlayerUnits" instance=ExtResource("archer")]
+position = Vector2(50, 320)
+
+[node name="PlayerArcher3" parent="PlayerUnits" instance=ExtResource("archer")]
+position = Vector2(50, 400)
+
+[node name="PlayerLancer1" parent="PlayerUnits" instance=ExtResource("lancer")]
+position = Vector2(150, 280)
+
+[node name="PlayerLancer2" parent="PlayerUnits" instance=ExtResource("lancer")]
+position = Vector2(150, 380)
+
+[node name="PlayerMonk1" parent="PlayerUnits" instance=ExtResource("monk")]
+position = Vector2(200, 320)
+
+[node name="PlayerMonk2" parent="PlayerUnits" instance=ExtResource("monk")]
+position = Vector2(200, 420)
+
+[node name="EnemyUnits" type="Node2D" parent="."]
+
+[node name="CP1Guard1" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(500, 250)
 team = 1
 
-[node name="EnemySoldier2" parent="EnemyUnits" unique_id=804311885 instance=ExtResource("soldier")]
-position = Vector2(800, 300)
+[node name="CP1Guard2" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(500, 330)
 team = 1
 
-[node name="Buildings" type="Node2D" parent="." unique_id=470011922]
+[node name="CP1Guard3" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(530, 280)
+team = 1
 
-[node name="PlayerCastle" parent="Buildings" unique_id=524690297 instance=ExtResource("castle")]
+[node name="CP1Guard4" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(480, 290)
+team = 1
+
+[node name="CP1Guard5" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(480, 320)
+team = 1
+
+[node name="CP2Guard1" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(900, 440)
+team = 1
+
+[node name="CP2Guard2" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(900, 530)
+team = 1
+
+[node name="CP2Guard3" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(930, 470)
+team = 1
+
+[node name="CP2Guard4" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(930, 540)
+team = 1
+
+[node name="CP2Guard5" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(880, 480)
+team = 1
+
+[node name="CP2Guard6" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(880, 520)
+team = 1
+
+[node name="CP2Guard7" parent="EnemyUnits" instance=ExtResource("lancer")]
+position = Vector2(920, 500)
+team = 1
+
+[node name="CP3Guard1" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1300, 630)
+team = 1
+
+[node name="CP3Guard2" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1300, 710)
+team = 1
+
+[node name="CP3Guard3" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1300, 780)
+team = 1
+
+[node name="CP3Guard4" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1330, 660)
+team = 1
+
+[node name="CP3Guard5" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1330, 740)
+team = 1
+
+[node name="CP3Guard6" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(1280, 680)
+team = 1
+
+[node name="CP3Guard7" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(1280, 750)
+team = 1
+
+[node name="CP3Guard8" parent="EnemyUnits" instance=ExtResource("lancer")]
+position = Vector2(1320, 710)
+team = 1
+
+[node name="Buildings" type="Node2D" parent="."]
+
+[node name="PlayerCastle" parent="Buildings" instance=ExtResource("castle")]
 position = Vector2(160, 224)
 
-[node name="EnemyBarracks" parent="Buildings" unique_id=379873202 instance=ExtResource("castle")]
-position = Vector2(800, 224)
-team = 1
+[node name="PlayerBarracks" parent="Buildings" instance=ExtResource("barracks")]
+position = Vector2(320, 320)
 
-[node name="SelectionBox" type="ColorRect" parent="." unique_id=405809695]
+[node name="PlayerArchery" parent="Buildings" instance=ExtResource("archery")]
+position = Vector2(320, 192)
+
+[node name="PlayerMonastery" parent="Buildings" instance=ExtResource("monastery")]
+position = Vector2(512, 256)
+
+[node name="SelectionBox" type="ColorRect" parent="."]
 visible = false
-mouse_filter = 2
 color = Color(0.4, 0.7, 1, 0.25)
-
-[node name="PreviewRect" type="ColorRect" parent="." unique_id=111497980]
-visible = false
 mouse_filter = 2
-color = Color(0, 1, 0, 0.3)
 
-[node name="ResultLabel" type="Label" parent="." unique_id=696122579]
+[node name="PreviewRect" type="ColorRect" parent="."]
+visible = false
+color = Color(0, 1, 0, 0.3)
+mouse_filter = 2
+
+[node name="ResultLabel" type="Label" parent="."]
 offset_left = 350.0
 offset_top = 300.0
 offset_right = 650.0
@@ -75,9 +186,9 @@ offset_bottom = 400.0
 theme_override_font_sizes/font_size = 48
 horizontal_alignment = 1
 vertical_alignment = 1
+text = ""
 
-[node name="AttackMoveIndicator" type="Label" parent="." unique_id=490491657]
-visible = false
+[node name="AttackMoveIndicator" type="Label" parent="."]
 offset_left = 10.0
 offset_top = 10.0
 offset_right = 200.0
@@ -85,6 +196,86 @@ offset_bottom = 40.0
 theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
 theme_override_font_sizes/font_size = 20
 text = "Attack Move (Click)"
+visible = false
 
-[node name="VictoryDestroyBase" type="Node" parent="." unique_id=645138158]
-script = ExtResource("victory_destroy_base")
+[node name="CapturePoint1" type="Area2D" parent="."]
+position = Vector2(500, 300)
+script = ExtResource("capture_point")
+trigger_type = 0
+detection_radius = 150.0
+capture_radius = 80.0
+can_enemy_capture = true
+allow_recapture = true
+
+[node name="CP1DetectMarker" type="Marker2D" parent="."]
+position = Vector2(500, 300)
+
+[node name="CapturePoint2" type="Area2D" parent="."]
+position = Vector2(900, 500)
+script = ExtResource("capture_point")
+trigger_type = 0
+detection_radius = 150.0
+capture_radius = 80.0
+can_enemy_capture = true
+allow_recapture = true
+
+[node name="CP2DetectMarker" type="Marker2D" parent="."]
+position = Vector2(900, 500)
+
+[node name="CapturePoint3" type="Area2D" parent="."]
+position = Vector2(1300, 700)
+script = ExtResource("capture_point")
+trigger_type = 0
+detection_radius = 150.0
+capture_radius = 80.0
+can_enemy_capture = true
+allow_recapture = true
+
+[node name="CP3DetectMarker" type="Marker2D" parent="."]
+position = Vector2(1300, 700)
+
+[node name="CounterSpawn1" type="Marker2D" parent="."]
+position = Vector2(600, 50)
+
+[node name="CounterSpawn2" type="Marker2D" parent="."]
+position = Vector2(1000, 50)
+
+[node name="CounterSpawn3" type="Marker2D" parent="."]
+position = Vector2(1400, 50)
+
+[node name="VictoryMultiStage" type="Node" parent="."]
+script = ExtResource("victory_multi_stage")
+stage_names = Array[String](["OBJ_STAGE_1", "OBJ_STAGE_2", "OBJ_STAGE_3"])
+
+[node name="Stage0" type="Node" parent="VictoryMultiStage"]
+
+[node name="HoldPoint1" type="Node" parent="VictoryMultiStage/Stage0"]
+script = ExtResource("victory_hold_point")
+capture_point_path = NodePath("../../../CapturePoint1")
+hold_time = 60.0
+counterattack_delay = 5.0
+counterattack_groups = Array[Dictionary]([{"type": 0, "count": 5}, {"type": 1, "count": 2}])
+counterattack_spawn_path = NodePath("../../../CounterSpawn1")
+description_key = "OBJ_HOLD_CP1"
+
+[node name="Stage1" type="Node" parent="VictoryMultiStage"]
+
+[node name="HoldPoint2" type="Node" parent="VictoryMultiStage/Stage1"]
+script = ExtResource("victory_hold_point")
+capture_point_path = NodePath("../../../CapturePoint2")
+hold_time = 60.0
+counterattack_delay = 5.0
+counterattack_groups = Array[Dictionary]([{"type": 0, "count": 7}, {"type": 1, "count": 4}, {"type": 2, "count": 1}])
+counterattack_spawn_path = NodePath("../../../CounterSpawn2")
+description_key = "OBJ_HOLD_CP2"
+
+[node name="Stage2" type="Node" parent="VictoryMultiStage"]
+
+[node name="HoldPoint3" type="Node" parent="VictoryMultiStage/Stage2"]
+script = ExtResource("victory_hold_point")
+capture_point_path = NodePath("../../../CapturePoint3")
+hold_time = 60.0
+counterattack_delay = 5.0
+counterattack_groups = Array[Dictionary]([{"type": 0, "count": 10}, {"type": 1, "count": 5}, {"type": 2, "count": 2}])
+counterattack_spawn_path = NodePath("../../../CounterSpawn3")
+description_key = "OBJ_HOLD_CP3"
