@@ -223,12 +223,18 @@ func _init_preplaced_units() -> void:
 	for unit in player_units_node.get_children():
 		if not unit is Unit:
 			continue
+		# 预放置单位走 .tscn 设的 team；faction_color 默认 BLUE，按 team 显式补全防御性
+		unit.faction_color = Faction.ColorId.BLUE
 		unit.connect("died", Callable(self, "_on_unit_died"))
 		unit.add_to_group("player_units")
 
 	for unit in enemy_units_node.get_children():
 		if not unit is Unit:
 			continue
+		# .tscn 里敌方只设了 team=ENEMY，没设 faction_color（默认 BLUE）；这里按 team 推导为 RED 并重载贴图
+		unit.faction_color = Faction.ColorId.RED
+		if unit.has_method("_setup_texture"):
+			unit._setup_texture()
 		unit.connect("died", Callable(self, "_on_unit_died"))
 		unit.add_to_group("enemy_units")
 		var ai := Node2D.new()

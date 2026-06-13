@@ -152,6 +152,10 @@ func register_preplaced_buildings(buildings_node: Node2D) -> void:
 		var gpos: Vector2i = building.grid_pos
 		var gsize: Vector2i = building.grid_size
 		var team: int = building.team
+		# .tscn 里建筑只设了 team，没设 faction_color；这里按 team 补全并重载贴图
+		building.faction_color = Faction.ColorId.BLUE if team == BuildingScript.Team.PLAYER else Faction.ColorId.RED
+		if building.has_method("_setup_texture"):
+			building._setup_texture()
 		building.add_to_group("buildings")
 		building.add_to_group("player_buildings" if team == BuildingScript.Team.PLAYER else "enemy_buildings")
 		building.connect("died", _on_building_died)
