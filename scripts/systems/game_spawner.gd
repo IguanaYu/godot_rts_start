@@ -78,8 +78,24 @@ func spawn_from_config(map_config: Resource) -> void:
 		ai.set_script(load("res://scripts/units/enemy_ai.gd"))
 		unit.add_child(ai)
 
-	# Spawn player buildings
+# Spawn player buildings
 	for spawn in map_config.player_buildings:
+		var building = place_building_callback.call(spawn.type, BuildingScript.Team.PLAYER, spawn.grid_pos)
+		building.net_id = _next_net_id
+		_next_net_id += 1
+		LockstepSync.register_unit(building)
+
+	# Spawn player 2 units (multiplayer co-op, same team as player 1)
+	for spawn in map_config.player2_units:
+		var unit := create_unit(spawn.type, UnitScript.Team.PLAYER, spawn.pos)
+		unit.net_id = _next_net_id
+		_next_net_id += 1
+		LockstepSync.register_unit(unit)
+		_player_units_node.add_child(unit)
+		unit.add_to_group("player_units")
+
+	# Spawn player 2 buildings
+	for spawn in map_config.player2_buildings:
 		var building = place_building_callback.call(spawn.type, BuildingScript.Team.PLAYER, spawn.grid_pos)
 		building.net_id = _next_net_id
 		_next_net_id += 1

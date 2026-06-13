@@ -1,0 +1,89 @@
+[gd_resource type="Resource" script_class="MapConfig" format=3]
+
+[ext_resource type="Script" uid="uid://cjdi3j0utrwrk" path="res://scripts/map_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+map_name = "MP Co-op Test"
+player_units = Array[Dictionary]([{
+"pos": Vector2(200, 500),
+"type": 0
+}, {
+"pos": Vector2(200, 580),
+"type": 0
+}, {
+"pos": Vector2(200, 660),
+"type": 0
+}, {
+"pos": Vector2(150, 540),
+"type": 1
+}, {
+"pos": Vector2(150, 620),
+"type": 1
+}])
+player_buildings = Array[Dictionary]([{
+"grid_pos": Vector2i(1, 8),
+"type": 2
+}, {
+"grid_pos": Vector2i(5, 9),
+"type": 3
+}])
+player2_units = Array[Dictionary]([{
+"pos": Vector2(200, 150),
+"type": 0
+}, {
+"pos": Vector2(200, 230),
+"type": 0
+}, {
+"pos": Vector2(200, 310),
+"type": 0
+}, {
+"pos": Vector2(150, 190),
+"type": 1
+}, {
+"pos": Vector2(150, 270),
+"type": 1
+}])
+player2_buildings = Array[Dictionary]([{
+"grid_pos": Vector2i(1, 2),
+"type": 2
+}, {
+"grid_pos": Vector2i(5, 3),
+"type": 3
+}])
+enemy_units = Array[Dictionary]([{
+"pos": Vector2(1100, 300),
+"type": 0
+}, {
+"pos": Vector2(1100, 380),
+"type": 0
+}, {
+"pos": Vector2(1100, 460),
+"type": 0
+}, {
+"pos": Vector2(1100, 540),
+"type": 0
+}, {
+"pos": Vector2(1150, 340),
+"type": 1
+}, {
+"pos": Vector2(1150, 420),
+"type": 1
+}, {
+"pos": Vector2(1150, 500),
+"type": 1
+}])
+enemy_buildings = Array[Dictionary]([{
+"grid_pos": Vector2i(16, 4),
+"type": 2
+}, {
+"grid_pos": Vector2i(14, 5),
+"type": 3
+}, {
+"grid_pos": Vector2i(18, 6),
+"type": 1
+}])
+available_items = Array[int]([1, 2, 5, 6, 3, 4, 7, 8, 9, 10])
+terrain_theme = 1
+border_width = 1
+map_description = "2-player co-op: destroy the enemy castle together!"

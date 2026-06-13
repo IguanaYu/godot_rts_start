@@ -8,6 +8,7 @@ var my_player_id := 0
 var is_host := false
 var _map_name := "map_1"
 var _game_seed := 0
+var is_online := false
 
 func _ready():
 	ws_client = WSClient.new()
@@ -47,12 +48,18 @@ func send_load_complete():
 func send_game_data(data: Dictionary):
 	ws_client.send_message("game_data", data)
 
+func update_map(map_name: String):
+	_map_name = map_name
+	ws_client.send_message("update_map", {"map": map_name})
+
 func _on_connected():
 	print("[RelayManager] Connected to server")
+	is_online = true
 	connected_to_server.emit()
 
 func _on_disconnected():
 	print("[RelayManager] Disconnected from server")
+	is_online = false
 
 func _on_message(type: String, payload: Dictionary):
 	match type:
@@ -77,6 +84,9 @@ func _on_message(type: String, payload: Dictionary):
 		"start_game":
 			_map_name = payload.get("map", "map_1")
 			game_starting.emit()
+		"map_changed":
+			_map_name = payload.get("map", "map_1")
+			map_changed.emit(_map_name)
 		"both_loaded":
 			_game_seed = payload.get("seed", 0)
 			both_loaded.emit(_game_seed)
@@ -103,3 +113,4 @@ signal player_ready(ready: bool)
 signal game_starting()
 signal both_loaded(seed: int)
 signal connected_to_server()
+signal map_changed(map_name: String)

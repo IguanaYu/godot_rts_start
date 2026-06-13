@@ -58,6 +58,10 @@ wss.on("connection", (ws) => {
           roomManager.relayGameData(ws, payload);
           break;
 
+        case "update_map":
+          roomManager.updateMap(ws, payload.map);
+          break;
+
         default:
           console.log(`[warn] Unknown message type: ${type}`);
       }

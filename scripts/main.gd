@@ -74,7 +74,7 @@ func _ready() -> void:
 	add_child(cursor_manager)
 
 	# 多人模式：加载地图配置
-	if NetworkManager.is_online and map_config == null:
+	if RelayManager.is_online and map_config == null:
 		var map_path := "res://resources/" + RelayManager._map_name.replace("_", "") + "_config.tres"
 		map_config = load(map_path)
 
@@ -185,7 +185,7 @@ func _ready() -> void:
 		spawner_module.spawn_from_config(map_config)
 
 	# 多人模式初始化
-	if NetworkManager.is_online:
+	if RelayManager.is_online:
 		LockstepSync.set_game(self)
 		if RelayManager._game_seed != 0:
 			LockstepSync._start_game(RelayManager._game_seed)
@@ -280,7 +280,7 @@ func _on_game_ended(result: String) -> void:
 	if _game_result_saved:
 		return
 	_game_result_saved = true
-	if NetworkManager.is_online:
+	if RelayManager.is_online:
 		_show_mp_result(result)
 		return
 
@@ -836,7 +836,7 @@ func _do_place(click_pos: Vector2) -> void:
 	if gold < cost:
 		return
 
-	if NetworkManager.is_online:
+	if RelayManager.is_online:
 		if D.is_unit_mode(place_mode):
 			CommandBuffer.add_spawn_command(D.PLACE_MODE_TO_UNIT[place_mode], click_pos)
 		elif D.is_building_mode(place_mode):

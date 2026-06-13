@@ -11,6 +11,10 @@ extends Resource
 @export var player_units: Array[Dictionary] = []
 @export var player_buildings: Array[Dictionary] = []
 
+# Player 2 initial data (multiplayer co-op)
+@export var player2_units: Array[Dictionary] = []
+@export var player2_buildings: Array[Dictionary] = []
+
 # Enemy initial data
 @export var enemy_units: Array[Dictionary] = []
 @export var enemy_buildings: Array[Dictionary] = []
