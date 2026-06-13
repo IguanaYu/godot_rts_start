@@ -87,9 +87,18 @@ func is_grid_free(gpos: Vector2i, size: Vector2i) -> bool:
 	return true
 
 
-func place_building(type: int, team: int, gpos: Vector2i) -> Node2D:
+func place_building(type: int, team: int, gpos: Vector2i, owner_id: int = -1, faction_color: int = -1, slot_id: int = 0) -> Node2D:
 	var scene_path: String = D.BUILDING_SCENES.get(type, "res://scenes/buildings/building.tscn")
 	var building: Node2D = load(scene_path).instantiate()
+	# 在 add_child 前设置 faction_color 等字段，避免 _ready 跑 _setup_texture 时还是默认值
+	# team 数值上等于 alliance_id（PLAYER=0/ENEMY=1），用 alliance_id setter 同步 team 字段
+	building.set("alliance_id", team)
+	building.set("owner_id", owner_id)
+	if faction_color >= 0:
+		building.set("faction_color", faction_color)
+	else:
+		building.set("faction_color", Faction.ColorId.BLUE if team == 0 else Faction.ColorId.RED)
+	building.set("slot_id", slot_id)
 	building.set("team", team)
 	building.set("grid_pos", gpos)
 	building.position = grid_to_world(gpos)

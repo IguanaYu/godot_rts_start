@@ -183,6 +183,8 @@ func _ready() -> void:
 		_init_preplaced_units()
 	else:
 		spawner_module.spawn_from_config(map_config)
+		# 新格式地图：玩家方按 player_sessions 占用情况动态生成 slot
+		_spawn_dynamic_players()
 
 	# 多人模式初始化
 	if RelayManager.is_online:
@@ -542,21 +544,82 @@ func _handle_number_key(key: int, event: InputEventKey) -> void:
 
 # --- 多人建造/生产 (由 LockstepSync 回调) ---
 
+## 新格式地图：按 player_sessions 占用情况动态生成玩家方 slot。
+## 玩家方 alliance=0 的所有 slot 在配置里声明，运行时只生成被占用的。
+## 没人占据的 slot 保持空地。两人选同槽 = 共享控制（owner_id=-1）。
+## 旧格式地图走 fallback，玩家方已在 spawn_from_config 内生成，此函数自动跳过。
+func _spawn_dynamic_players() -> void:
+	if map_config == null or map_config.alliances.is_empty():
+		return
+	if NetworkManager.player_sessions.is_empty():
+		# 单机：确保有一个默认 session（已在 NetworkManager._ready 中创建）
+		pass
+	# 找玩家方联盟（is_ai=false 的第一个）
+	var player_alliance: Dictionary = {}
+	for a in map_config.alliances:
+		if not a.get("is_ai", false):
+			player_alliance = a
+			break
+	if player_alliance.is_empty():
+		return
+	var slots: Array = player_alliance.get("slots", [])
+	# 统计每个 slot 被哪些玩家占用
+	var slot_occupied: Dictionary = {}  # slot_idx -> Array[player_id]
+	for pid in NetworkManager.player_sessions:
+		var s: Dictionary = NetworkManager.player_sessions[pid]
+		if s.get("alliance_id", 0) != 0:
+			continue
+		var slot_idx: int = s.get("slot_id", 0)
+		if not slot_occupied.has(slot_idx):
+			slot_occupied[slot_idx] = []
+		slot_occupied[slot_idx].append(pid)
+	# 为每个被占用的 slot 生成（用占用人颜色；多人同槽共享控制）
+	for slot_idx in slot_occupied.keys():
+		if slot_idx >= slots.size():
+			continue
+		var owners: Array = slot_occupied[slot_idx]
+		var primary_pid: int = owners[0]
+		var s: Dictionary = NetworkManager.player_sessions[primary_pid]
+		var color: int = s.get("color", Faction.ColorId.BLUE)
+		spawner_module.spawn_slot_initial(slots[slot_idx], slot_idx, -1, color)
+	# 初始化占用的玩家金币（各自独立池）
+	for slot_idx in slot_occupied.keys():
+		var owners: Array = slot_occupied[slot_idx]
+		var slot_cfg: Dictionary = slots[slot_idx] if slot_idx < slots.size() else {}
+		var slot_gold: int = slot_cfg.get("initial_gold", map_config.initial_gold)
+		for pid in owners:
+			NetworkManager.player_sessions[pid]["gold"] = slot_gold
+	# 自己的金币复制到 main.gold 便于旧代码读取
+	var my_sess: Dictionary = NetworkManager.player_sessions.get(NetworkManager.my_id, {})
+	if my_sess.get("gold", -1) >= 0:
+		gold = my_sess["gold"]
+
+
 func mp_place_building(player: int, building_type: int, pos: Vector2):
-	var team = BuildingScript.Team.PLAYER if player == NetworkManager.my_id else BuildingScript.Team.ENEMY
-	var building = building_placer.place_building(building_type, team, building_placer.snap_to_grid(pos))
+	# 用 player_sessions 推断 alliance/color/slot，不再用 player == my_id 推断 team
+	# 修复：原 bug 是 host 端执行 client 命令时把 client 单位当成 ENEMY（红色）
+	var sess: Dictionary = NetworkManager.player_sessions.get(player, {})
+	var alliance_id: int = sess.get("alliance_id", 0)
+	var color: int = sess.get("color", Faction.ColorId.BLUE)
+	var slot: int = sess.get("slot_id", 0)
+	var team = BuildingScript.Team.PLAYER if alliance_id == 0 else BuildingScript.Team.ENEMY
+	# 在 place_building 内部 add_child 前设置字段，避免 _ready 跑 _setup_texture 时还是默认蓝色
+	var building = building_placer.place_building(building_type, team, building_placer.snap_to_grid(pos), player, color, slot)
 	building.start_construction()
 	building.net_id = spawner_module._next_net_id
 	spawner_module._next_net_id += 1
 	LockstepSync.register_unit(building)
 
 func mp_spawn_unit(player: int, unit_type: int, pos: Vector2):
-	var team = UnitScript.Team.PLAYER if player == NetworkManager.my_id else UnitScript.Team.ENEMY
-	var unit = spawner_module.create_unit(unit_type, team, pos, &"")
+	var sess: Dictionary = NetworkManager.player_sessions.get(player, {})
+	var alliance_id: int = sess.get("alliance_id", 0)
+	var color: int = sess.get("color", Faction.ColorId.BLUE)
+	var slot: int = sess.get("slot_id", 0)
+	var unit = spawner_module.create_unit(unit_type, alliance_id, pos, &"", player, color, slot)
 	unit.net_id = spawner_module._next_net_id
 	spawner_module._next_net_id += 1
 	LockstepSync.register_unit(unit)
-	if team == UnitScript.Team.PLAYER:
+	if alliance_id == 0:
 		spawner_module._player_units_node.add_child(unit)
 		unit.add_to_group("player_units")
 		if spawner_module._upgrade_manager:
@@ -568,7 +631,7 @@ func mp_spawn_unit(player: int, unit_type: int, pos: Vector2):
 		ai.name = "EnemyAI"
 		ai.set_script(load("res://scripts/units/enemy_ai.gd"))
 		unit.add_child(ai)
-	spawner_module.spawn_spawn_effect(pos, team, unit)
+	spawner_module.spawn_spawn_effect(pos, alliance_id, unit)
 
 # --- 单位死亡 ---
 

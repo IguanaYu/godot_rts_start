@@ -10,6 +10,15 @@ const D := preload("res://scripts/systems/game_data.gd")
 @export var building_type: BuildingType = BuildingType.WALL:
 	set(v): building_type = v; _refresh_editor()
 @export var team: Team = Team.PLAYER
+## 玩家方=0, 敌方=1, 预留 2/3。由 alliance_id 派生 team。
+var alliance_id: int = 0:
+	set(v): alliance_id = v; team = Team.PLAYER if v == 0 else Team.ENEMY
+## 控制权归属的玩家 ID (1-4)。AI 单位 = -1。
+var owner_id: int = -1
+## 所属势力槽。同 alliance+slot 的多个玩家共享控制权（co-op）。
+var slot_id: int = 0
+## Faction.Color 枚举值，决定贴图目录。
+var faction_color: int = 1
 @export var shadow_scale_x: float = 0.85:
 	set(v): shadow_scale_x = v; _refresh_editor()
 @export var shadow_scale_y: float = 0.45:
@@ -101,6 +110,22 @@ func _ready() -> void:
 		# 预放置建筑（已建造状态）直接创建生产圆圈
 		if is_constructed:
 			_create_production_circle()
+		# 在线模式：产兵 timer 由 TickManager.tick 推进，保证两端同步
+		if NetworkManager.is_online:
+			TickManager.tick.connect(_on_production_tick)
+
+func _on_production_tick() -> void:
+	if disable_production:
+		return
+	if production_cooldown <= 0.0:
+		return
+	production_timer += TickManager.TICK_TIME
+	if production_timer >= production_cooldown:
+		production_timer = 0.0
+		if building_type == BuildingType.CASTLE:
+			_produce_gold()
+		else:
+			_spawn_produced_unit()
 
 func _snap_position_to_grid() -> void:
 	var offset := Vector2((grid_size.x - 1) * 32.0, (grid_size.y - 1) * 32.0)
@@ -193,25 +218,35 @@ func _setup_visuals() -> void:
 	hp_bar.offset_bottom += lift + sprite_offset_y
 
 func _setup_texture() -> void:
-	var color_dir := "blue" if team == Team.PLAYER else "red"
-	var tex_path := ""
-	match building_type:
-		BuildingType.WALL:
-			tex_path = "res://assets/buildings/%s_house/House1.png" % color_dir
-		BuildingType.TOWER:
-			tex_path = "res://assets/buildings/%s_tower/Tower.png" % color_dir
-		BuildingType.CASTLE:
-			tex_path = "res://assets/buildings/%s_castle/Castle.png" % color_dir
-		BuildingType.BARRACKS:
-			tex_path = "res://assets/buildings/%s_barracks/Barracks.png" % color_dir
-		BuildingType.MONASTERY:
-			tex_path = "res://assets/buildings/%s_monastery/Monastery.png" % color_dir
-		BuildingType.ARCHERY:
-			tex_path = "res://assets/buildings/%s_archery/Archery.png" % color_dir
-	if tex_path != "":
+	var color_dir := Faction.color_dir(faction_color)
+	var tex_path := _building_tex_path(color_dir)
+	if tex_path != "" and ResourceLoader.exists(tex_path):
 		var tex := load(tex_path)
 		if tex and body_sprite:
 			body_sprite.texture = tex
+	elif color_dir != "blue":
+		# 素材缺失 fallback 到蓝色
+		var fb_path := _building_tex_path("blue")
+		if fb_path != "" and ResourceLoader.exists(fb_path):
+			var tex := load(fb_path)
+			if tex and body_sprite:
+				body_sprite.texture = tex
+
+func _building_tex_path(color_dir_str: String) -> String:
+	match building_type:
+		BuildingType.WALL:
+			return "res://assets/buildings/%s_house/House1.png" % color_dir_str
+		BuildingType.TOWER:
+			return "res://assets/buildings/%s_tower/Tower.png" % color_dir_str
+		BuildingType.CASTLE:
+			return "res://assets/buildings/%s_castle/Castle.png" % color_dir_str
+		BuildingType.BARRACKS:
+			return "res://assets/buildings/%s_barracks/Barracks.png" % color_dir_str
+		BuildingType.MONASTERY:
+			return "res://assets/buildings/%s_monastery/Monastery.png" % color_dir_str
+		BuildingType.ARCHERY:
+			return "res://assets/buildings/%s_archery/Archery.png" % color_dir_str
+	return ""
 
 func _rebuild_shadow() -> void:
 	if _shadow_component:
@@ -398,6 +433,11 @@ func _production_process(delta: float) -> void:
 		return
 	if production_cooldown <= 0.0:
 		return
+	# 在线模式：timer 由 TickManager.tick 同步推进（_on_production_tick），这里只更新视觉
+	if NetworkManager.is_online:
+		if _production_circle:
+			_production_circle.update_progress(production_timer / production_cooldown)
+		return
 	production_timer += delta
 	# 更新圆圈进度
 	if _production_circle:
@@ -417,8 +457,11 @@ func _spawn_produced_unit() -> void:
 	if unit_scene == null:
 		return
 	var unit: CharacterBody2D = unit_scene.instantiate()
-	var unit_team := UnitScript.Team.PLAYER if team == Team.PLAYER else UnitScript.Team.ENEMY
-	unit.set("team", unit_team)
+	# 继承建筑的所有势力字段（alliance_id setter 同步 team）
+	unit.set("alliance_id", alliance_id)
+	unit.set("owner_id", owner_id)
+	unit.set("faction_color", faction_color)
+	unit.set("slot_id", slot_id)
 	# 在建筑旁找到有效出生位置
 	unit.position = _find_valid_spawn_position(16.0)
 	# 找到正确的父节点
@@ -429,6 +472,14 @@ func _spawn_produced_unit() -> void:
 		unit.queue_free()
 		return
 	parent_node.add_child(unit)
+	# 分配 net_id 并注册，否则 lockstep 命令通过 net_id 查不到这个单位
+	# （建筑造的兵两端各自跑 _process 生成，_next_net_id 可能略有不同步；
+	#  这是当前 lockstep 协议的局限，对单机模式无影响）
+	var main_node2 := get_tree().current_scene
+	if main_node2 and "spawner_module" in main_node2 and main_node2.spawner_module:
+		unit.net_id = main_node2.spawner_module._next_net_id
+		main_node2.spawner_module._next_net_id += 1
+		LockstepSync.register_unit(unit)
 	# 刷新后检查：如果小兵仍在建筑内，触发逃生
 	if unit.has_method("_start_escape") and unit.has_method("_is_inside_any_building"):
 		if unit._is_inside_any_building():

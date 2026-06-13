@@ -25,6 +25,27 @@ func initialize(spawner_module: Node) -> void:
 	_spawner_module = spawner_module
 
 
+## 当前客户端是否能控制该单位。
+## 规则：玩家方（alliance_id==0）且（同槽 co-op 共享 OR owner_id 是自己）。
+func _can_control(u) -> bool:
+	if u == null or not ("alliance_id" in u):
+		return true  # 字段缺失（旧场景预放置单位）：保守允许控制
+	if u.alliance_id != 0:
+		return false
+	var my_sess: Dictionary = NetworkManager.player_sessions.get(NetworkManager.my_id, {})
+	if my_sess.is_empty():
+		return true  # 单机或会话未初始化：允许控制所有玩家方单位
+	var my_alliance: int = my_sess.get("alliance_id", 0)
+	var my_slot: int = my_sess.get("slot_id", 0)
+	if my_alliance != u.alliance_id:
+		return false
+	# 同槽 = 共享控制权（co-op）；不同槽 = 只能控制自己 owner 的单位
+	if my_slot == u.slot_id:
+		return true
+	return u.owner_id == NetworkManager.my_id
+
+
+
 func start_selection(pos: Vector2, is_double_click: bool = false) -> void:
 	is_selecting = true
 	selection_start = pos
@@ -90,7 +111,7 @@ func release_selection(end_pos: Vector2, selection_box: ColorRect, shift_held: b
 		if not shift_held:
 			_deselect_all()
 		for u in get_tree().get_nodes_in_group("player_units"):
-			if u is CharacterBody2D and not u.is_dead():
+			if u is CharacterBody2D and not u.is_dead() and _can_control(u):
 				var sp: Vector2 = u.get_node("BodySprite").global_position if u.has_node("BodySprite") else u.global_position
 				if rect.has_point(sp) and not u.selected:
 					u.set_selected(true)
@@ -115,7 +136,7 @@ func select_all_of_type_on_screen(reference_unit) -> void:
 	var view_rect := Rect2(cam_center - half_size, half_size * 2.0)
 
 	for u in get_tree().get_nodes_in_group("player_units"):
-		if u is CharacterBody2D and not u.is_dead() and u.unit_type == ref_type:
+		if u is CharacterBody2D and not u.is_dead() and _can_control(u) and u.unit_type == ref_type:
 			var sp: Vector2 = u.get_node("BodySprite").global_position if u.has_node("BodySprite") else u.global_position
 			if view_rect.has_point(sp):
 				u.set_selected(true)
@@ -135,7 +156,7 @@ func _add_all_of_type_to_selection(reference_unit) -> void:
 	var view_rect := Rect2(cam_center - half_size, half_size * 2.0)
 
 	for u in get_tree().get_nodes_in_group("player_units"):
-		if u is CharacterBody2D and not u.is_dead() and u.unit_type == ref_type and not u.selected:
+		if u is CharacterBody2D and not u.is_dead() and _can_control(u) and u.unit_type == ref_type and not u.selected:
 			var sp: Vector2 = u.get_node("BodySprite").global_position if u.has_node("BodySprite") else u.global_position
 			if view_rect.has_point(sp):
 				u.set_selected(true)
@@ -146,7 +167,7 @@ func _add_all_of_type_to_selection(reference_unit) -> void:
 func select_all_army() -> void:
 	_deselect_all()
 	for u in get_tree().get_nodes_in_group("player_units"):
-		if u is CharacterBody2D and not u.is_dead():
+		if u is CharacterBody2D and not u.is_dead() and _can_control(u):
 			u.set_selected(true)
 			selected_units.append(u)
 			if u.selection_ring and u.selection_ring.has_method("pulse_scale"):
@@ -282,7 +303,7 @@ func _deselect_all() -> void:
 ## 查找点击位置的玩家单位
 func _find_player_unit_at(pos: Vector2):
 	for u in get_tree().get_nodes_in_group("player_units"):
-		if u is CharacterBody2D and not u.is_dead():
+		if u is CharacterBody2D and not u.is_dead() and _can_control(u):
 			var sp: Vector2 = u.get_node("BodySprite").global_position if u.has_node("BodySprite") else u.global_position
 			if sp.distance_to(pos) < 20.0:
 				return u

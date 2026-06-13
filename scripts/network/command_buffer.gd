@@ -94,7 +94,7 @@ func _add_to_pending(tick_num: int, player_id: int, cmds: Array) -> void:
 
 func _check_ready(tick_num: int) -> void:
 	var tick_data: Dictionary = _pending.get(tick_num, {})
-	var expected_players := 2  # TODO: 动态获取玩家数
+	var expected_players := maxi(2, NetworkManager.player_count)
 	if tick_data.size() >= expected_players:
 		var all_cmds: Array = []
 		for pid in tick_data:

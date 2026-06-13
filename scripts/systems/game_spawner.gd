@@ -33,7 +33,11 @@ func set_upgrade_manager(mgr: Node) -> void:
 
 # --- 单位创建 ---
 
-func create_unit(type: int, team: int, pos: Vector2, stats_id: StringName = &"" ) -> CharacterBody2D:
+func create_unit(type: int, alliance_id: int, pos: Vector2, stats_id: StringName = &"", owner_id: int = -1, color: int = -1, slot_id: int = 0) -> CharacterBody2D:
+	# alliance_id 兼容旧 team 参数（PLAYER=0/ENEMY=1），数值一致
+	# 默认颜色：玩家方 BLUE，敌方 RED
+	if color < 0:
+		color = Faction.ColorId.BLUE if alliance_id == 0 else Faction.ColorId.RED
 	var scene_path: String = ""
 	if stats_id != &"":
 		scene_path = D.ENEMY_VARIANT_SCENES.get(stats_id, "")
@@ -41,7 +45,10 @@ func create_unit(type: int, team: int, pos: Vector2, stats_id: StringName = &"" 
 		scene_path = D.UNIT_SCENES.get(type, "res://scenes/units/soldier.tscn")
 	var unit_scene := load(scene_path)
 	var unit: CharacterBody2D = unit_scene.instantiate()
-	unit.set("team", team)
+	unit.set("alliance_id", alliance_id)  # setter 会同步 team
+	unit.set("owner_id", owner_id)
+	unit.set("faction_color", color)
+	unit.set("slot_id", slot_id)
 	unit.position = pos
 	unit.connect("died", Callable(_main_node, "_on_unit_died"))
 	return unit
@@ -51,22 +58,34 @@ func create_unit(type: int, team: int, pos: Vector2, stats_id: StringName = &"" 
 func spawn_from_config(map_config: Resource) -> void:
 	if map_config == null:
 		return
-
 	_next_net_id = 1
+	if map_config.alliances.is_empty():
+		_spawn_legacy_from_config(map_config)
+	else:
+		_spawn_ai_alliances_from_config(map_config)
 
-	# Spawn player units
+# 旧地图 fallback：用 player_units/player2_units/enemy_units 字段生成
+# 玩家方一律 alliance=0, owner=-1, color=BLUE；slot 0=player_units, slot 1=player2_units
+func _spawn_legacy_from_config(map_config: Resource) -> void:
 	for spawn in map_config.player_units:
-		var unit := create_unit(spawn.type, UnitScript.Team.PLAYER, spawn.pos)
+		var unit := create_unit(spawn.type, 0, spawn.pos, &"", -1, Faction.ColorId.BLUE, 0)
 		unit.net_id = _next_net_id
 		_next_net_id += 1
 		LockstepSync.register_unit(unit)
 		_player_units_node.add_child(unit)
 		unit.add_to_group("player_units")
 
-	# Spawn enemy units
+	for spawn in map_config.player2_units:
+		var unit := create_unit(spawn.type, 0, spawn.pos, &"", -1, Faction.ColorId.BLUE, 1)
+		unit.net_id = _next_net_id
+		_next_net_id += 1
+		LockstepSync.register_unit(unit)
+		_player_units_node.add_child(unit)
+		unit.add_to_group("player_units")
+
 	for spawn in map_config.enemy_units:
 		var stats_id: StringName = spawn.get("stats_id", &"")
-		var unit := create_unit(spawn.type, UnitScript.Team.ENEMY, spawn.pos, stats_id)
+		var unit := create_unit(spawn.type, 1, spawn.pos, stats_id, -1, Faction.ColorId.RED, 0)
 		unit.net_id = _next_net_id
 		_next_net_id += 1
 		LockstepSync.register_unit(unit)
@@ -78,32 +97,67 @@ func spawn_from_config(map_config: Resource) -> void:
 		ai.set_script(load("res://scripts/units/enemy_ai.gd"))
 		unit.add_child(ai)
 
-# Spawn player buildings
 	for spawn in map_config.player_buildings:
-		var building = place_building_callback.call(spawn.type, BuildingScript.Team.PLAYER, spawn.grid_pos)
+		var building = place_building_callback.call(spawn.type, BuildingScript.Team.PLAYER, spawn.grid_pos, -1, Faction.ColorId.BLUE, 0)
 		building.net_id = _next_net_id
 		_next_net_id += 1
 		LockstepSync.register_unit(building)
 
-	# Spawn player 2 units (multiplayer co-op, same team as player 1)
-	for spawn in map_config.player2_units:
-		var unit := create_unit(spawn.type, UnitScript.Team.PLAYER, spawn.pos)
+	for spawn in map_config.player2_buildings:
+		var building = place_building_callback.call(spawn.type, BuildingScript.Team.PLAYER, spawn.grid_pos, -1, Faction.ColorId.BLUE, 1)
+		building.net_id = _next_net_id
+		_next_net_id += 1
+		LockstepSync.register_unit(building)
+
+	for spawn in map_config.enemy_buildings:
+		var building = place_building_callback.call(spawn.type, BuildingScript.Team.ENEMY, spawn.grid_pos, -1, Faction.ColorId.RED, 0)
+		building.net_id = _next_net_id
+		_next_net_id += 1
+		LockstepSync.register_unit(building)
+
+# 新格式：生成所有 is_ai=true 的联盟（玩家方 alliance=0 由 main._spawn_dynamic_players 处理）
+func _spawn_ai_alliances_from_config(map_config: Resource) -> void:
+	for alliance in map_config.alliances:
+		if not alliance.get("is_ai", false):
+			continue
+		var alliance_id: int = alliance.get("id", 1)
+		var alliance_color: int = alliance.get("color", Faction.ColorId.RED)
+		var slots: Array = alliance.get("slots", [])
+		for slot_idx in slots.size():
+			var slot: Dictionary = slots[slot_idx]
+			var slot_color: int = slot.get("color", alliance_color)
+			for spawn in slot.get("units", []):
+				var stats_id: StringName = spawn.get("stats_id", &"")
+				var unit := create_unit(spawn.type, alliance_id, spawn.pos, stats_id, -1, slot_color, slot_idx)
+				unit.net_id = _next_net_id
+				_next_net_id += 1
+				LockstepSync.register_unit(unit)
+				_enemy_units_node.add_child(unit)
+				_apply_difficulty_modifiers(unit)
+				unit.add_to_group("enemy_units")
+				var ai := Node2D.new()
+				ai.name = "EnemyAI"
+				ai.set_script(load("res://scripts/units/enemy_ai.gd"))
+				unit.add_child(ai)
+			for spawn in slot.get("buildings", []):
+				var building = place_building_callback.call(spawn.type, BuildingScript.Team.ENEMY, spawn.grid_pos, -1, slot_color, slot_idx)
+				building.net_id = _next_net_id
+				_next_net_id += 1
+				LockstepSync.register_unit(building)
+
+# 联机时按 player_sessions 占用情况动态生成单个玩家 slot 的初始单位/建筑
+func spawn_slot_initial(slot: Dictionary, slot_idx: int, owner_id: int, color: int) -> void:
+	for spawn in slot.get("units", []):
+		var unit := create_unit(spawn.type, 0, spawn.pos, &"", owner_id, color, slot_idx)
 		unit.net_id = _next_net_id
 		_next_net_id += 1
 		LockstepSync.register_unit(unit)
 		_player_units_node.add_child(unit)
 		unit.add_to_group("player_units")
-
-	# Spawn player 2 buildings
-	for spawn in map_config.player2_buildings:
-		var building = place_building_callback.call(spawn.type, BuildingScript.Team.PLAYER, spawn.grid_pos)
-		building.net_id = _next_net_id
-		_next_net_id += 1
-		LockstepSync.register_unit(building)
-
-	# Spawn enemy buildings
-	for spawn in map_config.enemy_buildings:
-		var building = place_building_callback.call(spawn.type, BuildingScript.Team.ENEMY, spawn.grid_pos)
+		if _upgrade_manager:
+			_upgrade_manager.apply_all_stat_upgrades_to_unit(unit)
+	for spawn in slot.get("buildings", []):
+		var building = place_building_callback.call(spawn.type, BuildingScript.Team.PLAYER, spawn.grid_pos, owner_id, color, slot_idx)
 		building.net_id = _next_net_id
 		_next_net_id += 1
 		LockstepSync.register_unit(building)

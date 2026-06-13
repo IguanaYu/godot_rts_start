@@ -216,7 +216,17 @@ func _spawn_garrison_unit(data: Dictionary) -> void:
 	if unit_scene == null:
 		return
 	var unit: CharacterBody2D = unit_scene.instantiate()
-	unit.set("team", UnitScript.Team.ENEMY)
+	# 继承建筑的势力字段（alliance_id setter 同步 team）
+	unit.set("alliance_id", _building.alliance_id)
+	unit.set("owner_id", _building.owner_id)
+	unit.set("faction_color", _building.faction_color)
+	unit.set("slot_id", _building.slot_id)
+	# 分配 net_id 并注册（同 building.gd._spawn_produced_unit）
+	var _main := get_tree().current_scene
+	if _main and "spawner_module" in _main and _main.spawner_module:
+		unit.net_id = _main.spawner_module._next_net_id
+		_main.spawner_module._next_net_id += 1
+		LockstepSync.register_unit(unit)
 	# 找到建筑旁的有效出生位置
 	var spawn_pos: Vector2 = _building._find_valid_spawn_position(16.0)
 	unit.position = spawn_pos
