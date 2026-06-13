@@ -1,83 +1,378 @@
 [gd_scene format=3 uid="uid://map11scene"]
 
-[ext_resource type="PackedScene" uid="uid://dhyxequcxurbh" path="res://scenes/buildings/castle.tscn" id="castle"]
 [ext_resource type="Script" uid="uid://cg2igjmusi0dq" path="res://scripts/main.gd" id="main_script"]
 [ext_resource type="Resource" uid="uid://map11cfg" path="res://resources/map11_config.tres" id="map11_config"]
 [ext_resource type="PackedScene" uid="uid://mmgbo1ded4ro" path="res://scenes/units/soldier.tscn" id="soldier"]
 [ext_resource type="PackedScene" uid="uid://e5by4tc82spk" path="res://scenes/units/archer.tscn" id="archer"]
-[ext_resource type="Script" uid="uid://jhcf43ds1dy6" path="res://scripts/victory/victory_destroy_base.gd" id="victory_destroy_base"]
+[ext_resource type="PackedScene" uid="uid://bxlancer01" path="res://scenes/units/lancer.tscn" id="lancer"]
+[ext_resource type="PackedScene" uid="uid://bxmonk001" path="res://scenes/units/monk.tscn" id="monk"]
+[ext_resource type="PackedScene" uid="uid://8rfekrdqs7gf" path="res://scenes/buildings/castle.tscn" id="castle"]
+[ext_resource type="PackedScene" uid="uid://dhyxequcxurbh" path="res://scenes/buildings/barracks.tscn" id="barracks"]
+[ext_resource type="PackedScene" uid="uid://tower0001" path="res://scenes/buildings/tower.tscn" id="tower"]
+[ext_resource type="PackedScene" uid="uid://wall00001" path="res://scenes/buildings/wall.tscn" id="wall"]
+[ext_resource type="Script" path="res://scripts/systems_game/adaptive_reinforcement.gd" id="adaptive_reinforcement"]
+[ext_resource type="Script" path="res://scripts/victory/victory_destroy_buildings.gd" id="victory_destroy"]
 
 [sub_resource type="NavigationPolygon" id="NavPoly_1"]
-vertices = PackedVector2Array(-500, -500, 1500, -500, 1500, 1200, -500, 1200)
-polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
+vertices = PackedVector2Array(-200, -200, 2200, -200, 2200, 1600, -200, 1600)
+polygons = [PackedInt32Array(0, 1, 2, 3)]
 
-[node name="Map11" type="Node2D" unique_id=212612579]
+[node name="Map11" type="Node2D"]
 script = ExtResource("main_script")
 map_config = ExtResource("map11_config")
 
-[node name="Ground" type="ColorRect" parent="." unique_id=899808598]
-offset_left = -537.0
-offset_top = -468.0
-offset_right = 1463.0
-offset_bottom = 1232.0
-color = Color(0.35, 0.55, 0.25, 1)
+[node name="Ground" type="ColorRect" parent="."]
+offset_left = -200.0
+offset_top = -200.0
+offset_right = 2200.0
+offset_bottom = 1600.0
+color = Color(0.45, 0.40, 0.35, 1)
 
-[node name="NavigationRegion2D" type="NavigationRegion2D" parent="." unique_id=802062054]
+[node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
 navigation_polygon = SubResource("NavPoly_1")
 
-[node name="Camera2D" type="Camera2D" parent="." unique_id=770889047]
+[node name="Camera2D" type="Camera2D" parent="."]
 
-[node name="PlayerUnits" type="Node2D" parent="." unique_id=681546732]
+[node name="PlayerUnits" type="Node2D" parent="."]
 
-[node name="PlayerSoldier1" parent="PlayerUnits" unique_id=818331997 instance=ExtResource("soldier")]
-position = Vector2(200, 200)
+[node name="PSoldier1" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(100, 600)
 
-[node name="PlayerSoldier2" parent="PlayerUnits" unique_id=886610386 instance=ExtResource("soldier")]
-position = Vector2(200, 280)
+[node name="PSoldier2" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(100, 660)
 
-[node name="PlayerArcher1" parent="PlayerUnits" unique_id=641266643 instance=ExtResource("archer")]
-position = Vector2(150, 240)
+[node name="PSoldier3" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(100, 720)
 
-[node name="EnemyUnits" type="Node2D" parent="." unique_id=746386153]
+[node name="PSoldier4" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(100, 780)
 
-[node name="EnemySoldier1" parent="EnemyUnits" unique_id=354737471 instance=ExtResource("soldier")]
-position = Vector2(800, 200)
+[node name="PSoldier5" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(100, 840)
+
+[node name="PSoldier6" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(140, 630)
+
+[node name="PSoldier7" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(140, 690)
+
+[node name="PSoldier8" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(140, 750)
+
+[node name="PArcher1" parent="PlayerUnits" instance=ExtResource("archer")]
+position = Vector2(60, 650)
+
+[node name="PArcher2" parent="PlayerUnits" instance=ExtResource("archer")]
+position = Vector2(60, 710)
+
+[node name="PArcher3" parent="PlayerUnits" instance=ExtResource("archer")]
+position = Vector2(60, 770)
+
+[node name="PArcher4" parent="PlayerUnits" instance=ExtResource("archer")]
+position = Vector2(60, 830)
+
+[node name="PMonk1" parent="PlayerUnits" instance=ExtResource("monk")]
+position = Vector2(60, 690)
+
+[node name="PMonk2" parent="PlayerUnits" instance=ExtResource("monk")]
+position = Vector2(60, 780)
+
+[node name="EnemyUnits" type="Node2D" parent="."]
+
+[node name="OuterGuard1" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(550, 500)
 team = 1
 
-[node name="EnemySoldier2" parent="EnemyUnits" unique_id=622103926 instance=ExtResource("soldier")]
-position = Vector2(800, 300)
+[node name="OuterGuard2" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(550, 600)
 team = 1
 
-[node name="Buildings" type="Node2D" parent="." unique_id=858814465]
-
-[node name="PlayerCastle" parent="Buildings" unique_id=195047060 instance=ExtResource("castle")]
-position = Vector2(160, 224)
-
-[node name="EnemyBarracks" parent="Buildings" unique_id=346083215 instance=ExtResource("castle")]
-position = Vector2(800, 224)
+[node name="OuterGuard3" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(550, 700)
 team = 1
 
-[node name="SelectionBox" type="ColorRect" parent="." unique_id=323798810]
+[node name="OuterGuard4" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(550, 800)
+team = 1
+
+[node name="OuterGuard5" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(550, 900)
+team = 1
+
+[node name="OuterGuard6" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(550, 1000)
+team = 1
+
+[node name="OuterArcher1" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(500, 550)
+team = 1
+
+[node name="OuterArcher2" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(500, 650)
+team = 1
+
+[node name="OuterArcher3" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(500, 750)
+team = 1
+
+[node name="OuterArcher4" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(500, 850)
+team = 1
+
+[node name="InnerGuard1" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1050, 500)
+team = 1
+
+[node name="InnerGuard2" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1050, 600)
+team = 1
+
+[node name="InnerGuard3" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1050, 700)
+team = 1
+
+[node name="InnerGuard4" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1050, 800)
+team = 1
+
+[node name="InnerGuard5" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1050, 900)
+team = 1
+
+[node name="InnerGuard6" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1050, 1000)
+team = 1
+
+[node name="InnerGuard7" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1050, 1100)
+team = 1
+
+[node name="InnerGuard8" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1050, 400)
+team = 1
+
+[node name="InnerArcher1" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(1000, 550)
+team = 1
+
+[node name="InnerArcher2" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(1000, 650)
+team = 1
+
+[node name="InnerArcher3" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(1000, 750)
+team = 1
+
+[node name="InnerArcher4" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(1000, 850)
+team = 1
+
+[node name="InnerArcher5" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(1000, 950)
+team = 1
+
+[node name="InnerLancer1" parent="EnemyUnits" instance=ExtResource("lancer")]
+position = Vector2(1080, 750)
+team = 1
+
+[node name="InnerLancer2" parent="EnemyUnits" instance=ExtResource("lancer")]
+position = Vector2(1080, 850)
+team = 1
+
+[node name="CoreGuard1" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1700, 500)
+team = 1
+
+[node name="CoreGuard2" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1700, 600)
+team = 1
+
+[node name="CoreGuard3" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1700, 700)
+team = 1
+
+[node name="CoreGuard4" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1700, 800)
+team = 1
+
+[node name="CoreGuard5" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1700, 900)
+team = 1
+
+[node name="CoreGuard6" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1700, 1000)
+team = 1
+
+[node name="CoreGuard7" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1700, 1100)
+team = 1
+
+[node name="CoreGuard8" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1700, 400)
+team = 1
+
+[node name="CoreGuard9" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1700, 300)
+team = 1
+
+[node name="CoreGuard10" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1700, 1200)
+team = 1
+
+[node name="CoreArcher1" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(1650, 550)
+team = 1
+
+[node name="CoreArcher2" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(1650, 650)
+team = 1
+
+[node name="CoreArcher3" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(1650, 750)
+team = 1
+
+[node name="CoreArcher4" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(1650, 850)
+team = 1
+
+[node name="CoreArcher5" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(1650, 950)
+team = 1
+
+[node name="CoreArcher6" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(1650, 1050)
+team = 1
+
+[node name="CoreLancer1" parent="EnemyUnits" instance=ExtResource("lancer")]
+position = Vector2(1730, 750)
+team = 1
+
+[node name="CoreLancer2" parent="EnemyUnits" instance=ExtResource("lancer")]
+position = Vector2(1730, 850)
+team = 1
+
+[node name="CoreLancer3" parent="EnemyUnits" instance=ExtResource("lancer")]
+position = Vector2(1730, 950)
+team = 1
+
+[node name="Buildings" type="Node2D" parent="."]
+
+[node name="OuterWall1" parent="Buildings" instance=ExtResource("wall")]
+position = Vector2(640, 512)
+team = 1
+grid_pos = Vector2i(9, 7)
+
+[node name="OuterWall2" parent="Buildings" instance=ExtResource("wall")]
+position = Vector2(640, 960)
+team = 1
+grid_pos = Vector2i(9, 14)
+
+[node name="OuterWall3" parent="Buildings" instance=ExtResource("wall")]
+position = Vector2(640, 704)
+team = 1
+grid_pos = Vector2i(9, 10)
+
+[node name="OuterTower1" parent="Buildings" instance=ExtResource("tower")]
+position = Vector2(640, 384)
+team = 1
+grid_pos = Vector2i(9, 5)
+
+[node name="OuterTower2" parent="Buildings" instance=ExtResource("tower")]
+position = Vector2(640, 832)
+team = 1
+grid_pos = Vector2i(9, 12)
+
+[node name="OuterTower3" parent="Buildings" instance=ExtResource("tower")]
+position = Vector2(640, 1088)
+team = 1
+grid_pos = Vector2i(9, 16)
+
+[node name="InnerWall1" parent="Buildings" instance=ExtResource("wall")]
+position = Vector2(1152, 640)
+team = 1
+grid_pos = Vector2i(17, 9)
+
+[node name="InnerWall2" parent="Buildings" instance=ExtResource("wall")]
+position = Vector2(1152, 896)
+team = 1
+grid_pos = Vector2i(17, 13)
+
+[node name="InnerTower1" parent="Buildings" instance=ExtResource("tower")]
+position = Vector2(1152, 512)
+team = 1
+grid_pos = Vector2i(17, 7)
+
+[node name="InnerTower2" parent="Buildings" instance=ExtResource("tower")]
+position = Vector2(1152, 1024)
+team = 1
+grid_pos = Vector2i(17, 15)
+
+[node name="InnerBarracks" parent="Buildings" instance=ExtResource("barracks")]
+position = Vector2(1152, 768)
+team = 1
+grid_pos = Vector2i(17, 11)
+disable_production = true
+
+[node name="CoreCastle" parent="Buildings" instance=ExtResource("castle")]
+position = Vector2(1792, 768)
+team = 1
+grid_pos = Vector2i(27, 11)
+
+[node name="CoreTower1" parent="Buildings" instance=ExtResource("tower")]
+position = Vector2(1664, 512)
+team = 1
+grid_pos = Vector2i(25, 7)
+
+[node name="CoreTower2" parent="Buildings" instance=ExtResource("tower")]
+position = Vector2(1664, 1024)
+team = 1
+grid_pos = Vector2i(25, 15)
+
+[node name="CoreTower3" parent="Buildings" instance=ExtResource("tower")]
+position = Vector2(1920, 512)
+team = 1
+grid_pos = Vector2i(29, 7)
+
+[node name="CoreTower4" parent="Buildings" instance=ExtResource("tower")]
+position = Vector2(1920, 1024)
+team = 1
+grid_pos = Vector2i(29, 15)
+
+[node name="ReinforcementSpawn" type="Marker2D" parent="."]
+position = Vector2(50, 700)
+
+[node name="AdaptiveReinforcement" type="Node2D" parent="."]
+position = Vector2(50, 700)
+script = ExtResource("adaptive_reinforcement")
+spawn_point_path = NodePath("../ReinforcementSpawn")
+reinforcement_table = Array[Dictionary]( [
+	{"min_alive": 0, "max_alive": 4, "interval": 8.0, "groups": [{"type": 0, "count": 3}, {"type": 1, "count": 2}]},
+	{"min_alive": 5, "max_alive": 10, "interval": 15.0, "groups": [{"type": 0, "count": 2}, {"type": 1, "count": 1}]},
+	{"min_alive": 11, "max_alive": 15, "interval": 20.0, "groups": [{"type": 0, "count": 1}, {"type": 1, "count": 1}]},
+	{"min_alive": 16, "max_alive": 999, "interval": 25.0, "groups": [{"type": 0, "count": 1}]}
+] )
+
+[node name="SelectionBox" type="ColorRect" parent="."]
 visible = false
-mouse_filter = 2
 color = Color(0.4, 0.7, 1, 0.25)
-
-[node name="PreviewRect" type="ColorRect" parent="." unique_id=545029892]
-visible = false
 mouse_filter = 2
-color = Color(0, 1, 0, 0.3)
 
-[node name="ResultLabel" type="Label" parent="." unique_id=109089375]
-offset_left = 350.0
-offset_top = 300.0
-offset_right = 650.0
-offset_bottom = 400.0
+[node name="PreviewRect" type="ColorRect" parent="."]
+visible = false
+color = Color(0, 1, 0, 0.3)
+mouse_filter = 2
+
+[node name="ResultLabel" type="Label" parent="."]
+offset_left = 800.0
+offset_top = 600.0
+offset_right = 1100.0
+offset_bottom = 700.0
 theme_override_font_sizes/font_size = 48
 horizontal_alignment = 1
 vertical_alignment = 1
+text = ""
 
-[node name="AttackMoveIndicator" type="Label" parent="." unique_id=336942484]
-visible = false
+[node name="AttackMoveIndicator" type="Label" parent="."]
 offset_left = 10.0
 offset_top = 10.0
 offset_right = 200.0
@@ -85,6 +380,10 @@ offset_bottom = 40.0
 theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
 theme_override_font_sizes/font_size = 20
 text = "Attack Move (Click)"
+visible = false
 
-[node name="VictoryDestroyBase" type="Node" parent="." unique_id=116197862]
-script = ExtResource("victory_destroy_base")
+[node name="VictoryDestroyBuildings" type="Node" parent="."]
+script = ExtResource("victory_destroy")
+target_buildings = Array[NodePath]([NodePath("../Buildings/CoreCastle")])
+description_key = "OBJ_DESTROY_CASTLE"
+skip_defeat_check = true
