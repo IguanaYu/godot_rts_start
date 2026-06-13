@@ -25,6 +25,27 @@ func initialize(spawner_module: Node) -> void:
 	_spawner_module = spawner_module
 
 
+## 当前客户端是否能控制该单位。
+## 规则：玩家方（alliance_id==0）且（同槽 co-op 共享 OR owner_id 是自己）。
+func _can_control(u) -> bool:
+	if u == null or not ("alliance_id" in u):
+		return true  # 字段缺失（旧场景预放置单位）：保守允许控制
+	if u.alliance_id != 0:
+		return false
+	var my_sess: Dictionary = NetworkManager.player_sessions.get(NetworkManager.my_id, {})
+	if my_sess.is_empty():
+		return true  # 单机或会话未初始化：允许控制所有玩家方单位
+	var my_alliance: int = my_sess.get("alliance_id", 0)
+	var my_slot: int = my_sess.get("slot_id", 0)
+	if my_alliance != u.alliance_id:
+		return false
+	# 同槽 = 共享控制权（co-op）；不同槽 = 只能控制自己 owner 的单位
+	if my_slot == u.slot_id:
+		return true
+	return u.owner_id == NetworkManager.my_id
+
+
+
 func start_selection(pos: Vector2, is_double_click: bool = false) -> void:
 	is_selecting = true
 	selection_start = pos
@@ -90,7 +111,7 @@ func release_selection(end_pos: Vector2, selection_box: ColorRect, shift_held: b
 		if not shift_held:
 			_deselect_all()
 		for u in get_tree().get_nodes_in_group("player_units"):
-			if u is CharacterBody2D and not u.is_dead():
+			if u is CharacterBody2D and not u.is_dead() and _can_control(u):
 				var sp: Vector2 = u.get_node("BodySprite").global_position if u.has_node("BodySprite") else u.global_position
 				if rect.has_point(sp) and not u.selected:
 					u.set_selected(true)
@@ -115,7 +136,7 @@ func select_all_of_type_on_screen(reference_unit) -> void:
 	var view_rect := Rect2(cam_center - half_size, half_size * 2.0)
 
 	for u in get_tree().get_nodes_in_group("player_units"):
-		if u is CharacterBody2D and not u.is_dead() and u.unit_type == ref_type:
+		if u is CharacterBody2D and not u.is_dead() and _can_control(u) and u.unit_type == ref_type:
 			var sp: Vector2 = u.get_node("BodySprite").global_position if u.has_node("BodySprite") else u.global_position
 			if view_rect.has_point(sp):
 				u.set_selected(true)
@@ -135,7 +156,7 @@ func _add_all_of_type_to_selection(reference_unit) -> void:
 	var view_rect := Rect2(cam_center - half_size, half_size * 2.0)
 
 	for u in get_tree().get_nodes_in_group("player_units"):
-		if u is CharacterBody2D and not u.is_dead() and u.unit_type == ref_type and not u.selected:
+		if u is CharacterBody2D and not u.is_dead() and _can_control(u) and u.unit_type == ref_type and not u.selected:
 			var sp: Vector2 = u.get_node("BodySprite").global_position if u.has_node("BodySprite") else u.global_position
 			if view_rect.has_point(sp):
 				u.set_selected(true)
@@ -146,7 +167,7 @@ func _add_all_of_type_to_selection(reference_unit) -> void:
 func select_all_army() -> void:
 	_deselect_all()
 	for u in get_tree().get_nodes_in_group("player_units"):
-		if u is CharacterBody2D and not u.is_dead():
+		if u is CharacterBody2D and not u.is_dead() and _can_control(u):
 			u.set_selected(true)
 			selected_units.append(u)
 			if u.selection_ring and u.selection_ring.has_method("pulse_scale"):
@@ -158,17 +179,24 @@ func right_click(click_pos: Vector2) -> void:
 	if selected_units.is_empty():
 		return
 	var target = _find_enemy_at(click_pos)
+	var unit_ids := _get_selected_net_ids()
 	if target != null:
-		for unit in selected_units:
-			unit.command_attack(target)
+		if NetworkManager.is_online:
+			CommandBuffer.add_attack_command(unit_ids, target.net_id)
+		else:
+			for unit in selected_units:
+				unit.command_attack(target)
 		if target.has_method("get_children"):
 			for ai in target.get_children():
 				if ai.has_method("on_attacked"):
 					ai.on_attacked(selected_units[0])
 		_spawner_module.spawn_click_effect(D.AttackClickEffectScene, click_pos)
 		return
-	for i in range(selected_units.size()):
-		selected_units[i].move_to(click_pos + _formation_offset(i, selected_units.size()))
+	if NetworkManager.is_online:
+		CommandBuffer.add_move_command(unit_ids, click_pos)
+	else:
+		for i in range(selected_units.size()):
+			selected_units[i].move_to(click_pos + _formation_offset(i, selected_units.size()))
 	_spawner_module.spawn_click_effect(D.MoveClickEffectScene, click_pos)
 
 
@@ -176,17 +204,24 @@ func do_attack_move(click_pos: Vector2) -> void:
 	if selected_units.is_empty():
 		return
 	var target = _find_enemy_at(click_pos)
+	var unit_ids := _get_selected_net_ids()
 	if target != null:
-		for u in selected_units:
-			u.command_attack(target)
+		if NetworkManager.is_online:
+			CommandBuffer.add_attack_command(unit_ids, target.net_id)
+		else:
+			for u in selected_units:
+				u.command_attack(target)
 		if target.has_method("get_children"):
 			for ai in target.get_children():
 				if ai.has_method("on_attacked") and selected_units.size() > 0:
 					ai.on_attacked(selected_units[0])
 		_spawner_module.spawn_click_effect(D.AttackClickEffectScene, click_pos)
 		return
-	for i in range(selected_units.size()):
-		selected_units[i].attack_move_to(click_pos + _formation_offset(i, selected_units.size()))
+	if NetworkManager.is_online:
+		CommandBuffer.add_attack_move_command(unit_ids, click_pos)
+	else:
+		for i in range(selected_units.size()):
+			selected_units[i].attack_move_to(click_pos + _formation_offset(i, selected_units.size()))
 	_spawner_module.spawn_click_effect(D.AttackClickEffectScene, click_pos)
 
 
@@ -268,7 +303,7 @@ func _deselect_all() -> void:
 ## 查找点击位置的玩家单位
 func _find_player_unit_at(pos: Vector2):
 	for u in get_tree().get_nodes_in_group("player_units"):
-		if u is CharacterBody2D and not u.is_dead():
+		if u is CharacterBody2D and not u.is_dead() and _can_control(u):
 			var sp: Vector2 = u.get_node("BodySprite").global_position if u.has_node("BodySprite") else u.global_position
 			if sp.distance_to(pos) < 20.0:
 				return u
@@ -314,3 +349,11 @@ func _formation_offset(index: int, total: int) -> Vector2:
 
 func _get_selection_rect(start: Vector2, end: Vector2) -> Rect2:
 	return Rect2(Vector2(min(start.x, end.x), min(start.y, end.y)), Vector2(abs(end.x - start.x), abs(end.y - start.y)))
+
+
+func _get_selected_net_ids() -> Array:
+	var ids: Array = []
+	for unit in selected_units:
+		if unit.net_id > 0:
+			ids.append(unit.net_id)
+	return ids

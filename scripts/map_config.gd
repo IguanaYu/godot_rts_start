@@ -11,9 +11,23 @@ extends Resource
 @export var player_units: Array[Dictionary] = []
 @export var player_buildings: Array[Dictionary] = []
 
+# Player 2 initial data (multiplayer co-op)
+@export var player2_units: Array[Dictionary] = []
+@export var player2_buildings: Array[Dictionary] = []
+
 # Enemy initial data
 @export var enemy_units: Array[Dictionary] = []
 @export var enemy_buildings: Array[Dictionary] = []
+
+# === 多势力 / 多联盟结构（新格式；为空时由 game_spawner 用旧字段自动构造 fallback）===
+# alliance 结构：{ "id": int, "is_ai": bool, "slots": Array[Dictionary] }
+# slot 结构：{ "color": int (Faction.Color), "start_pos": Vector2,
+#             "initial_gold": int, "units": Array[{type,pos}],
+#             "buildings": Array[{type,grid_pos}] }
+@export var alliances: Array[Dictionary] = []
+
+# 敌方随玩家数动态增强：每多 1 个玩家，敌方单位数 ×mult，并可选追加 extra_groups 波次
+@export var enemy_scaling: Dictionary = {"per_player_unit_mult": 1.0, "per_player_extra_groups": []}
 
 # Environment counts
 @export var environment: Dictionary = {"trees": 15, "rocks": 10, "bushes": 12, "sheep": 5}

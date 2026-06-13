@@ -1,0 +1,12 @@
+{
+  "name": "rts-relay",
+  "version": "1.0.0",
+  "description": "RTS Lockstep WebSocket relay server",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "ws": "^8.16.0"
+  }
+}

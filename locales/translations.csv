@@ -19,6 +19,7 @@ UI_RESUME,Resume,继续,再開
 UI_RESTART,Restart,重新开始,リスタート
 UI_LEVEL_SELECT,Level Select,选择关卡,レベル選択
 UI_QUIT_GAME,Quit Game,退出游戏,ゲーム終了
+UI_MULTIPLAYER,Multiplayer,多人联机,マルチプレイ
 UI_PRESS_ESC_RESUME,Press ESC to resume,按 ESC 继续,ESCで再開
 UI_ATTACK_MOVE,Attack Move (Click),攻击移动（点击）,アタックムーブ（クリック）
 PLACE_UNIT,Click to place %s,点击放置 %s,クリックして %s を配置

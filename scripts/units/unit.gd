@@ -15,6 +15,15 @@ var _effects_material: ShaderMaterial = null
 @export var unit_type: UnitType = UnitType.SOLDIER:
 	set(v): unit_type = v; _refresh_editor()
 @export var team: Team = Team.PLAYER
+## 玩家方=0, 敌方=1, 预留 2/3 用于未来 PvP 地图。由 alliance_id 派生 team。
+var alliance_id: int = 0:
+	set(v): alliance_id = v; team = Team.PLAYER if v == 0 else Team.ENEMY
+## 控制权归属的玩家 ID (1-4)。AI 单位 = -1。
+var owner_id: int = -1
+## 所属势力槽。同 alliance+slot 的多个玩家共享单位控制权（co-op）。
+var slot_id: int = 0
+## Faction.Color 枚举值，决定贴图目录。
+var faction_color: int = 1
 @export var sprite_lift: float = 20.0:
 	set(v): sprite_lift = v; _refresh_editor()
 @export var shadow_width: int = 28:
@@ -36,6 +45,8 @@ var _effects_material: ShaderMaterial = null
 @export var sprite_offset_y: float = 0.0:
 	set(v): sprite_offset_y = v; _refresh_editor()
 @export var arrow_scene: PackedScene = null
+
+var net_id: int = 0
 
 const StatSetClass = preload("res://scripts/stats/stat_set.gd")
 const UpgradeMgrClass = preload("res://scripts/stats/upgrade_manager.gd")
@@ -195,27 +206,38 @@ func _setup_visuals() -> void:
 	add_child(_state_indicator)
 
 func _setup_texture() -> void:
-	var color_dir := "blue" if team == Team.PLAYER else "red"
+	var color_dir := Faction.color_dir(faction_color)
+	_load_unit_textures(color_dir)
+	# 素材缺失时 fallback 到蓝色（新颜色素材补全前的占位）
+	if _tex_idle == null and color_dir != "blue":
+		_load_unit_textures("blue")
+
+func _safe_load_tex(path: String):
+	if path == "" or not ResourceLoader.exists(path):
+		return null
+	return load(path)
+
+func _load_unit_textures(color_dir_str: String) -> void:
 	match unit_type:
 		UnitType.SOLDIER:
-			var base := "res://assets/units/%s_warrior" % color_dir
-			_tex_idle = load(base + "/Warrior_Idle.png")
-			_tex_run = load(base + "/Warrior_Run.png")
-			_tex_attack = load(base + "/Warrior_Attack1.png")
+			var base := "res://assets/units/%s_warrior" % color_dir_str
+			_tex_idle = _safe_load_tex(base + "/Warrior_Idle.png")
+			_tex_run = _safe_load_tex(base + "/Warrior_Run.png")
+			_tex_attack = _safe_load_tex(base + "/Warrior_Attack1.png")
 		UnitType.ARCHER:
-			var base := "res://assets/units/%s_archer" % color_dir
-			_tex_idle = load(base + "/Archer_Idle.png")
-			_tex_run = load(base + "/Archer_Run.png")
-			_tex_attack = load(base + "/Archer_Shoot.png")
+			var base := "res://assets/units/%s_archer" % color_dir_str
+			_tex_idle = _safe_load_tex(base + "/Archer_Idle.png")
+			_tex_run = _safe_load_tex(base + "/Archer_Run.png")
+			_tex_attack = _safe_load_tex(base + "/Archer_Shoot.png")
 		UnitType.LANCER:
-			var base := "res://assets/units/%s_lancer" % color_dir
-			_tex_idle = load(base + "/Lancer_Idle.png")
-			_tex_run = load(base + "/Lancer_Run.png")
-			_tex_attack = load(base + "/Lancer_DownRight_Attack.png")
+			var base := "res://assets/units/%s_lancer" % color_dir_str
+			_tex_idle = _safe_load_tex(base + "/Lancer_Idle.png")
+			_tex_run = _safe_load_tex(base + "/Lancer_Run.png")
+			_tex_attack = _safe_load_tex(base + "/Lancer_DownRight_Attack.png")
 		UnitType.MONK:
-			var base := "res://assets/units/%s_monk" % color_dir
-			_tex_idle = load(base + "/Idle.png")
-			_tex_run = load(base + "/Run.png")
+			var base := "res://assets/units/%s_monk" % color_dir_str
+			_tex_idle = _safe_load_tex(base + "/Idle.png")
+			_tex_run = _safe_load_tex(base + "/Run.png")
 			_tex_attack = null
 
 	var frame_w := 192

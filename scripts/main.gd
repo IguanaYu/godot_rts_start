@@ -73,6 +73,11 @@ func _ready() -> void:
 	cursor_manager = CursorManagerScene.instantiate()
 	add_child(cursor_manager)
 
+	# 多人模式：加载地图配置
+	if RelayManager.is_online and map_config == null:
+		var map_path := "res://resources/" + RelayManager._map_name.replace("_", "") + "_config.tres"
+		map_config = load(map_path)
+
 	_load_from_config()
 	_load_damage_number_setting()
 	_load_display_settings()
@@ -178,6 +183,15 @@ func _ready() -> void:
 		_init_preplaced_units()
 	else:
 		spawner_module.spawn_from_config(map_config)
+		# 新格式地图：玩家方按 player_sessions 占用情况动态生成 slot
+		_spawn_dynamic_players()
+
+	# 多人模式初始化
+	if RelayManager.is_online:
+		LockstepSync.set_game(self)
+		if RelayManager._game_seed != 0:
+			LockstepSync._start_game(RelayManager._game_seed)
+
 	building_placer.create_grid()
 	spawner_module.spawn_environment(map_config, map_bounds)
 
@@ -268,6 +282,9 @@ func _on_game_ended(result: String) -> void:
 	if _game_result_saved:
 		return
 	_game_result_saved = true
+	if RelayManager.is_online:
+		_show_mp_result(result)
+		return
 
 	# 通知 SaveManager 记录结果
 	var sm := get_node_or_null("/root/SaveManager")
@@ -281,6 +298,45 @@ func _on_game_ended(result: String) -> void:
 		result_label.text = tr("RESULT_DEFEAT")
 		result_label.visible = true
 
+
+func _show_mp_result(result: String):
+	var canvas := CanvasLayer.new()
+	canvas.layer = 100
+	add_child(canvas)
+
+	var overlay := ColorRect.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.color = Color(0, 0, 0, 0.5)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	canvas.add_child(overlay)
+
+	var label := Label.new()
+	label.text = tr("RESULT_VICTORY") if result == "victory" else tr("RESULT_DEFEAT")
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 48)
+	label.add_theme_color_override("font_color", Color(1, 0.85, 0.0) if result == "victory" else Color(1, 0.3, 0.3))
+	label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	label.offset_left = -200
+	label.offset_right = 200
+	label.offset_top = -60
+	label.offset_bottom = 60
+	canvas.add_child(label)
+
+	var btn := Button.new()
+	btn.text = "Back to Menu"
+	btn.custom_minimum_size = Vector2(160, 44)
+	btn.add_theme_font_size_override("font_size", 18)
+	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	btn.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	btn.offset_left = -80
+	btn.offset_right = 80
+	btn.offset_top = 40
+	btn.offset_bottom = 84
+	btn.pressed.connect(func():
+		RelayManager.disconnect_from_server()
+		get_tree().change_scene_to_file("res://scenes/main_menu.tscn"))
+	canvas.add_child(btn)
 
 func _show_victory_panel(sm: Node) -> void:
 	result_label.visible = false
@@ -485,9 +541,102 @@ func _handle_number_key(key: int, event: InputEventKey) -> void:
 		ctrl_group_mgr.select_group(gi, combat_ctrl)
 	_group_tap_times[gi] = now
 
+
+# --- 多人建造/生产 (由 LockstepSync 回调) ---
+
+## 新格式地图：按 player_sessions 占用情况动态生成玩家方 slot。
+## 玩家方 alliance=0 的所有 slot 在配置里声明，运行时只生成被占用的。
+## 没人占据的 slot 保持空地。两人选同槽 = 共享控制（owner_id=-1）。
+## 旧格式地图走 fallback，玩家方已在 spawn_from_config 内生成，此函数自动跳过。
+func _spawn_dynamic_players() -> void:
+	if map_config == null or map_config.alliances.is_empty():
+		return
+	if NetworkManager.player_sessions.is_empty():
+		# 单机：确保有一个默认 session（已在 NetworkManager._ready 中创建）
+		pass
+	# 找玩家方联盟（is_ai=false 的第一个）
+	var player_alliance: Dictionary = {}
+	for a in map_config.alliances:
+		if not a.get("is_ai", false):
+			player_alliance = a
+			break
+	if player_alliance.is_empty():
+		return
+	var slots: Array = player_alliance.get("slots", [])
+	# 统计每个 slot 被哪些玩家占用
+	var slot_occupied: Dictionary = {}  # slot_idx -> Array[player_id]
+	for pid in NetworkManager.player_sessions:
+		var s: Dictionary = NetworkManager.player_sessions[pid]
+		if s.get("alliance_id", 0) != 0:
+			continue
+		var slot_idx: int = s.get("slot_id", 0)
+		if not slot_occupied.has(slot_idx):
+			slot_occupied[slot_idx] = []
+		slot_occupied[slot_idx].append(pid)
+	# 为每个被占用的 slot 生成（用占用人颜色；多人同槽共享控制）
+	for slot_idx in slot_occupied.keys():
+		if slot_idx >= slots.size():
+			continue
+		var owners: Array = slot_occupied[slot_idx]
+		var primary_pid: int = owners[0]
+		var s: Dictionary = NetworkManager.player_sessions[primary_pid]
+		var color: int = s.get("color", Faction.ColorId.BLUE)
+		spawner_module.spawn_slot_initial(slots[slot_idx], slot_idx, -1, color)
+	# 初始化占用的玩家金币（各自独立池）
+	for slot_idx in slot_occupied.keys():
+		var owners: Array = slot_occupied[slot_idx]
+		var slot_cfg: Dictionary = slots[slot_idx] if slot_idx < slots.size() else {}
+		var slot_gold: int = slot_cfg.get("initial_gold", map_config.initial_gold)
+		for pid in owners:
+			NetworkManager.player_sessions[pid]["gold"] = slot_gold
+	# 自己的金币复制到 main.gold 便于旧代码读取
+	var my_sess: Dictionary = NetworkManager.player_sessions.get(NetworkManager.my_id, {})
+	if my_sess.get("gold", -1) >= 0:
+		gold = my_sess["gold"]
+
+
+func mp_place_building(player: int, building_type: int, pos: Vector2):
+	# 用 player_sessions 推断 alliance/color/slot，不再用 player == my_id 推断 team
+	# 修复：原 bug 是 host 端执行 client 命令时把 client 单位当成 ENEMY（红色）
+	var sess: Dictionary = NetworkManager.player_sessions.get(player, {})
+	var alliance_id: int = sess.get("alliance_id", 0)
+	var color: int = sess.get("color", Faction.ColorId.BLUE)
+	var slot: int = sess.get("slot_id", 0)
+	var team = BuildingScript.Team.PLAYER if alliance_id == 0 else BuildingScript.Team.ENEMY
+	# 在 place_building 内部 add_child 前设置字段，避免 _ready 跑 _setup_texture 时还是默认蓝色
+	var building = building_placer.place_building(building_type, team, building_placer.snap_to_grid(pos), player, color, slot)
+	building.start_construction()
+	building.net_id = spawner_module._next_net_id
+	spawner_module._next_net_id += 1
+	LockstepSync.register_unit(building)
+
+func mp_spawn_unit(player: int, unit_type: int, pos: Vector2):
+	var sess: Dictionary = NetworkManager.player_sessions.get(player, {})
+	var alliance_id: int = sess.get("alliance_id", 0)
+	var color: int = sess.get("color", Faction.ColorId.BLUE)
+	var slot: int = sess.get("slot_id", 0)
+	var unit = spawner_module.create_unit(unit_type, alliance_id, pos, &"", player, color, slot)
+	unit.net_id = spawner_module._next_net_id
+	spawner_module._next_net_id += 1
+	LockstepSync.register_unit(unit)
+	if alliance_id == 0:
+		spawner_module._player_units_node.add_child(unit)
+		unit.add_to_group("player_units")
+		if spawner_module._upgrade_manager:
+			spawner_module._upgrade_manager.apply_all_stat_upgrades_to_unit(unit)
+	else:
+		spawner_module._enemy_units_node.add_child(unit)
+		unit.add_to_group("enemy_units")
+		var ai := Node2D.new()
+		ai.name = "EnemyAI"
+		ai.set_script(load("res://scripts/units/enemy_ai.gd"))
+		unit.add_child(ai)
+	spawner_module.spawn_spawn_effect(pos, alliance_id, unit)
+
 # --- 单位死亡 ---
 
 func _on_unit_died(unit: CharacterBody2D) -> void:
+	LockstepSync.unregister_unit(unit)
 	# 星级评价：玩家单位死亡计数
 	if unit.is_in_group("player_units"):
 		_units_lost += 1
@@ -749,6 +898,16 @@ func _do_place(click_pos: Vector2) -> void:
 	var cost: int = D.COSTS.get(place_mode, 0)
 	if gold < cost:
 		return
+
+	if RelayManager.is_online:
+		if D.is_unit_mode(place_mode):
+			CommandBuffer.add_spawn_command(D.PLACE_MODE_TO_UNIT[place_mode], click_pos)
+		elif D.is_building_mode(place_mode):
+			CommandBuffer.add_build_command(D.PLACE_MODE_TO_BUILDING[place_mode], click_pos)
+		gold -= cost
+		ui_module.update_gold_display(gold)
+		return
+
 	var placed := false
 	if D.is_unit_mode(place_mode):
 		spawner_module.place_player_unit(D.PLACE_MODE_TO_UNIT[place_mode], click_pos)
