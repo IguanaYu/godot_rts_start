@@ -158,17 +158,24 @@ func right_click(click_pos: Vector2) -> void:
 	if selected_units.is_empty():
 		return
 	var target = _find_enemy_at(click_pos)
+	var unit_ids := _get_selected_net_ids()
 	if target != null:
-		for unit in selected_units:
-			unit.command_attack(target)
+		if NetworkManager.is_online:
+			CommandBuffer.add_attack_command(unit_ids, target.net_id)
+		else:
+			for unit in selected_units:
+				unit.command_attack(target)
 		if target.has_method("get_children"):
 			for ai in target.get_children():
 				if ai.has_method("on_attacked"):
 					ai.on_attacked(selected_units[0])
 		_spawner_module.spawn_click_effect(D.AttackClickEffectScene, click_pos)
 		return
-	for i in range(selected_units.size()):
-		selected_units[i].move_to(click_pos + _formation_offset(i, selected_units.size()))
+	if NetworkManager.is_online:
+		CommandBuffer.add_move_command(unit_ids, click_pos)
+	else:
+		for i in range(selected_units.size()):
+			selected_units[i].move_to(click_pos + _formation_offset(i, selected_units.size()))
 	_spawner_module.spawn_click_effect(D.MoveClickEffectScene, click_pos)
 
 
@@ -176,17 +183,24 @@ func do_attack_move(click_pos: Vector2) -> void:
 	if selected_units.is_empty():
 		return
 	var target = _find_enemy_at(click_pos)
+	var unit_ids := _get_selected_net_ids()
 	if target != null:
-		for u in selected_units:
-			u.command_attack(target)
+		if NetworkManager.is_online:
+			CommandBuffer.add_attack_command(unit_ids, target.net_id)
+		else:
+			for u in selected_units:
+				u.command_attack(target)
 		if target.has_method("get_children"):
 			for ai in target.get_children():
 				if ai.has_method("on_attacked") and selected_units.size() > 0:
 					ai.on_attacked(selected_units[0])
 		_spawner_module.spawn_click_effect(D.AttackClickEffectScene, click_pos)
 		return
-	for i in range(selected_units.size()):
-		selected_units[i].attack_move_to(click_pos + _formation_offset(i, selected_units.size()))
+	if NetworkManager.is_online:
+		CommandBuffer.add_attack_move_command(unit_ids, click_pos)
+	else:
+		for i in range(selected_units.size()):
+			selected_units[i].attack_move_to(click_pos + _formation_offset(i, selected_units.size()))
 	_spawner_module.spawn_click_effect(D.AttackClickEffectScene, click_pos)
 
 
@@ -314,3 +328,11 @@ func _formation_offset(index: int, total: int) -> Vector2:
 
 func _get_selection_rect(start: Vector2, end: Vector2) -> Rect2:
 	return Rect2(Vector2(min(start.x, end.x), min(start.y, end.y)), Vector2(abs(end.x - start.x), abs(end.y - start.y)))
+
+
+func _get_selected_net_ids() -> Array:
+	var ids: Array = []
+	for unit in selected_units:
+		if unit.net_id > 0:
+			ids.append(unit.net_id)
+	return ids

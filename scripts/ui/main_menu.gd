@@ -155,6 +155,10 @@ func _create_buttons() -> void:
 	_quit_label = _make_menu_button(tr("UI_QUIT_GAME"), np_btn_blue, np_btn_blue_prs, Vector2(0, 60), _on_quit_pressed)
 	vbox.add_child(_quit_label.get_parent())
 
+	# Multiplayer - 蓝色按钮
+	var mp_label = _make_menu_button(tr("UI_MULTIPLAYER"), np_btn_blue, np_btn_blue_prs, Vector2(0, 60), _on_multiplayer_pressed)
+	vbox.add_child(mp_label.get_parent())
+
 
 func _make_menu_button(text: String, np: Dictionary, np_prs: Dictionary, min_size: Vector2, callback: Callable) -> Label:
 	var wrapper := Control.new()
@@ -232,6 +236,10 @@ func _on_settings_pressed() -> void:
 
 func _on_quit_pressed() -> void:
 	get_tree().quit()
+
+
+func _on_multiplayer_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/room_browser.tscn")
 
 
 func _on_language_selected(index: int) -> void:

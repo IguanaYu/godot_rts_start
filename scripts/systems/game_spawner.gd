@@ -12,6 +12,7 @@ var _enemy_units_node: Node2D
 var _buildings_node: Node2D
 var _diff_preset: Resource = null  # DifficultyPreset
 var _upgrade_manager: Node = null  # upgrade_manager, duck typing
+var _next_net_id: int = 1
 
 # Callbacks for building placement (grid module functions)
 var place_building_callback: Callable
@@ -51,9 +52,14 @@ func spawn_from_config(map_config: Resource) -> void:
 	if map_config == null:
 		return
 
+	_next_net_id = 1
+
 	# Spawn player units
 	for spawn in map_config.player_units:
 		var unit := create_unit(spawn.type, UnitScript.Team.PLAYER, spawn.pos)
+		unit.net_id = _next_net_id
+		_next_net_id += 1
+		LockstepSync.register_unit(unit)
 		_player_units_node.add_child(unit)
 		unit.add_to_group("player_units")
 
@@ -61,6 +67,9 @@ func spawn_from_config(map_config: Resource) -> void:
 	for spawn in map_config.enemy_units:
 		var stats_id: StringName = spawn.get("stats_id", &"")
 		var unit := create_unit(spawn.type, UnitScript.Team.ENEMY, spawn.pos, stats_id)
+		unit.net_id = _next_net_id
+		_next_net_id += 1
+		LockstepSync.register_unit(unit)
 		_enemy_units_node.add_child(unit)
 		_apply_difficulty_modifiers(unit)
 		unit.add_to_group("enemy_units")
@@ -71,11 +80,17 @@ func spawn_from_config(map_config: Resource) -> void:
 
 	# Spawn player buildings
 	for spawn in map_config.player_buildings:
-		place_building_callback.call(spawn.type, BuildingScript.Team.PLAYER, spawn.grid_pos)
+		var building = place_building_callback.call(spawn.type, BuildingScript.Team.PLAYER, spawn.grid_pos)
+		building.net_id = _next_net_id
+		_next_net_id += 1
+		LockstepSync.register_unit(building)
 
 	# Spawn enemy buildings
 	for spawn in map_config.enemy_buildings:
-		place_building_callback.call(spawn.type, BuildingScript.Team.ENEMY, spawn.grid_pos)
+		var building = place_building_callback.call(spawn.type, BuildingScript.Team.ENEMY, spawn.grid_pos)
+		building.net_id = _next_net_id
+		_next_net_id += 1
+		LockstepSync.register_unit(building)
 
 # --- 环境装饰 ---
 
@@ -160,6 +175,9 @@ func _find_safe_spawn_pos(min_x: float, max_x: float, min_y: float, max_y: float
 
 func place_player_unit(unit_type: int, click_pos: Vector2) -> void:
 	var unit := create_unit(unit_type, UnitScript.Team.PLAYER, click_pos)
+	unit.net_id = _next_net_id
+	_next_net_id += 1
+	LockstepSync.register_unit(unit)
 	_player_units_node.add_child(unit)
 	unit.add_to_group("player_units")
 	if _upgrade_manager:
@@ -252,6 +270,9 @@ func spawn_enemy_wave_v2(groups: Array, spawn_center: Vector2, wave_attack: bool
 func _spawn_enemy_unit_immediate(type: int, pos: Vector2, wave_attack: bool, wave_target: Vector2, data: Dictionary) -> void:
 	var stats_id: StringName = data.get("stats_id", &"")
 	var unit := create_unit(type, UnitScript.Team.ENEMY, pos, stats_id)
+	unit.net_id = _next_net_id
+	_next_net_id += 1
+	LockstepSync.register_unit(unit)
 	# 先加入场景树触发 _ready()，确保 stat_set 已初始化
 	_enemy_units_node.add_child(unit)
 	# 应用变种修饰器
@@ -283,6 +304,9 @@ func _spawn_enemy_unit_immediate(type: int, pos: Vector2, wave_attack: bool, wav
 func spawn_unit_near(type: int, pos: Vector2, team: int) -> void:
 	var offset := Vector2(randf_range(-50, 50), randf_range(-50, 50))
 	var unit := create_unit(type, team, pos + offset)
+	unit.net_id = _next_net_id
+	_next_net_id += 1
+	LockstepSync.register_unit(unit)
 	if team == UnitScript.Team.PLAYER:
 		_player_units_node.add_child(unit)
 		unit.add_to_group("player_units")

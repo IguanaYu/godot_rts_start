@@ -34,6 +34,7 @@ const D := preload("res://scripts/systems/game_data.gd")
 var grid_size: Vector2i = Vector2i(1, 1)
 var grid_pos: Vector2i = Vector2i.ZERO
 var _is_dead: bool = false
+var net_id: int = 0
 const ShadowComp := preload("res://scripts/core/shadow_component.gd")
 @onready var _shadow_component: ShadowComp = $ShadowComponent
 const HealthComp := preload("res://scripts/core/health_component.gd")

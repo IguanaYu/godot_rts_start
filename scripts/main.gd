@@ -73,6 +73,11 @@ func _ready() -> void:
 	cursor_manager = CursorManagerScene.instantiate()
 	add_child(cursor_manager)
 
+	# 多人模式：加载地图配置
+	if NetworkManager.is_online and map_config == null:
+		var map_path := "res://resources/" + RelayManager._map_name.replace("_", "") + "_config.tres"
+		map_config = load(map_path)
+
 	_load_from_config()
 	_load_damage_number_setting()
 	_load_display_settings()
@@ -178,6 +183,13 @@ func _ready() -> void:
 		_init_preplaced_units()
 	else:
 		spawner_module.spawn_from_config(map_config)
+
+	# 多人模式初始化
+	if NetworkManager.is_online:
+		LockstepSync.set_game(self)
+		if RelayManager._game_seed != 0:
+			LockstepSync._start_game(RelayManager._game_seed)
+
 	building_placer.create_grid()
 	spawner_module.spawn_environment(map_config, map_bounds)
 
@@ -268,6 +280,9 @@ func _on_game_ended(result: String) -> void:
 	if _game_result_saved:
 		return
 	_game_result_saved = true
+	if NetworkManager.is_online:
+		_show_mp_result(result)
+		return
 
 	# 通知 SaveManager 记录结果
 	var sm := get_node_or_null("/root/SaveManager")
@@ -281,6 +296,45 @@ func _on_game_ended(result: String) -> void:
 		result_label.text = tr("RESULT_DEFEAT")
 		result_label.visible = true
 
+
+func _show_mp_result(result: String):
+	var canvas := CanvasLayer.new()
+	canvas.layer = 100
+	add_child(canvas)
+
+	var overlay := ColorRect.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.color = Color(0, 0, 0, 0.5)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	canvas.add_child(overlay)
+
+	var label := Label.new()
+	label.text = tr("RESULT_VICTORY") if result == "victory" else tr("RESULT_DEFEAT")
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 48)
+	label.add_theme_color_override("font_color", Color(1, 0.85, 0.0) if result == "victory" else Color(1, 0.3, 0.3))
+	label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	label.offset_left = -200
+	label.offset_right = 200
+	label.offset_top = -60
+	label.offset_bottom = 60
+	canvas.add_child(label)
+
+	var btn := Button.new()
+	btn.text = "Back to Menu"
+	btn.custom_minimum_size = Vector2(160, 44)
+	btn.add_theme_font_size_override("font_size", 18)
+	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	btn.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	btn.offset_left = -80
+	btn.offset_right = 80
+	btn.offset_top = 40
+	btn.offset_bottom = 84
+	btn.pressed.connect(func():
+		RelayManager.disconnect_from_server()
+		get_tree().change_scene_to_file("res://scenes/main_menu.tscn"))
+	canvas.add_child(btn)
 
 func _show_victory_panel(sm: Node) -> void:
 	result_label.visible = false
@@ -485,9 +539,41 @@ func _handle_number_key(key: int, event: InputEventKey) -> void:
 		ctrl_group_mgr.select_group(gi, combat_ctrl)
 	_group_tap_times[gi] = now
 
+
+# --- 多人建造/生产 (由 LockstepSync 回调) ---
+
+func mp_place_building(player: int, building_type: int, pos: Vector2):
+	var team = BuildingScript.Team.PLAYER if player == NetworkManager.my_id else BuildingScript.Team.ENEMY
+	var building = building_placer.place_building(building_type, team, building_placer.snap_to_grid(pos))
+	building.start_construction()
+	building.net_id = spawner_module._next_net_id
+	spawner_module._next_net_id += 1
+	LockstepSync.register_unit(building)
+
+func mp_spawn_unit(player: int, unit_type: int, pos: Vector2):
+	var team = UnitScript.Team.PLAYER if player == NetworkManager.my_id else UnitScript.Team.ENEMY
+	var unit = spawner_module.create_unit(unit_type, team, pos, &"")
+	unit.net_id = spawner_module._next_net_id
+	spawner_module._next_net_id += 1
+	LockstepSync.register_unit(unit)
+	if team == UnitScript.Team.PLAYER:
+		spawner_module._player_units_node.add_child(unit)
+		unit.add_to_group("player_units")
+		if spawner_module._upgrade_manager:
+			spawner_module._upgrade_manager.apply_all_stat_upgrades_to_unit(unit)
+	else:
+		spawner_module._enemy_units_node.add_child(unit)
+		unit.add_to_group("enemy_units")
+		var ai := Node2D.new()
+		ai.name = "EnemyAI"
+		ai.set_script(load("res://scripts/units/enemy_ai.gd"))
+		unit.add_child(ai)
+	spawner_module.spawn_spawn_effect(pos, team, unit)
+
 # --- 单位死亡 ---
 
 func _on_unit_died(unit: CharacterBody2D) -> void:
+	LockstepSync.unregister_unit(unit)
 	# 星级评价：玩家单位死亡计数
 	if unit.is_in_group("player_units"):
 		_units_lost += 1
@@ -749,6 +835,16 @@ func _do_place(click_pos: Vector2) -> void:
 	var cost: int = D.COSTS.get(place_mode, 0)
 	if gold < cost:
 		return
+
+	if NetworkManager.is_online:
+		if D.is_unit_mode(place_mode):
+			CommandBuffer.add_spawn_command(D.PLACE_MODE_TO_UNIT[place_mode], click_pos)
+		elif D.is_building_mode(place_mode):
+			CommandBuffer.add_build_command(D.PLACE_MODE_TO_BUILDING[place_mode], click_pos)
+		gold -= cost
+		ui_module.update_gold_display(gold)
+		return
+
 	var placed := false
 	if D.is_unit_mode(place_mode):
 		spawner_module.place_player_unit(D.PLACE_MODE_TO_UNIT[place_mode], click_pos)

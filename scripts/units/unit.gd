@@ -37,6 +37,8 @@ var _effects_material: ShaderMaterial = null
 	set(v): sprite_offset_y = v; _refresh_editor()
 @export var arrow_scene: PackedScene = null
 
+var net_id: int = 0
+
 const StatSetClass = preload("res://scripts/stats/stat_set.gd")
 const UpgradeMgrClass = preload("res://scripts/stats/upgrade_manager.gd")
 @export var stats_data: UnitStats

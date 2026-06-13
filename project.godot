@@ -18,6 +18,12 @@ config/icon="res://icon.svg"
 [autoload]
 
 SaveManager="*res://scripts/systems/save_manager.gd"
+TickManager="*res://scripts/network/tick_manager.gd"
+RelayManager="*res://scripts/network/relay_manager.gd"
+NetworkManager="*res://scripts/network/network_manager.gd"
+CommandBuffer="*res://scripts/network/command_buffer.gd"
+LockstepSync="*res://scripts/network/lockstep_sync.gd"
+StateHasher="*res://scripts/network/state_hasher.gd"
 
 [display]
 
