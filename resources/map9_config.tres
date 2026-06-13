@@ -5,31 +5,25 @@
 [resource]
 script = ExtResource("1_cfg")
 map_name = "Siege from All Sides"
-initial_gold = 5000
-player_units = Array[Dictionary]([{
-"pos": Vector2(200, 200),
-"type": 0
-}, {
-"pos": Vector2(200, 280),
-"type": 0
-}, {
-"pos": Vector2(150, 240),
-"type": 1
-}])
-player_buildings = Array[Dictionary]([{
-"grid_pos": Vector2i(1, 2),
-"type": 2
-}])
-enemy_units = Array[Dictionary]([{
-"pos": Vector2(800, 200),
-"type": 0
-}, {
-"pos": Vector2(800, 300),
-"type": 0
-}])
-enemy_buildings = Array[Dictionary]([{
-"grid_pos": Vector2i(10, 2),
-"type": 3
-}])
-available_items = Array[int]([1, 2, 5, 6, 3, 4])
-map_description = "Placeholder map for Siege from All Sides"
+map_bounds = Rect2(-200, -200, 2800, 2800)
+nav_bounds = Array[Vector2]([Vector2(-200, -200), Vector2(2600, -200), Vector2(2600, 2600), Vector2(-200, 2600)])
+initial_gold = 8000
+camera_start = Vector2(1200, 1200)
+
+player_units = Array[Dictionary]( [])
+player_buildings = Array[Dictionary]( [])
+enemy_units = Array[Dictionary]( [])
+enemy_buildings = Array[Dictionary]( [])
+
+environment = {"trees": 10, "rocks": 8, "bushes": 6, "sheep": 4}
+
+available_items = Array[int]( [1, 2, 5, 6, 3, 4, 8, 9] )
+commander_skills = Array[int]( [1, 2] )
+
+terrain_theme = 0
+border_width = 1
+map_description = "Defend against waves from 4 directions!"
+star_time_3 = 480.0
+star_time_2 = 600.0
+star_deaths_3 = 0
+star_deaths_2 = 5

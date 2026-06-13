@@ -1,83 +1,226 @@
 [gd_scene format=3 uid="uid://map8scene"]
 
-[ext_resource type="PackedScene" uid="uid://dhyxequcxurbh" path="res://scenes/buildings/castle.tscn" id="castle"]
 [ext_resource type="Script" uid="uid://cg2igjmusi0dq" path="res://scripts/main.gd" id="main_script"]
 [ext_resource type="Resource" uid="uid://map8cfg" path="res://resources/map8_config.tres" id="map8_config"]
 [ext_resource type="PackedScene" uid="uid://mmgbo1ded4ro" path="res://scenes/units/soldier.tscn" id="soldier"]
 [ext_resource type="PackedScene" uid="uid://e5by4tc82spk" path="res://scenes/units/archer.tscn" id="archer"]
-[ext_resource type="Script" uid="uid://jhcf43ds1dy6" path="res://scripts/victory/victory_destroy_base.gd" id="victory_destroy_base"]
+[ext_resource type="PackedScene" uid="uid://bxlancer01" path="res://scenes/units/lancer.tscn" id="lancer"]
+[ext_resource type="PackedScene" uid="uid://8rfekrdqs7gf" path="res://scenes/buildings/castle.tscn" id="castle"]
+[ext_resource type="PackedScene" uid="uid://dhyxequcxurbh" path="res://scenes/buildings/barracks.tscn" id="barracks"]
+[ext_resource type="PackedScene" uid="uid://tower0001" path="res://scenes/buildings/tower.tscn" id="tower"]
+[ext_resource type="PackedScene" uid="uid://wall00001" path="res://scenes/buildings/wall.tscn" id="wall"]
+[ext_resource type="PackedScene" uid="uid://bxarchery01" path="res://scenes/buildings/archery_building.tscn" id="archery"]
+[ext_resource type="Script" path="res://scripts/systems_game/wave_manager.gd" id="wave_manager"]
+[ext_resource type="Script" path="res://scripts/victory/victory_destroy_base.gd" id="victory_destroy_base"]
 
 [sub_resource type="NavigationPolygon" id="NavPoly_1"]
-vertices = PackedVector2Array(-500, -500, 1500, -500, 1500, 1200, -500, 1200)
-polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
+vertices = PackedVector2Array(-200, -200, 2200, -200, 2200, 1600, -200, 1600)
+polygons = [PackedInt32Array(0, 1, 2, 3)]
 
-[node name="Map8" type="Node2D" unique_id=520200466]
+[node name="Map8" type="Node2D"]
 script = ExtResource("main_script")
 map_config = ExtResource("map8_config")
 
-[node name="Ground" type="ColorRect" parent="." unique_id=568605759]
-offset_left = -537.0
-offset_top = -468.0
-offset_right = 1463.0
-offset_bottom = 1232.0
+[node name="Ground" type="ColorRect" parent="."]
+offset_left = -200.0
+offset_top = -200.0
+offset_right = 2200.0
+offset_bottom = 1600.0
 color = Color(0.35, 0.55, 0.25, 1)
 
-[node name="NavigationRegion2D" type="NavigationRegion2D" parent="." unique_id=888681033]
+[node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
 navigation_polygon = SubResource("NavPoly_1")
 
-[node name="Camera2D" type="Camera2D" parent="." unique_id=249036559]
+[node name="Camera2D" type="Camera2D" parent="."]
 
-[node name="PlayerUnits" type="Node2D" parent="." unique_id=909430139]
+[node name="PlayerUnits" type="Node2D" parent="."]
 
-[node name="PlayerSoldier1" parent="PlayerUnits" unique_id=622456008 instance=ExtResource("soldier")]
-position = Vector2(200, 200)
+[node name="PSoldier1" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(300, 600)
 
-[node name="PlayerSoldier2" parent="PlayerUnits" unique_id=486132702 instance=ExtResource("soldier")]
-position = Vector2(200, 280)
+[node name="PSoldier2" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(300, 680)
 
-[node name="PlayerArcher1" parent="PlayerUnits" unique_id=346354991 instance=ExtResource("archer")]
-position = Vector2(150, 240)
+[node name="PSoldier3" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(300, 760)
 
-[node name="EnemyUnits" type="Node2D" parent="." unique_id=627249948]
+[node name="PSoldier4" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(300, 840)
 
-[node name="EnemySoldier1" parent="EnemyUnits" unique_id=706707780 instance=ExtResource("soldier")]
-position = Vector2(800, 200)
+[node name="PArcher1" parent="PlayerUnits" instance=ExtResource("archer")]
+position = Vector2(240, 640)
+
+[node name="PArcher2" parent="PlayerUnits" instance=ExtResource("archer")]
+position = Vector2(240, 720)
+
+[node name="PArcher3" parent="PlayerUnits" instance=ExtResource("archer")]
+position = Vector2(240, 800)
+
+[node name="PLancer1" parent="PlayerUnits" instance=ExtResource("lancer")]
+position = Vector2(360, 680)
+
+[node name="PLancer2" parent="PlayerUnits" instance=ExtResource("lancer")]
+position = Vector2(360, 780)
+
+[node name="EnemyUnits" type="Node2D" parent="."]
+
+[node name="EBrav1" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1700, 650)
 team = 1
 
-[node name="EnemySoldier2" parent="EnemyUnits" unique_id=722180537 instance=ExtResource("soldier")]
-position = Vector2(800, 300)
+[node name="EBrav2" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1700, 730)
 team = 1
 
-[node name="Buildings" type="Node2D" parent="." unique_id=560084065]
-
-[node name="PlayerCastle" parent="Buildings" unique_id=621309235 instance=ExtResource("castle")]
-position = Vector2(160, 224)
-
-[node name="EnemyBarracks" parent="Buildings" unique_id=130200197 instance=ExtResource("castle")]
-position = Vector2(800, 224)
+[node name="EBrav3" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1740, 680)
 team = 1
 
-[node name="SelectionBox" type="ColorRect" parent="." unique_id=953409472]
+[node name="EBrav4" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1740, 760)
+team = 1
+
+[node name="EBrav5" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1700, 810)
+team = 1
+
+[node name="EArcher1" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(1660, 680)
+team = 1
+
+[node name="EArcher2" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(1660, 740)
+team = 1
+
+[node name="EArcher3" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(1660, 800)
+team = 1
+
+[node name="ELancer1" parent="EnemyUnits" instance=ExtResource("lancer")]
+position = Vector2(1740, 830)
+team = 1
+
+[node name="Buildings" type="Node2D" parent="."]
+
+[node name="PlayerCastle" parent="Buildings" instance=ExtResource("castle")]
+position = Vector2(288, 704)
+grid_pos = Vector2i(3, 10)
+
+[node name="PlayerBarracks" parent="Buildings" instance=ExtResource("barracks")]
+position = Vector2(512, 640)
+grid_pos = Vector2i(7, 9)
+
+[node name="PlayerArchery" parent="Buildings" instance=ExtResource("archery")]
+position = Vector2(512, 832)
+grid_pos = Vector2i(7, 12)
+
+[node name="PlayerTower" parent="Buildings" instance=ExtResource("tower")]
+position = Vector2(416, 544)
+grid_pos = Vector2i(5, 7)
+
+[node name="EnemyCastle" parent="Buildings" instance=ExtResource("castle")]
+position = Vector2(1760, 736)
+team = 1
+grid_pos = Vector2i(26, 10)
+
+[node name="EnemyBarracks1" parent="Buildings" instance=ExtResource("barracks")]
+position = Vector2(1536, 640)
+team = 1
+grid_pos = Vector2i(23, 9)
+disable_production = true
+
+[node name="EnemyBarracks2" parent="Buildings" instance=ExtResource("barracks")]
+position = Vector2(1536, 832)
+team = 1
+grid_pos = Vector2i(23, 12)
+disable_production = true
+
+[node name="EnemyTower1" parent="Buildings" instance=ExtResource("tower")]
+position = Vector2(1632, 544)
+team = 1
+grid_pos = Vector2i(24, 7)
+
+[node name="EnemyTower2" parent="Buildings" instance=ExtResource("tower")]
+position = Vector2(1632, 928)
+team = 1
+grid_pos = Vector2i(24, 13)
+
+[node name="EnemyWall1" parent="Buildings" instance=ExtResource("wall")]
+position = Vector2(1632, 640)
+team = 1
+grid_pos = Vector2i(24, 9)
+
+[node name="EnemyWall2" parent="Buildings" instance=ExtResource("wall")]
+position = Vector2(1632, 832)
+team = 1
+grid_pos = Vector2i(24, 12)
+
+[node name="WaveSpawn" type="Marker2D" parent="."]
+position = Vector2(2000, 700)
+
+[node name="WaveManager" type="Node" parent="."]
+script = ExtResource("wave_manager")
+clear_then_next = false
+waves = Array[Dictionary]( [
+	{
+		"delay": 90.0,
+		"wave_attack": true,
+		"wave_target": Vector2(400, 700),
+		"spawn_point_path": NodePath("../WaveSpawn"),
+		"formation": "line",
+		"spacing": 50.0,
+		"groups": Array[Dictionary]( [{"type": 0, "count": 4}, {"type": 1, "count": 2}] )
+	},
+	{
+		"delay": 90.0,
+		"wave_attack": true,
+		"wave_target": Vector2(400, 700),
+		"spawn_point_path": NodePath("../WaveSpawn"),
+		"formation": "line",
+		"spacing": 50.0,
+		"groups": Array[Dictionary]( [{"type": 0, "count": 6}, {"type": 1, "count": 3}] )
+	},
+	{
+		"delay": 90.0,
+		"wave_attack": true,
+		"wave_target": Vector2(400, 700),
+		"spawn_point_path": NodePath("../WaveSpawn"),
+		"formation": "line",
+		"spacing": 50.0,
+		"groups": Array[Dictionary]( [{"type": 0, "count": 8}, {"type": 1, "count": 4}, {"type": 2, "count": 1}] )
+	},
+	{
+		"delay": 90.0,
+		"wave_attack": true,
+		"wave_target": Vector2(400, 700),
+		"spawn_point_path": NodePath("../WaveSpawn"),
+		"formation": "line",
+		"spacing": 50.0,
+		"groups": Array[Dictionary]( [{"type": 0, "count": 10}, {"type": 1, "count": 5}, {"type": 2, "count": 2}] )
+	}
+] )
+
+[node name="SelectionBox" type="ColorRect" parent="."]
 visible = false
-mouse_filter = 2
 color = Color(0.4, 0.7, 1, 0.25)
-
-[node name="PreviewRect" type="ColorRect" parent="." unique_id=375768355]
-visible = false
 mouse_filter = 2
-color = Color(0, 1, 0, 0.3)
 
-[node name="ResultLabel" type="Label" parent="." unique_id=621919522]
-offset_left = 350.0
-offset_top = 300.0
-offset_right = 650.0
-offset_bottom = 400.0
+[node name="PreviewRect" type="ColorRect" parent="."]
+visible = false
+color = Color(0, 1, 0, 0.3)
+mouse_filter = 2
+
+[node name="ResultLabel" type="Label" parent="."]
+offset_left = 800.0
+offset_top = 600.0
+offset_right = 1100.0
+offset_bottom = 700.0
 theme_override_font_sizes/font_size = 48
 horizontal_alignment = 1
 vertical_alignment = 1
+text = ""
 
-[node name="AttackMoveIndicator" type="Label" parent="." unique_id=397500222]
-visible = false
+[node name="AttackMoveIndicator" type="Label" parent="."]
 offset_left = 10.0
 offset_top = 10.0
 offset_right = 200.0
@@ -85,6 +228,7 @@ offset_bottom = 40.0
 theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
 theme_override_font_sizes/font_size = 20
 text = "Attack Move (Click)"
+visible = false
 
-[node name="VictoryDestroyBase" type="Node" parent="." unique_id=131193682]
+[node name="VictoryDestroyBase" type="Node" parent="."]
 script = ExtResource("victory_destroy_base")

@@ -34,8 +34,8 @@ LEVEL_2_NAME,Map 2: Basic Attack,关卡2: 基础进攻,マップ2: 基本攻撃
 LEVEL_2_DESC,Starting with a castle and 10000 gold. Train all unit types and build freely. Destroy the enemy castle to win — but protect yours!,"城堡开局，10000金币起步，可建造全部兵种和建筑。摧毁敌方城堡即可获胜，别忘了守住自己的城堡！","城と10000金貨でスタート。全兵種を訓練し自由に建設可能。敵の城を破壊すれば勝利だが、自城の防衛も忘れるな！"
 LEVEL_3_NAME,Map 3: Tower Defense,关卡3: 塔防,マップ3: タワーディフェンス
 LEVEL_3_DESC,"6000 gold, 3 waves incoming! Wave 1: 5 enemies. Wave 2: 9 enemies with lancers. Wave 3: 14 enemies. Build walls and towers, train soldiers and archers to survive.","6000金币，3波敌袭！第1波5人，第2波9人含枪兵，第3波14人大军压境。善用城墙和箭塔，训练士兵与弓箭手守住阵地。","金貨6000、3波の敵襲が来る！第1波は5体、第2波は9体でランサー登場、第3波は14体の大軍。城壁と矢塔を築き、兵士とアーチャーを訓練して持ちこたえろ。"
-LEVEL_4_NAME,Map 4: Expand & Defend,关卡4: 扩张防守,マップ4: 拡張防衛
-LEVEL_4_DESC,"8000 gold, 5 enemy waves, 4 camps to capture. Each camp grants gold income. Expand quickly while defending — balance offense and defense to win!","8000金币，5波敌军，4座中立营地。每占领一座营地获得金币收入。一边扩张一边防守，在攻守之间找到平衡才能取胜！","金貨8000、5波の敵軍、4つの中立キャンプ。各キャンプを占領すると金貨収入を得る。防衛しつつ拡張し、攻守のバランスを取って勝利せよ！"
+LEVEL_4_NAME,Map 4: Three Sharpshooters,关卡4: 神射三杰,マップ4: 三人の射撃手
+LEVEL_4_DESC,"Escort 3 elite archers through ambush zones. Don't let any VIP die! Reach the destination to win.","护送3名精英弓箭手穿越伏击区。不能让任何VIP阵亡！到达终点即获胜。","3人のエリートアーチャーを伏撃地帯から脱出させよ。VIPを全員生存させ目的地に到達せよ。"
 REWARD_GOLD,+%d,+%d,+%d
 REWARD_UNITS_PLURAL,+%d %ss,+%d %s,+%d %s
 REWARD_UNITS_SINGLE,+%d %s,+%d %s,+%d %s
@@ -217,7 +217,7 @@ LEVEL_7_DESC,Defend against 4 waves. Capture ancient tombs for rewards but enemi
 LEVEL_8_NAME,Map 8: Tug of War,关卡8: 拉锯战,マップ8: 一進一退
 LEVEL_8_DESC,Classic RTS battle. Both sides have bases. Destroy the enemy castle to win.,经典RTS对战。双方都有基地。摧毁敌方城堡即可获胜。,クラシックRTS対戦。双方に基地あり。敵の城を破壊して勝利せよ。
 LEVEL_9_NAME,Map 9: Siege from All Sides,关卡9: 四方围攻,マップ9: 四方包囲
-LEVEL_9_DESC,Enemies attack from 4 directions. Elite units buff nearby allies. Prioritize elite targets.,敌人从四面八方进攻。精英单位会强化周围敌军。优先击杀精英。,敵が四方から攻める。エリートユニットは周囲を強化する。エリートを優先せよ。
+LEVEL_9_DESC,Enemies attack from 4 directions with elite units mixed in. Survive all 5 waves!,敌人从四面八方进攻，混有精英单位。存活全部5波！,敵が四方から攻める。エリート混じりの5波を耐え抜け！
 LEVEL_10_NAME,Map 10: Timed Assault,关卡10: 限时清除,マップ10: 時限攻略
 LEVEL_10_DESC,Destroy 3 enemy bases before time runs out. Each base destroyed extends the timer.,在时间耗尽前摧毁3个敌方据点。每摧毁一个据点延长倒计时。,時間切れ前に敵拠点を3つ破壊せよ。拠点破壊で時間延長。
 LEVEL_11_NAME,Map 11: Endless Reinforcements,关卡11: 源源不绝,マップ11: 源源不絶
@@ -243,3 +243,8 @@ OBJ_STAGE_3,Stage 3: Capture South Point,阶段3: 占领南据点,フェーズ3:
 OBJ_HOLD_CP1,Capture and hold Point 1,占领并坚守据点1,拠点1を占領して防衛
 OBJ_HOLD_CP2,Capture and hold Point 2,占领并坚守据点2,拠点2を占領して防衛
 OBJ_HOLD_CP3,Capture and hold Point 3,占领并坚守据点3,拠点3を占領して防衛
+OBJ_REACH_DEST,Escort VIPs to destination,护送VIP到达目的地,VIPを目的地へ護送
+OBJ_DESTROY_CASTLE,Destroy the enemy castle,摧毁敌方城堡,敵の城を破壊
+OBJ_DESTROY_SHIELDS,Destroy shield generators,摧毁护盾发生器,シールドジェネレーターを破壊
+OBJ_KILL_BOSS,Defeat the Boss,击败Boss,ボスを倒せ
+OBJ_SURVIVE_WAVES,Survive all waves,存活全部波次,全波を生き延びろ

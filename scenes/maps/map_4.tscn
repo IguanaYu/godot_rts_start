@@ -2,33 +2,29 @@
 
 [ext_resource type="Script" uid="uid://cg2igjmusi0dq" path="res://scripts/main.gd" id="main_script"]
 [ext_resource type="Resource" path="res://resources/map4_config.tres" id="map4_config"]
-[ext_resource type="Script" path="res://scripts/victory/victory_expand_defense.gd" id="victory_expand"]
-[ext_resource type="Script" path="res://scripts/systems_game/wave_manager.gd" id="wave_manager"]
-[ext_resource type="Script" path="res://scripts/systems_game/capture_point.gd" id="capture_point"]
 [ext_resource type="PackedScene" uid="uid://mmgbo1ded4ro" path="res://scenes/units/soldier.tscn" id="soldier"]
-[ext_resource type="PackedScene" uid="uid://e5by4tc82spk" path="res://scenes/units/archer.tscn" id="archer"]
-[ext_resource type="PackedScene" uid="uid://bxlancer01" path="res://scenes/units/lancer.tscn" id="lancer"]
 [ext_resource type="PackedScene" uid="uid://bxelite001" path="res://scenes/units/elite_archer.tscn" id="elite_archer"]
-[ext_resource type="PackedScene" uid="uid://8rfekrdqs7gf" path="res://scenes/buildings/castle.tscn" id="castle"]
-[ext_resource type="PackedScene" uid="uid://dhyxequcxurbh" path="res://scenes/buildings/barracks.tscn" id="barracks"]
-[ext_resource type="PackedScene" uid="uid://tower0001" path="res://scenes/buildings/tower.tscn" id="tower"]
-[ext_resource type="PackedScene" path="res://scenes/terrain/terrain_rock.tscn" id="terrain_rock"]
-[ext_resource type="PackedScene" path="res://scenes/terrain/terrain_forest.tscn" id="terrain_forest"]
-[ext_resource type="PackedScene" path="res://scenes/terrain/terrain_river.tscn" id="terrain_river"]
+[ext_resource type="Script" path="res://scripts/systems_game/ambush_trigger.gd" id="ambush_trigger"]
+[ext_resource type="Script" path="res://scripts/victory/victory_composite.gd" id="victory_composite"]
+[ext_resource type="Script" path="res://scripts/victory/victory_vip_survival.gd" id="victory_vip"]
+[ext_resource type="Script" path="res://scripts/victory/victory_reach_location.gd" id="victory_reach"]
 
 [sub_resource type="NavigationPolygon" id="NavPoly_1"]
-vertices = PackedVector2Array(-500, -500, 2000, -500, 2000, 1700, -500, 1700)
+vertices = PackedVector2Array(-200, -200, 2600, -200, 2600, 600, -200, 600)
 polygons = [PackedInt32Array(0, 1, 2, 3)]
+
+[sub_resource type="CircleShape2D" id="CircleShape_dest"]
+radius = 80.0
 
 [node name="Map4" type="Node2D"]
 script = ExtResource("main_script")
 map_config = ExtResource("map4_config")
 
 [node name="Ground" type="ColorRect" parent="."]
-offset_left = -500.0
-offset_top = -500.0
-offset_right = 2000.0
-offset_bottom = 1700.0
+offset_left = -200.0
+offset_top = -200.0
+offset_right = 2600.0
+offset_bottom = 600.0
 color = Color(0.35, 0.55, 0.25, 1)
 
 [node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
@@ -38,132 +34,73 @@ navigation_polygon = SubResource("NavPoly_1")
 
 [node name="PlayerUnits" type="Node2D" parent="."]
 
-[node name="PlayerSoldier1" parent="PlayerUnits" instance=ExtResource("soldier")]
-position = Vector2(420, 520)
+[node name="VipArcher1" parent="PlayerUnits" instance=ExtResource("elite_archer")]
+position = Vector2(100, 180)
 
-[node name="PlayerSoldier2" parent="PlayerUnits" instance=ExtResource("soldier")]
-position = Vector2(420, 580)
+[node name="VipArcher2" parent="PlayerUnits" instance=ExtResource("elite_archer")]
+position = Vector2(100, 240)
 
-[node name="PlayerSoldier3" parent="PlayerUnits" instance=ExtResource("soldier")]
-position = Vector2(420, 640)
+[node name="VipArcher3" parent="PlayerUnits" instance=ExtResource("elite_archer")]
+position = Vector2(100, 300)
 
-[node name="PlayerArcher1" parent="PlayerUnits" instance=ExtResource("archer")]
-position = Vector2(360, 550)
+[node name="EscortSoldier1" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(160, 200)
 
-[node name="PlayerArcher2" parent="PlayerUnits" instance=ExtResource("archer")]
-position = Vector2(360, 610)
+[node name="EscortSoldier2" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(160, 260)
+
+[node name="EscortSoldier3" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(160, 320)
+
+[node name="EscortSoldier4" parent="PlayerUnits" instance=ExtResource("soldier")]
+position = Vector2(160, 380)
 
 [node name="EnemyUnits" type="Node2D" parent="."]
 
-[node name="EnemySoldier1" parent="EnemyUnits" instance=ExtResource("soldier")]
-position = Vector2(340, -250)
-team = 1
-
-[node name="EnemySoldier2" parent="EnemyUnits" instance=ExtResource("soldier")]
-position = Vector2(460, -250)
-team = 1
-
-[node name="EnemyArcher1" parent="EnemyUnits" instance=ExtResource("archer")]
-position = Vector2(400, -300)
-team = 1
-
-[node name="EnemySoldier3" parent="EnemyUnits" instance=ExtResource("soldier")]
-position = Vector2(1140, -250)
-team = 1
-
-[node name="EnemySoldier4" parent="EnemyUnits" instance=ExtResource("soldier")]
-position = Vector2(1260, -250)
-team = 1
-
-[node name="EnemyArcher2" parent="EnemyUnits" instance=ExtResource("archer")]
-position = Vector2(1200, -300)
-team = 1
-
-[node name="EnemySoldier5" parent="EnemyUnits" instance=ExtResource("soldier")]
-position = Vector2(-160, 750)
-team = 1
-
-[node name="EnemySoldier6" parent="EnemyUnits" instance=ExtResource("soldier")]
-position = Vector2(-40, 750)
-team = 1
-
-[node name="EnemyArcher3" parent="EnemyUnits" instance=ExtResource("archer")]
-position = Vector2(-100, 700)
-team = 1
-
-[node name="EnemyArcher4" parent="EnemyUnits" instance=ExtResource("archer")]
-position = Vector2(-100, 850)
-team = 1
-
-[node name="EnemySoldier7" parent="EnemyUnits" instance=ExtResource("soldier")]
-position = Vector2(1140, 850)
-team = 1
-
-[node name="EnemySoldier8" parent="EnemyUnits" instance=ExtResource("soldier")]
-position = Vector2(1260, 850)
-team = 1
-
-[node name="EnemyArcher5" parent="EnemyUnits" instance=ExtResource("archer")]
-position = Vector2(1200, 800)
-team = 1
-
-[node name="EnemyArcher6" parent="EnemyUnits" instance=ExtResource("archer")]
-position = Vector2(1200, 950)
-team = 1
-
-[node name="EnemyLancer1" parent="EnemyUnits" instance=ExtResource("lancer")]
-position = Vector2(1200, 900)
-team = 1
-
-[node name="EnemyEliteArcher1" parent="EnemyUnits" instance=ExtResource("elite_archer")]
-position = Vector2(400, -350)
-team = 1
-
-[node name="EnemyEliteArcher2" parent="EnemyUnits" instance=ExtResource("elite_archer")]
-position = Vector2(1200, -350)
-team = 1
-
 [node name="Buildings" type="Node2D" parent="."]
 
-[node name="PlayerCastle" parent="Buildings" instance=ExtResource("castle")]
-position = Vector2(544, 608)
+[node name="AmbushA" type="Area2D" parent="."]
+position = Vector2(600, 200)
+script = ExtResource("ambush_trigger")
+trigger_radius = 250.0
+ambush_units = Array[Dictionary]( [{"type": 0, "count": 3}, {"type": 1, "count": 2}] )
 
-[node name="PlayerBarracks" parent="Buildings" instance=ExtResource("barracks")]
-position = Vector2(768, 704)
+[node name="AmbushB" type="Area2D" parent="."]
+position = Vector2(1200, 200)
+script = ExtResource("ambush_trigger")
+trigger_radius = 250.0
+ambush_units = Array[Dictionary]( [{"type": 0, "count": 4}, {"type": 1, "count": 3}] )
 
-[node name="EnemyTower1" parent="Buildings" instance=ExtResource("tower")]
-position = Vector2(352, -288)
-team = 1
+[node name="AmbushC" type="Area2D" parent="."]
+position = Vector2(1900, 200)
+script = ExtResource("ambush_trigger")
+trigger_radius = 250.0
+ambush_units = Array[Dictionary]( [{"type": 0, "count": 5}, {"type": 1, "count": 4}, {"type": 2, "count": 1}] )
 
-[node name="EnemyTower2" parent="Buildings" instance=ExtResource("tower")]
-position = Vector2(1312, -288)
-team = 1
+[node name="DestinationArea" type="Area2D" parent="."]
+position = Vector2(2300, 200)
 
-[node name="EnemyTower3" parent="Buildings" instance=ExtResource("tower")]
-position = Vector2(-288, 736)
-team = 1
+[node name="DestShape" type="CollisionShape2D" parent="DestinationArea"]
+shape = SubResource("CircleShape_dest")
 
-[node name="EnemyTower4" parent="Buildings" instance=ExtResource("tower")]
-position = Vector2(1312, 864)
-team = 1
+[node name="DestVisual" type="ColorRect" parent="DestinationArea"]
+offset_left = -80.0
+offset_top = -80.0
+offset_right = 80.0
+offset_bottom = 80.0
+color = Color(0, 1, 0, 0.25)
+mouse_filter = 2
 
-[node name="Obstacles" type="Node2D" parent="."]
-
-[node name="CenterForest" parent="Obstacles" instance=ExtResource("terrain_forest")]
-position = Vector2(750, 300)
-obstacle_size = Vector2(320, 256)
-
-[node name="RockNorth" parent="Obstacles" instance=ExtResource("terrain_rock")]
-position = Vector2(600, -100)
-obstacle_size = Vector2(96, 80)
-
-[node name="RockSouth" parent="Obstacles" instance=ExtResource("terrain_rock")]
-position = Vector2(900, 900)
-obstacle_size = Vector2(96, 80)
-
-[node name="RiverEast" parent="Obstacles" instance=ExtResource("terrain_river")]
-position = Vector2(1600, 600)
-obstacle_size = Vector2(128, 320)
+[node name="DestLabel" type="Label" parent="DestinationArea"]
+offset_left = -60.0
+offset_top = -30.0
+offset_right = 60.0
+offset_bottom = 30.0
+text = "EXIT"
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_colors/font_color = Color(0, 1, 0, 1)
+theme_override_font_sizes/font_size = 24
 
 [node name="SelectionBox" type="ColorRect" parent="."]
 visible = false
@@ -176,10 +113,10 @@ color = Color(0, 1, 0, 0.3)
 mouse_filter = 2
 
 [node name="ResultLabel" type="Label" parent="."]
-offset_left = 350.0
-offset_top = 500.0
-offset_right = 650.0
-offset_bottom = 600.0
+offset_left = 900.0
+offset_top = 100.0
+offset_right = 1200.0
+offset_bottom = 200.0
 theme_override_font_sizes/font_size = 48
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -195,134 +132,20 @@ theme_override_font_sizes/font_size = 20
 text = "Attack Move (Click)"
 visible = false
 
-[node name="WaveManager" type="Node" parent="."]
-script = ExtResource("wave_manager")
-clear_then_next = false
-waves = Array[Dictionary]( [
-	{
-		"delay": 45.0,
-		"wave_attack": true,
-		"wave_target": Vector2(500, 600),
-		"units": Array[Dictionary]( [
-			{"type": 0, "pos": Vector2(1850, 0)},
-			{"type": 0, "pos": Vector2(1850, 100)},
-			{"type": 0, "pos": Vector2(1850, 200)},
-			{"type": 1, "pos": Vector2(1900, 50)},
-			{"type": 1, "pos": Vector2(1900, 150)}
-		] )
-	},
-	{
-		"delay": 90.0,
-		"wave_attack": true,
-		"wave_target": Vector2(500, 600),
-		"units": Array[Dictionary]( [
-			{"type": 0, "pos": Vector2(1850, -100)},
-			{"type": 0, "pos": Vector2(1850, 0)},
-			{"type": 0, "pos": Vector2(1850, 100)},
-			{"type": 0, "pos": Vector2(1850, 200)},
-			{"type": 1, "pos": Vector2(1900, -50)},
-			{"type": 1, "pos": Vector2(1900, 50)},
-			{"type": 1, "pos": Vector2(1900, 150)}
-		] )
-	},
-	{
-		"delay": 120.0,
-		"wave_attack": true,
-		"wave_target": Vector2(500, 600),
-		"units": Array[Dictionary]( [
-			{"type": 0, "pos": Vector2(1850, -200)},
-			{"type": 0, "pos": Vector2(1850, -100)},
-			{"type": 0, "pos": Vector2(1850, 0)},
-			{"type": 0, "pos": Vector2(1850, 100)},
-			{"type": 0, "pos": Vector2(1850, 200)},
-			{"type": 1, "pos": Vector2(1900, -150)},
-			{"type": 1, "pos": Vector2(1900, -50)},
-			{"type": 1, "pos": Vector2(1900, 50)},
-			{"type": 1, "pos": Vector2(1900, 150)},
-			{"type": 2, "pos": Vector2(1875, 250)}
-		] )
-	},
-	{
-		"delay": 150.0,
-		"wave_attack": true,
-		"wave_target": Vector2(500, 600),
-		"units": Array[Dictionary]( [
-			{"type": 0, "pos": Vector2(1850, -300)},
-			{"type": 0, "pos": Vector2(1850, -200)},
-			{"type": 0, "pos": Vector2(1850, -100)},
-			{"type": 0, "pos": Vector2(1850, 0)},
-			{"type": 0, "pos": Vector2(1850, 100)},
-			{"type": 0, "pos": Vector2(1850, 200)},
-			{"type": 1, "pos": Vector2(1900, -250)},
-			{"type": 1, "pos": Vector2(1900, -150)},
-			{"type": 1, "pos": Vector2(1900, -50)},
-			{"type": 1, "pos": Vector2(1900, 50)},
-			{"type": 2, "pos": Vector2(1875, 150)},
-			{"type": 2, "pos": Vector2(1875, 250)}
-		] )
-	},
-	{
-		"delay": 180.0,
-		"wave_attack": true,
-		"wave_target": Vector2(500, 600),
-		"units": Array[Dictionary]( [
-			{"type": 0, "pos": Vector2(1850, -400)},
-			{"type": 0, "pos": Vector2(1850, -300)},
-			{"type": 0, "pos": Vector2(1850, -200)},
-			{"type": 0, "pos": Vector2(1850, -100)},
-			{"type": 0, "pos": Vector2(1850, 0)},
-			{"type": 0, "pos": Vector2(1850, 100)},
-			{"type": 0, "pos": Vector2(1850, 200)},
-			{"type": 0, "pos": Vector2(1850, 300)},
-			{"type": 1, "pos": Vector2(1900, -350)},
-			{"type": 1, "pos": Vector2(1900, -250)},
-			{"type": 1, "pos": Vector2(1900, -150)},
-			{"type": 1, "pos": Vector2(1900, -50)},
-			{"type": 1, "pos": Vector2(1900, 50)},
-			{"type": 2, "pos": Vector2(1875, 150)},
-			{"type": 2, "pos": Vector2(1875, 250)},
-			{"type": 2, "pos": Vector2(1875, 350)}
-		] )
-	}
-] )
+[node name="VictoryComposite" type="Node" parent="."]
+script = ExtResource("victory_composite")
+logic_mode = 0
 
-[node name="VictoryExpandDefense" type="Node" parent="."]
-script = ExtResource("victory_expand")
-wave_manager_path = NodePath("../WaveManager")
-capture_points = [NodePath("../CapturePointNW"), NodePath("../CapturePointNE"), NodePath("../CapturePointSW"), NodePath("../CapturePointSE")]
+[node name="VictoryVipSurvival" type="Node" parent="VictoryComposite"]
+script = ExtResource("victory_vip")
+vip_units = [NodePath("../../PlayerUnits/VipArcher1"), NodePath("../../PlayerUnits/VipArcher2"), NodePath("../../PlayerUnits/VipArcher3")]
+marker_level = 2
+description_key = "OBJ_VIP_SURVIVAL"
 
-[node name="CapturePointNW" type="Area2D" parent="."]
-position = Vector2(400, -200)
-script = ExtResource("capture_point")
-trigger_type = 0
-detection_radius = 250.0
-capture_radius = 100.0
-capture_speed = 30.0
-reward_gold = 600
-
-[node name="CapturePointNE" type="Area2D" parent="."]
-position = Vector2(1200, -200)
-script = ExtResource("capture_point")
-trigger_type = 0
-detection_radius = 250.0
-capture_radius = 100.0
-capture_speed = 30.0
-reward_gold = 600
-
-[node name="CapturePointSW" type="Area2D" parent="."]
-position = Vector2(-100, 800)
-script = ExtResource("capture_point")
-trigger_type = 0
-detection_radius = 250.0
-capture_radius = 100.0
-capture_speed = 30.0
-reward_gold = 800
-
-[node name="CapturePointSE" type="Area2D" parent="."]
-position = Vector2(1200, 900)
-script = ExtResource("capture_point")
-trigger_type = 0
-detection_radius = 250.0
-capture_radius = 100.0
-capture_speed = 30.0
-reward_gold = 1000
+[node name="VictoryReachLocation" type="Node" parent="VictoryComposite"]
+script = ExtResource("victory_reach")
+destination = NodePath("../../DestinationArea")
+required_units = [NodePath("../../PlayerUnits/VipArcher1"), NodePath("../../PlayerUnits/VipArcher2"), NodePath("../../PlayerUnits/VipArcher3")]
+require_all = true
+reach_radius = 80.0
+description_key = "OBJ_REACH_DEST"

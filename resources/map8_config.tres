@@ -5,31 +5,25 @@
 [resource]
 script = ExtResource("1_cfg")
 map_name = "Tug of War"
-initial_gold = 5000
-player_units = Array[Dictionary]([{
-"pos": Vector2(200, 200),
-"type": 0
-}, {
-"pos": Vector2(200, 280),
-"type": 0
-}, {
-"pos": Vector2(150, 240),
-"type": 1
-}])
-player_buildings = Array[Dictionary]([{
-"grid_pos": Vector2i(1, 2),
-"type": 2
-}])
-enemy_units = Array[Dictionary]([{
-"pos": Vector2(800, 200),
-"type": 0
-}, {
-"pos": Vector2(800, 300),
-"type": 0
-}])
-enemy_buildings = Array[Dictionary]([{
-"grid_pos": Vector2i(10, 2),
-"type": 3
-}])
-available_items = Array[int]([1, 2, 5, 6, 3, 4])
-map_description = "Placeholder map for Tug of War"
+map_bounds = Rect2(-200, -200, 2400, 1800)
+nav_bounds = Array[Vector2]([Vector2(-200, -200), Vector2(2200, -200), Vector2(2200, 1600), Vector2(-200, 1600)])
+initial_gold = 6000
+camera_start = Vector2(400, 700)
+
+player_units = Array[Dictionary]( [])
+player_buildings = Array[Dictionary]( [])
+enemy_units = Array[Dictionary]( [])
+enemy_buildings = Array[Dictionary]( [])
+
+environment = {"trees": 5, "rocks": 4, "bushes": 3, "sheep": 2}
+
+available_items = Array[int]( [1, 2, 5, 6, 3, 4, 8, 9] )
+commander_skills = Array[int]( [2] )
+
+terrain_theme = 0
+border_width = 1
+map_description = "Classic RTS battle with garrisoned enemy base and waves!"
+star_time_3 = 600.0
+star_time_2 = 780.0
+star_deaths_3 = 0
+star_deaths_2 = 5

@@ -3,13 +3,14 @@ extends VictoryCondition
 
 ## 摧毁指定建筑条件
 ## 胜利：所有指定建筑被摧毁
-## 失败：玩家城堡被毁
+## 失败：玩家城堡被毁（仅当有城堡时检测）
 
 const BuildingScript := preload("res://scripts/buildings/building.gd")
 
 @export var target_buildings: Array[NodePath] = []
 @export var target_building_type: int = -1  # -1表示使用target_buildings，否则扫描enemy_buildings匹配类型
 @export var target_team: int = 1  # 默认敌方(1)
+@export var skip_defeat_check: bool = false  # 无玩家城堡时跳过失败检测
 ## 标记等级：0=普通, 1=重要, 2=关键
 @export var marker_level: int = 0
 
@@ -85,16 +86,17 @@ func check() -> int:
 	if _destroyed_count >= _total_targets and _total_targets > 0:
 		return 1  # 胜利
 
-	# 失败条件：玩家城堡被毁
-	var player_castle_alive := false
-	for b in get_tree().get_nodes_in_group("player_buildings"):
-		if b.has_method("is_dead") and not b.is_dead():
-			if b.get("building_type") == BuildingScript.BuildingType.CASTLE:
-				player_castle_alive = true
-				break
+	# 失败条件：玩家城堡被毁（仅当有城堡时检测）
+	if not skip_defeat_check:
+		var player_castle_alive := false
+		for b in get_tree().get_nodes_in_group("player_buildings"):
+			if b.has_method("is_dead") and not b.is_dead():
+				if b.get("building_type") == BuildingScript.BuildingType.CASTLE:
+					player_castle_alive = true
+					break
 
-	if not player_castle_alive:
-		return 2  # 失败
+		if not player_castle_alive:
+			return 2  # 失败
 
 	return 0  # 进行中
 

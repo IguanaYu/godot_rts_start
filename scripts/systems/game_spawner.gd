@@ -176,7 +176,7 @@ static func _expand_groups(groups: Array) -> Array:
 		var count: int = g.get("count", 1)
 		for _i in count:
 			var entry: Dictionary = {"type": type}
-			for key in ["variant_hp", "variant_atk", "variant_speed_mult", "variant_scale"]:
+			for key in ["variant_hp", "variant_atk", "variant_speed_mult", "variant_scale", "stats_id"]:
 				if g.has(key):
 					entry[key] = g[key]
 			result.append(entry)

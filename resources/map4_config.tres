@@ -4,54 +4,27 @@
 
 [resource]
 script = ExtResource("1_cfg45")
-map_name = "Expand & Defend"
-map_bounds = Rect2(-500, -500, 2500, 2200)
-nav_bounds = Array[Vector2]([Vector2(-500, -500), Vector2(2000, -500), Vector2(2000, 1700), Vector2(-500, 1700)])
-initial_gold = 8000
-camera_start = Vector2(500, 600)
+map_name = "Three Sharpshooters"
+map_bounds = Rect2(-200, -200, 2800, 800)
+nav_bounds = Array[Vector2]([Vector2(-200, -200), Vector2(2600, -200), Vector2(2600, 600), Vector2(-200, 600)])
+initial_gold = 0
+camera_start = Vector2(200, 200)
 
-player_units = Array[Dictionary]( [
-	{"type": 0, "pos": Vector2(420, 520)},
-	{"type": 0, "pos": Vector2(420, 580)},
-	{"type": 0, "pos": Vector2(420, 640)},
-	{"type": 1, "pos": Vector2(360, 550)},
-	{"type": 1, "pos": Vector2(360, 610)}
-] )
+player_units = Array[Dictionary]( [])
+player_buildings = Array[Dictionary]( [])
+enemy_units = Array[Dictionary]( [])
+enemy_buildings = Array[Dictionary]( [])
 
-player_buildings = Array[Dictionary]( [
-	{"type": 2, "grid_pos": Vector2i(7, 8)},
-	{"type": 3, "grid_pos": Vector2i(11, 10)}
-] )
+environment = {"trees": 0, "rocks": 0, "bushes": 0, "sheep": 0}
 
-enemy_units = Array[Dictionary]( [
-	{"type": 0, "pos": Vector2(340, -250)},
-	{"type": 0, "pos": Vector2(460, -250)},
-	{"type": 1, "pos": Vector2(400, -300)},
-	{"type": 0, "pos": Vector2(1140, -250)},
-	{"type": 0, "pos": Vector2(1260, -250)},
-	{"type": 1, "pos": Vector2(1200, -300)},
-	{"type": 0, "pos": Vector2(-160, 750)},
-	{"type": 0, "pos": Vector2(-40, 750)},
-	{"type": 1, "pos": Vector2(-100, 700)},
-	{"type": 1, "pos": Vector2(-100, 850)},
-	{"type": 0, "pos": Vector2(1140, 850)},
-	{"type": 0, "pos": Vector2(1260, 850)},
-	{"type": 1, "pos": Vector2(1200, 800)},
-	{"type": 1, "pos": Vector2(1200, 950)},
-	{"type": 2, "pos": Vector2(1200, 900)}
-] )
+available_items = Array[int]( [])
 
-enemy_buildings = Array[Dictionary]( [
-	{"type": 1, "grid_pos": Vector2i(5, -5)},
-	{"type": 1, "grid_pos": Vector2i(20, -5)},
-	{"type": 1, "grid_pos": Vector2i(-5, 11)},
-	{"type": 1, "grid_pos": Vector2i(20, 13)}
-] )
+commander_skills = Array[int]( [])
 
-environment = {"trees": 20, "rocks": 12, "bushes": 15, "sheep": 6}
-
-available_items = Array[int]( [1, 2, 4, 8, 5, 6, 9] )
-
-terrain_theme = 3
+terrain_theme = 2
 border_width = 1
-map_description = "Capture 4 neutral camps across the map while defending against waves of enemies!"
+map_description = "Escort 3 elite archers through ambush zones to the destination!"
+star_time_3 = 300.0
+star_time_2 = 420.0
+star_deaths_3 = 0
+star_deaths_2 = 2

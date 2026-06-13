@@ -35,7 +35,18 @@ func _on_vip_died(_vip: Node = null) -> void:
 	_cached_result = 2  # 失败
 
 func check() -> int:
-	return _cached_result
+	if _cached_result == 2:
+		return 2
+
+	# 检查是否有VIP死亡（双重确认）
+	for vip in _vips:
+		if not is_instance_valid(vip):
+			return 2
+		if vip.has_method("is_dead") and vip.is_dead():
+			return 2
+
+	# 所有VIP存活 = 条件满足（配合其他条件共同胜利）
+	return 1
 
 func get_objectives() -> Array[Dictionary]:
 	var alive_count := 0

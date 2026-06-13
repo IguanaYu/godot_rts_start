@@ -183,6 +183,9 @@ func _ready() -> void:
 
 	_setup_victory_condition()
 	_setup_capture_points()
+	_setup_ambush_triggers()
+	_setup_adaptive_reinforcement()
+	_setup_boss_ai()
 	_setup_wave_manager()
 
 	if map_config != null:
@@ -361,6 +364,22 @@ func _setup_capture_points() -> void:
 	for child in get_children():
 		if child is CapturePoint:
 			child.set_game_controller(self)
+
+func _setup_ambush_triggers() -> void:
+	for child in get_children():
+		if child is AmbushTrigger:
+			child.set_game_controller(self)
+
+func _setup_adaptive_reinforcement() -> void:
+	for child in get_children():
+		if child is AdaptiveReinforcement:
+			child.set_game_controller(self)
+
+func _setup_boss_ai() -> void:
+	var boss_ais := get_tree().get_nodes_in_group("boss_ai")
+	for boss in boss_ais:
+		if boss.has_method("set_game_controller"):
+			boss.set_game_controller(self)
 
 func _setup_wave_manager() -> void:
 	for child in get_children():
