@@ -281,7 +281,8 @@ func _on_start_pressed():
 	RelayManager.send_start_game()
 
 func _on_game_starting():
-	get_tree().change_scene_to_file("res://scenes/loading_screen.tscn")
+	var mp_scene := "res://scenes/maps/" + RelayManager._map_name + ".tscn"
+	LoadRouter.request_load(mp_scene, true)
 
 func _on_back():
 	RelayManager.leave_room()

@@ -62,85 +62,96 @@ var _diff_preset: Resource = null  # DifficultyPreset
 var show_fps: bool = false
 var canvas_modulate: CanvasModulate = null
 var _units_lost: int = 0  # 星级评价用：玩家损失单位数
+var _initialized: bool = false  # _run_init_steps 跑完前 _process/_input 直接 return
 
 func _ready() -> void:
 	result_label.visible = false
 	attack_move_indicator.text = tr("UI_ATTACK_MOVE")
 	attack_move_indicator.visible = false
 	preview_rect.visible = false
+	_run_init_steps()
 
+# 分帧初始化：每个段落之间 await process_frame 让 LoadRouter 进度条有机会刷新
+func _run_init_steps() -> void:
+	# Step 0: 光标管理器
+	LoadRouter.report_init_progress(0.05)
 	var CursorManagerScene := preload("res://scenes/cursor_manager.tscn")
 	cursor_manager = CursorManagerScene.instantiate()
 	add_child(cursor_manager)
+	await get_tree().process_frame
 
-	# 多人模式：加载地图配置
+	# Step 1: 多人模式地图配置
+	LoadRouter.report_init_progress(0.10)
 	if RelayManager.is_online and map_config == null:
 		var map_path := "res://resources/" + RelayManager._map_name.replace("_", "") + "_config.tres"
 		map_config = load(map_path)
+	await get_tree().process_frame
 
+	# Step 2: 配置/设置/地形
+	LoadRouter.report_init_progress(0.20)
 	_load_from_config()
 	_load_damage_number_setting()
 	_load_display_settings()
 	_load_brightness()
 	_load_audio_settings()
-
-	# 替换 ColorRect 地面为 TileMapLayer 地形
 	_replace_ground_with_terrain()
+	await get_tree().process_frame
 
-	# UI 模块
+	# Step 3: UI 模块
+	LoadRouter.report_init_progress(0.30)
 	ui_module = Node.new()
 	ui_module.set_script(load("res://scripts/systems/game_ui.gd"))
 	add_child(ui_module)
 	ui_module.initialize(self, map_config, gold)
 	ui_module.place_mode_requested.connect(_on_place_mode_requested)
 	key_to_mode = ui_module.key_to_mode
+	await get_tree().process_frame
 
-	# 相机模块
+	# Step 4: 相机模块（依赖 ui_module 的 panel_rect）
+	LoadRouter.report_init_progress(0.40)
 	camera_module = Node.new()
 	camera_module.set_script(load("res://scripts/systems/game_camera.gd"))
 	add_child(camera_module)
 	camera_module.initialize(camera, map_bounds)
 	camera_module.speed_multiplier = _load_gameplay_settings()
-
-	# 注册 UI 面板豁免区域到相机（防止底部面板触发边缘滚动）
 	ui_module.update_panel_rect()
 	camera_module.ui_exclusion_rects.append(ui_module.get_panel_screen_rect())
+	await get_tree().process_frame
 
-	# 生成模块
+	# Step 5: 生成模块 + 建筑放置（依赖 ui_module）
+	LoadRouter.report_init_progress(0.50)
 	spawner_module = Node.new()
 	spawner_module.set_script(load("res://scripts/systems/game_spawner.gd"))
 	add_child(spawner_module)
 	spawner_module.initialize(self, player_units_node, enemy_units_node, buildings_node)
 	spawner_module.set_difficulty(_diff_preset)
-
-	# 建筑放置模块
 	building_placer = Node.new()
 	building_placer.set_script(load("res://scripts/systems/building_placer.gd"))
 	add_child(building_placer)
 	building_placer.initialize(map_bounds, NAV_BOUNDS, nav_region, buildings_node, preview_rect, ui_module)
 	spawner_module.place_building_callback = building_placer.place_building
+	await get_tree().process_frame
 
-	# 战斗/选择模块
+	# Step 6: 战斗/选择 + 输入模式 + 控制组
+	LoadRouter.report_init_progress(0.60)
 	combat_ctrl = Node.new()
 	combat_ctrl.set_script(load("res://scripts/systems/combat_controller.gd"))
 	add_child(combat_ctrl)
 	combat_ctrl.initialize(spawner_module)
 	combat_ctrl.selection_changed.connect(_on_selection_changed)
 	combat_ctrl.building_selected.connect(_on_building_selected)
-
-	# 输入模式管理器 (Q/W)
 	input_mode = Node.new()
 	input_mode.set_script(load("res://scripts/systems/input_mode_manager.gd"))
 	add_child(input_mode)
 	input_mode.mode_changed.connect(_on_input_mode_changed)
-
-	# 控制组管理器
 	const CtrlGroupMgr := preload("res://scripts/systems/control_group_manager.gd")
 	ctrl_group_mgr = CtrlGroupMgr.new()
 	for i in range(10):
 		_group_tap_times.append(0.0)
+	await get_tree().process_frame
 
-	# 指挥官技能系统
+	# Step 7: 指挥官技能系统（依赖 spawner）
+	LoadRouter.report_init_progress(0.70)
 	const CSD := preload("res://scripts/commander_skill/commander_skill_data.gd")
 	commander_skill_manager = Node.new()
 	commander_skill_manager.set_script(load("res://scripts/commander_skill/commander_skill_manager.gd"))
@@ -150,21 +161,21 @@ func _ready() -> void:
 		available_skills = map_config.commander_skills
 	commander_skill_manager.initialize(self, spawner_module, func(): return gold, func(cost: int): _spend_gold(cost))
 	commander_skill_manager.set_available_skills(available_skills)
-
 	commander_skill_panel = Node.new()
 	commander_skill_panel.set_script(load("res://scripts/commander_skill/commander_skill_panel.gd"))
 	add_child(commander_skill_panel)
 	commander_skill_panel.initialize(self, commander_skill_manager)
 	commander_skill_panel.skill_button_pressed.connect(_on_commander_skill_button_pressed)
+	await get_tree().process_frame
 
-	# 升级系统
+	# Step 8: 升级系统（双向依赖 spawner）
+	LoadRouter.report_init_progress(0.80)
 	upgrade_manager = Node.new()
 	upgrade_manager.set_script(load("res://scripts/upgrade/upgrade_manager.gd"))
 	add_child(upgrade_manager)
 	upgrade_manager.initialize(self)
 	upgrade_manager.set_spawner(spawner_module)
 	spawner_module.set_upgrade_manager(upgrade_manager)
-
 	upgrade_panel = Node.new()
 	upgrade_panel.set_script(load("res://scripts/upgrade/upgrade_panel.gd"))
 	add_child(upgrade_panel)
@@ -175,8 +186,10 @@ func _ready() -> void:
 	upgrade_manager.add_token(0)  # 1 白银
 	upgrade_manager.add_token(1)  # 1 黄金
 	upgrade_manager.add_token(2)  # 1 钻石
+	await get_tree().process_frame
 
-	# 生成
+	# Step 9: 实体生成 + 多人 + 网格 + 环境 + setup + camera_start
+	LoadRouter.report_init_progress(0.90)
 	var has_preplaced := _has_preplaced_entities()
 	if has_preplaced:
 		building_placer.register_preplaced_buildings(buildings_node)
@@ -185,27 +198,26 @@ func _ready() -> void:
 		spawner_module.spawn_from_config(map_config)
 		# 新格式地图：玩家方按 player_sessions 占用情况动态生成 slot
 		_spawn_dynamic_players()
-
-	# 多人模式初始化
 	if RelayManager.is_online:
 		LockstepSync.set_game(self)
 		if RelayManager._game_seed != 0:
 			LockstepSync._start_game(RelayManager._game_seed)
-
 	building_placer.create_grid()
 	spawner_module.spawn_environment(map_config, map_bounds)
-
 	_setup_victory_condition()
 	_setup_capture_points()
 	_setup_ambush_triggers()
 	_setup_adaptive_reinforcement()
 	_setup_boss_ai()
 	_setup_wave_manager()
-
 	if map_config != null:
 		camera.position = map_config.camera_start
-
 	await get_tree().process_frame
+
+	# Step 10: 完成
+	_initialized = true
+	LoadRouter.report_init_progress(1.0)
+	LoadRouter.finish_init()
 
 func _has_preplaced_entities() -> bool:
 	for child in player_units_node.get_children():
@@ -693,6 +705,8 @@ var _wave_clear_notified: bool = false
 var _wave_debug_timer: float = 0.0
 
 func _process(delta: float) -> void:
+	if not _initialized:
+		return
 	camera_module.process_camera(delta / Engine.time_scale)
 	_check_victory()
 	_check_wave_cleared()
@@ -775,6 +789,8 @@ func _check_wave_cleared() -> void:
 # --- 输入处理 ---
 
 func _input(event: InputEvent) -> void:
+	if not _initialized:
+		return
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		if upgrade_panel and upgrade_panel.is_panel_visible():
 			upgrade_panel.close()

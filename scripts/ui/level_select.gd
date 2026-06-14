@@ -1029,7 +1029,7 @@ func _on_start_pressed() -> void:
 
 
 func _load_level(scene_path: String) -> void:
-	get_tree().change_scene_to_file(scene_path)
+	LoadRouter.request_load(scene_path, false)
 
 
 func _input(event: InputEvent) -> void:
