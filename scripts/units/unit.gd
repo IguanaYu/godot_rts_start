@@ -626,13 +626,14 @@ func _attack_move_process(delta: float) -> void:
 		velocity = base_dir2 * stat_set.get_value(StatSetClass.MOVE_SPEED)
 
 func _find_closest_enemy_in_range(scan_range: float):
-	var enemy_group := "enemy_units" if team == Team.PLAYER else "player_units"
 	var enemy_building_group := "enemy_buildings" if team == Team.PLAYER else "player_buildings"
 	var closest = null
 	var closest_dist: float = INF
-	for u in get_tree().get_nodes_in_group(enemy_group):
+	for u in UnitGrid.query_neighbors(global_position, scan_range):
 		if u.is_dead():
 			continue
+		if u.team == team:
+			continue  # grid 同时含友军和敌军，跳过同队
 		var d := global_position.distance_to(u.global_position)
 		if d < scan_range and d < closest_dist:
 			closest = u
@@ -647,13 +648,14 @@ func _find_closest_enemy_in_range(scan_range: float):
 	return closest
 
 func _find_wounded_ally(scan_range: float):
-	var ally_group := "player_units" if team == Team.PLAYER else "enemy_units"
 	var closest = null
 	var closest_dist: float = INF
-	for u in get_tree().get_nodes_in_group(ally_group):
+	for u in UnitGrid.query_neighbors(global_position, scan_range):
 		if u == self:
 			continue
 		if u.is_dead():
+			continue
+		if u.team != team:
 			continue
 		if u.health.hp >= u.health.max_hp:
 			continue
@@ -771,29 +773,28 @@ func _get_steered_direction(base_dir: Vector2, delta: float) -> Vector2:
 	var left_units: Array = []
 	var right_units: Array = []
 
-	var ally_group := "player_units" if team == Team.PLAYER else "enemy_units"
-	var enemy_group := "enemy_units" if team == Team.PLAYER else "player_units"
+	# 一次 grid 查询拿到 50 半径内全部候选，后续两次角度筛选都基于此数组
+	var neighbors: Array = UnitGrid.query_neighbors(global_position, scan_range)
 
-	for group in [ally_group, enemy_group]:
-		for u in get_tree().get_nodes_in_group(group):
-			if u == self or u.is_dead():
+	for u in neighbors:
+		if u == self or u.is_dead():
+			continue
+		if u == attack_target:
+			continue
+		# 同方向移动的单位不算障碍（保持阵型）
+		if u.velocity.length_squared() > 1.0:
+			var vel_angle: float = abs(base_dir.angle_to(u.velocity))
+			if vel_angle < PI / 4.0:
 				continue
-			if u == attack_target:
-				continue
-			# 同方向移动的单位不算障碍（保持阵型）
-			if u.velocity.length_squared() > 1.0:
-				var vel_angle: float = abs(base_dir.angle_to(u.velocity))
-				if vel_angle < PI / 4.0:
-					continue
-			var to_u: Vector2 = u.global_position - global_position
-			var dist: float = to_u.length()
-			if dist < scan_range and dist > 0.1:
-				var angle: float = base_dir.angle_to(to_u)
-				if abs(angle) < PI / 3.0:  # ±60°
-					if angle < 0:
-						left_units.append(to_u)
-					else:
-						right_units.append(to_u)
+		var to_u: Vector2 = u.global_position - global_position
+		var dist: float = to_u.length()
+		if dist < scan_range and dist > 0.1:
+			var angle: float = base_dir.angle_to(to_u)
+			if abs(angle) < PI / 3.0:  # ±60°
+				if angle < 0:
+					left_units.append(to_u)
+				else:
+					right_units.append(to_u)
 
 	var has_left: bool = not left_units.is_empty()
 	var has_right: bool = not right_units.is_empty()
@@ -827,20 +828,19 @@ func _get_steered_direction(base_dir: Vector2, delta: float) -> Vector2:
 		_lateral_timer = 0.0
 		return _lateral_dir
 
-	# 4b: 对侧拥堵 → 扩大扫描到±120°，钝角切线横向躲避
-	for group in [ally_group, enemy_group]:
-		for u in get_tree().get_nodes_in_group(group):
-			if u == self or u.is_dead() or u == attack_target:
-				continue
-			var to_u: Vector2 = u.global_position - global_position
-			var dist: float = to_u.length()
-			if dist < scan_range and dist > 0.1:
-				var angle: float = base_dir.angle_to(to_u)
-				if abs(angle) >= PI / 3.0 and abs(angle) < 2.0 * PI / 3.0:
-					if angle < 0:
-						left_units.append(to_u)
-					else:
-						right_units.append(to_u)
+	# 4b: 对侧拥堵 → 扩大扫描到±120°，钝角切线横向躲避（复用 neighbors，省一次 grid 查询）
+	for u in neighbors:
+		if u == self or u.is_dead() or u == attack_target:
+			continue
+		var to_u: Vector2 = u.global_position - global_position
+		var dist: float = to_u.length()
+		if dist < scan_range and dist > 0.1:
+			var angle: float = base_dir.angle_to(to_u)
+			if abs(angle) >= PI / 3.0 and abs(angle) < 2.0 * PI / 3.0:
+				if angle < 0:
+					left_units.append(to_u)
+				else:
+					right_units.append(to_u)
 
 	var left_escape: Vector2 = _calc_best_tangent(left_units, base_dir, false, false)
 	var right_escape: Vector2 = _calc_best_tangent(right_units, base_dir, false, false)
@@ -947,9 +947,10 @@ func _player_retaliate(attacker) -> void:
 
 func _alert_nearby_allies(attacker) -> void:
 	var alert_range := 400.0
-	var ally_group := "player_units" if team == Team.PLAYER else "enemy_units"
-	for u in get_tree().get_nodes_in_group(ally_group):
+	for u in UnitGrid.query_neighbors(global_position, alert_range):
 		if u == self or u.is_dead():
+			continue
+		if u.team != team:
 			continue
 		if global_position.distance_to(u.global_position) <= alert_range:
 			u._player_retaliate(attacker)
@@ -961,8 +962,10 @@ func _alert_enemy_response(attacker) -> void:
 		ai.on_attacked(attacker)
 	# 广播给附近友军
 	var alert_range := 400.0
-	for u in get_tree().get_nodes_in_group("enemy_units"):
+	for u in UnitGrid.query_neighbors(global_position, alert_range):
 		if u == self or u.is_dead():
+			continue
+		if u.team != Team.ENEMY:
 			continue
 		if global_position.distance_to(u.global_position) <= alert_range:
 			var ally_ai = u.get_node_or_null("EnemyAI")

@@ -12,6 +12,8 @@ var _scale_pulse: float = 0.0
 
 
 func _process(delta: float) -> void:
+	if not visible:
+		return
 	_pulse_time += delta
 	if _flash_alpha > 0.0:
 		_flash_alpha = max(0.0, _flash_alpha - delta * 3.3)  # 0.3s 衰减

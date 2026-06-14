@@ -41,7 +41,7 @@ value = 100.0
 show_percentage = false
 
 [node name="NavigationAgent2D" type="NavigationAgent2D" parent="." unique_id=2129303765]
-avoidance_enabled = true
+avoidance_enabled = false
 radius = 16.0
 
 [node name="PathLine" type="Line2D" parent="." unique_id=998877665]
