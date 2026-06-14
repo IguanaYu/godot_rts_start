@@ -20,7 +20,8 @@ var player_sessions: Dictionary = {}
 var player_count: int = 1
 
 # 默认 slot 颜色轮转表（避开 RED=3 留给敌人）
-const SLOT_COLORS := [0, 1, 2, 4]  # BLACK, BLUE, PURPLE, YELLOW
+# pid=1 主机 → BLUE，pid=2 客户机 → YELLOW；3/4 槽预留 PURPLE/BLACK
+const SLOT_COLORS := [1, 4, 2, 0]  # BLUE, YELLOW, PURPLE, BLACK
 
 func _ready():
 	RelayManager.room_created.connect(_on_room_created)
