@@ -6,6 +6,3 @@
 process_mode = 3
 layer = 200
 script = ExtResource("1_script")
-
-[node name="CursorSprite" type="Sprite2D" parent="."]
-top_level = true
