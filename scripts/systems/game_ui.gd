@@ -263,7 +263,7 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	# 单位标签
 	var BF4 := preload("res://scripts/ui/button_factory.gd")
 	var unit_tab := Button.new()
-	unit_tab.text = tr("TAB_UNITS")
+	unit_tab.text = "TAB_UNITS"
 	unit_tab.custom_minimum_size = Vector2(100, 28)
 	unit_tab.toggle_mode = true
 	unit_tab.pressed.connect(func(): _switch_tab(0))
@@ -273,7 +273,7 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 
 	# 建筑标签
 	var build_tab := Button.new()
-	build_tab.text = tr("TAB_BUILDINGS")
+	build_tab.text = "TAB_BUILDINGS"
 	build_tab.custom_minimum_size = Vector2(100, 28)
 	build_tab.toggle_mode = true
 	build_tab.pressed.connect(func(): _switch_tab(1))
@@ -283,7 +283,7 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 
 	# 信息标签
 	var info_tab := Button.new()
-	info_tab.text = tr("TAB_INFO")
+	info_tab.text = "TAB_INFO"
 	info_tab.custom_minimum_size = Vector2(100, 28)
 	info_tab.toggle_mode = true
 	info_tab.pressed.connect(func(): _switch_tab(2))
@@ -1177,7 +1177,7 @@ func _create_pause_menu() -> void:
 	panel_wrapper.add_child(vbox)
 
 	var title := Label.new()
-	title.text = tr("UI_PAUSED")
+	title.text = "UI_PAUSED"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 28)
 	title.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
@@ -1191,18 +1191,18 @@ func _create_pause_menu() -> void:
 	vbox.add_child(spacer)
 
 	var btn_data := [
-		[tr("UI_RESUME"), _close_pause_menu],
-		[tr("UI_RESTART"), _on_pause_restart],
-		[tr("UI_LEVEL_SELECT"), _on_pause_level_select],
-		[tr("UI_SETTINGS"), _open_settings_page],
-		[tr("UI_MAIN_MENU"), _on_pause_quit],
+		["UI_RESUME", _close_pause_menu],
+		["UI_RESTART", _on_pause_restart],
+		["UI_LEVEL_SELECT", _on_pause_level_select],
+		["UI_SETTINGS", _open_settings_page],
+		["UI_MAIN_MENU", _on_pause_quit],
 	]
 	for data in btn_data:
 		var btn_wrapper := _make_styled_button(data[0], Vector2(0, 44), data[1])
 		vbox.add_child(btn_wrapper)
 
 	var hint := Label.new()
-	hint.text = tr("UI_PRESS_ESC_RESUME")
+	hint.text = "UI_PRESS_ESC_RESUME"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.add_theme_font_size_override("font_size", 12)
 	hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
@@ -1365,7 +1365,7 @@ func _open_settings_page() -> void:
 
 	# --- 标题 ---
 	var title := Label.new()
-	title.text = tr("UI_SETTINGS")
+	title.text = "UI_SETTINGS"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 24)
 	title.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
@@ -1379,13 +1379,13 @@ func _open_settings_page() -> void:
 	vbox.add_child(spacer1)
 
 	# === 显示区域 ===
-	vbox.add_child(_make_section_label(tr("UI_DISPLAY")))
+	vbox.add_child(_make_section_label("UI_DISPLAY"))
 
 	# 分辨率
 	var res_row := HBoxContainer.new()
 	res_row.add_theme_constant_override("separation", 8)
 	var res_label := Label.new()
-	res_label.text = tr("UI_RESOLUTION")
+	res_label.text = "UI_RESOLUTION"
 	res_label.custom_minimum_size = Vector2(100, 0)
 	res_label.add_theme_font_size_override("font_size", 14)
 	res_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
@@ -1395,7 +1395,7 @@ func _open_settings_page() -> void:
 	var current_size := DisplayServer.window_get_size()
 	var selected_idx := 0
 	for i in RESOLUTION_PRESETS.size():
-		_settings_res_option.add_item(tr(RESOLUTION_KEYS[i]), i)
+		_settings_res_option.add_item(RESOLUTION_KEYS[i], i)
 		if RESOLUTION_PRESETS[i] == current_size:
 			selected_idx = i
 	_settings_res_option.selected = selected_idx
@@ -1407,15 +1407,15 @@ func _open_settings_page() -> void:
 	var dm_row := HBoxContainer.new()
 	dm_row.add_theme_constant_override("separation", 8)
 	var dm_label := Label.new()
-	dm_label.text = tr("UI_DISPLAY_MODE")
+	dm_label.text = "UI_DISPLAY_MODE"
 	dm_label.custom_minimum_size = Vector2(100, 0)
 	dm_label.add_theme_font_size_override("font_size", 14)
 	dm_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
 	dm_row.add_child(dm_label)
 	_settings_display_mode_option = OptionButton.new()
-	_settings_display_mode_option.add_item(tr("UI_MODE_FULLSCREEN"), 0)
-	_settings_display_mode_option.add_item(tr("UI_MODE_BORDERLESS"), 1)
-	_settings_display_mode_option.add_item(tr("UI_MODE_WINDOWED"), 2)
+	_settings_display_mode_option.add_item("UI_MODE_FULLSCREEN", 0)
+	_settings_display_mode_option.add_item("UI_MODE_BORDERLESS", 1)
+	_settings_display_mode_option.add_item("UI_MODE_WINDOWED", 2)
 	var current_mode := DisplayServer.window_get_mode()
 	match current_mode:
 		DisplayServer.WINDOW_MODE_FULLSCREEN: _settings_display_mode_option.selected = 0
@@ -1428,13 +1428,13 @@ func _open_settings_page() -> void:
 
 	# 亮度
 	var brightness_val: float = config.get_value("display", "brightness", 1.0)
-	vbox.add_child(_make_slider_row(tr("UI_BRIGHTNESS"), brightness_val, 0.3, 1.5, _on_brightness_changed))
+	vbox.add_child(_make_slider_row("UI_BRIGHTNESS", brightness_val, 0.3, 1.5, _on_brightness_changed))
 
 	# FPS 显示
 	var fps_row := HBoxContainer.new()
 	fps_row.add_theme_constant_override("separation", 8)
 	var fps_label := Label.new()
-	fps_label.text = tr("UI_SHOW_FPS")
+	fps_label.text = "UI_SHOW_FPS"
 	fps_label.add_theme_font_size_override("font_size", 14)
 	fps_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
 	fps_row.add_child(fps_label)
@@ -1449,29 +1449,29 @@ func _open_settings_page() -> void:
 	vbox.add_child(spacer2)
 
 	# === 音频区域 ===
-	vbox.add_child(_make_section_label(tr("UI_AUDIO")))
+	vbox.add_child(_make_section_label("UI_AUDIO"))
 
 	var master_val: float = config.get_value("audio", "master_volume", 1.0)
-	vbox.add_child(_make_slider_row(tr("UI_MASTER_VOLUME"), master_val, 0.0, 1.0, _on_master_volume_changed))
+	vbox.add_child(_make_slider_row("UI_MASTER_VOLUME", master_val, 0.0, 1.0, _on_master_volume_changed))
 
 	var music_val: float = config.get_value("audio", "music_volume", 1.0)
-	vbox.add_child(_make_slider_row(tr("UI_MUSIC_VOLUME"), music_val, 0.0, 1.0, _on_music_volume_changed))
+	vbox.add_child(_make_slider_row("UI_MUSIC_VOLUME", music_val, 0.0, 1.0, _on_music_volume_changed))
 
 	var sfx_val: float = config.get_value("audio", "sfx_volume", 1.0)
-	vbox.add_child(_make_slider_row(tr("UI_SFX_VOLUME"), sfx_val, 0.0, 1.0, _on_sfx_volume_changed))
+	vbox.add_child(_make_slider_row("UI_SFX_VOLUME", sfx_val, 0.0, 1.0, _on_sfx_volume_changed))
 
 	var spacer3 := Control.new()
 	spacer3.custom_minimum_size = Vector2(0, 6)
 	vbox.add_child(spacer3)
 
 	# === 游戏区域 ===
-	vbox.add_child(_make_section_label(tr("UI_GAMEPLAY")))
+	vbox.add_child(_make_section_label("UI_GAMEPLAY"))
 
 	# 伤害飘字
 	var dmg_row := HBoxContainer.new()
 	dmg_row.add_theme_constant_override("separation", 8)
 	var dmg_label := Label.new()
-	dmg_label.text = tr("UI_DAMAGE_NUMBERS")
+	dmg_label.text = "UI_DAMAGE_NUMBERS"
 	dmg_label.add_theme_font_size_override("font_size", 14)
 	dmg_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
 	dmg_row.add_child(dmg_label)
@@ -1485,7 +1485,7 @@ func _open_settings_page() -> void:
 	var path_row := HBoxContainer.new()
 	path_row.add_theme_constant_override("separation", 8)
 	var path_label := Label.new()
-	path_label.text = tr("UI_PATH_LINES")
+	path_label.text = "UI_PATH_LINES"
 	path_label.add_theme_font_size_override("font_size", 14)
 	path_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
 	path_row.add_child(path_label)
@@ -1497,20 +1497,20 @@ func _open_settings_page() -> void:
 
 	# 鼠标灵敏度
 	var sens_val: float = config.get_value("gameplay", "camera_sensitivity", 1.0)
-	vbox.add_child(_make_slider_row(tr("UI_MOUSE_SENSITIVITY"), sens_val, 0.2, 3.0, _on_camera_sensitivity_changed))
+	vbox.add_child(_make_slider_row("UI_MOUSE_SENSITIVITY", sens_val, 0.2, 3.0, _on_camera_sensitivity_changed))
 
 	var spacer4 := Control.new()
 	spacer4.custom_minimum_size = Vector2(0, 8)
 	vbox.add_child(spacer4)
 
 	# 查看按键绑定按钮
-	vbox.add_child(_make_styled_button(tr("UI_VIEW_KEYBINDS"), Vector2(0, 40), _open_keybinds_page))
+	vbox.add_child(_make_styled_button("UI_VIEW_KEYBINDS", Vector2(0, 40), _open_keybinds_page))
 
 	# === Language section ===
 	var spacer5 := Control.new()
 	spacer5.custom_minimum_size = Vector2(0, 6)
 	vbox.add_child(spacer5)
-	vbox.add_child(_make_section_label(tr("UI_LANGUAGE")))
+	vbox.add_child(_make_section_label("UI_LANGUAGE"))
 	var lang_hbox := HBoxContainer.new()
 	lang_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	lang_hbox.add_theme_constant_override("separation", 8)
@@ -1518,7 +1518,7 @@ func _open_settings_page() -> void:
 	var current_locale := TranslationServer.get_locale()
 	for locale_code in _supported_locales:
 		var btn := Button.new()
-		btn.text = tr("LANG_" + locale_code.to_upper())
+		btn.text = "LANG_" + locale_code.to_upper()
 		btn.custom_minimum_size = Vector2(90, 28)
 		btn.add_theme_font_size_override("font_size", 14)
 		btn.set_meta("locale", locale_code)
@@ -1529,7 +1529,7 @@ func _open_settings_page() -> void:
 	vbox.add_child(lang_hbox)
 
 	# 返回按钮
-	vbox.add_child(_make_styled_button(tr("UI_BACK"), Vector2(0, 40), _close_settings_page))
+	vbox.add_child(_make_styled_button("UI_OK", Vector2(0, 40), _close_settings_page))
 
 
 func _make_section_label(text: String) -> Label:
@@ -1558,12 +1558,22 @@ func _close_settings_page() -> void:
 # ============================================================
 func _on_settings_language_selected(locale_code: String) -> void:
 	TranslationServer.set_locale(locale_code)
-	var config := ConfigFile.new()
-	config.load("user://settings.cfg")
-	config.set_value("game", "locale", locale_code)
-	config.save("user://settings.cfg")
-	_close_settings_page()
-	_open_settings_page()
+	_save_setting("game", "locale", locale_code)
+	_refresh_language_button_colors()
+
+
+func _refresh_language_button_colors() -> void:
+	var current_locale := TranslationServer.get_locale()
+	_refresh_lang_buttons_recursive(_pause_overlay, current_locale)
+
+
+func _refresh_lang_buttons_recursive(node: Node, current_locale: String) -> void:
+	if node is Button and node.has_meta("locale"):
+		var btn_locale: String = node.get_meta("locale")
+		var is_active: bool = btn_locale == current_locale or btn_locale == current_locale.substr(0, 2)
+		node.add_theme_color_override("font_color", Color(1, 0.85, 0.0) if is_active else Color(0.8, 0.8, 0.8))
+	for child in node.get_children():
+		_refresh_lang_buttons_recursive(child, current_locale)
 
 
 func _open_keybinds_page() -> void:
@@ -1595,7 +1605,7 @@ func _open_keybinds_page() -> void:
 	panel_wrapper.add_child(vbox)
 
 	var title := Label.new()
-	title.text = tr("UI_KEYBINDS_TITLE")
+	title.text = "UI_KEYBINDS_TITLE"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 22)
 	title.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
@@ -1620,7 +1630,7 @@ func _open_keybinds_page() -> void:
 		row.alignment = BoxContainer.ALIGNMENT_CENTER
 
 		var name_label := Label.new()
-		name_label.text = tr(names.get(mode, "?"))
+		name_label.text = names.get(mode, "?")
 		name_label.add_theme_font_size_override("font_size", 16)
 		name_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
 		name_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.4))
@@ -1656,7 +1666,7 @@ func _open_keybinds_page() -> void:
 	vbox.add_child(spacer2)
 
 	# 返回设置按钮
-	vbox.add_child(_make_styled_button(tr("UI_BACK_TO_SETTINGS"), Vector2(0, 40), _close_keybinds_page))
+	vbox.add_child(_make_styled_button("UI_BACK_TO_SETTINGS", Vector2(0, 40), _close_keybinds_page))
 
 
 func _close_keybinds_page() -> void:

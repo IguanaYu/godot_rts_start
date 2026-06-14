@@ -55,6 +55,7 @@ UI_INFO_SPD,SPD: %.0f,速度: %.0f,速度: %.0f
 UI_DAMAGE_NUMBERS,Damage Numbers,伤害飘字,ダメージ数字
 UI_SETTINGS,Settings,设置,設定
 UI_BACK,Back,返回,戻る
+UI_OK,OK,确定,OK
 UI_RESOLUTION,Resolution,分辨率,解像度
 UI_FULLSCREEN,Fullscreen,全屏,フルスクリーン
 RES_1280x720,1280 x 720,1280 x 720,1280 x 720
