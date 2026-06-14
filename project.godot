@@ -26,6 +26,7 @@ LockstepSync="*res://scripts/network/lockstep_sync.gd"
 StateHasher="*res://scripts/network/state_hasher.gd"
 LoadRouter="*res://scripts/autoload/load_router.gd"
 UnitGrid="*res://scripts/core/unit_spatial_grid.gd"
+NetworkStatus="*res://scripts/ui/network_status.gd"
 
 [display]
 
