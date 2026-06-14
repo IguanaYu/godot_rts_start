@@ -12,6 +12,8 @@ func _ready() -> void:
 	TickManager.enabled = false
 	if not RelayManager.both_loaded.is_connected(_start_game):
 		RelayManager.both_loaded.connect(_start_game)
+	if not RelayManager.connection_lost.is_connected(_on_connection_lost):
+		RelayManager.connection_lost.connect(_on_connection_lost)
 
 func set_game(game: Node2D) -> void:
 	_game = game
@@ -37,6 +39,15 @@ func _start_game(seed: int) -> void:
 func stop() -> void:
 	TickManager.enabled = false
 	print("LockstepSync: 同步已停止")
+
+## 任何一方掉线 → 立即暂停 tick，避免一端继续推进导致 desync
+## 注意：仅多人模式生效；reason 来自 RelayManager.connection_lost 信号
+func _on_connection_lost(_reason: String) -> void:
+	if not NetworkManager.is_online and not TickManager.enabled:
+		return
+	print("[LockstepSync] Connection lost (%s) → pause TickManager" % _reason)
+	TickManager.pause()
+	stop()
 
 func _on_commands_ready(tick_num: int, commands: Array) -> void:
 	if tick_num <= _last_executed_tick:

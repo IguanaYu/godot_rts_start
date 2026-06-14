@@ -91,6 +91,31 @@ class RoomManager {
     this.leaveRoom(ws);
   }
 
+  /// 返回 ws 在房间里的角色：1=host, 2=guest, 0=不在房间
+  getPlayerRole(ws) {
+    const code = this.wsToRoom.get(ws);
+    if (!code) return 0;
+    const room = this.rooms.get(code);
+    if (!room) return 0;
+    if (room.host && room.host.ws === ws) return 1;
+    if (room.guest && room.guest.ws === ws) return 2;
+    return 0;
+  }
+
+  /// 心跳超时通知对方玩家"该玩家已断开"，对方 UI 据此暂停游戏
+  notifyPeerTimeout(ws) {
+    const code = this.wsToRoom.get(ws);
+    if (!code) return;
+    const room = this.rooms.get(code);
+    if (!room) return;
+    const timeoutPlayerId = this.getPlayerRole(ws);
+    const other =
+      room.host && room.host.ws !== ws ? room.host.ws : room.guest ? room.guest.ws : null;
+    if (other) {
+      this._sendTo(other, "peer_timeout", { player_id: timeoutPlayerId });
+    }
+  }
+
   toggleReady(ws) {
     const code = this.wsToRoom.get(ws);
     if (!code) throw new Error("Not in a room");
