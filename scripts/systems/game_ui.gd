@@ -890,9 +890,10 @@ func _update_info_panel() -> void:
 	if info_container == null:
 		return
 
-	# 清空右侧类型容器
+	# 清空右侧类型容器（用 free 立即释放，避免每帧累积导致 layout 越来越慢）
 	for c in _info_type_container.get_children():
-		c.queue_free()
+		_info_type_container.remove_child(c)
+		c.free()
 
 	# ---- 建筑选择 ----
 	if _tracked_building != null and is_instance_valid(_tracked_building) and not _tracked_building.is_dead():
@@ -951,10 +952,19 @@ func _update_info_panel() -> void:
 		_info_hp_bar_fill.size.x = _info_hp_bar_fill.get_parent().size.x * hp_ratio
 	_info_hp_label.text = "%d / %d" % [total_hp, total_max_hp]
 
-	# ATK / SPD（平均值）
+	# ATK / SPD（平均值）— 注意：tr(...) 在翻译缺失时返回字面 key，无 % 占位符，会触发 String formatting error。
+	# 用 if count > 0 + 翻译存在性判断兜底。
 	if count > 0:
-		_info_atk_label.text = tr("UI_INFO_ATK") % int(total_atk / count)
-		_info_spd_label.text = tr("UI_INFO_SPD") % (total_spd / count)
+		var atk_key := tr("UI_INFO_ATK")
+		var spd_key := tr("UI_INFO_SPD")
+		if atk_key.find("%") >= 0:
+			_info_atk_label.text = atk_key % int(total_atk / count)
+		else:
+			_info_atk_label.text = "ATK %d" % int(total_atk / count)
+		if spd_key.find("%") >= 0:
+			_info_spd_label.text = spd_key % (total_spd / count)
+		else:
+			_info_spd_label.text = "SPD %.0f" % (total_spd / count)
 	else:
 		_info_atk_label.text = ""
 		_info_spd_label.text = ""

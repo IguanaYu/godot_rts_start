@@ -153,11 +153,13 @@ func _scan_for_targets() -> void:
 	var closest = null
 	var closest_dist: float = INF
 
-	# 扫描玩家单位
-	for u in get_tree().get_nodes_in_group("player_units"):
+	# 扫描玩家单位（用空间分区，grid 同时含 player/enemy，过滤 team）
+	for u in UnitGrid.query_neighbors(unit.global_position, vision_range):
 		if not (u is CharacterBody2D):
 			continue
 		if u.is_dead():
+			continue
+		if u.team != Unit.Team.PLAYER:
 			continue
 		var d: float = unit.global_position.distance_to(u.global_position)
 		if d < vision_range and d < closest_dist:

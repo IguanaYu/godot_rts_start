@@ -484,7 +484,6 @@ func _physics_process(delta: float) -> void:
 			var was_blocked := _is_blocked
 			_is_blocked = _blocked_timer > 0.1
 			if _is_blocked and not was_blocked:
-				_show_debug_text("Blocked!", Color(1.0, 0.5, 0.2))
 				if _is_inside_any_building():
 					_start_escape()
 		else:
