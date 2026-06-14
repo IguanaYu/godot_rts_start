@@ -98,22 +98,24 @@ func _process_ninepatch(source_path: String, content_rows: Array, content_cols: 
 			new_img.blit_rect(tile, Rect2i(Vector2i.ZERO, tile.get_size()), Vector2i(dst_x, dst_y))
 			dst_x += tw[c]
 		dst_y += th[r]
-	return {"texture": ImageTexture.create_from_image(new_img), "patch_margin_left": content_cols[0][1] - content_cols[0][0], "patch_margin_top": content_rows[0][1] - content_rows[0][0], "patch_margin_right": content_cols[2][1] - content_cols[2][0], "patch_margin_bottom": content_rows[2][1] - content_rows[2][0]}
+	return {"texture": ImageTexture.create_from_image(new_img), "patch_margin_left": tw[0], "patch_margin_top": th[0], "patch_margin_right": tw[2], "patch_margin_bottom": th[2]}
 
-func _make_ninepatch(np: Dictionary) -> NinePatchRect:
+func _make_ninepatch(np: Dictionary, tile_center := true) -> NinePatchRect:
 	var npr := NinePatchRect.new()
 	npr.texture = np.texture
 	npr.patch_margin_left = np.patch_margin_left
 	npr.patch_margin_top = np.patch_margin_top
 	npr.patch_margin_right = np.patch_margin_right
 	npr.patch_margin_bottom = np.patch_margin_bottom
-	npr.axis_stretch_horizontal = NinePatchRect.AXIS_STRETCH_MODE_TILE
-	npr.axis_stretch_vertical = NinePatchRect.AXIS_STRETCH_MODE_TILE
+	if tile_center:
+		npr.axis_stretch_horizontal = NinePatchRect.AXIS_STRETCH_MODE_TILE
+		npr.axis_stretch_vertical = NinePatchRect.AXIS_STRETCH_MODE_TILE
+	npr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return npr
 
 func _build_ui():
 	# Background
-	var bg := _make_ninepatch(_np_wood_table)
+	var bg := _make_ninepatch(_np_wood_table, false)
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
