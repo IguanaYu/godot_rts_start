@@ -4,6 +4,8 @@ extends Node2D
 
 enum AIState { PATROL, CHASE, ATTACK, WAVE_ATTACK }
 
+const SCAN_THROTTLE_FRAMES: int = 6
+
 @export var patrol_radius: float = 150.0
 @export var vision_range: float = 250.0
 
@@ -16,12 +18,18 @@ var wave_target: Vector2 = Vector2.ZERO
 var previous_state: AIState = AIState.PATROL
 
 var unit: Unit
+var _scan_phase: int = 0
 
 
 func _ready() -> void:
 	unit = get_parent() as Unit
 	patrol_center = unit.global_position
 	_pick_new_patrol_point()
+	_scan_phase = get_instance_id() % SCAN_THROTTLE_FRAMES
+
+
+func _should_scan_this_frame() -> bool:
+	return Engine.get_physics_frames() % SCAN_THROTTLE_FRAMES == _scan_phase
 
 
 func _physics_process(_delta: float) -> void:
@@ -72,7 +80,8 @@ func _physics_process(_delta: float) -> void:
 		AIState.WAVE_ATTACK:
 			_wave_attack_process()
 
-	_scan_for_targets()
+	if _should_scan_this_frame():
+		_scan_for_targets()
 
 
 func _patrol_process(delta: float) -> void:

@@ -96,12 +96,22 @@ static var show_all_health_bars: bool = false
 # 寻路路径线
 static var show_path_lines: bool = true
 
+# 阶段 2.1：AI 扫描分帧。每单位每 SCAN_THROTTLE_FRAMES 帧才执行一次邻居扫描，
+# 把扫描频率从 60Hz → 10Hz，CPU 直接砍 6 倍。玩家感知差异 ≈ 0（≤100ms 反应延迟）。
+const SCAN_THROTTLE_FRAMES: int = 6
+var _scan_phase: int = 0
+var _cached_scan_enemy = null
+var _cached_scan_wounded = null
+
 @onready var nav_agent: NavigationAgent2D = $NavigationAgent2D
 @onready var selection_ring: Node2D = $SelectionRing
 @onready var hp_bar: ProgressBar = $HPBar
 @onready var body_sprite: Sprite2D = $BodySprite
 @onready var aggro_line: Line2D = $AggroLine
 @onready var path_line: Line2D = $PathLine
+
+# 缓存上次画 aggro_line 时的目标，避免每帧 clear+add 触发完全重画
+var _aggro_target = null
 
 # 动画
 var _anim_state: String = ""
@@ -140,6 +150,18 @@ func _ready() -> void:
 		_setup_visuals()
 		_update_selection_ring()
 		_update_hp_bar()
+	# 用 instance_id 把单位均匀分到 6 个 scan_phase，避免同帧扎堆扫描
+	_scan_phase = get_instance_id() % SCAN_THROTTLE_FRAMES
+
+
+## 是否在本帧执行邻居扫描（每单位每 6 帧扫描一次）
+func _should_scan_this_frame() -> bool:
+	return Engine.get_physics_frames() % SCAN_THROTTLE_FRAMES == _scan_phase
+
+
+## 校验缓存的目标是否仍可用（实例存活 + 未死）
+func _is_target_alive(target) -> bool:
+	return target != null and is_instance_valid(target) and not target.is_dead()
 
 func _init_outline_materials() -> void:
 	if UnitEffectsShader == null:
@@ -582,10 +604,11 @@ func _attack_process(delta: float) -> void:
 func _attack_move_process(delta: float) -> void:
 	# Monk 攻击移动时优先治疗
 	if unit_type == UnitType.MONK:
-		var wounded = _find_wounded_ally(stat_set.get_value(StatSetClass.HEAL_SCAN_RANGE))
-		if wounded != null:
-			heal_target = wounded
-			nav_agent.target_position = wounded.global_position
+		if _should_scan_this_frame():
+			_cached_scan_wounded = _find_wounded_ally(stat_set.get_value(StatSetClass.HEAL_SCAN_RANGE))
+		if _is_target_alive(_cached_scan_wounded):
+			heal_target = _cached_scan_wounded
+			nav_agent.target_position = _cached_scan_wounded.global_position
 			state = UnitState.HEAL
 			return
 		if nav_agent.is_navigation_finished():
@@ -601,7 +624,9 @@ func _attack_move_process(delta: float) -> void:
 			velocity = base_dir * stat_set.get_value(StatSetClass.MOVE_SPEED)
 		return
 
-	var closest = _find_closest_enemy_in_range(attack_move_scan_range)
+	if _should_scan_this_frame():
+		_cached_scan_enemy = _find_closest_enemy_in_range(attack_move_scan_range)
+	var closest = _cached_scan_enemy if _is_target_alive(_cached_scan_enemy) else null
 
 	if closest != null:
 		attack_target = closest
@@ -686,8 +711,10 @@ func _patrol_process(delta: float) -> void:
 	if patrol_points.is_empty():
 		state = UnitState.GUARD
 		return
-	# 巡逻中遇敌自动交战
-	var closest = _find_closest_enemy_in_range(attack_move_scan_range)
+	# 巡逻中遇敌自动交战（节流扫描）
+	if _should_scan_this_frame():
+		_cached_scan_enemy = _find_closest_enemy_in_range(attack_move_scan_range)
+	var closest = _cached_scan_enemy if _is_target_alive(_cached_scan_enemy) else null
 	if closest != null:
 		attack_target = closest
 		attack_command_source = CommandSource.AUTO
@@ -707,14 +734,17 @@ func _patrol_process(delta: float) -> void:
 func _guard_process(delta: float) -> void:
 	# Monk 优先寻找受伤友军
 	if unit_type == UnitType.MONK:
-		var wounded = _find_wounded_ally(stat_set.get_value(StatSetClass.HEAL_SCAN_RANGE))
-		if wounded != null:
-			heal_target = wounded
-			nav_agent.target_position = wounded.global_position
+		if _should_scan_this_frame():
+			_cached_scan_wounded = _find_wounded_ally(stat_set.get_value(StatSetClass.HEAL_SCAN_RANGE))
+		if _is_target_alive(_cached_scan_wounded):
+			heal_target = _cached_scan_wounded
+			nav_agent.target_position = _cached_scan_wounded.global_position
 			state = UnitState.HEAL
 		return
 
-	var closest = _find_closest_enemy_in_range(attack_move_scan_range)
+	if _should_scan_this_frame():
+		_cached_scan_enemy = _find_closest_enemy_in_range(attack_move_scan_range)
+	var closest = _cached_scan_enemy if _is_target_alive(_cached_scan_enemy) else null
 	if closest != null:
 		attack_target = closest
 		attack_command_source = CommandSource.AUTO
@@ -723,7 +753,9 @@ func _guard_process(delta: float) -> void:
 		hold_position_mode = false
 
 func _hold_position_process(delta: float) -> void:
-	var closest = _find_closest_enemy_in_range(get_effective_attack_range())
+	if _should_scan_this_frame():
+		_cached_scan_enemy = _find_closest_enemy_in_range(get_effective_attack_range())
+	var closest = _cached_scan_enemy if _is_target_alive(_cached_scan_enemy) else null
 	if closest != null:
 		attack_target = closest
 		attack_command_source = CommandSource.AUTO
@@ -1146,17 +1178,30 @@ func _update_aggro_line() -> void:
 		return
 	# 治疗目标也显示连线
 	if heal_target != null and is_instance_valid(heal_target) and not heal_target.is_dead():
-		aggro_line.visible = true
-		aggro_line.clear_points()
-		aggro_line.add_point(Vector2.ZERO)
-		aggro_line.add_point(heal_target.global_position - global_position)
+		if _aggro_target != heal_target:
+			_aggro_target = heal_target
+			aggro_line.visible = true
+			aggro_line.clear_points()
+			aggro_line.add_point(Vector2.ZERO)
+			aggro_line.add_point(heal_target.global_position - global_position)
+		else:
+			# 同一目标，只更新终点（避免 clear+add 触发完全重画）
+			var pts := PackedVector2Array([Vector2.ZERO, heal_target.global_position - global_position])
+			aggro_line.points = pts
 	elif attack_target != null and not attack_target.is_dead():
-		aggro_line.visible = true
-		aggro_line.clear_points()
-		aggro_line.add_point(Vector2.ZERO)
-		aggro_line.add_point(attack_target.global_position - global_position)
+		if _aggro_target != attack_target:
+			_aggro_target = attack_target
+			aggro_line.visible = true
+			aggro_line.clear_points()
+			aggro_line.add_point(Vector2.ZERO)
+			aggro_line.add_point(attack_target.global_position - global_position)
+		else:
+			var pts2 := PackedVector2Array([Vector2.ZERO, attack_target.global_position - global_position])
+			aggro_line.points = pts2
 	else:
-		aggro_line.visible = false
+		if _aggro_target != null:
+			aggro_line.visible = false
+			_aggro_target = null
 
 func _update_path_line() -> void:
 	if path_line == null:

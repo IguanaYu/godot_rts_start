@@ -703,6 +703,7 @@ func _spawn_upgrade_token(pos: Vector2, tier: int) -> void:
 
 var _wave_clear_notified: bool = false
 var _wave_debug_timer: float = 0.0
+var _perf_log_timer: float = 0.0
 
 func _process(delta: float) -> void:
 	if not _initialized:
@@ -718,6 +719,20 @@ func _process(delta: float) -> void:
 	# 更新指挥官技能目标预览
 	if input_mode.is_commander_skill_cast() and commander_skill_manager.is_casting():
 		commander_skill_panel.update_target_preview(get_global_mouse_position())
+	# 性能监控：每 2 秒打印一次关键指标
+	_perf_log_timer += delta
+	if _perf_log_timer >= 2.0:
+		_perf_log_timer = 0.0
+		var fps := Engine.get_frames_per_second()
+		var proc_ms := Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
+		var phys_ms := Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
+		var nodes := int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))
+		var resources := int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT))
+		var draw_calls := int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
+		var p_units := get_tree().get_nodes_in_group("player_units").size()
+		var e_units := get_tree().get_nodes_in_group("enemy_units").size()
+		print("[PERF] fps=%d proc=%.1fms phys=%.1fms nodes=%d res=%d draw_calls=%d units=P%d/E%d" %
+			[fps, proc_ms, phys_ms, nodes, resources, draw_calls, p_units, e_units])
 
 func _get_base_position() -> Vector2:
 	var buildings := get_tree().get_nodes_in_group("player_buildings")
