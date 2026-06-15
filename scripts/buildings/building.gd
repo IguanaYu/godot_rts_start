@@ -97,6 +97,9 @@ signal damaged(amount, attacker)
 @onready var aggro_line: Line2D = $AggroLine
 
 func _ready() -> void:
+	# @export team 在 .tscn 中可保存，但 alliance_id 是 var 不会自动同步。
+	# 这里反推一次，保证产兵/驻军继承正确的阵营。
+	alliance_id = 1 if team == Team.ENEMY else 0
 	_setup_stats()
 	if Engine.is_editor_hint():
 		_snap_position_to_grid()
