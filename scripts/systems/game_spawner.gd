@@ -162,6 +162,47 @@ func spawn_slot_initial(slot: Dictionary, slot_idx: int, owner_id: int, color: i
 		_next_net_id += 1
 		LockstepSync.register_unit(building)
 
+# 单机模式 AI 队友（owner_id=-2, alliance_id=0, color=YELLOW, slot=2）
+func spawn_ally_unit_initial(unit_type: int, pos: Vector2) -> void:
+	var unit := create_unit(unit_type, 0, pos, &"", -2, Faction.ColorId.YELLOW, 2)
+	unit.net_id = _next_net_id
+	_next_net_id += 1
+	LockstepSync.register_unit(unit)
+	_player_units_node.add_child(unit)
+	unit.add_to_group("player_units")
+	if _upgrade_manager:
+		_upgrade_manager.apply_all_stat_upgrades_to_unit(unit)
+	var ai := Node2D.new()
+	ai.name = "AllyAI"
+	ai.set_script(load("res://scripts/units/ally_ai.gd"))
+	unit.add_child(ai)
+	spawn_spawn_effect(pos, UnitScript.Team.PLAYER, unit)
+
+
+# AI 队友延迟增援波次：占领 capture_point 后调用，生成的单位自动 attack_move 到 target
+func spawn_ally_wave(groups: Array, spawn_center: Vector2, target: Vector2, formation: String = "column", spacing: float = 50.0) -> void:
+	var expanded: Array = _expand_groups(groups)
+	var positions: Array = _calc_formation_positions(spawn_center, expanded.size(), formation, spacing)
+	for i in expanded.size():
+		_spawn_ally_wave_unit(expanded[i].type, positions[i], target)
+
+
+func _spawn_ally_wave_unit(unit_type: int, pos: Vector2, target: Vector2) -> void:
+	var unit := create_unit(unit_type, 0, pos, &"", -2, Faction.ColorId.YELLOW, 2)
+	unit.net_id = _next_net_id
+	_next_net_id += 1
+	LockstepSync.register_unit(unit)
+	_player_units_node.add_child(unit)
+	unit.add_to_group("player_units")
+	if _upgrade_manager:
+		_upgrade_manager.apply_all_stat_upgrades_to_unit(unit)
+	var ai := Node2D.new()
+	ai.name = "AllyAI"
+	ai.set_script(load("res://scripts/units/ally_ai.gd"))
+	unit.add_child(ai)
+	spawn_spawn_effect(pos, UnitScript.Team.PLAYER, unit)
+	ai.call_deferred("start_wave_attack", target)
+
 # --- 环境装饰 ---
 
 func spawn_environment(map_config: Resource, map_bounds: Rect2) -> void:

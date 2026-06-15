@@ -27,6 +27,8 @@ StateHasher="*res://scripts/network/state_hasher.gd"
 LoadRouter="*res://scripts/autoload/load_router.gd"
 UnitGrid="*res://scripts/core/unit_spatial_grid.gd"
 NetworkStatus="*res://scripts/ui/network_status.gd"
+AllyDistressSignal="*res://scripts/systems_game/ally_distress_signal.gd"
+AllyCommander="*res://scripts/systems_game/ally_commander.gd"
 
 [display]
 

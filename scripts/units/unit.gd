@@ -945,6 +945,9 @@ func take_damage(amount: int, attacker = null) -> void:
 			_alert_enemy_response(attacker)
 		elif team == Team.PLAYER:
 			_player_retaliate(attacker)
+	# AI 队友受击：上报求救（由 AllyDistressSignal 区域 CD 去重）
+	if owner_id == -2 and attacker != null:
+		AllyDistressSignal.report(global_position, self)
 	if health.hp <= 0:
 		die()
 

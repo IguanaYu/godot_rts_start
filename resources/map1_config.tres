@@ -20,6 +20,14 @@ player_units = Array[Dictionary]( [
 
 player_buildings = Array[Dictionary]( [] )
 
+ai_allies = Array[Dictionary]( [
+	{"type": 0, "pos": Vector2(60, 170)},
+	{"type": 0, "pos": Vector2(60, 200)},
+	{"type": 0, "pos": Vector2(60, 230)},
+	{"type": 1, "pos": Vector2(90, 185)},
+	{"type": 1, "pos": Vector2(90, 215)}
+] )
+
 enemy_units = Array[Dictionary]( [
 	{"type": 0, "pos": Vector2(460, 170)},
 	{"type": 0, "pos": Vector2(540, 230)},

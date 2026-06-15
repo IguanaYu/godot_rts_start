@@ -5,6 +5,7 @@ const UnitScript := preload("res://scripts/units/unit.gd")
 const BuildingScript := preload("res://scripts/buildings/building.gd")
 const MapConfigScript := preload("res://scripts/map_config.gd")
 const DifficultyClass := preload("res://scripts/difficulty.gd")
+const AllyDistressMarkerScript := preload("res://scripts/ui/ally_distress_marker.gd")
 
 # Map configuration
 @export var map_config: MapConfigScript = null
@@ -63,6 +64,9 @@ var show_fps: bool = false
 var canvas_modulate: CanvasModulate = null
 var _units_lost: int = 0  # 星级评价用：玩家损失单位数
 var _initialized: bool = false  # _run_init_steps 跑完前 _process/_input 直接 return
+# AI 队友求救感叹号列表（main 实例化，distress_cleared 时清除）
+var _distress_markers: Array[Node2D] = []
+var _distress_rescue_check_timer: float = 0.0
 
 func _ready() -> void:
 	result_label.visible = false
@@ -198,6 +202,8 @@ func _run_init_steps() -> void:
 		spawner_module.spawn_from_config(map_config)
 		# 新格式地图：玩家方按 player_sessions 占用情况动态生成 slot
 		_spawn_dynamic_players()
+	# AI 队友（单机模式；预放置和配置生成两种情况都支持）
+	_spawn_ai_allies()
 	if RelayManager.is_online:
 		LockstepSync.set_game(self)
 		if RelayManager._game_seed != 0:
@@ -212,6 +218,11 @@ func _run_init_steps() -> void:
 	_setup_wave_manager()
 	if map_config != null:
 		camera.position = map_config.camera_start
+	# 连接 AI 队友求救信号
+	if not AllyDistressSignal.distress_reported.is_connected(_on_ally_distress_reported):
+		AllyDistressSignal.distress_reported.connect(_on_ally_distress_reported)
+	if not AllyDistressSignal.distress_cleared.is_connected(_on_ally_distress_cleared):
+		AllyDistressSignal.distress_cleared.connect(_on_ally_distress_cleared)
 	await get_tree().process_frame
 
 	# Step 10: 完成
@@ -438,6 +449,52 @@ func _setup_capture_points() -> void:
 	for child in get_children():
 		if child is CapturePoint:
 			child.set_game_controller(self)
+			if not child.captured.is_connected(_on_capture_point_captured):
+				child.captured.connect(_on_capture_point_captured.bind(child))
+
+
+# 占领 capture_point 后的回调：检查是否配置了 AI 队友延迟增援
+func _on_capture_point_captured(_team: int, point: CapturePoint) -> void:
+	var delay: float = point.ally_reinforcement_delay
+	if delay <= 0.0 or point.ally_reinforcement_groups.is_empty():
+		return
+	if RelayManager.is_online:
+		return  # 多人模式不支持 AI 队友
+	var spawn_pos: Vector2 = point.global_position
+	var target: Vector2 = _find_nearest_enemy_pos(spawn_pos)
+	# 屏幕提示
+	spawner_module.show_floating_text(tr("ALLY_REINFORCEMENT_INCOMING"), Color(1.0, 0.85, 0.0), spawn_pos)
+	# 延迟生成
+	var timer := get_tree().create_timer(delay)
+	timer.timeout.connect(_on_ally_reinforcement_timeout.bind(point.ally_reinforcement_groups, spawn_pos, target))
+
+
+func _on_ally_reinforcement_timeout(groups: Array, spawn_pos: Vector2, target: Vector2) -> void:
+	if not is_instance_valid(self):
+		return
+	spawner_module.spawn_ally_wave(groups, spawn_pos, target)
+
+
+# 找最近的敌方建筑/单位位置作为增援目标
+func _find_nearest_enemy_pos(from: Vector2) -> Vector2:
+	var nearest: Vector2 = from + Vector2(800, 0)
+	var nearest_dist: float = INF
+	for b in get_tree().get_nodes_in_group("enemy_buildings"):
+		if not is_instance_valid(b) or b.is_dead():
+			continue
+		var d: float = from.distance_to(b.global_position)
+		if d < nearest_dist:
+			nearest_dist = d
+			nearest = b.global_position
+	if nearest_dist == INF:
+		for u in get_tree().get_nodes_in_group("enemy_units"):
+			if not (u is CharacterBody2D) or u.is_dead():
+				continue
+			var d2: float = from.distance_to(u.global_position)
+			if d2 < nearest_dist:
+				nearest_dist = d2
+				nearest = u.global_position
+	return nearest
 
 func _setup_ambush_triggers() -> void:
 	for child in get_children():
@@ -613,6 +670,127 @@ func _spawn_dynamic_players() -> void:
 		gold = my_sess["gold"]
 
 
+# 单机模式 AI 队友：从 map_config.ai_allies 生成黄色盟军（owner_id=-2）
+# 多人模式下强制跳过，避免 lockstep 同步复杂度
+func _spawn_ai_allies() -> void:
+	if RelayManager.is_online:
+		return
+	if map_config == null or map_config.ai_allies.is_empty():
+		return
+	for spawn in map_config.ai_allies:
+		spawner_module.spawn_ally_unit_initial(spawn.type, spawn.pos)
+
+
+# === AI 队友求救系统回调 ===
+
+func _on_ally_distress_reported(world_pos: Vector2, _victim: Node) -> void:
+	# 1. 屏幕文字（世界位置漂浮）
+	spawner_module.show_floating_text(tr("ALLY_DISTRESS_TEXT"), Color(1.0, 0.85, 0.0), world_pos)
+	# 2. 地图感叹号
+	var marker: Node2D = AllyDistressMarkerScript.new()
+	add_child(marker)
+	marker.setup(world_pos)
+	_distress_markers.append(marker)
+
+
+func _on_ally_distress_cleared(world_pos: Vector2) -> void:
+	# 清除距离 world_pos 最近的感叹号
+	var best_idx: int = -1
+	var best_dist: float = INF
+	for i in _distress_markers.size():
+		var m: Node2D = _distress_markers[i]
+		if not is_instance_valid(m):
+			continue
+		var d: float = m.global_position.distance_to(world_pos)
+		if d < best_dist:
+			best_dist = d
+			best_idx = i
+	if best_idx >= 0 and best_dist < AllyDistressSignal.AREA_RADIUS:
+		var m2: Node2D = _distress_markers[best_idx]
+		_distress_markers.remove_at(best_idx)
+		if is_instance_valid(m2):
+			m2.queue_free()
+
+
+# 玩家走到求救点附近自动清除信号（每 0.5s 检查一次）
+func _check_distress_rescue() -> void:
+	if _distress_markers.is_empty():
+		return
+	var rescue_radius: float = AllyDistressSignal.RESCUE_RADIUS
+	var positions: Array = []
+	for m in _distress_markers:
+		if is_instance_valid(m):
+			positions.append(m.global_position)
+	if positions.is_empty():
+		return
+	for unit in get_tree().get_nodes_in_group("player_units"):
+		if not (unit is CharacterBody2D) or unit.is_dead():
+			continue
+		if unit.owner_id == -2:
+			continue  # AI 队友自身不算救援者
+		for pos in positions:
+			if unit.global_position.distance_to(pos) < rescue_radius:
+				AllyDistressSignal.clear_at(pos)
+				break
+
+
+# 玩家 ping 攻击指挥（Alt+左键）：所有 AI 队友 attack_move 到此点
+func _do_ally_ping_attack(world_pos: Vector2) -> void:
+	if RelayManager.is_online:
+		return  # 多人模式不支持 AI 队友
+	var has_ally: bool = false
+	for u in get_tree().get_nodes_in_group("player_units"):
+		if u is CharacterBody2D and not u.is_dead() and u.owner_id == -2:
+			has_ally = true
+			break
+	if not has_ally:
+		return  # 没有 AI 队友，ping 无意义
+	AllyCommander.issue_attack_order(world_pos)
+	spawner_module.show_floating_text(tr("ALLY_PING_ATTACK"), Color(1.0, 0.4, 0.3), world_pos)
+	_spawn_ally_ping_marker(world_pos, Color(1.0, 0.4, 0.3))
+
+
+# 玩家 ping 防御指挥（Alt+右键）：所有 AI 队友 move 到此点后驻防
+func _do_ally_ping_defend(world_pos: Vector2) -> void:
+	if RelayManager.is_online:
+		return
+	var has_ally: bool = false
+	for u in get_tree().get_nodes_in_group("player_units"):
+		if u is CharacterBody2D and not u.is_dead() and u.owner_id == -2:
+			has_ally = true
+			break
+	if not has_ally:
+		return
+	AllyCommander.issue_defend_order(world_pos)
+	spawner_module.show_floating_text(tr("ALLY_PING_DEFEND"), Color(0.4, 0.8, 1.0), world_pos)
+	_spawn_ally_ping_marker(world_pos, Color(0.4, 0.8, 1.0))
+
+
+# ping 位置的扩散十字 + 圆圈视觉反馈（1.2s 自动消失）
+func _spawn_ally_ping_marker(world_pos: Vector2, color: Color) -> void:
+	var marker := Node2D.new()
+	marker.name = "AllyPingMarker"
+	add_child(marker)
+	marker.global_position = world_pos
+	marker.z_index = 60
+	var cross_h := Line2D.new()
+	cross_h.width = 3.0
+	cross_h.default_color = color
+	cross_h.add_point(Vector2(-40, 0))
+	cross_h.add_point(Vector2(40, 0))
+	marker.add_child(cross_h)
+	var cross_v := Line2D.new()
+	cross_v.width = 3.0
+	cross_v.default_color = color
+	cross_v.add_point(Vector2(0, -40))
+	cross_v.add_point(Vector2(0, 40))
+	marker.add_child(cross_v)
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(marker, "scale", Vector2(1.8, 1.8), 1.2).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(marker, "modulate:a", 0.0, 1.2).set_trans(Tween.TRANS_SINE)
+	tween.chain().tween_callback(marker.queue_free)
+
+
 func mp_place_building(player: int, building_type: int, pos: Vector2):
 	# 用 player_sessions 推断 alliance/color/slot，不再用 player == my_id 推断 team
 	# 修复：原 bug 是 host 端执行 client 命令时把 client 单位当成 ENEMY（红色）
@@ -711,6 +889,11 @@ func _process(delta: float) -> void:
 	camera_module.process_camera(delta / Engine.time_scale)
 	_check_victory()
 	_check_wave_cleared()
+	# AI 队友求救救援检测：每 0.5s 一次
+	_distress_rescue_check_timer += delta
+	if _distress_rescue_check_timer >= 0.5:
+		_distress_rescue_check_timer = 0.0
+		_check_distress_rescue()
 	combat_ctrl.update_selection(get_global_mouse_position(), selection_box)
 	attack_move_indicator.visible = combat_ctrl.attack_move_mode
 	building_placer.update_preview()
@@ -833,6 +1016,9 @@ func _input(event: InputEvent) -> void:
 		match event.button_index:
 			MOUSE_BUTTON_LEFT:
 				if event.pressed:
+					if event.alt_pressed:
+						_do_ally_ping_attack(get_global_mouse_position())
+						return
 					if combat_ctrl.attack_move_mode:
 						combat_ctrl.do_attack_move(get_global_mouse_position())
 						combat_ctrl.set_attack_move_mode(false)
@@ -858,6 +1044,9 @@ func _input(event: InputEvent) -> void:
 						combat_ctrl.release_selection(get_global_mouse_position(), selection_box, shift_held, ctrl_held)
 			MOUSE_BUTTON_RIGHT:
 				if event.pressed:
+					if event.alt_pressed:
+						_do_ally_ping_defend(get_global_mouse_position())
+						return
 					combat_ctrl.set_attack_move_mode(false)
 					cursor_manager.set_attack(false)
 					# Q/W模式下右键退出模式

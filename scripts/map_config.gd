@@ -19,6 +19,10 @@ extends Resource
 @export var enemy_units: Array[Dictionary] = []
 @export var enemy_buildings: Array[Dictionary] = []
 
+# AI 队友（单机模式电脑控制的盟军，owner_id=-2, alliance_id=0, color=YELLOW）
+# 扁平格式，与 player_units 一致：Array[{"type": int, "pos": Vector2}]
+@export var ai_allies: Array[Dictionary] = []
+
 # === 多势力 / 多联盟结构（新格式；为空时由 game_spawner 用旧字段自动构造 fallback）===
 # alliance 结构：{ "id": int, "is_ai": bool, "slots": Array[Dictionary] }
 # slot 结构：{ "color": int (Faction.Color), "start_pos": Vector2,

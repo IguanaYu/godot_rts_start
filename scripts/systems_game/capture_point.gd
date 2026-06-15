@@ -37,6 +37,10 @@ enum TriggerType { CLEAR_AREA, KILL_TARGETS, MISSION_COUNTER }
 @export var reward_lancers: int = 0
 @export var reward_monks: int = 0
 
+# --- AI 队友延迟增援（占领后过 delay 秒召唤黄色盟军波次）---
+@export var ally_reinforcement_delay: float = 0.0  # 0 = 无增援
+@export var ally_reinforcement_groups: Array = []  # [{type=0, count=3}, ...]
+
 # --- 控制 ---
 @export var enabled_on_start: bool = true
 

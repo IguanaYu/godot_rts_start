@@ -1,4 +1,8 @@
 keys,en,zh,ja
+ALLY_DISTRESS_TEXT,Ally under attack!,友军求救！,味方が攻撃されている！
+ALLY_REINFORCEMENT_INCOMING,Reinforcements incoming!,增援即将到达！,増援が到着！
+ALLY_PING_ATTACK,Attack here!,攻击此处！,ここを攻撃！
+ALLY_PING_DEFEND,Defend here!,防御此处！,ここを防御！
 ENTITY_WALL,Wall,城墙,城壁
 ENTITY_TOWER,Tower,箭塔,矢塔
 ENTITY_SOLDIER,Soldier,士兵,兵士

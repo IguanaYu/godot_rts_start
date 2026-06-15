@@ -88,9 +88,24 @@ func _draw() -> void:
 	_draw_collectibles()
 	_draw_spawn_points()
 	_draw_objective_markers()
+	_draw_distress_pings()
 	_draw_camera_view()
 
 	draw_rect(Rect2(Vector2.ZERO, _minimap_size), COLOR_BORDER, false, 1.5)
+
+
+# AI 队友求救 ping：脉动黄色圆点
+func _draw_distress_pings() -> void:
+	var positions: Array = AllyDistressSignal.get_active_positions()
+	if positions.is_empty():
+		return
+	var pulse: float = 4.0 + sin(_anim_frame * 0.5) * 2.5
+	for world_pos in positions:
+		var mp := world_to_minimap(world_pos)
+		if not _in_bounds(mp):
+			continue
+		draw_circle(mp, pulse + 3.0, Color(1.0, 0.85, 0.0, 0.3))
+		draw_circle(mp, pulse, Color(1.0, 0.85, 0.0, 0.9))
 
 
 func _draw_units() -> void:

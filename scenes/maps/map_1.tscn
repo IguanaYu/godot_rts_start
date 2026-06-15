@@ -164,6 +164,8 @@ detection_area = NodePath("../DetectionArea1")
 can_enemy_capture = false
 reward_gold = 200
 reward_soldiers = 3
+ally_reinforcement_delay = 15.0
+ally_reinforcement_groups = Array[Dictionary]([{"type": 0, "count": 3}, {"type": 1, "count": 2}])
 
 [node name="CapturePoint2" type="Area2D" parent="." unique_id=571342277]
 position = Vector2(1000, 200)
