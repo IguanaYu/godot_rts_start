@@ -1,7 +1,7 @@
 extends Node
 ## 输入模式管理器：Q键造兵模式 / W键建筑模式 / 默认编队模式
 
-enum InputMode { DEFAULT, UNIT_PRODUCTION, BUILDING_PLACEMENT, COMMANDER_SKILL_CAST }
+enum InputMode { DEFAULT, UNIT_PRODUCTION, BUILDING_PLACEMENT, COMMANDER_SKILL_CAST, RALLY_PLACEMENT }
 
 var current_mode: InputMode = InputMode.DEFAULT
 
@@ -55,3 +55,16 @@ func enter_commander_skill_cast() -> void:
 
 func is_commander_skill_cast() -> bool:
 	return current_mode == InputMode.COMMANDER_SKILL_CAST
+
+
+func enter_rally_placement() -> void:
+	if current_mode == InputMode.RALLY_PLACEMENT:
+		# Toggle: 再按一次Y退出
+		cancel_mode()
+		return
+	current_mode = InputMode.RALLY_PLACEMENT
+	mode_changed.emit(current_mode)
+
+
+func is_rally_placement() -> bool:
+	return current_mode == InputMode.RALLY_PLACEMENT

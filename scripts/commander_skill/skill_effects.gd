@@ -138,14 +138,22 @@ static func unit_drop(main_node: Node2D, spawner_module: Node, target_pos: Vecto
 	var units: Array = config.get("units", [])
 
 	# 生成单位
+	var spawned: Array = []
 	for unit_type in units:
-		spawner_module.spawn_unit_near(unit_type, target_pos, UnitScript.Team.PLAYER)
+		var u = spawner_module.spawn_unit_near(unit_type, target_pos, UnitScript.Team.PLAYER)
+		if u:
+			spawned.append(u)
 
 	# 空投特效：灰尘
 	spawner_module.spawn_dust_effect(target_pos)
 
 	# 浮动文字
 	spawner_module.show_floating_text("Unit Drop", Color(0.3, 0.8, 1.0), target_pos)
+
+	# 全局集结点：召唤单位自动前往（移动并攻击）
+	if main_node.get("has_global_rally"):
+		for u in spawned:
+			u.attack_move_to(main_node.global_rally_point)
 
 
 static func _show_area_indicator(main_node: Node2D, pos: Vector2, radius: float, color: Color) -> void:

@@ -42,6 +42,11 @@ var commander_skill_panel: Node
 var upgrade_manager: Node
 var upgrade_panel: Node
 
+# 全局玩家集结点
+var global_rally_point: Vector2 = Vector2.ZERO
+var has_global_rally: bool = false
+var _rally_indicator: Node2D = null
+
 # 控制组管理器
 var ctrl_group_mgr: RefCounted
 
@@ -1027,6 +1032,10 @@ func _input(event: InputEvent) -> void:
 					elif input_mode.is_commander_skill_cast() and commander_skill_manager.is_casting():
 						commander_skill_manager.confirm_cast(get_global_mouse_position())
 						input_mode.cancel_mode()
+					elif input_mode.is_rally_placement():
+						_set_global_rally(get_global_mouse_position())
+						input_mode.cancel_mode()
+						cursor_manager.set_attack(false)
 					elif building_placer.get_place_mode() != D.PlaceMode.NONE:
 						_do_place(get_global_mouse_position())
 					else:
@@ -1056,10 +1065,10 @@ func _input(event: InputEvent) -> void:
 						input_mode.cancel_mode()
 						return
 					building_placer.cancel_place_mode()
-					# 建筑选中时：右键设置集结点
+					# 建筑选中时：右键设置全局集结点
 					var sb = combat_ctrl.selected_building
 					if sb != null and is_instance_valid(sb) and combat_ctrl.is_empty():
-						sb.set_rally_point(get_global_mouse_position())
+						_set_global_rally(get_global_mouse_position())
 						return
 					combat_ctrl.right_click(get_global_mouse_position())
 			MOUSE_BUTTON_MIDDLE:
@@ -1091,6 +1100,11 @@ func _input(event: InputEvent) -> void:
 					combat_ctrl.set_attack_move_mode(true)
 					building_placer.cancel_place_mode()
 					cursor_manager.set_attack(true)
+			KEY_Y:
+				input_mode.enter_rally_placement()
+				building_placer.cancel_place_mode()
+				combat_ctrl.set_attack_move_mode(false)
+				cursor_manager.set_attack(input_mode.is_rally_placement())
 			KEY_S:
 				combat_ctrl.stop_selected()
 			KEY_H:
@@ -1280,5 +1294,34 @@ func _load_gameplay_settings() -> float:
 		return config.get_value("gameplay", "camera_sensitivity", 1.0)
 	return 1.0
 
-func spawn_unit_near(type: int, pos: Vector2, team: int) -> void:
-	spawner_module.spawn_unit_near(type, pos, team)
+func _set_global_rally(pos: Vector2) -> void:
+	global_rally_point = pos
+	has_global_rally = true
+	if _rally_indicator == null:
+		_rally_indicator = Node2D.new()
+		_rally_indicator.set_script(load("res://scripts/effects/rally_point_indicator.gd"))
+		_rally_indicator.z_index = 5
+		add_child(_rally_indicator)
+	_rally_indicator.setup_global(pos)
+	# 弹入动画
+	_rally_indicator.scale = Vector2(0.5, 0.5)
+	var tween := create_tween()
+	tween.tween_property(_rally_indicator, "scale", Vector2.ONE, 0.25) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	# 视野内所有玩家单位立刻 attack_move
+	_rally_units_in_view(pos)
+
+
+func _rally_units_in_view(pos: Vector2) -> void:
+	var view_rect: Rect2 = camera_module.get_camera_view_rect()
+	for u in get_tree().get_nodes_in_group("player_units"):
+		if is_instance_valid(u) and not u.is_dead() and view_rect.has_point(u.global_position):
+			u.attack_move_to(pos)
+
+
+func spawn_unit_near(type: int, pos: Vector2, team: int) -> CharacterBody2D:
+	var unit = spawner_module.spawn_unit_near(type, pos, team)
+	# 玩家单位自动前往全局集结点（覆盖 adaptive_reinforcement / capture_point 等通过 game_controller 的调用）
+	if team == UnitScript.Team.PLAYER and has_global_rally and is_instance_valid(unit):
+		unit.attack_move_to(global_rally_point)
+	return unit

@@ -7,6 +7,7 @@ var _flag_width: float = 14.0
 var _color: Color = Color(1.0, 0.85, 0.0, 0.8)  # 黄色
 var _dash_length: float = 8.0
 var _gap_length: float = 6.0
+var _global_mode: bool = false
 
 
 func setup(rally_world_pos: Vector2, building_world_pos: Vector2) -> void:
@@ -14,7 +15,25 @@ func setup(rally_world_pos: Vector2, building_world_pos: Vector2) -> void:
 	queue_redraw()
 
 
+func setup_global(world_pos: Vector2) -> void:
+	# 全局集结点模式：节点直接定位到世界坐标，本地原点画旗帜（无虚线）
+	_global_mode = true
+	global_position = world_pos
+	queue_redraw()
+
+
 func _draw() -> void:
+	if _global_mode:
+		# 全局模式：本地原点画旗帜（无虚线，全局集结点没有起点）
+		var pole_top := Vector2(0, -_flag_height)
+		draw_line(Vector2.ZERO, pole_top, _color, 2.0)
+		var flag_points := PackedVector2Array([
+			pole_top,
+			pole_top + Vector2(_flag_width, _flag_height * 0.35),
+			pole_top + Vector2(0, _flag_height * 0.6),
+		])
+		draw_colored_polygon(flag_points, _color)
+		return
 	if _target_pos.length_squared() < 4.0:
 		return
 

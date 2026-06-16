@@ -146,11 +146,15 @@ func _spawn_units(config: Dictionary) -> void:
 		return
 	var base_pos := _get_base_position()
 	var spawn_list: Array = config.get("spawn_units", [])
+	var main_scene := get_tree().current_scene
+	var has_rally: bool = main_scene != null and main_scene.get("has_global_rally")
 	for entry in spawn_list:
 		var type: int = entry.get("type", 0)
 		var count: int = entry.get("count", 1)
 		for _i in count:
-			_spawner.spawn_unit_near(type, base_pos, UnitScript.Team.PLAYER)
+			var u = _spawner.spawn_unit_near(type, base_pos, UnitScript.Team.PLAYER)
+			if has_rally and u:
+				u.attack_move_to(main_scene.global_rally_point)
 
 
 func _give_gold(config: Dictionary) -> void:

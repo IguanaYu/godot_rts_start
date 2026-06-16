@@ -294,6 +294,10 @@ func place_player_unit(unit_type: int, click_pos: Vector2) -> void:
 	if _upgrade_manager:
 		_upgrade_manager.apply_all_stat_upgrades_to_unit(unit)
 	spawn_spawn_effect(click_pos, UnitScript.Team.PLAYER, unit)
+	# 全局集结点：新单位自动前往（移动并攻击）
+	var main_scene := get_tree().current_scene
+	if main_scene and main_scene.get("has_global_rally"):
+		unit.attack_move_to(main_scene.global_rally_point)
 
 # --- 阵型计算 ---
 
@@ -412,7 +416,7 @@ func _spawn_enemy_unit_immediate(type: int, pos: Vector2, wave_attack: bool, wav
 	if wave_attack and wave_target != Vector2.ZERO:
 		ai.call_deferred("start_wave_attack", wave_target)
 
-func spawn_unit_near(type: int, pos: Vector2, team: int) -> void:
+func spawn_unit_near(type: int, pos: Vector2, team: int) -> CharacterBody2D:
 	var offset := Vector2(randf_range(-50, 50), randf_range(-50, 50))
 	var unit := create_unit(type, team, pos + offset)
 	unit.net_id = _next_net_id
@@ -432,6 +436,7 @@ func spawn_unit_near(type: int, pos: Vector2, team: int) -> void:
 		ai.name = "EnemyAI"
 		ai.set_script(load("res://scripts/units/enemy_ai.gd"))
 		unit.add_child(ai)
+	return unit
 
 # --- 难度乘数 ---
 
