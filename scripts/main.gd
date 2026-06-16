@@ -61,6 +61,7 @@ var map_bounds := Rect2(-500, -500, 2000, 1700)
 var show_damage_numbers: bool = true
 var _diff_preset: Resource = null  # DifficultyPreset
 var show_fps: bool = false
+var show_collisions: bool = false
 var canvas_modulate: CanvasModulate = null
 var _units_lost: int = 0  # 星级评价用：玩家损失单位数
 var _initialized: bool = false  # _run_init_steps 跑完前 _process/_input 直接 return
@@ -1200,6 +1201,21 @@ func _load_damage_number_setting() -> void:
 	if config.load("user://settings.cfg") == OK:
 		show_damage_numbers = config.get_value("game", "show_damage_numbers", true)
 		Unit.show_path_lines = config.get_value("game", "show_path_lines", true)
+		show_collisions = config.get_value("game", "show_collisions", false)
+	refresh_collision_debug()
+
+
+# 即时切换碰撞区域显示：设置 hint 后手动触发已有节点重绘
+func refresh_collision_debug() -> void:
+	get_tree().debug_collisions_hint = show_collisions
+	_redraw_collision_shapes(get_tree().root)
+
+
+func _redraw_collision_shapes(node: Node) -> void:
+	if node is CollisionShape2D or node is CollisionPolygon2D:
+		node.queue_redraw()
+	for child in node.get_children():
+		_redraw_collision_shapes(child)
 
 
 func _load_display_settings() -> void:

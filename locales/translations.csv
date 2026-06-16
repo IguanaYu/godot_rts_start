@@ -214,6 +214,7 @@ TEST_T13_DESC,"Survive as long as possible. Game ends when your castle falls.","
 TAB_CAMPAIGN,Campaign,战役,キャンペーン
 TAB_TEST_LEVELS,Test Levels,测试关卡,テストステージ
 UI_PATH_LINES,Path Lines,寻路路径线,パス表示
+UI_SHOW_COLLISIONS,Show Collisions,碰撞区域,コリジョン表示
 LEVEL_5_NAME,Map 5: Skill Awakening,关卡5: 技能觉醒,マップ5: スキル覚醒
 LEVEL_5_DESC,Learn to use Orbital Strike and Shield Wall commander skills. Survive 3 waves of enemies.,学习使用轨道轰炸和护盾墙指挥官技能。抵御3波敌军进攻。,軌道爆撃とシールドウォールの指揮官スキルを学べ。3波の敵を耐えろ。
 LEVEL_6_NAME,Map 6: Resource Drain,关卡6: 资源枯竭,マップ6: 資源枯渇

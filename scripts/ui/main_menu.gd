@@ -436,6 +436,20 @@ func _show_settings_overlay() -> void:
 	path_row.add_child(path_toggle)
 	vbox.add_child(path_row)
 
+	# 碰撞区域显示
+	var col_row := HBoxContainer.new()
+	col_row.add_theme_constant_override("separation", 8)
+	var col_label := Label.new()
+	col_label.text = tr("UI_SHOW_COLLISIONS")
+	col_label.add_theme_font_size_override("font_size", 14)
+	col_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
+	col_row.add_child(col_label)
+	var col_toggle := CheckButton.new()
+	col_toggle.button_pressed = config.get_value("game", "show_collisions", false)
+	col_toggle.toggled.connect(_on_settings_collisions_toggled)
+	col_row.add_child(col_toggle)
+	vbox.add_child(col_row)
+
 	var spacer4 := Control.new()
 	spacer4.custom_minimum_size = Vector2(0, 8)
 	vbox.add_child(spacer4)
@@ -578,6 +592,11 @@ func _on_settings_fps_toggled(pressed: bool) -> void:
 func _on_settings_path_lines_toggled(pressed: bool) -> void:
 	Unit.show_path_lines = pressed
 	_save_setting("game", "show_path_lines", pressed)
+
+
+func _on_settings_collisions_toggled(pressed: bool) -> void:
+	get_tree().debug_collisions_hint = pressed
+	_save_setting("game", "show_collisions", pressed)
 
 
 func _on_settings_master_volume_changed(value: float) -> void:
