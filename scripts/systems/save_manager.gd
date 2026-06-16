@@ -6,6 +6,7 @@ signal save_updated(slot: int)
 
 const SAVE_DIR := "user://saves/"
 const SLOTS := 3
+const SETTINGS_PATH := "user://settings.cfg"
 const LEVELS := [
 	"map_1", "map_2", "map_3", "map_4",
 	"map_5", "map_6", "map_7", "map_8",
@@ -153,6 +154,33 @@ func save_current_data(data: Dictionary) -> void:
 		return
 	data["total_score"] = calc_total_score(data)
 	save_slot(_current_slot, data)
+
+
+# === 默认存档（快速进入）===
+
+func get_default_slot() -> int:
+	var config := ConfigFile.new()
+	if config.load(SETTINGS_PATH) == OK:
+		var slot: int = config.get_value("save", "last_active_slot", 0)
+		if slot >= 0 and slot < SLOTS:
+			return slot
+	return 0
+
+
+func set_default_slot(slot: int) -> void:
+	var config := ConfigFile.new()
+	config.load(SETTINGS_PATH)
+	config.set_value("save", "last_active_slot", slot)
+	config.save(SETTINGS_PATH)
+
+
+# 一键进入默认存档：设 current_slot → 不存在则初始化空档 → 写回记录
+func enter_default_slot() -> void:
+	var slot := get_default_slot()
+	set_current_slot(slot)
+	if not slot_exists(slot):
+		save_slot(slot, _empty_slot())
+	set_default_slot(slot)
 
 
 # === 游戏会话追踪 ===

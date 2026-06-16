@@ -328,7 +328,7 @@ func _refresh_ui() -> void:
 
 	# 更新返回按钮文本
 	if _back_button_label:
-		_back_button_label.text = tr("SAVE_BACK_PROFILE")
+		_back_button_label.text = tr("ESC_BACK_MAIN_MENU")
 # ============================================================
 func _make_ninepatch(np: Dictionary) -> NinePatchRect:
 	var npr := NinePatchRect.new()
@@ -717,7 +717,7 @@ func _create_start_button(parent: VBoxContainer) -> void:
 
 
 # ============================================================
-# 返回存档选择按钮
+# 返回主菜单按钮
 # ============================================================
 func _create_back_button(parent: BoxContainer) -> void:
 	var wrapper := Control.new()
@@ -740,7 +740,7 @@ func _create_back_button(parent: BoxContainer) -> void:
 	wrapper.add_child(btn)
 
 	_back_button_label = Label.new()
-	_back_button_label.text = tr("SAVE_BACK_PROFILE")
+	_back_button_label.text = tr("ESC_BACK_MAIN_MENU")
 	_back_button_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_back_button_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_back_button_label.add_theme_font_size_override("font_size", 16)
@@ -758,7 +758,7 @@ func _create_back_button(parent: BoxContainer) -> void:
 
 
 func _on_back_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/save_select.tscn")
+	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 
 
 # ============================================================

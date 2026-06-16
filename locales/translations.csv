@@ -157,6 +157,7 @@ UPGRADE_SPAWN_6,Full Mobilization,全军出击,総動員
 UPGRADE_SPAWN_6_DESC,Deploy 3 Soldiers + 2 Archers + 1 Lancer,部署3战士+2弓手+1枪兵,戦士3+アーチャー2+ランサー1を配置
 MAIN_MENU_TITLE,TINY SWORDS RTS,小小剑 RTS,タイニーソード RTS
 MAIN_MENU_START,Start Game,开始游戏,ゲーム開始
+MAIN_MENU_SWITCH_SAVE,Switch Save,切换存档,セーブ切替
 UI_LANGUAGE,Language,语言,言語
 ESC_RESUME,Resume,继续,再開
 ESC_BACK_MAIN_MENU,Back to Main Menu,返回主菜单,メインメニューに戻る

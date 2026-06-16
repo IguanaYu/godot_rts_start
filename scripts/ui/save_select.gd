@@ -396,6 +396,7 @@ func _refresh_all_slots() -> void:
 func _on_slot_selected(slot: int) -> void:
 	var sm := _get_save_manager()
 	sm.set_current_slot(slot)
+	sm.set_default_slot(slot)
 	# 如果是新存档，先初始化
 	if not sm.slot_exists(slot):
 		sm.save_slot(slot, sm.load_slot(slot))

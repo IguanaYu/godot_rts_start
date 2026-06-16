@@ -27,6 +27,7 @@ var _title_label: Label
 var _start_label: Label
 var _settings_label: Label
 var _quit_label: Label
+var _switch_save_label: Label
 
 var np_wood_table: Dictionary
 var np_btn_blue: Dictionary
@@ -137,27 +138,31 @@ func _create_buttons() -> void:
 	var vbox := VBoxContainer.new()
 	vbox.anchor_left = 0.35
 	vbox.anchor_right = 0.65
-	vbox.anchor_top = 0.35
-	vbox.anchor_bottom = 0.70
-	vbox.add_theme_constant_override("separation", 20)
+	vbox.anchor_top = 0.30
+	vbox.anchor_bottom = 0.75
+	vbox.add_theme_constant_override("separation", 12)
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	add_child(vbox)
 
-	# Start Game - 红色按钮
+	# 1. Start Game - 红色按钮（直接进入上次活动存档）
 	_start_label = _make_menu_button(tr("MAIN_MENU_START"), np_btn_red, np_btn_red_prs, Vector2(0, 60), _on_start_pressed)
 	vbox.add_child(_start_label.get_parent())
 
-	# Settings - 蓝色按钮
+	# 2. Switch Save - 蓝色按钮（进入存档选择界面）
+	_switch_save_label = _make_menu_button(tr("MAIN_MENU_SWITCH_SAVE"), np_btn_blue, np_btn_blue_prs, Vector2(0, 60), _on_switch_save_pressed)
+	vbox.add_child(_switch_save_label.get_parent())
+
+	# 3. Multiplayer - 蓝色按钮
+	var mp_label = _make_menu_button(tr("UI_MULTIPLAYER"), np_btn_blue, np_btn_blue_prs, Vector2(0, 60), _on_multiplayer_pressed)
+	vbox.add_child(mp_label.get_parent())
+
+	# 4. Settings - 蓝色按钮
 	_settings_label = _make_menu_button(tr("UI_SETTINGS"), np_btn_blue, np_btn_blue_prs, Vector2(0, 60), _on_settings_pressed)
 	vbox.add_child(_settings_label.get_parent())
 
-	# Quit - 蓝色按钮
+	# 5. Quit - 蓝色按钮
 	_quit_label = _make_menu_button(tr("UI_QUIT_GAME"), np_btn_blue, np_btn_blue_prs, Vector2(0, 60), _on_quit_pressed)
 	vbox.add_child(_quit_label.get_parent())
-
-	# Multiplayer - 蓝色按钮
-	var mp_label = _make_menu_button(tr("UI_MULTIPLAYER"), np_btn_blue, np_btn_blue_prs, Vector2(0, 60), _on_multiplayer_pressed)
-	vbox.add_child(mp_label.get_parent())
 
 
 func _make_menu_button(text: String, np: Dictionary, np_prs: Dictionary, min_size: Vector2, callback: Callable) -> Label:
@@ -227,6 +232,13 @@ func _create_language_option() -> void:
 
 
 func _on_start_pressed() -> void:
+	var sm := get_node_or_null("/root/SaveManager")
+	if sm and sm.has_method("enter_default_slot"):
+		sm.enter_default_slot()
+	get_tree().change_scene_to_file("res://scenes/level_select.tscn")
+
+
+func _on_switch_save_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/save_select.tscn")
 
 
@@ -252,6 +264,7 @@ func _on_language_selected(index: int) -> void:
 func _refresh_ui() -> void:
 	_title_label.text = tr("MAIN_MENU_TITLE")
 	_start_label.text = tr("MAIN_MENU_START")
+	_switch_save_label.text = tr("MAIN_MENU_SWITCH_SAVE")
 	_settings_label.text = tr("UI_SETTINGS")
 	_quit_label.text = tr("UI_QUIT_GAME")
 	# 更新语言下拉框项文字
