@@ -377,6 +377,14 @@ func _create_card_generic(item_id: int, name_text: String, desc_text: String,
 	if icon_path != "":
 		var icon_tex := load(icon_path) as Texture2D
 		if icon_tex:
+			# 精灵表（横排多帧正方形）裁出第一帧；单图保持原样
+			var tw := icon_tex.get_width()
+			var th := icon_tex.get_height()
+			if tw > th and th > 0 and tw % th == 0:
+				var atlas := AtlasTexture.new()
+				atlas.atlas = icon_tex
+				atlas.region = Rect2(0, 0, th, th)
+				icon_tex = atlas
 			var icon := TextureRect.new()
 			icon.texture = icon_tex
 			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
