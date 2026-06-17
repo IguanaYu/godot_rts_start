@@ -11,7 +11,8 @@ enum PlaceMode { NONE, WALL, TOWER, CASTLE, BARRACKS, SOLDIER, ARCHER, MONASTERY
 	PIKEMAN, RAM, ARMOR_PIERCER,
 	REVENANT, DUELIST, TROLL, PALADIN,
 	WAR_DRUMMER, BANNER_BEARER,
-	BOMBER, AVENGER }
+	BOMBER, AVENGER,
+	HAMMERER }
 
 # --- 费用 ---
 const COSTS := {
@@ -41,6 +42,7 @@ const COSTS := {
 	PlaceMode.BANNER_BEARER: 150,
 	PlaceMode.BOMBER: 80,
 	PlaceMode.AVENGER: 120,
+	PlaceMode.HAMMERER: 130,
 }
 
 # --- 显示名称（翻译键，使用时需 tr()） ---
@@ -71,6 +73,7 @@ const MODE_NAMES := {
 	PlaceMode.BANNER_BEARER: "ENTITY_BANNER_BEARER",
 	PlaceMode.BOMBER: "ENTITY_BOMBER",
 	PlaceMode.AVENGER: "ENTITY_AVENGER",
+	PlaceMode.HAMMERER: "ENTITY_HAMMERER",
 }
 
 # --- 默认全部物品 ---
@@ -84,6 +87,7 @@ const ALL_ITEMS := [
 	PlaceMode.REVENANT, PlaceMode.DUELIST, PlaceMode.TROLL, PlaceMode.PALADIN,
 	PlaceMode.WAR_DRUMMER, PlaceMode.BANNER_BEARER,
 	PlaceMode.BOMBER, PlaceMode.AVENGER,
+	PlaceMode.HAMMERER,
 ]
 
 # --- 固定显示顺序（单位在前，建筑在后） ---
@@ -94,7 +98,7 @@ const DISPLAY_ORDER := [
 	PlaceMode.PIKEMAN, PlaceMode.RAM, PlaceMode.ARMOR_PIERCER,
 	PlaceMode.REVENANT, PlaceMode.DUELIST, PlaceMode.TROLL, PlaceMode.PALADIN,
 	PlaceMode.WAR_DRUMMER, PlaceMode.BANNER_BEARER,
-	PlaceMode.BOMBER, PlaceMode.AVENGER,
+	PlaceMode.BOMBER, PlaceMode.AVENGER, PlaceMode.HAMMERER,
 	PlaceMode.WALL, PlaceMode.TOWER, PlaceMode.BARRACKS,
 	PlaceMode.ARCHERY_RANGE, PlaceMode.MONASTERY, PlaceMode.CASTLE,
 ]
@@ -141,6 +145,7 @@ const MODE_ICONS := {
 	PlaceMode.BANNER_BEARER: "res://assets/units/blue_warrior/Warrior_Idle.png",
 	PlaceMode.BOMBER: "res://assets/units/blue_warrior/Warrior_Idle.png",
 	PlaceMode.AVENGER: "res://assets/units/blue_warrior/Warrior_Idle.png",
+	PlaceMode.HAMMERER: "res://assets/units/blue_lancer/Lancer_Idle.png",
 }
 
 # --- 预加载按钮图标纹理 ---
@@ -239,6 +244,7 @@ const ENEMY_VARIANT_SCENES := {
 	&"banner_bearer": "res://scenes/units/banner_bearer.tscn",
 	&"bomber": "res://scenes/units/bomber.tscn",
 	&"avenger": "res://scenes/units/avenger.tscn",
+	&"hammerer": "res://scenes/units/hammerer.tscn",
 }
 
 # --- PlaceMode → BuildingType 映射 ---
@@ -273,6 +279,7 @@ const PLACE_MODE_TO_UNIT := {
 	PlaceMode.BANNER_BEARER: UnitScript.UnitType.SOLDIER,
 	PlaceMode.BOMBER: UnitScript.UnitType.SOLDIER,
 	PlaceMode.AVENGER: UnitScript.UnitType.SOLDIER,
+	PlaceMode.HAMMERER: UnitScript.UnitType.LANCER,
 }
 
 # --- PlaceMode → stats_id 映射（变体单位） ---
@@ -293,6 +300,7 @@ const PLACE_MODE_TO_STATS_ID := {
 	PlaceMode.BANNER_BEARER: &"banner_bearer",
 	PlaceMode.BOMBER: &"bomber",
 	PlaceMode.AVENGER: &"avenger",
+	PlaceMode.HAMMERER: &"hammerer",
 }
 
 # --- 网格 ---

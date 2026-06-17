@@ -52,6 +52,9 @@ extends Resource
 @export var vengeance_buff_duration: float = 0.0  # buff 持续时间(ms)
 @export var vengeance_scan_range: float = 0.0     # 侦测同伴死亡的范围
 
+# --- 击退 ---
+@export var knockback_force: float = 0.0   # 命中后将目标推开多少像素，0=无击退
+
 # --- 升级系统 ---
 @export var upgrade_hp_per_level: int = 10       # 每级 HP 增加
 @export var upgrade_damage_per_level: int = 2    # 每级攻击力增加

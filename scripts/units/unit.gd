@@ -954,6 +954,10 @@ func _perform_attack() -> void:
 			_spawn_arrow(attack_target, damage)
 		else:
 			attack_target.take_damage(damage, self)
+			# 击退：近战命中后将目标推开
+			if stats_data and stats_data.knockback_force > 0.0 and attack_target is Unit and is_instance_valid(attack_target):
+				var dir = (attack_target.global_position - global_position).normalized()
+				attack_target.global_position += dir * stats_data.knockback_force
 
 func _spawn_arrow(target, damage: int = -1) -> void:
 	var spawner = get_tree().current_scene.get("spawner_module")

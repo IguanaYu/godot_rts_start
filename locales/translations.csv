@@ -318,3 +318,4 @@ LEVEL_HINT_NAV,↑↓ Select Level · SPACE/ENTER Start · TAB Switch Tab,↑↓
 SAVE_HINT_NAV,←→ Select Slot · SPACE/ENTER Enter,←→ 选择存档 · 空格/回车 进入,←→ 選択 · SPACE/ENTER 入る
 ENTITY_BOMBER,Bomber,自爆兵,自爆兵
 ENTITY_AVENGER,Avenger,复仇者,復讐者
+ENTITY_HAMMERER,Hammerer,重锤兵,ハンマー兵
