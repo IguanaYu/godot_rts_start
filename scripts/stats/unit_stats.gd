@@ -93,6 +93,10 @@ extends Resource
 @export var summon_chance: float = 1.0      # 每次攻击命中时召唤概率（0-1）
 @export var summon_lifetime: float = 15.0   # 召唤物存活秒数（0=永久）
 
+# --- 劝化（Enchanter） ---
+@export var convert_channel_time: float = 0.0  # 引导秒数，0=不劝化
+@export var convert_range: float = 0.0         # 劝化射程
+
 # --- 升级系统 ---
 @export var upgrade_hp_per_level: int = 10       # 每级 HP 增加
 @export var upgrade_damage_per_level: int = 2    # 每级攻击力增加

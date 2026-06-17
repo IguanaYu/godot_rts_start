@@ -107,6 +107,11 @@ var _poison_accumulator: float = 0.0    # DoT 累积器
 var _summoned_minions: Array = []       # 当前存活的召唤物引用
 var _summon_lifetime: float = 0.0       # 召唤物存活秒数（0=永久），从 stats 同步
 
+# 劝化系统（2B Step8）
+var _convert_target: Node = null        # 当前劝化引导目标
+var _convert_channel: float = 0.0       # 已引导秒数
+var _convert_aura_timer: float = 0.0    # 劝化目标扫描计时
+
 # 命令队列 (Shift)
 const CommandQueue = preload("res://scripts/systems/command_queue.gd")
 var command_queue = CommandQueue.new()
@@ -512,6 +517,8 @@ func _physics_process(delta: float) -> void:
 	_aura_process(delta)
 	# 嘲讽（Stoneguard）：周期性强制周围敌人攻击自己
 	_taunt_process(delta)
+	# 劝化（Enchanter）：引导转化敌方单位
+	_convert_process(delta)
 	# 隐身/显形管理
 	_stealth_process(delta)
 	# 闪现冷却递减
@@ -989,6 +996,9 @@ func _perform_attack() -> void:
 	if attack_target and not attack_target.is_dead():
 		# 自爆单位不进行普通攻击
 		if stats_data and stats_data.explode_damage > 0 and stats_data.attack_damage <= 0:
+			return
+		# 劝化单位不进行普通攻击
+		if stats_data and stats_data.convert_channel_time > 0 and stats_data.attack_damage <= 0:
 			return
 		if unit_type == UnitType.MONK and (stats_data == null or stats_data.projectile_data == null):
 			return
@@ -1740,6 +1750,87 @@ func force_attack_target(target_node, duration_sec: float) -> void:
 ## 是否处于被嘲讽状态（供 AI 决策参考）
 func is_taunted() -> bool:
 	return _taunt_expire_timer > 0.0
+
+
+# ============== 劝化（2B Step8） ==============
+
+## 劝化引导：锁定射程内一个敌方单位，持续引导 convert_channel_time 秒后转化
+func _convert_process(delta: float) -> void:
+	if stats_data == null or stats_data.convert_channel_time <= 0.0:
+		return
+	# 无引导目标时扫描
+	if _convert_target == null or not is_instance_valid(_convert_target) or _convert_target.is_dead():
+		_convert_target = null
+		_convert_channel = 0.0
+		_convert_aura_timer += delta
+		if _convert_aura_timer >= 0.5:
+			_convert_aura_timer = 0.0
+			_convert_target = _find_convert_target()
+		return
+	# 目标超出射程则放弃
+	var dist := global_position.distance_to(_convert_target.global_position)
+	if dist > stats_data.convert_range:
+		_convert_target = null
+		_convert_channel = 0.0
+		return
+	# 引导累加
+	_convert_channel += delta
+	if _convert_channel >= stats_data.convert_channel_time:
+		_convert_unit(_convert_target)
+		_convert_target = null
+		_convert_channel = 0.0
+
+
+## 查找劝化目标：射程内最近的有效敌方单位（非隐身）
+func _find_convert_target() -> Node:
+	var best = null
+	var best_dist: float = stats_data.convert_range
+	for u in UnitGrid.query_neighbors(global_position, stats_data.convert_range):
+		if not is_instance_valid(u) or u.is_dead():
+			continue
+		if u.team == team:
+			continue
+		if not (u is Unit):
+			continue
+		if u.has_method("is_stealthed") and u.is_stealthed():
+			continue
+		var d := global_position.distance_to(u.global_position)
+		if d <= best_dist:
+			best_dist = d
+			best = u
+	return best
+
+
+## 执行转化：切换阵营、分组、父节点
+func _convert_unit(target: Unit) -> void:
+	if target == null or not is_instance_valid(target) or target.is_dead():
+		return
+	var old_group := "enemy_units" if target.team == Team.ENEMY else "player_units"
+	var new_group := "player_units" if target.team == Team.ENEMY else "enemy_units"
+	var new_alliance := 0 if target.team == Team.ENEMY else 1
+	# 切换分组
+	if target.is_in_group(old_group):
+		target.remove_from_group(old_group)
+	# 切换阵营（setter 自动同步 team）
+	target.alliance_id = new_alliance
+	target.add_to_group(new_group)
+	# 移动到对方节点树下
+	var new_parent_name := "PlayerUnits" if new_alliance == 0 else "EnemyUnits"
+	var new_parent := get_tree().current_scene.get_node_or_null(new_parent_name)
+	if new_parent:
+		var old_pos := target.global_position
+		target.reparent(new_parent)
+		target.global_position = old_pos
+	# 若原为敌方单位，移除其 EnemyAI 子节点
+	var ai := target.get_node_or_null("EnemyAI")
+	if ai:
+		ai.queue_free()
+	# 清除目标的攻击目标（避免转化后立刻攻击新队友）
+	target.attack_target = null
+	target.attack_command_source = CommandSource.NONE
+	if target.state == UnitState.ATTACK:
+		target.state = UnitState.GUARD
+
 
 
 

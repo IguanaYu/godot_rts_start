@@ -13,7 +13,7 @@ enum PlaceMode { NONE, WALL, TOWER, CASTLE, BARRACKS, SOLDIER, ARCHER, MONASTERY
 	WAR_DRUMMER, BANNER_BEARER,
 	BOMBER, AVENGER,
 	HAMMERER,
-	STORMCALLER, SALAMANDER, SHADOWBLADE, BLINKER, WARDEN, STONEGUARD, VENOMBLADE, INQUISITOR, NECROMANCER }
+	STORMCALLER, SALAMANDER, SHADOWBLADE, BLINKER, WARDEN, STONEGUARD, VENOMBLADE, INQUISITOR, NECROMANCER, ENCHANTER }
 
 # --- 费用 ---
 const COSTS := {
@@ -53,6 +53,7 @@ const COSTS := {
 	PlaceMode.VENOMBLADE: 120,
 	PlaceMode.INQUISITOR: 130,
 	PlaceMode.NECROMANCER: 160,
+	PlaceMode.ENCHANTER: 150,
 }
 
 # --- 显示名称（翻译键，使用时需 tr()） ---
@@ -93,6 +94,7 @@ const MODE_NAMES := {
 	PlaceMode.VENOMBLADE: "ENTITY_VENOMBLADE",
 	PlaceMode.INQUISITOR: "ENTITY_INQUISITOR",
 	PlaceMode.NECROMANCER: "ENTITY_NECROMANCER",
+	PlaceMode.ENCHANTER: "ENTITY_ENCHANTER",
 }
 
 # --- 默认全部物品 ---
@@ -112,6 +114,7 @@ const ALL_ITEMS := [
 	PlaceMode.WARDEN, PlaceMode.STONEGUARD,
 	PlaceMode.VENOMBLADE, PlaceMode.INQUISITOR,
 	PlaceMode.NECROMANCER,
+	PlaceMode.ENCHANTER,
 ]
 
 # --- 固定显示顺序（单位在前，建筑在后） ---
@@ -128,6 +131,7 @@ const DISPLAY_ORDER := [
 	PlaceMode.WARDEN, PlaceMode.STONEGUARD,
 	PlaceMode.VENOMBLADE, PlaceMode.INQUISITOR,
 	PlaceMode.NECROMANCER,
+	PlaceMode.ENCHANTER,
 	PlaceMode.WALL, PlaceMode.TOWER, PlaceMode.BARRACKS,
 	PlaceMode.ARCHERY_RANGE, PlaceMode.MONASTERY, PlaceMode.CASTLE,
 ]
@@ -184,6 +188,7 @@ const MODE_ICONS := {
 	PlaceMode.VENOMBLADE: "res://assets/units/blue_archer/Archer_Idle.png",
 	PlaceMode.INQUISITOR: "res://assets/units/blue_archer/Archer_Idle.png",
 	PlaceMode.NECROMANCER: "res://assets/units/blue_archer/Archer_Idle.png",
+	PlaceMode.ENCHANTER: "res://assets/units/blue_warrior/Warrior_Idle.png",
 }
 
 # --- 预加载按钮图标纹理 ---
@@ -219,6 +224,7 @@ const ICON_TEXTURES := {
 	PlaceMode.VENOMBLADE: preload("res://assets/units/blue_archer/Archer_Idle.png"),
 	PlaceMode.INQUISITOR: preload("res://assets/units/blue_archer/Archer_Idle.png"),
 	PlaceMode.NECROMANCER: preload("res://assets/units/blue_archer/Archer_Idle.png"),
+	PlaceMode.ENCHANTER: preload("res://assets/units/blue_warrior/Warrior_Idle.png"),
 	}
 
 # --- Q模式：造兵快捷键 ---
@@ -300,6 +306,7 @@ const ENEMY_VARIANT_SCENES := {
 	&"inquisitor": "res://scenes/units/inquisitor.tscn",
 	&"necromancer": "res://scenes/units/necromancer.tscn",
 	&"skeleton": "res://scenes/units/skeleton.tscn",
+	&"enchanter": "res://scenes/units/enchanter.tscn",
 }
 
 # --- PlaceMode → BuildingType 映射 ---
@@ -344,6 +351,7 @@ const PLACE_MODE_TO_UNIT := {
 	PlaceMode.VENOMBLADE: UnitScript.UnitType.ARCHER,
 	PlaceMode.INQUISITOR: UnitScript.UnitType.ARCHER,
 	PlaceMode.NECROMANCER: UnitScript.UnitType.ARCHER,
+	PlaceMode.ENCHANTER: UnitScript.UnitType.SOLDIER,
 }
 
 # --- PlaceMode → stats_id 映射（变体单位） ---
@@ -374,6 +382,7 @@ const PLACE_MODE_TO_STATS_ID := {
 	PlaceMode.VENOMBLADE: &"venomblade",
 	PlaceMode.INQUISITOR: &"inquisitor",
 	PlaceMode.NECROMANCER: &"necromancer",
+	PlaceMode.ENCHANTER: &"enchanter",
 }
 
 # --- 网格 ---
