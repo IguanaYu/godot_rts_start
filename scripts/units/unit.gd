@@ -161,6 +161,9 @@ func _ready() -> void:
 		_update_hp_bar()
 	# 用 instance_id 把单位均匀分到 6 个 scan_phase，避免同帧扎堆扫描
 	_scan_phase = get_instance_id() % SCAN_THROTTLE_FRAMES
+	# 复仇者：延迟一帧扫描附近友军，连接死亡信号
+	if stats_data and stats_data.vengeance_scan_range > 0:
+		call_deferred("_setup_vengeance")
 
 
 ## 是否在本帧执行邻居扫描（每单位每 6 帧扫描一次）
@@ -937,6 +940,9 @@ func _calc_best_tangent(units: Array, base_dir: Vector2, acute: bool, pick_small
 
 func _perform_attack() -> void:
 	if attack_target and not attack_target.is_dead():
+		# 自爆单位不进行普通攻击
+		if stats_data and stats_data.explode_damage > 0 and stats_data.attack_damage <= 0:
+			return
 		if unit_type == UnitType.MONK and (stats_data == null or stats_data.projectile_data == null):
 			return
 		_is_attacking = true
@@ -1056,6 +1062,15 @@ func _alert_enemy_response(attacker) -> void:
 func die() -> void:
 	state = UnitState.DEAD
 	died.emit(self)
+	# 自爆：死亡时对周围敌人造成范围伤害
+	if stats_data and stats_data.explode_damage > 0 and stats_data.explode_radius > 0:
+		for u in UnitGrid.query_neighbors(global_position, stats_data.explode_radius):
+			if is_instance_valid(u) and not u.is_dead() and u.team != team:
+				var dist = global_position.distance_to(u.global_position)
+				if dist <= stats_data.explode_radius:
+					var ratio = 1.0 - dist / stats_data.explode_radius
+					var dmg = max(1, int(stats_data.explode_damage * ratio))
+					u.take_damage(dmg, self)
 	health._is_dead = true
 	var tween := create_tween()
 	tween.tween_property(self, "scale", Vector2.ZERO, 0.3)
@@ -1301,6 +1316,20 @@ func apply_buff(buff_type: String, value: float) -> void:
 		"range_bonus":
 			stat_set.add_modifier("buff:range_bonus", StatSetClass.ATTACK_RANGE, value, 1.0)
 
+## 带自定义持续时间的 buff（duration_msec 毫秒）
+func apply_buff_duration(buff_type: String, value: float, duration_msec: int) -> void:
+	var now_msec := Time.get_ticks_msec()
+	buffs[buff_type] = {"value": value, "expire": now_msec + duration_msec}
+	match buff_type:
+		"defense":
+			stat_set.add_modifier("buff:defense", StatSetClass.DAMAGE_REDUCTION, 0.0, 1.0 - value)
+		"attack":
+			stat_set.add_modifier("buff:attack", StatSetClass.ATTACK_DAMAGE, 0.0, 1.0 + value)
+		"attack_melee":
+			stat_set.add_modifier("buff:attack_melee", StatSetClass.ATTACK_DAMAGE, 0.0, 1.0 + value)
+		"range_bonus":
+			stat_set.add_modifier("buff:range_bonus", StatSetClass.ATTACK_RANGE, value, 1.0)
+
 func _expire_buffs() -> void:
 	var now_msec := Time.get_ticks_msec()
 	var expired := []
@@ -1341,6 +1370,26 @@ func _heal_from_lifesteal(damage_dealt: int) -> void:
 		heal_amt += stats_data.lifesteal_flat
 	if heal_amt > 0 and health.hp < health.max_hp:
 		health.heal(heal_amt)
+
+
+
+## 复仇者：扫描附近友军并连接死亡信号
+func _setup_vengeance() -> void:
+	var range_val := stats_data.vengeance_scan_range
+	if range_val <= 0.0:
+		return
+	for u in UnitGrid.query_neighbors(global_position, range_val):
+		if is_instance_valid(u) and not u.is_dead() and u.team == team:
+			if not u.died.is_connected(_on_ally_died):
+				u.died.connect(_on_ally_died)
+
+
+## 复仇者：友军死亡时获得攻击加成
+func _on_ally_died(_ally: Unit) -> void:
+	if not stats_data or stats_data.vengeance_buff_duration <= 0.0:
+		return
+	var dur_msec := int(stats_data.vengeance_buff_duration)
+	apply_buff_duration("attack", stats_data.vengeance_buff_value, dur_msec)
 
 
 ## 光环扫描：每 0.5s 对范围内友军施加光环效果

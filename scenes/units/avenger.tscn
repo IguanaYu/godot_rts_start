@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://avngr001"]
+
+[ext_resource type="PackedScene" uid="uid://bxunit0001" path="res://scenes/units/unit.tscn" id="base"]
+[ext_resource type="Resource" path="res://resources/stats/avenger_stats.tres" id="stats"]
+
+[node name="Avenger" instance=ExtResource("base")]
+stats_data = ExtResource("stats")
+sprite_scale_x = 0.3
+sprite_scale_y = 0.3
+sprite_offset_y = 9.0
+variant_tint = Color(0.627, 0.125, 0.125, 1.0)
+variant_tint_amount = 0.5

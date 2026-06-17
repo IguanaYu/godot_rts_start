@@ -42,8 +42,15 @@ extends Resource
 
 # --- 光环 ---
 @export var aura_range: float = 0.0    # 0 = 无光环
-@export var aura_type: String = ""     # "attack"/"defense"/"regen"/"range_bonus"
+@export var aura_type: String = ""     # "attack"/"defense"/"regen"/"range_bonus"/"shield"
 @export var aura_value: float = 0.0    # 数值
+
+# --- 死亡触发 ---
+@export var explode_damage: int = 0      # 自爆伤害，0=不自爆
+@export var explode_radius: float = 0.0  # 爆炸范围
+@export var vengeance_buff_value: float = 0.0    # 同伴死亡时获得的 buff 强度（+攻%）
+@export var vengeance_buff_duration: float = 0.0  # buff 持续时间(ms)
+@export var vengeance_scan_range: float = 0.0     # 侦测同伴死亡的范围
 
 # --- 升级系统 ---
 @export var upgrade_hp_per_level: int = 10       # 每级 HP 增加

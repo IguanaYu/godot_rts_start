@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/stats/unit_stats.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"avenger"
+unit_type = 0
+category = "normal"
+parent_id = &"soldier"
+max_hp = 80
+attack_damage = 9
+attack_range = 38.0
+attack_cooldown = 0.7
+move_speed = 135.0
+damage_reduction = 0.0
+heal_range = 0.0
+heal_amount = 0
+heal_cooldown = 0.0
+heal_scan_range = 0.0
+sprite_scale = 1.0
+projectile_data = null
+bonus_vs_unit_types = []
+bonus_vs_multiplier = 1.0
+bonus_vs_building_multiplier = 1.0
+ignores_damage_reduction = false
+lifesteal_ratio = 0.0
+lifesteal_flat = 0
+dodge_chance = 0.0
+regen_per_sec = 0.0
+aura_range = 0.0
+aura_type = ""
+aura_value = 0.0
+explode_damage = 0
+explode_radius = 0.0
+vengeance_buff_value = 0.5
+vengeance_buff_duration = 5000
+vengeance_scan_range = 300.0
+upgrade_hp_per_level = 0
+upgrade_damage_per_level = 0
+upgrade_speed_per_level = 0.0
+max_upgrade_level = 0
+upgrade_cost = 0

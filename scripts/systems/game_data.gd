@@ -10,7 +10,8 @@ enum PlaceMode { NONE, WALL, TOWER, CASTLE, BARRACKS, SOLDIER, ARCHER, MONASTERY
 	SHIELDBEARER, BERSERKER, CROSSBOWMAN, PYROMANCER, CRYOMANCER,
 	PIKEMAN, RAM, ARMOR_PIERCER,
 	REVENANT, DUELIST, TROLL, PALADIN,
-	WAR_DRUMMER, BANNER_BEARER }
+	WAR_DRUMMER, BANNER_BEARER,
+	BOMBER, AVENGER }
 
 # --- 费用 ---
 const COSTS := {
@@ -38,6 +39,8 @@ const COSTS := {
 	PlaceMode.PALADIN: 180,
 	PlaceMode.WAR_DRUMMER: 120,
 	PlaceMode.BANNER_BEARER: 150,
+	PlaceMode.BOMBER: 80,
+	PlaceMode.AVENGER: 120,
 }
 
 # --- 显示名称（翻译键，使用时需 tr()） ---
@@ -66,6 +69,8 @@ const MODE_NAMES := {
 	PlaceMode.PALADIN: "ENTITY_PALADIN",
 	PlaceMode.WAR_DRUMMER: "ENTITY_WAR_DRUMMER",
 	PlaceMode.BANNER_BEARER: "ENTITY_BANNER_BEARER",
+	PlaceMode.BOMBER: "ENTITY_BOMBER",
+	PlaceMode.AVENGER: "ENTITY_AVENGER",
 }
 
 # --- 默认全部物品 ---
@@ -78,6 +83,7 @@ const ALL_ITEMS := [
 	PlaceMode.PIKEMAN, PlaceMode.RAM, PlaceMode.ARMOR_PIERCER,
 	PlaceMode.REVENANT, PlaceMode.DUELIST, PlaceMode.TROLL, PlaceMode.PALADIN,
 	PlaceMode.WAR_DRUMMER, PlaceMode.BANNER_BEARER,
+	PlaceMode.BOMBER, PlaceMode.AVENGER,
 ]
 
 # --- 固定显示顺序（单位在前，建筑在后） ---
@@ -88,6 +94,7 @@ const DISPLAY_ORDER := [
 	PlaceMode.PIKEMAN, PlaceMode.RAM, PlaceMode.ARMOR_PIERCER,
 	PlaceMode.REVENANT, PlaceMode.DUELIST, PlaceMode.TROLL, PlaceMode.PALADIN,
 	PlaceMode.WAR_DRUMMER, PlaceMode.BANNER_BEARER,
+	PlaceMode.BOMBER, PlaceMode.AVENGER,
 	PlaceMode.WALL, PlaceMode.TOWER, PlaceMode.BARRACKS,
 	PlaceMode.ARCHERY_RANGE, PlaceMode.MONASTERY, PlaceMode.CASTLE,
 ]
@@ -132,6 +139,8 @@ const MODE_ICONS := {
 	PlaceMode.PALADIN:       "res://assets/units/blue_warrior/Warrior_Idle.png",
 	PlaceMode.WAR_DRUMMER:   "res://assets/units/blue_monk/Idle.png",
 	PlaceMode.BANNER_BEARER: "res://assets/units/blue_warrior/Warrior_Idle.png",
+	PlaceMode.BOMBER: "res://assets/units/blue_warrior/Warrior_Idle.png",
+	PlaceMode.AVENGER: "res://assets/units/blue_warrior/Warrior_Idle.png",
 }
 
 # --- 预加载按钮图标纹理 ---
@@ -228,6 +237,8 @@ const ENEMY_VARIANT_SCENES := {
 	&"paladin": "res://scenes/units/paladin.tscn",
 	&"war_drummer": "res://scenes/units/war_drummer.tscn",
 	&"banner_bearer": "res://scenes/units/banner_bearer.tscn",
+	&"bomber": "res://scenes/units/bomber.tscn",
+	&"avenger": "res://scenes/units/avenger.tscn",
 }
 
 # --- PlaceMode → BuildingType 映射 ---
@@ -260,6 +271,8 @@ const PLACE_MODE_TO_UNIT := {
 	PlaceMode.PALADIN: UnitScript.UnitType.SOLDIER,
 	PlaceMode.WAR_DRUMMER: UnitScript.UnitType.MONK,
 	PlaceMode.BANNER_BEARER: UnitScript.UnitType.SOLDIER,
+	PlaceMode.BOMBER: UnitScript.UnitType.SOLDIER,
+	PlaceMode.AVENGER: UnitScript.UnitType.SOLDIER,
 }
 
 # --- PlaceMode → stats_id 映射（变体单位） ---
@@ -278,6 +291,8 @@ const PLACE_MODE_TO_STATS_ID := {
 	PlaceMode.PALADIN: &"paladin",
 	PlaceMode.WAR_DRUMMER: &"war_drummer",
 	PlaceMode.BANNER_BEARER: &"banner_bearer",
+	PlaceMode.BOMBER: &"bomber",
+	PlaceMode.AVENGER: &"avenger",
 }
 
 # --- 网格 ---
