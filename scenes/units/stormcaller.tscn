@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://strmcl001"]
+
+[ext_resource type="PackedScene" uid="uid://bxunit0001" path="res://scenes/units/unit.tscn" id="base"]
+[ext_resource type="Resource" path="res://resources/stats/stormcaller_stats.tres" id="stats"]
+
+[node name="Stormcaller" instance=ExtResource("base")]
+unit_type = 1
+stats_data = ExtResource("stats")
+sprite_scale_x = 0.3
+sprite_scale_y = 0.3
+sprite_offset_y = 9.0
+variant_tint = Color(0.227, 0.416, 0.878, 1.0)
+variant_tint_amount = 0.5

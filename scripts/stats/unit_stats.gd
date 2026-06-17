@@ -55,6 +55,15 @@ extends Resource
 # --- 击退 ---
 @export var knockback_force: float = 0.0   # 命中后将目标推开多少像素，0=无击退
 
+# --- 连锁闪电 ---
+@export var chain_count: int = 0           # 连锁次数，0=无连锁
+@export var chain_falloff: float = 0.7     # 每次连锁伤害衰减（0.7=70%）
+@export var chain_range: float = 120.0     # 连锁搜索范围
+
+# --- 锥形 AoE ---
+@export var cone_range: float = 0.0        # 锥形攻击范围，0=无锥形
+@export var cone_angle: float = 0.0        # 锥形角度（度），如 90=前方90度扇形
+
 # --- 升级系统 ---
 @export var upgrade_hp_per_level: int = 10       # 每级 HP 增加
 @export var upgrade_damage_per_level: int = 2    # 每级攻击力增加

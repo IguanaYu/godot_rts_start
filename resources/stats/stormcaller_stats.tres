@@ -1,0 +1,49 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/stats/unit_stats.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"stormcaller"
+unit_type = 1
+category = "normal"
+parent_id = &"archer"
+max_hp = 50
+attack_damage = 10
+attack_range = 200.0
+attack_cooldown = 1.4
+move_speed = 110.0
+damage_reduction = 0.0
+heal_range = 0.0
+heal_amount = 0
+heal_cooldown = 0.0
+heal_scan_range = 0.0
+sprite_scale = 1.0
+projectile_data = null
+bonus_vs_unit_types = []
+bonus_vs_multiplier = 1.0
+bonus_vs_building_multiplier = 1.0
+ignores_damage_reduction = false
+lifesteal_ratio = 0.0
+lifesteal_flat = 0
+dodge_chance = 0.0
+regen_per_sec = 0.0
+aura_range = 0.0
+aura_type = ""
+aura_value = 0.0
+explode_damage = 0
+explode_radius = 0.0
+vengeance_buff_value = 0.0
+vengeance_buff_duration = 0.0
+vengeance_scan_range = 0.0
+knockback_force = 0.0
+chain_count = 3
+chain_falloff = 0.7
+chain_range = 130.0
+cone_range = 0.0
+cone_angle = 0.0
+upgrade_hp_per_level = 0
+upgrade_damage_per_level = 0
+upgrade_speed_per_level = 0.0
+max_upgrade_level = 0
+upgrade_cost = 0

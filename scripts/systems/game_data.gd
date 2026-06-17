@@ -12,7 +12,8 @@ enum PlaceMode { NONE, WALL, TOWER, CASTLE, BARRACKS, SOLDIER, ARCHER, MONASTERY
 	REVENANT, DUELIST, TROLL, PALADIN,
 	WAR_DRUMMER, BANNER_BEARER,
 	BOMBER, AVENGER,
-	HAMMERER }
+	HAMMERER,
+	STORMCALLER, SALAMANDER }
 
 # --- 费用 ---
 const COSTS := {
@@ -43,6 +44,8 @@ const COSTS := {
 	PlaceMode.BOMBER: 80,
 	PlaceMode.AVENGER: 120,
 	PlaceMode.HAMMERER: 130,
+	PlaceMode.STORMCALLER: 140,
+	PlaceMode.SALAMANDER: 130,
 }
 
 # --- 显示名称（翻译键，使用时需 tr()） ---
@@ -74,6 +77,8 @@ const MODE_NAMES := {
 	PlaceMode.BOMBER: "ENTITY_BOMBER",
 	PlaceMode.AVENGER: "ENTITY_AVENGER",
 	PlaceMode.HAMMERER: "ENTITY_HAMMERER",
+	PlaceMode.STORMCALLER: "ENTITY_STORMCALLER",
+	PlaceMode.SALAMANDER: "ENTITY_SALAMANDER",
 }
 
 # --- 默认全部物品 ---
@@ -88,6 +93,7 @@ const ALL_ITEMS := [
 	PlaceMode.WAR_DRUMMER, PlaceMode.BANNER_BEARER,
 	PlaceMode.BOMBER, PlaceMode.AVENGER,
 	PlaceMode.HAMMERER,
+	PlaceMode.STORMCALLER, PlaceMode.SALAMANDER,
 ]
 
 # --- 固定显示顺序（单位在前，建筑在后） ---
@@ -99,6 +105,7 @@ const DISPLAY_ORDER := [
 	PlaceMode.REVENANT, PlaceMode.DUELIST, PlaceMode.TROLL, PlaceMode.PALADIN,
 	PlaceMode.WAR_DRUMMER, PlaceMode.BANNER_BEARER,
 	PlaceMode.BOMBER, PlaceMode.AVENGER, PlaceMode.HAMMERER,
+	PlaceMode.STORMCALLER, PlaceMode.SALAMANDER,
 	PlaceMode.WALL, PlaceMode.TOWER, PlaceMode.BARRACKS,
 	PlaceMode.ARCHERY_RANGE, PlaceMode.MONASTERY, PlaceMode.CASTLE,
 ]
@@ -146,6 +153,8 @@ const MODE_ICONS := {
 	PlaceMode.BOMBER: "res://assets/units/blue_warrior/Warrior_Idle.png",
 	PlaceMode.AVENGER: "res://assets/units/blue_warrior/Warrior_Idle.png",
 	PlaceMode.HAMMERER: "res://assets/units/blue_lancer/Lancer_Idle.png",
+	PlaceMode.STORMCALLER: "res://assets/units/blue_archer/Archer_Idle.png",
+	PlaceMode.SALAMANDER: "res://assets/units/blue_lancer/Lancer_Idle.png",
 }
 
 # --- 预加载按钮图标纹理 ---
@@ -245,6 +254,8 @@ const ENEMY_VARIANT_SCENES := {
 	&"bomber": "res://scenes/units/bomber.tscn",
 	&"avenger": "res://scenes/units/avenger.tscn",
 	&"hammerer": "res://scenes/units/hammerer.tscn",
+	&"stormcaller": "res://scenes/units/stormcaller.tscn",
+	&"salamander": "res://scenes/units/salamander.tscn",
 }
 
 # --- PlaceMode → BuildingType 映射 ---
@@ -280,6 +291,8 @@ const PLACE_MODE_TO_UNIT := {
 	PlaceMode.BOMBER: UnitScript.UnitType.SOLDIER,
 	PlaceMode.AVENGER: UnitScript.UnitType.SOLDIER,
 	PlaceMode.HAMMERER: UnitScript.UnitType.LANCER,
+	PlaceMode.STORMCALLER: UnitScript.UnitType.ARCHER,
+	PlaceMode.SALAMANDER: UnitScript.UnitType.LANCER,
 }
 
 # --- PlaceMode → stats_id 映射（变体单位） ---
@@ -301,6 +314,8 @@ const PLACE_MODE_TO_STATS_ID := {
 	PlaceMode.BOMBER: &"bomber",
 	PlaceMode.AVENGER: &"avenger",
 	PlaceMode.HAMMERER: &"hammerer",
+	PlaceMode.STORMCALLER: &"stormcaller",
+	PlaceMode.SALAMANDER: &"salamander",
 }
 
 # --- 网格 ---

@@ -319,3 +319,5 @@ SAVE_HINT_NAV,←→ Select Slot · SPACE/ENTER Enter,←→ 选择存档 · 空
 ENTITY_BOMBER,Bomber,自爆兵,自爆兵
 ENTITY_AVENGER,Avenger,复仇者,復讐者
 ENTITY_HAMMERER,Hammerer,重锤兵,ハンマー兵
+ENTITY_STORMCALLER,Stormcaller,风暴召唤者,ストームコーラー
+ENTITY_SALAMANDER,Salamander,龙息兵,サラマンダー

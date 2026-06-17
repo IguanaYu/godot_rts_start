@@ -950,6 +950,14 @@ func _perform_attack() -> void:
 		_set_anim("attack")
 		var damage = stat_set.get_int(StatSetClass.ATTACK_DAMAGE)
 		var pd = stats_data.projectile_data if stats_data else null
+		# 锥形攻击：对前方扇形范围内所有敌人造成伤害
+		if stats_data and stats_data.cone_range > 0.0:
+			_do_cone_attack(damage)
+			return
+		# 连锁闪电：命中主目标后弹射到附近敌人
+		if stats_data and stats_data.chain_count > 0:
+			_do_chain_attack(damage)
+			return
 		if unit_type == UnitType.ARCHER or (pd != null):
 			_spawn_arrow(attack_target, damage)
 		else:
@@ -958,6 +966,101 @@ func _perform_attack() -> void:
 			if stats_data and stats_data.knockback_force > 0.0 and attack_target is Unit and is_instance_valid(attack_target):
 				var dir = (attack_target.global_position - global_position).normalized()
 				attack_target.global_position += dir * stats_data.knockback_force
+
+## 连锁闪电：主目标受伤后弹射到附近 N 个敌人
+func _do_chain_attack(damage: int) -> void:
+	if not attack_target or not is_instance_valid(attack_target):
+		return
+	# 主目标承受全额伤害
+	attack_target.take_damage(damage, self)
+	# 连锁弹射
+	var chained: Array = [attack_target]
+	var chain_points: Array = [global_position, attack_target.global_position]
+	var current_target = attack_target
+	var current_dmg = damage
+	for i in range(stats_data.chain_count):
+		current_dmg = int(current_dmg * stats_data.chain_falloff)
+		if current_dmg <= 0:
+			break
+		# 从当前目标位置搜索最近的未连锁敌人
+		var best = null
+		var best_dist = stats_data.chain_range
+		for u in UnitGrid.query_neighbors(current_target.global_position, stats_data.chain_range):
+			if not is_instance_valid(u) or u.is_dead():
+				continue
+			if u.team == team or u in chained:
+				continue
+			if not (u is Unit):
+				continue
+			var dist = current_target.global_position.distance_to(u.global_position)
+			if dist <= best_dist:
+				best_dist = dist
+				best = u
+		if best == null:
+			break
+		best.take_damage(current_dmg, self)
+		chained.append(best)
+		chain_points.append(best.global_position)
+		current_target = best
+	# 闪电视觉特效
+	_show_chain_effect(chain_points)
+
+## 锥形 AoE：对前方扇形范围内所有敌人造成伤害
+func _do_cone_attack(damage: int) -> void:
+	if not attack_target or not is_instance_valid(attack_target):
+		return
+	var aim_dir = (attack_target.global_position - global_position).normalized()
+	var half_angle = deg_to_rad(stats_data.cone_angle * 0.5)
+	for u in UnitGrid.query_neighbors(global_position, stats_data.cone_range):
+		if not is_instance_valid(u) or u.is_dead():
+			continue
+		if u.team == team:
+			continue
+		if not (u is Unit):
+			continue
+		var to_target = u.global_position - global_position
+		var dist = to_target.length()
+		if dist > stats_data.cone_range or dist < 1.0:
+			continue
+		var angle = aim_dir.angle_to(to_target.normalized())
+		if abs(angle) <= half_angle:
+			u.take_damage(damage, self)
+	# 锥形视觉特效
+	_show_cone_effect(aim_dir, stats_data.cone_range, stats_data.cone_angle)
+
+## 连锁闪电特效：在世界空间画短暂折线
+func _show_chain_effect(points: Array) -> void:
+	if points.size() < 2:
+		return
+	var line := Line2D.new()
+	line.default_color = Color(0.5, 0.7, 1.0, 0.9)
+	line.width = 3.0
+	line.joint_mode = Line2D.LINE_JOINT_SHARP
+	for p in points:
+		line.add_point(p)
+	get_tree().current_scene.add_child(line)
+	var tw := create_tween()
+	tw.tween_property(line, "modulate:a", 0.0, 0.25)
+	tw.tween_callback(line.queue_free)
+
+## 锥形特效：画短暂半透明扇形
+func _show_cone_effect(aim_dir: Vector2, range_val: float, angle_deg: float) -> void:
+	var poly := Polygon2D.new()
+	poly.color = Color(1.0, 0.5, 0.1, 0.25)
+	var center := global_position
+	var pts := PackedVector2Array()
+	pts.append(center)
+	var half := deg_to_rad(angle_deg * 0.5)
+	var base_a := aim_dir.angle()
+	var segs := 8
+	for i in range(segs + 1):
+		var a := base_a - half + (half * 2.0 * i / segs)
+		pts.append(center + Vector2(cos(a), sin(a)) * range_val)
+	poly.polygon = pts
+	get_tree().current_scene.add_child(poly)
+	var tw := create_tween()
+	tw.tween_property(poly, "color:a", 0.0, 0.3)
+	tw.tween_callback(poly.queue_free)
 
 func _spawn_arrow(target, damage: int = -1) -> void:
 	var spawner = get_tree().current_scene.get("spawner_module")
