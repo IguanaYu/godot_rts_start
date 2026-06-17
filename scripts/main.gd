@@ -592,17 +592,19 @@ func _handle_number_key(key: int, event: InputEventKey) -> void:
 			ctrl_group_mgr.assign_group(gi, combat_ctrl.selected_units)
 		return
 
-	# Q/W模式下：放置单位/建筑
+	# Q/W模式下：放置单位/建筑（按槽位 1,2,3... 连续绑定）
 	if input_mode.is_unit_production():
-		var mode: int = D.UNIT_PRODUCTION_HOTKEYS.get(key, -1)
-		if mode >= 0:
+		var idx: int = key - KEY_1
+		if idx >= 0 and idx < ui_module.unit_modes_ordered.size():
+			var mode: int = ui_module.unit_modes_ordered[idx]
 			ui_module.switch_tab_for_mode(mode)
 			_on_place_mode_requested(mode)
 		return
 
 	if input_mode.is_building_placement():
-		var mode: int = D.BUILDING_PLACEMENT_HOTKEYS.get(key, -1)
-		if mode >= 0:
+		var idx: int = key - KEY_1
+		if idx >= 0 and idx < ui_module.building_modes_ordered.size():
+			var mode: int = ui_module.building_modes_ordered[idx]
 			ui_module.switch_tab_for_mode(mode)
 			_on_place_mode_requested(mode)
 		return
@@ -1312,28 +1314,15 @@ static func save_player_loadout(modes: Array) -> bool:
 
 
 # 计算本局实际可用的物品 PlaceMode 列表（最多 10 个）。
-# 玩家选 ∩ 关卡允许；不足时按关卡允许顺序补；都空则用默认。
+# 完全以玩家战前选择为准，关卡 available_items 不再做交集限制。
+# 玩家未选或选不满时，用默认编制补足。
 func _resolve_loadout() -> Array:
 	var player_picked: Array = load_player_loadout()
-	var allowed_by_map: Array = []
-	if map_config != null and not map_config.available_items.is_empty():
-		allowed_by_map = map_config.available_items
 	var result: Array = []
 	for mode in player_picked:
-		if allowed_by_map.is_empty() or allowed_by_map.has(mode):
+		if mode in D.ALL_ITEMS and not result.has(mode):
 			result.append(mode)
-	# 不足时从关卡允许里补
-	while result.size() < LOADOUT_SLOTS_COUNT and not allowed_by_map.is_empty():
-		var added := false
-		for mode in allowed_by_map:
-			if not result.has(mode):
-				result.append(mode)
-				added = true
-				if result.size() >= LOADOUT_SLOTS_COUNT:
-					break
-		if not added:
-			break
-	# 兜底
+	# 玩家没选任何东西，用默认
 	if result.is_empty():
 		result = DEFAULT_PLAYER_LOADOUT.duplicate()
 	# 限制最多 10
@@ -1349,7 +1338,11 @@ func _apply_loadout_filter() -> void:
 	var resolved: Array = _resolve_loadout()
 	# 空配置场景下不动；非空则覆盖
 	if not resolved.is_empty():
-		map_config.available_items = resolved
+		# map_config.available_items 是 Array[int] 强类型数组，必须转换
+		var typed: Array[int] = []
+		for mode in resolved:
+			typed.append(int(mode))
+		map_config.available_items = typed
 
 
 # ============================================================

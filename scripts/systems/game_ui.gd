@@ -39,6 +39,8 @@ var active_tab: int = 0  # 0=单位, 1=建筑, 2=信息
 var tab_buttons: Array[Button] = []
 var unit_container: HBoxContainer
 var building_container: HBoxContainer
+var unit_modes_ordered: Array = []      # 玩家选中的单位，按显示顺序
+var building_modes_ordered: Array = []  # 玩家选中的建筑，按显示顺序
 
 # 信息面板 (Info tab)
 var info_container: HBoxContainer
@@ -225,6 +227,9 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 			unit_modes.append(mode)
 		else:
 			building_modes.append(mode)
+	# 暴露给 main.gd 做槽位快捷键查询
+	unit_modes_ordered = unit_modes
+	building_modes_ordered = building_modes
 
 	# --- 底部建造面板 ---
 	var panel_wrapper := Control.new()
@@ -392,11 +397,11 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	building_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content.add_child(building_container)
 
-	# --- 生成按钮 ---
-	for mode in unit_modes:
-		_add_icon_button(mode, unit_container)
-	for mode in building_modes:
-		_add_icon_button(mode, building_container)
+	# --- 生成按钮（按槽位分配 1,2,3... 连续键）---
+	for i in range(unit_modes.size()):
+		_add_icon_button(unit_modes[i], unit_container, KEY_1 + i)
+	for i in range(building_modes.size()):
+		_add_icon_button(building_modes[i], building_container, KEY_1 + i)
 
 	# 默认显示单位页
 	_switch_tab(0)
@@ -623,8 +628,8 @@ func _make_trimmed_icon(tex: Texture2D) -> AtlasTexture:
 # ============================================================
 # 图标按钮工厂
 # ============================================================
-func _add_icon_button(mode: int, container: HBoxContainer) -> void:
-	var hotkey: Key = D.MODE_HOTKEYS.get(mode, KEY_0)
+func _add_icon_button(mode: int, container: HBoxContainer, slot_key: Key) -> void:
+	var hotkey: Key = slot_key
 	var hotkey_index: int = (hotkey - KEY_1 + 1) if hotkey != KEY_0 else 0
 	var cost: int = D.COSTS.get(mode, 0)
 	var mode_name: String = tr(D.MODE_NAMES.get(mode, "ENTITY_UNIT"))
