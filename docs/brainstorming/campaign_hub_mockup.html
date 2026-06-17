@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>战役枢纽 UI 布局设计 v2</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #1a1a2e; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Segoe UI', sans-serif; padding: 20px; }
+
+  .frame {
+    width: 1000px; min-height: 680px;
+    background: #2d2d44; border-radius: 16px; padding: 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+
+  /* ===== 顶栏 ===== */
+  .title-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px; color: #e8d5b0;
+  }
+  .title-bar h1 { font-size: 20px; text-shadow: 1px 1px 2px #000; }
+  .title-bar .gold { background: #3d2e1a; padding: 4px 14px; border-radius: 20px; border: 1px solid #c9a04e; color: #f0d080; font-weight: bold; font-size: 14px; }
+  .title-bar .info { color: #888; font-size: 12px; display: flex; gap: 16px; }
+
+  /* ===== 主体 ===== */
+  .main-area {
+    display: flex; gap: 16px; height: 500px; position: relative;
+  }
+
+  /* ===== 左侧：营地网格（更大） ===== */
+  .camp-section {
+    flex: 7; background: #3a3a4e; border-radius: 12px; padding: 16px;
+    display: flex; flex-direction: column; position: relative;
+  }
+  .camp-section .label {
+    color: #b8a88a; font-size: 12px; margin-bottom: 6px; letter-spacing: 1px;
+  }
+
+  .grid-wrapper {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+
+  .grid {
+    display: grid; grid-template-columns: repeat(9, 1fr); gap: 3px;
+    width: 100%; max-width: 520px;
+  }
+
+  .cell {
+    aspect-ratio: 1; background: #22223a; border-radius: 3px;
+    border: 1px solid #3a3a52; display: flex; align-items: center; justify-content: center;
+    font-size: 9px; color: #666; position: relative;
+  }
+
+  /* 已拥有的格子 */
+  .cell.owned { background: #303048; border-color: #4a4a66; }
+
+  /* 建筑 */
+  .building {
+    width: 88%; height: 88%; border-radius: 6px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 10px; color: #fff; font-weight: bold; cursor: pointer;
+    transition: all 0.15s; position: relative;
+  }
+  .building:hover { filter: brightness(1.3); transform: scale(1.05); }
+  .building .icon { font-size: 22px; line-height: 1; margin-bottom: 2px; }
+  .building .name { font-size: 9px; opacity: 0.9; }
+
+  .building.hq { background: linear-gradient(135deg, #6b4c2a, #8a6a3a); border: 2px solid #c9a04e; }
+  .building.barracks { background: linear-gradient(135deg, #6b3a3a, #8a4a4a); border: 2px solid #c96040; }
+  .building.range { background: linear-gradient(135deg, #3a5a3a, #4a7a4a); border: 2px solid #60a050; }
+  .building.stable { background: linear-gradient(135deg, #3a4a5a, #4a6a7a); border: 2px solid #5090b0; }
+  .building.lab { background: linear-gradient(135deg, #4a2a5a, #6a3a7a); border: 2px solid #a060c0; }
+  .building.farm { background: linear-gradient(135deg, #4a5a3a, #5a7a4a); border: 2px solid #80a050; }
+  .building.warehouse { background: linear-gradient(135deg, #4a4a3a, #6a6a4a); border: 2px solid #a0a060; }
+  .building.temple { background: linear-gradient(135deg, #5a3a4a, #7a4a6a); border: 2px solid #c06090; }
+
+  .building .click-hint {
+    position: absolute; top: -6px; right: -6px;
+    background: #f0b040; color: #000; font-size: 8px;
+    padding: 1px 4px; border-radius: 8px; font-weight: bold;
+  }
+
+  /* 可购买地块 */
+  .cell.buyable {
+    border-color: #5a7a3e; cursor: pointer; background: #2a3a1e;
+  }
+  .cell.buyable:hover { background: #3a5a2e; }
+  .cell.buyable .cost {
+    color: #8aae5e; font-size: 9px;
+  }
+
+  /* 锁定地块 */
+  .cell.locked { opacity: 0.35; }
+  .cell.locked .lock-icon { font-size: 12px; }
+
+  /* ===== NPC（在地图上走动） ===== */
+  .npc {
+    position: absolute; cursor: pointer; z-index: 5;
+    display: flex; flex-direction: column; align-items: center;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    transition: transform 0.2s;
+  }
+  .npc:hover { transform: scale(1.2); }
+  .npc .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; border: 2px solid #c9a04e;
+  }
+  .npc .name-tag {
+    font-size: 9px; color: #ddd; background: rgba(0,0,0,0.6);
+    padding: 1px 6px; border-radius: 8px; margin-top: 2px;
+    white-space: nowrap;
+  }
+  .npc .talk-hint {
+    position: absolute; top: -8px; right: -8px;
+    background: #f0b040; color: #000; font-size: 8px;
+    padding: 1px 5px; border-radius: 8px; font-weight: bold;
+  }
+  /* NPC 位置（模拟走动） */
+  .npc-1 { top: 28%; left: 38%; }
+  .npc-2 { top: 65%; left: 55%; }
+  .npc-3 { top: 45%; left: 72%; }
+
+  /* ===== 右侧：功能面板（根据点击的建筑切换） ===== */
+  .panel-section {
+    flex: 5; background: #333348; border-radius: 12px; padding: 16px;
+    display: none; flex-direction: column; overflow-y: auto;
+  }
+  .panel-section.active { display: flex; }
+
+  .panel-section .panel-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #4a4a5e;
+  }
+  .panel-section .panel-header h2 { color: #f0d8b0; font-size: 17px; }
+  .panel-section .panel-header .close-btn {
+    color: #888; cursor: pointer; font-size: 18px; padding: 0 4px;
+  }
+  .panel-section .panel-header .close-btn:hover { color: #f0b040; }
+
+  /* ===== 星图面板 ===== */
+  .mission-group { margin-bottom: 8px; }
+  .mission-group .group-title {
+    color: #887; font-size: 11px; padding: 4px 0; margin-bottom: 2px;
+    border-bottom: 1px solid #3a3a52;
+  }
+  .mission-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px; margin-bottom: 3px;
+    background: #3a3a50; border-radius: 5px; border-left: 3px solid #555;
+    color: #ccc; font-size: 12px; cursor: pointer;
+  }
+  .mission-item:hover { background: #44445a; }
+  .mission-item.done { border-left-color: #60a050; opacity: 0.65; }
+  .mission-item.active { border-left-color: #f0b040; background: #4a4a60; color: #f0e0c0; }
+  .mission-item.locked { border-left-color: #444; opacity: 0.35; }
+  .mission-item .branch-tag { font-size: 9px; background: #5a3040; padding: 1px 5px; border-radius: 3px; color: #e08080; margin-left: auto; }
+
+  .start-btn {
+    margin-top: 8px; background: #6b4c2a; border: 2px solid #c9a04e;
+    border-radius: 8px; padding: 10px; text-align: center;
+    color: #f0d080; font-weight: bold; cursor: pointer; font-size: 14px;
+  }
+  .start-btn:hover { background: #8a6a3a; }
+
+  /* ===== 工坊/升级面板 ===== */
+  .upgrade-group { margin-bottom: 10px; }
+  .upgrade-group .group-title {
+    color: #887; font-size: 11px; margin-bottom: 4px;
+  }
+  .upgrade-item {
+    background: #3a3a50; border-radius: 6px; padding: 8px 10px; margin-bottom: 6px;
+  }
+  .upgrade-item .upgrade-name { color: #ddd; font-size: 12px; margin-bottom: 4px; }
+  .upgrade-item .choices { display: flex; gap: 6px; }
+  .upgrade-item .choice {
+    flex: 1; padding: 4px 8px; border-radius: 4px; background: #4a4a62;
+    cursor: pointer; font-size: 11px; text-align: center; border: 1px solid #5a5a7a;
+    color: #ccc;
+  }
+  .upgrade-item .choice:hover { background: #5a5a7a; }
+  .upgrade-item .choice.chosen { background: #6b4c2a; border-color: #c9a04e; color: #f0d080; }
+  .upgrade-item .locked-text { color: #666; font-size: 11px; font-style: italic; }
+
+  /* ===== NPC 对话面板 ===== */
+  .dialogue-content {
+    flex: 1; display: flex; flex-direction: column;
+  }
+  .dialogue-npc-info {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px; background: #3a3a50; border-radius: 8px; margin-bottom: 12px;
+  }
+  .dialogue-npc-info .avatar-lg {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: #6b4c2a; border: 2px solid #c9a04e;
+    display: flex; align-items: center; justify-content: center; font-size: 24px;
+  }
+  .dialogue-npc-info .npc-name { color: #f0d080; font-size: 15px; font-weight: bold; }
+  .dialogue-npc-info .npc-desc { color: #999; font-size: 12px; }
+
+  .dialogue-text-box {
+    flex: 1; background: rgba(0,0,0,0.4); border-radius: 8px;
+    padding: 16px; border-left: 3px solid #c9a04e;
+    display: flex; flex-direction: column;
+  }
+  .dialogue-text-box .text {
+    color: #e0d8c8; font-size: 14px; line-height: 1.6; flex: 1;
+  }
+  .dialogue-text-box .continue {
+    color: #888; font-size: 11px; text-align: right; cursor: pointer; margin-top: 8px;
+  }
+  .dialogue-text-box .continue:hover { color: #f0d080; }
+
+  /* ===== 底部提示 ===== */
+  .footer-hint {
+    margin-top: 10px; text-align: center; color: #666; font-size: 11px;
+  }
+</style>
+</head>
+<body>
+
+<div class="frame">
+  <!-- 顶栏 -->
+  <div class="title-bar">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <h1>⚔ 自由之翼 · 营地</h1>
+      <span style="font-size:12px;color:#888;">第 3 章 · 已通关 2 关</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px;">
+      <span style="color:#888;font-size:12px;">🏗 7×9 · 已扩建 3 次</span>
+      <span class="gold">💰 军费 4,200</span>
+    </div>
+  </div>
+
+  <!-- 主体 -->
+  <div class="main-area">
+    <!-- ===== 左侧：营地网格（核心交互区） ===== -->
+    <div class="camp-section">
+      <div class="label">▼ 点击建筑进入对应功能 · 点击 NPC 对话 · 点击空地建造</div>
+      <div class="grid-wrapper">
+        <div class="grid">
+          <!-- 行 0 -->
+          <div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div>
+          <!-- 行 1 -->
+          <div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell owned"><div class="building hq"><span class="icon">🏰</span><span class="name">指挥中心</span><span class="click-hint">选关</span></div></div><div class="cell owned"><div class="building barracks"><span class="icon">⚔</span><span class="name">兵营</span><span class="click-hint">步兵</span></div></div><div class="cell owned"><div class="building range"><span class="icon">🏹</span><span class="name">靶场</span><span class="click-hint">远程</span></div></div><div class="cell owned"><div class="building farm"><span class="icon">🌾</span><span class="name">农场</span></div></div><div class="cell owned"></div><div class="cell buyable"><span class="cost">$500</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div>
+          <!-- 行 2 -->
+          <div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell owned"></div><div class="cell owned"></div><div class="cell owned"><div class="building stable"><span class="icon">🐴</span><span class="name">马厩</span><span class="click-hint">骑兵</span></div></div><div class="cell owned"><div class="building farm"><span class="icon">🌾</span><span class="name">农场</span></div></div><div class="cell owned"></div><div class="cell buyable"><span class="cost">$500</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div>
+          <!-- 行 3 -->
+          <div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell owned"><div class="building lab"><span class="icon">🔬</span><span class="name">研究院</span><span class="click-hint">科技</span></div></div><div class="cell owned"></div><div class="cell owned"></div><div class="cell owned"></div><div class="cell owned"></div><div class="cell buyable"><span class="cost">$500</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div>
+          <!-- 行 4 -->
+          <div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell owned"></div><div class="cell owned"><div class="building warehouse"><span class="icon">📦</span><span class="name">仓库</span></div></div><div class="cell owned"></div><div class="cell owned"><div class="building temple"><span class="icon">🛐</span><span class="name">神殿</span><span class="click-hint">技能</span></div></div><div class="cell owned"></div><div class="cell buyable"><span class="cost">$500</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div>
+          <!-- 行 5 -->
+          <div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell owned"></div><div class="cell owned"></div><div class="cell owned"></div><div class="cell owned"></div><div class="cell owned"></div><div class="cell buyable"><span class="cost">$500</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div>
+          <!-- 行 6 -->
+          <div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell buyable"><span class="cost">$500</span></div><div class="cell buyable"><span class="cost">$500</span></div><div class="cell buyable"><span class="cost">$600</span></div><div class="cell buyable"><span class="cost">$600</span></div><div class="cell buyable"><span class="cost">$600</span></div><div class="cell buyable"><span class="cost">$600</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div>
+          <!-- 行 7 -->
+          <div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div><div class="cell locked"><span class="lock-icon">⬚</span></div>
+        </div>
+
+        <!-- NPC 在地图上走动 -->
+        <div class="npc npc-1" title="点击对话">
+          <div class="avatar" style="background:#6b4c2a;border-color:#c9a04e;">🧔</div>
+          <span class="name-tag">泰凯斯</span>
+          <span class="talk-hint">💬</span>
+        </div>
+        <div class="npc npc-2" title="点击对话">
+          <div class="avatar" style="background:#3a4a5a;border-color:#5090b0;">👩</div>
+          <span class="name-tag">指挥官</span>
+          <span class="talk-hint">💬</span>
+        </div>
+        <div class="npc npc-3" title="点击对话">
+          <div class="avatar" style="background:#4a3a5a;border-color:#a060c0;">🧙</div>
+          <span class="name-tag">学者</span>
+          <span class="talk-hint">💬</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 右侧面板区 ===== -->
+
+    <!-- 面板：星图（点击指挥中心后显示） -->
+    <div class="panel-section active" id="panel-starmap">
+      <div class="panel-header">
+        <h2>🏰 指挥中心 — 选择任务</h2>
+        <span class="close-btn" onclick="switchPanel(null)">✕</span>
+      </div>
+      <div class="mission-group">
+        <div class="group-title">━━ 第一章：起义 ━━</div>
+        <div class="mission-item done"><span>✓</span> 自由之日</div>
+        <div class="mission-item done"><span>✓</span> 不法之徒</div>
+        <div class="mission-item active"><span>▶</span> 零点行动</div>
+      </div>
+      <div class="mission-group">
+        <div class="group-title">━━ 神器线索 ━━</div>
+        <div class="mission-item locked"><span>🔒</span> 来之不易</div>
+        <div class="mission-item locked"><span>🔒</span> 挖宝行动</div>
+      </div>
+      <div class="mission-group">
+        <div class="group-title">━━ 帝国反击 ━━</div>
+        <div class="mission-item locked"><span>🔒</span> 火车大劫案</div>
+        <div class="mission-item locked"><span>🔒</span> 抉择之路 <span class="branch-tag">⚡分支</span></div>
+      </div>
+      <div class="start-btn">▶ 开始任务：零点行动</div>
+    </div>
+
+    <!-- 面板：工坊（点击兵营/靶场/马厩后显示，按建筑分类） -->
+    <div class="panel-section" id="panel-workshop">
+      <div class="panel-header">
+        <h2>⚔ 兵营 — 步兵升级</h2>
+        <span class="close-btn" onclick="switchPanel(null)">✕</span>
+      </div>
+      <div class="upgrade-group">
+        <div class="group-title">基础步兵</div>
+        <div class="upgrade-item">
+          <div class="upgrade-name">剑士</div>
+          <div class="choices">
+            <div class="choice chosen">🗡 攻击 +15%</div>
+            <div class="choice">🛡 生命 +20%</div>
+          </div>
+        </div>
+        <div class="upgrade-item">
+          <div class="upgrade-name">长矛手</div>
+          <div class="choices">
+            <div class="choice">⚡ 攻速 +15%</div>
+            <div class="choice">🏃 移速 +20%</div>
+          </div>
+        </div>
+      </div>
+      <div class="panel-header" style="margin-top:8px;border-color:#4a4a5e;">
+        <h2>🏹 靶场 — 远程升级</h2>
+      </div>
+      <div class="upgrade-group">
+        <div class="upgrade-item">
+          <div class="upgrade-name">弓箭手</div>
+          <div class="choices">
+            <div class="choice">🎯 射程 +1</div>
+            <div class="choice">💥 攻击 +15%</div>
+          </div>
+        </div>
+      </div>
+      <div class="upgrade-item">
+        <div class="upgrade-name">弩手</div>
+        <div class="choices">
+          <div class="locked-text">🔒 需要建造：靶场 Lv.2</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 面板：研究院科技（点击研究院后显示） -->
+    <div class="panel-section" id="panel-lab">
+      <div class="panel-header">
+        <h2>🔬 研究院 — 全局科技</h2>
+        <span class="close-btn" onclick="switchPanel(null)">✕</span>
+      </div>
+      <div class="upgrade-group">
+        <div class="group-title">经济</div>
+        <div class="upgrade-item">
+          <div class="upgrade-name">初始资金</div>
+          <div class="choices">
+            <div class="choice">💰 初始金币 +200</div>
+            <div class="choice">💰 初始金币 +500</div>
+          </div>
+        </div>
+        <div class="upgrade-item">
+          <div class="upgrade-name">军费效率</div>
+          <div class="choices">
+            <div class="choice">📈 每关军费 +10%</div>
+            <div class="choice">📈 每关军费 +200</div>
+          </div>
+        </div>
+      </div>
+      <div class="upgrade-group">
+        <div class="group-title">全局战斗</div>
+        <div class="upgrade-item">
+          <div class="upgrade-name">部队强化</div>
+          <div class="choices">
+            <div class="choice">⚔ 所有单位攻击 +10%</div>
+            <div class="choice">🛡 所有单位生命 +10%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 面板：NPC 对话（点击 NPC 后显示） -->
+    <div class="panel-section" id="panel-dialogue">
+      <div class="panel-header">
+        <h2>💬 对话</h2>
+        <span class="close-btn" onclick="switchPanel(null)">✕</span>
+      </div>
+      <div class="dialogue-content">
+        <div class="dialogue-npc-info">
+          <div class="avatar-lg">🧔</div>
+          <div>
+            <div class="npc-name">泰凯斯 · 芬利</div>
+            <div class="npc-desc">老练的佣兵 · 雷诺的老友</div>
+          </div>
+        </div>
+        <div class="dialogue-text-box">
+          <div class="text">
+            "嘿，老搭档，准备好了吗？<br><br>
+            帝国那些家伙在玛萨拉布了重兵，不过我有条小道能绕到他们后方。<br><br>
+            只要你能搞定那些岗哨，我们就能给蒙斯克那混蛋一点颜色看看。"
+          </div>
+          <div class="continue">[点击继续 →]</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部提示 -->
+  <div class="footer-hint">
+    💡 点击左侧建筑使用功能 · 点击 NPC 对话 · 点击空地建造新建筑 · 建筑解锁对应升级
+  </div>
+</div>
+
+<script>
+// 模拟面板切换
+function switchPanel(panelId) {
+  document.querySelectorAll('.panel-section').forEach(p => p.classList.remove('active'));
+  if (panelId) {
+    document.getElementById(panelId).classList.add('active');
+  }
+}
+</script>
+</body>
+</html>
