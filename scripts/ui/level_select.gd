@@ -706,11 +706,12 @@ func _create_start_button(parent: VBoxContainer) -> void:
 
 	var BF := preload("res://scripts/ui/button_factory.gd")
 	BF.add_hover_anim(wrapper, start_button_bg, np_btn_red_prs.texture, np_btn_red.texture)
-	# 按钮行：开始 + 返回
+	# 按钮行：开始 + 战前配置 + 返回
 	var btn_row := HBoxContainer.new()
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	btn_row.add_theme_constant_override("separation", 16)
 	btn_row.add_child(wrapper)
+	_create_pre_battle_config_button(btn_row)
 	_create_back_button(btn_row)
 	parent.add_child(btn_row)
 
@@ -1224,6 +1225,56 @@ func _close_esc_menu() -> void:
 	if _esc_menu:
 		_esc_menu.queue_free()
 		_esc_menu = null
+
+
+# ============================================================
+# 战前配置入口（弹窗内含 3 个 Tab：指挥官技能 / 部队编制 / 战前被动）
+# ============================================================
+
+func _create_pre_battle_config_button(parent: BoxContainer) -> void:
+	var wrapper := Control.new()
+	wrapper.custom_minimum_size = Vector2(160, 50)
+	wrapper.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+
+	var bg := _make_ninepatch(np_btn_blue)
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	wrapper.add_child(bg)
+
+	var btn := Button.new()
+	btn.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	var es := StyleBoxEmpty.new()
+	btn.add_theme_stylebox_override("normal", es)
+	btn.add_theme_stylebox_override("hover", es)
+	btn.add_theme_stylebox_override("pressed", es)
+	btn.add_theme_stylebox_override("focus", es)
+	btn.pressed.connect(_show_pre_battle_config_dialog)
+	wrapper.add_child(btn)
+
+	var label := Label.new()
+	label.text = tr("PRE_BATTLE_CONFIG_BUTTON")
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 16)
+	label.add_theme_color_override("font_color", Color(1, 1, 1))
+	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	label.add_theme_constant_override("shadow_offset_x", 1)
+	label.add_theme_constant_override("shadow_offset_y", 1)
+	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wrapper.add_child(label)
+
+	var BF := preload("res://scripts/ui/button_factory.gd")
+	BF.add_hover_anim(wrapper, bg, np_btn_blue_prs.texture, np_btn_blue.texture)
+	parent.add_child(wrapper)
+
+
+func _show_pre_battle_config_dialog() -> void:
+	var DialogScript := preload("res://scripts/ui/pre_battle_config_dialog.gd")
+	var dialog := Control.new()
+	dialog.set_script(DialogScript)
+	dialog.setup(np_paper, np_btn_blue, np_btn_blue_prs, np_btn_red, np_btn_red_prs)
+	add_child(dialog)
 
 
 func _on_esc_back_to_main() -> void:

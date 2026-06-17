@@ -73,6 +73,20 @@ func purchase_upgrade(upgrade_id: int) -> void:
 	token_count_changed.emit(tokens)
 
 
+# 战前被动：把玩家选的 UpgradeId 列表当作"已购升级"应用一次
+# 1) 加入 purchased_upgrades —— 后续产出的新单位会自动获得加成
+# 2) 立即对现有所有单位/玩家执行 effect
+func apply_pre_battle_passives(upgrade_ids: Array) -> void:
+	for uid in upgrade_ids:
+		if not UD.CONFIGS.has(uid):
+			continue
+		if uid in purchased_upgrades:
+			continue
+		purchased_upgrades.append(uid)
+		_execute_effect(uid)
+		upgrade_applied.emit(uid)
+
+
 func _execute_effect(upgrade_id: int) -> void:
 	var config: Dictionary = UD.CONFIGS[upgrade_id]
 	var etype: int = config.effect_type

@@ -41,6 +41,7 @@ var commander_skill_manager: Node
 var commander_skill_panel: Node
 var upgrade_manager: Node
 var upgrade_panel: Node
+var _available_skills: Array = []
 
 # 全局玩家集结点
 var global_rally_point: Vector2 = Vector2.ZERO
@@ -100,6 +101,7 @@ func _run_init_steps() -> void:
 	# Step 2: 配置/设置/地形
 	LoadRouter.report_init_progress(0.20)
 	_load_from_config()
+	_apply_loadout_filter()  # 玩家战前编制 ∩ 关卡允许 = 实际可用
 	_load_damage_number_setting()
 	_load_display_settings()
 	_load_brightness()
@@ -166,9 +168,8 @@ func _run_init_steps() -> void:
 	commander_skill_manager = Node.new()
 	commander_skill_manager.set_script(load("res://scripts/commander_skill/commander_skill_manager.gd"))
 	add_child(commander_skill_manager)
-	var available_skills: Array = CSD.ALL_SKILLS
-	if map_config != null and not map_config.commander_skills.is_empty():
-		available_skills = map_config.commander_skills
+	var available_skills: Array = _resolve_available_skills()
+	_available_skills = available_skills
 	commander_skill_manager.initialize(self, spawner_module, func(): return gold, func(cost: int): _spend_gold(cost))
 	commander_skill_manager.set_available_skills(available_skills)
 	commander_skill_panel = Node.new()
@@ -229,6 +230,8 @@ func _run_init_steps() -> void:
 		AllyDistressSignal.distress_reported.connect(_on_ally_distress_reported)
 	if not AllyDistressSignal.distress_cleared.is_connected(_on_ally_distress_cleared):
 		AllyDistressSignal.distress_cleared.connect(_on_ally_distress_cleared)
+	# 应用战前被动（玩家选的 3 个 UpgradeId，在所有单位生成之后应用）
+	_apply_pre_battle_passives()
 	await get_tree().process_frame
 
 	# Step 10: 完成
@@ -1110,10 +1113,10 @@ func _input(event: InputEvent) -> void:
 			KEY_H:
 				combat_ctrl.hold_position_selected()
 			KEY_Z, KEY_X, KEY_C, KEY_V:
-				var CSD2 := preload("res://scripts/commander_skill/commander_skill_data.gd")
-				var skill_id: int = CSD2.HOTKEY_TO_SKILL.get(key, -1)
-				if skill_id >= 0:
-					_start_commander_skill(skill_id)
+				const SLOT_KEYS := [KEY_Z, KEY_X, KEY_C, KEY_V]
+				var slot_index: int = SLOT_KEYS.find(key)
+				if slot_index >= 0 and slot_index < _available_skills.size():
+					_start_commander_skill(_available_skills[slot_index])
 			KEY_R:
 				get_tree().reload_current_scene()
 			KEY_G:
@@ -1198,6 +1201,201 @@ func _start_commander_skill(skill_id: int) -> void:
 	if commander_skill_manager.start_cast(skill_id):
 		if commander_skill_manager.is_casting():
 			input_mode.enter_commander_skill_cast()
+
+
+# ============================================================
+# 玩家选择的指挥官技能（4 个槽位，全局共享，存 settings.cfg）
+# ============================================================
+
+const SKILL_SLOTS_COUNT := 4
+const DEFAULT_PLAYER_SKILLS := [0, 1, 2, 3]  # ORBITAL_STRIKE / HEAL_FIELD / SHIELD_WALL / UNIT_DROP
+
+
+# 计算本局实际可用的技能列表（最多 4 个）。
+# 优先级：玩家选的 4 个 ∩ 关卡允许；不足时按关卡允许的顺序补足；都空则用默认 4 个。
+func _resolve_available_skills() -> Array:
+	var player_picked: Array = load_player_selected_skills()
+	var allowed_by_map: Array = []
+	if map_config != null and not map_config.commander_skills.is_empty():
+		allowed_by_map = map_config.commander_skills
+
+	var result: Array = []
+	# 1) 玩家选的，关卡允许的
+	for sid in player_picked:
+		if allowed_by_map.is_empty() or allowed_by_map.has(sid):
+			result.append(sid)
+	# 2) 不足 4 个时，从关卡允许列表里补
+	while result.size() < SKILL_SLOTS_COUNT and not allowed_by_map.is_empty():
+		var added := false
+		for sid in allowed_by_map:
+			if not result.has(sid):
+				result.append(sid)
+				added = true
+				if result.size() >= SKILL_SLOTS_COUNT:
+					break
+		if not added:
+			break
+	# 3) 兜底：玩家选的或默认
+	if result.is_empty():
+		if not player_picked.is_empty():
+			result = player_picked.duplicate()
+		else:
+			result = DEFAULT_PLAYER_SKILLS.duplicate()
+	# 4) 限制最多 4 个
+	if result.size() > SKILL_SLOTS_COUNT:
+		result = result.slice(0, SKILL_SLOTS_COUNT)
+	return result
+
+
+# 读取玩家选择的 4 个技能 ID（全局共享）。无配置时返回默认 4 个。
+static func load_player_selected_skills() -> Array:
+	var config := ConfigFile.new()
+	if config.load("user://settings.cfg") != OK:
+		return DEFAULT_PLAYER_SKILLS.duplicate()
+	var skills = config.get_value("commander_skills", "selected", DEFAULT_PLAYER_SKILLS)
+	if not skills is Array or skills.size() != SKILL_SLOTS_COUNT:
+		return DEFAULT_PLAYER_SKILLS.duplicate()
+	# 校验所有 ID 在合法范围内（SkillId 枚举）
+	var validated: Array = []
+	for sid in skills:
+		if sid is int and sid >= 0 and sid < 12:
+			validated.append(sid)
+	if validated.size() != SKILL_SLOTS_COUNT:
+		return DEFAULT_PLAYER_SKILLS.duplicate()
+	return validated
+
+
+# 保存玩家选择的 4 个技能 ID 到 settings.cfg。
+static func save_player_selected_skills(skill_ids: Array) -> bool:
+	if skill_ids.size() != SKILL_SLOTS_COUNT:
+		return false
+	var config := ConfigFile.new()
+	config.load("user://settings.cfg")
+	config.set_value("commander_skills", "selected", skill_ids)
+	var err := config.save("user://settings.cfg")
+	return err == OK
+
+
+# ============================================================
+# 玩家战前编制（最多 10 个 PlaceMode，全局共享）
+# ============================================================
+
+const LOADOUT_SLOTS_COUNT := 10
+const DEFAULT_PLAYER_LOADOUT := [
+	D.PlaceMode.SOLDIER, D.PlaceMode.ARCHER, D.PlaceMode.LANCER, D.PlaceMode.MONK_UNIT,
+	D.PlaceMode.WALL, D.PlaceMode.TOWER, D.PlaceMode.BARRACKS,
+	D.PlaceMode.ARCHERY_RANGE, D.PlaceMode.MONASTERY, D.PlaceMode.CASTLE,
+]
+
+
+# 读取玩家选择的部队编制。无配置或非法返回默认 10 个。
+static func load_player_loadout() -> Array:
+	var config := ConfigFile.new()
+	if config.load("user://settings.cfg") != OK:
+		return DEFAULT_PLAYER_LOADOUT.duplicate()
+	var raw = config.get_value("loadout", "selected", DEFAULT_PLAYER_LOADOUT)
+	if not raw is Array:
+		return DEFAULT_PLAYER_LOADOUT.duplicate()
+	var validated: Array = []
+	for mode in raw:
+		if mode is int and mode in D.ALL_ITEMS:
+			validated.append(mode)
+	return validated
+
+
+static func save_player_loadout(modes: Array) -> bool:
+	var config := ConfigFile.new()
+	config.load("user://settings.cfg")
+	config.set_value("loadout", "selected", modes)
+	var err := config.save("user://settings.cfg")
+	return err == OK
+
+
+# 计算本局实际可用的物品 PlaceMode 列表（最多 10 个）。
+# 玩家选 ∩ 关卡允许；不足时按关卡允许顺序补；都空则用默认。
+func _resolve_loadout() -> Array:
+	var player_picked: Array = load_player_loadout()
+	var allowed_by_map: Array = []
+	if map_config != null and not map_config.available_items.is_empty():
+		allowed_by_map = map_config.available_items
+	var result: Array = []
+	for mode in player_picked:
+		if allowed_by_map.is_empty() or allowed_by_map.has(mode):
+			result.append(mode)
+	# 不足时从关卡允许里补
+	while result.size() < LOADOUT_SLOTS_COUNT and not allowed_by_map.is_empty():
+		var added := false
+		for mode in allowed_by_map:
+			if not result.has(mode):
+				result.append(mode)
+				added = true
+				if result.size() >= LOADOUT_SLOTS_COUNT:
+					break
+		if not added:
+			break
+	# 兜底
+	if result.is_empty():
+		result = DEFAULT_PLAYER_LOADOUT.duplicate()
+	# 限制最多 10
+	if result.size() > LOADOUT_SLOTS_COUNT:
+		result = result.slice(0, LOADOUT_SLOTS_COUNT)
+	return result
+
+
+# 把战前编制覆盖回 map_config.available_items，给 game_ui 使用
+func _apply_loadout_filter() -> void:
+	if map_config == null:
+		return
+	var resolved: Array = _resolve_loadout()
+	# 空配置场景下不动；非空则覆盖
+	if not resolved.is_empty():
+		map_config.available_items = resolved
+
+
+# ============================================================
+# 玩家战前被动（最多 3 个 UpgradeId，全局共享）
+# ============================================================
+
+const PASSIVE_SLOTS_COUNT := 3
+const DEFAULT_PLAYER_PASSIVES := []  # 默认无被动，由玩家选
+
+
+static func load_player_passives() -> Array:
+	var config := ConfigFile.new()
+	if config.load("user://settings.cfg") != OK:
+		return DEFAULT_PLAYER_PASSIVES.duplicate()
+	var raw = config.get_value("passives", "selected", DEFAULT_PLAYER_PASSIVES)
+	if not raw is Array:
+		return DEFAULT_PLAYER_PASSIVES.duplicate()
+	const UD := preload("res://scripts/upgrade/upgrade_data.gd")
+	var validated: Array = []
+	for uid in raw:
+		if uid is int and UD.CONFIGS.has(uid):
+			validated.append(uid)
+	return validated
+
+
+static func save_player_passives(upgrade_ids: Array) -> bool:
+	var config := ConfigFile.new()
+	config.load("user://settings.cfg")
+	config.set_value("passives", "selected", upgrade_ids)
+	var err := config.save("user://settings.cfg")
+	return err == OK
+
+
+# 计算本局实际生效的战前被动 UpgradeId 列表
+func _resolve_passives() -> Array:
+	return load_player_passives()
+
+
+# 在所有玩家单位生成后调用，应用战前被动
+func _apply_pre_battle_passives() -> void:
+	if upgrade_manager == null:
+		return
+	var ids: Array = _resolve_passives()
+	if ids.is_empty():
+		return
+	upgrade_manager.apply_pre_battle_passives(ids)
 
 func show_floating_text(text: String, color: Color, world_pos: Vector2) -> void:
 	spawner_module.show_floating_text(text, color, world_pos)
