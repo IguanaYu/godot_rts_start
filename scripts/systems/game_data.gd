@@ -7,7 +7,8 @@ const BuildingScript := preload("res://scripts/buildings/building.gd")
 
 # --- 放置模式 ---
 enum PlaceMode { NONE, WALL, TOWER, CASTLE, BARRACKS, SOLDIER, ARCHER, MONASTERY, ARCHERY_RANGE, LANCER, MONK_UNIT,
-	SHIELDBEARER, BERSERKER, CROSSBOWMAN, PYROMANCER, CRYOMANCER }
+	SHIELDBEARER, BERSERKER, CROSSBOWMAN, PYROMANCER, CRYOMANCER,
+	PIKEMAN, RAM, ARMOR_PIERCER }
 
 # --- 费用 ---
 const COSTS := {
@@ -26,6 +27,9 @@ const COSTS := {
 	PlaceMode.CROSSBOWMAN: 120,
 	PlaceMode.PYROMANCER: 120,
 	PlaceMode.CRYOMANCER: 120,
+	PlaceMode.PIKEMAN: 130,
+	PlaceMode.RAM: 200,
+	PlaceMode.ARMOR_PIERCER: 140,
 }
 
 # --- 显示名称（翻译键，使用时需 tr()） ---
@@ -45,6 +49,9 @@ const MODE_NAMES := {
 	PlaceMode.CROSSBOWMAN: "ENTITY_CROSSBOWMAN",
 	PlaceMode.PYROMANCER: "ENTITY_PYROMANCER",
 	PlaceMode.CRYOMANCER: "ENTITY_CRYOMANCER",
+	PlaceMode.PIKEMAN: "ENTITY_PIKEMAN",
+	PlaceMode.RAM: "ENTITY_RAM",
+	PlaceMode.ARMOR_PIERCER: "ENTITY_ARMOR_PIERCER",
 }
 
 # --- 默认全部物品 ---
@@ -54,6 +61,7 @@ const ALL_ITEMS := [
 	PlaceMode.ARCHERY_RANGE, PlaceMode.LANCER, PlaceMode.MONK_UNIT,
 	PlaceMode.SHIELDBEARER, PlaceMode.BERSERKER, PlaceMode.CROSSBOWMAN,
 	PlaceMode.PYROMANCER, PlaceMode.CRYOMANCER,
+	PlaceMode.PIKEMAN, PlaceMode.RAM, PlaceMode.ARMOR_PIERCER,
 ]
 
 # --- 固定显示顺序（单位在前，建筑在后） ---
@@ -61,6 +69,7 @@ const DISPLAY_ORDER := [
 	PlaceMode.SOLDIER, PlaceMode.ARCHER, PlaceMode.LANCER, PlaceMode.MONK_UNIT,
 	PlaceMode.SHIELDBEARER, PlaceMode.BERSERKER, PlaceMode.CROSSBOWMAN,
 	PlaceMode.PYROMANCER, PlaceMode.CRYOMANCER,
+	PlaceMode.PIKEMAN, PlaceMode.RAM, PlaceMode.ARMOR_PIERCER,
 	PlaceMode.WALL, PlaceMode.TOWER, PlaceMode.BARRACKS,
 	PlaceMode.ARCHERY_RANGE, PlaceMode.MONASTERY, PlaceMode.CASTLE,
 ]
@@ -96,6 +105,9 @@ const MODE_ICONS := {
 	PlaceMode.CROSSBOWMAN:   "res://assets/units/blue_archer/Archer_Idle.png",
 	PlaceMode.PYROMANCER:    "res://assets/units/blue_archer/Archer_Idle.png",
 	PlaceMode.CRYOMANCER:    "res://assets/units/blue_archer/Archer_Idle.png",
+	PlaceMode.PIKEMAN:       "res://assets/units/blue_lancer/Lancer_Idle.png",
+	PlaceMode.RAM:           "res://assets/units/blue_lancer/Lancer_Idle.png",
+	PlaceMode.ARMOR_PIERCER: "res://assets/units/blue_archer/Archer_Idle.png",
 }
 
 # --- 预加载按钮图标纹理 ---
@@ -115,6 +127,9 @@ const ICON_TEXTURES := {
 	PlaceMode.CROSSBOWMAN:   preload("res://assets/units/blue_archer/Archer_Idle.png"),
 	PlaceMode.PYROMANCER:    preload("res://assets/units/blue_archer/Archer_Idle.png"),
 	PlaceMode.CRYOMANCER:    preload("res://assets/units/blue_archer/Archer_Idle.png"),
+	PlaceMode.PIKEMAN:       preload("res://assets/units/blue_lancer/Lancer_Idle.png"),
+	PlaceMode.RAM:           preload("res://assets/units/blue_lancer/Lancer_Idle.png"),
+	PlaceMode.ARMOR_PIERCER: preload("res://assets/units/blue_archer/Archer_Idle.png"),
 	}
 
 # --- Q模式：造兵快捷键 ---
@@ -174,6 +189,9 @@ const ENEMY_VARIANT_SCENES := {
 	&"crossbowman": "res://scenes/units/crossbowman.tscn",
 	&"pyromancer": "res://scenes/units/pyromancer.tscn",
 	&"cryomancer": "res://scenes/units/cryomancer.tscn",
+	&"pikeman": "res://scenes/units/pikeman.tscn",
+	&"ram": "res://scenes/units/ram.tscn",
+	&"armor_piercer": "res://scenes/units/armor_piercer.tscn",
 }
 
 # --- PlaceMode → BuildingType 映射 ---
@@ -197,6 +215,9 @@ const PLACE_MODE_TO_UNIT := {
 	PlaceMode.CROSSBOWMAN: UnitScript.UnitType.ARCHER,
 	PlaceMode.PYROMANCER: UnitScript.UnitType.ARCHER,
 	PlaceMode.CRYOMANCER: UnitScript.UnitType.ARCHER,
+	PlaceMode.PIKEMAN: UnitScript.UnitType.LANCER,
+	PlaceMode.RAM: UnitScript.UnitType.LANCER,
+	PlaceMode.ARMOR_PIERCER: UnitScript.UnitType.ARCHER,
 }
 
 # --- PlaceMode → stats_id 映射（变体单位） ---
@@ -206,6 +227,9 @@ const PLACE_MODE_TO_STATS_ID := {
 	PlaceMode.CROSSBOWMAN: &"crossbowman",
 	PlaceMode.PYROMANCER: &"pyromancer",
 	PlaceMode.CRYOMANCER: &"cryomancer",
+	PlaceMode.PIKEMAN: &"pikeman",
+	PlaceMode.RAM: &"ram",
+	PlaceMode.ARMOR_PIERCER: &"armor_piercer",
 }
 
 # --- 网格 ---

@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/stats/unit_stats.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"armor_piercer"
+unit_type = 1
+category = "normal"
+parent_id = &"archer"
+max_hp = 55
+attack_damage = 18
+attack_range = 200.0
+attack_cooldown = 1.5
+move_speed = 110.0
+damage_reduction = 0.0
+heal_range = 0.0
+heal_amount = 0
+heal_cooldown = 0.0
+heal_scan_range = 0.0
+sprite_scale = 1.0
+projectile_data = null
+bonus_vs_unit_types = []
+bonus_vs_multiplier = 1.0
+bonus_vs_building_multiplier = 1.0
+ignores_damage_reduction = true
+upgrade_hp_per_level = 0
+upgrade_damage_per_level = 0
+upgrade_speed_per_level = 0.0
+max_upgrade_level = 0
+upgrade_cost = 0

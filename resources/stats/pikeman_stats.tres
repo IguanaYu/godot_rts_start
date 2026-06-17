@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/stats/unit_stats.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"pikeman"
+unit_type = 2
+category = "normal"
+parent_id = &"lancer"
+max_hp = 130
+attack_damage = 8
+attack_range = 42.0
+attack_cooldown = 0.9
+move_speed = 95.0
+damage_reduction = 0.0
+heal_range = 0.0
+heal_amount = 0
+heal_cooldown = 0.0
+heal_scan_range = 0.0
+sprite_scale = 1.0
+projectile_data = null
+bonus_vs_unit_types = [2]
+bonus_vs_multiplier = 2.5
+bonus_vs_building_multiplier = 1.0
+ignores_damage_reduction = false
+upgrade_hp_per_level = 0
+upgrade_damage_per_level = 0
+upgrade_speed_per_level = 0.0
+max_upgrade_level = 0
+upgrade_cost = 0

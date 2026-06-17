@@ -941,9 +941,20 @@ func take_damage(amount: int, attacker = null) -> void:
 	if health.is_dead():
 		return
 	var final_amount := amount
-	var reduction = stat_set.get_value(StatSetClass.DAMAGE_REDUCTION)
-	if reduction > 0.0:
-		final_amount = int(amount * (1.0 - reduction))
+	# 反特化：attacker 对 self.unit_type 有额外伤害倍率
+	var atk_stats = attacker.stats_data if attacker is Unit else null
+	if atk_stats:
+		if atk_stats.bonus_vs_multiplier > 1.0 and unit_type in atk_stats.bonus_vs_unit_types:
+			final_amount = int(final_amount * atk_stats.bonus_vs_multiplier)
+		# 减伤计算（穿甲单位无视减伤）
+		if not atk_stats.ignores_damage_reduction:
+			var reduction = stat_set.get_value(StatSetClass.DAMAGE_REDUCTION)
+			if reduction > 0.0:
+				final_amount = int(final_amount * (1.0 - reduction))
+	else:
+		var reduction = stat_set.get_value(StatSetClass.DAMAGE_REDUCTION)
+		if reduction > 0.0:
+			final_amount = int(final_amount * (1.0 - reduction))
 	health.take_damage(final_amount)
 	# 伤害飘字
 	if final_amount > 0:

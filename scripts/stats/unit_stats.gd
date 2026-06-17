@@ -28,6 +28,12 @@ extends Resource
 # --- 弹道数据（非近战单位使用投射物） ---
 @export var projectile_data: Resource = null      # ProjectileData，null=近战直接伤害
 
+# --- 反特化 ---
+@export var bonus_vs_unit_types: Array[int] = []    # 对这些 UnitType 造额外伤害
+@export var bonus_vs_multiplier: float = 1.0         # 倍率（2.5 = 2.5倍伤害）
+@export var bonus_vs_building_multiplier: float = 1.0 # 对建筑倍率
+@export var ignores_damage_reduction: bool = false    # 穿甲：无视目标减伤
+
 # --- 升级系统 ---
 @export var upgrade_hp_per_level: int = 10       # 每级 HP 增加
 @export var upgrade_damage_per_level: int = 2    # 每级攻击力增加

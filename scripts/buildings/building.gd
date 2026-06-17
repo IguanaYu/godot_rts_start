@@ -615,13 +615,18 @@ func take_damage(amount: int, attacker = null) -> void:
 		return
 	if health.is_dead():
 		return
-	health.take_damage(amount)
-	damaged.emit(amount, attacker)
+	# 反特化：attacker 对建筑有额外伤害倍率
+	var final_amount := amount
+	var atk_stats = attacker.stats_data if attacker is Unit else null
+	if atk_stats and atk_stats.bonus_vs_building_multiplier > 1.0:
+		final_amount = int(final_amount * atk_stats.bonus_vs_building_multiplier)
+	health.take_damage(final_amount)
+	damaged.emit(final_amount, attacker)
 	# 伤害飘字
-	if amount > 0:
+	if final_amount > 0:
 		var main_node := get_tree().current_scene
 		if main_node and main_node.has_method("show_damage_number"):
-			main_node.show_damage_number(amount, global_position)
+			main_node.show_damage_number(final_amount, global_position)
 	_last_damage_time = 3.0  # 城墙被攻击后3秒才开始修复
 	if attacker and team == Team.ENEMY:
 		_alert_nearby_enemies(attacker)

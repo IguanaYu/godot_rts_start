@@ -18,6 +18,9 @@ ENTITY_BERSERKER,Berserker,狂战士,狂戦士
 ENTITY_CROSSBOWMAN,Crossbowman,弩手,弩兵
 ENTITY_PYROMANCER,Pyromancer,火焰法师,火炎魔導
 ENTITY_CRYOMANCER,Cryomancer,冰霜法师,氷霜魔導
+ENTITY_PIKEMAN,Pikeman,戟兵,パイクマン
+ENTITY_RAM,Ram,攻城槌,破城槌
+ENTITY_ARMOR_PIERCER,Armor Piercer,穿甲弩,アーマーピアサー
 ENTITY_UNIT,Unit,单位,ユニット
 ENTITY_BUILDING,Building,建筑,建物
 UI_BTN_FORMAT,%s[%d] $%d,%s[%d] $%d,%s[%d] $%d

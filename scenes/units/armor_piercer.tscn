@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://armpc001"]
+
+[ext_resource type="Texture2D" uid="uid://n2yxiptxgrlt" path="res://assets/units/blue_archer/Archer_Idle.png" id="2_arch"]
+[ext_resource type="PackedScene" uid="uid://bxunit0001" path="res://scenes/units/unit.tscn" id="base"]
+[ext_resource type="Resource" path="res://resources/stats/armor_piercer_stats.tres" id="stats"]
+
+[node name="ArmorPiercer" instance=ExtResource("base")]
+unit_type = 1
+stats_data = ExtResource("stats")
+sprite_scale_x = 0.6
+sprite_scale_y = 0.6
+sprite_offset_y = 9.0
+variant_tint = Color(0.502, 0.502, 0.502, 1.0)
+variant_tint_amount = 0.4
+
+[node name="BodySprite" parent="." index="2"]
+position = Vector2(0, -11)
+scale = Vector2(0.6, 0.6)
+texture = ExtResource("2_arch")
+hframes = 6
