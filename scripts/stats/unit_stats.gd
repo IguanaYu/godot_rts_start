@@ -25,6 +25,9 @@ extends Resource
 # --- 视觉缩放（hero/boss 更大） ---
 @export var sprite_scale: float = 1.0
 
+# --- 弹道数据（非近战单位使用投射物） ---
+@export var projectile_data: Resource = null      # ProjectileData，null=近战直接伤害
+
 # --- 升级系统 ---
 @export var upgrade_hp_per_level: int = 10       # 每级 HP 增加
 @export var upgrade_damage_per_level: int = 2    # 每级攻击力增加

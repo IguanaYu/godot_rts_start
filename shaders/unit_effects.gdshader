@@ -6,12 +6,21 @@ uniform vec4 glow_color : source_color = vec4(1.0, 0.9, 0.3, 1.0);
 uniform float glow_width : hint_range(1.0, 8.0) = 3.0;
 uniform vec4 slow_tint : source_color = vec4(0.5, 0.8, 1.0, 1.0);
 
+uniform bool tint_enabled = false;
+uniform vec4 tint_color : source_color = vec4(1.0);
+uniform float tint_amount : hint_range(0.0, 1.0) = 0.5;
+
 void fragment() {
 	vec4 col = texture(TEXTURE, UV);
 
 	// 减速变色：整体向冰蓝色偏移
 	if (slow_enabled) {
 		col.rgb = mix(col.rgb, slow_tint.rgb, 0.35);
+	}
+
+	// 变体调色：优先于减速染色，两者不叠加
+	if (tint_enabled) {
+		col.rgb = mix(col.rgb, tint_color.rgb, tint_amount);
 	}
 
 	// 选中发光

@@ -13,6 +13,11 @@ ENTITY_MONASTERY,Monastery,修道院,修道院
 ENTITY_ARCHERY,Archery,靶场,弓道場
 ENTITY_LANCER,Lancer,枪兵,ランサー
 ENTITY_MONK,Monk,僧侣,モンク
+ENTITY_SHIELDBEARER,Shieldbearer,盾卫,盾衛
+ENTITY_BERSERKER,Berserker,狂战士,狂戦士
+ENTITY_CROSSBOWMAN,Crossbowman,弩手,弩兵
+ENTITY_PYROMANCER,Pyromancer,火焰法师,火炎魔導
+ENTITY_CRYOMANCER,Cryomancer,冰霜法师,氷霜魔導
 ENTITY_UNIT,Unit,单位,ユニット
 ENTITY_BUILDING,Building,建筑,建物
 UI_BTN_FORMAT,%s[%d] $%d,%s[%d] $%d,%s[%d] $%d
@@ -119,7 +124,7 @@ PRE_BATTLE_TITLE,Configure Your Loadout,配置你的战前编制,戦前編成を
 TAB_COMMANDER_SKILLS,Commander Skills,指挥官技能,指揮官スキル
 TAB_LOADOUT,Troop Loadout,部队编制,部隊編成
 TAB_PASSIVES,Pre-Battle Passives,战前被动,戦前パッシブ
-LOADOUT_HINT,Pick up to 10 (units + buildings share keys 1-9 0),最多选 10 个（单位+建筑共用 1-9 0 键）,最大10個（ユニット+建物は1-9 0キー共有）
+LOADOUT_HINT,Pick up to 15 (units + buildings share keys 1-9 0),最多选 15 个（单位+建筑共用 1-9 0 键）,最大15個（ユニット+建物は1-9 0キー共有）
 PASSIVES_HINT,Pick 3 passives - active for the entire battle,选 3 个被动技能 - 整局生效,3つ選択 - 戦闘全体に効果
 SKILL_ENERGY,Energy,能量,エネルギー
 SKILL_COST,Cost,消耗,コスト

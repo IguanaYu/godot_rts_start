@@ -289,8 +289,8 @@ func _find_safe_spawn_pos(min_x: float, max_x: float, min_y: float, max_y: float
 
 # --- 放置时生成玩家单位 ---
 
-func place_player_unit(unit_type: int, click_pos: Vector2) -> void:
-	var unit := create_unit(unit_type, UnitScript.Team.PLAYER, click_pos)
+func place_player_unit(unit_type: int, click_pos: Vector2, stats_id: StringName = &"") -> void:
+	var unit := create_unit(unit_type, UnitScript.Team.PLAYER, click_pos, stats_id)
 	unit.net_id = _next_net_id
 	_next_net_id += 1
 	LockstepSync.register_unit(unit)

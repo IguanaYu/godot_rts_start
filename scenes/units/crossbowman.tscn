@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://crossbow001"]
+
+[ext_resource type="PackedScene" uid="uid://bxunit0001" path="res://scenes/units/unit.tscn" id="base"]
+[ext_resource type="Resource" path="res://resources/stats/crossbowman_stats.tres" id="stats"]
+
+[node name="Crossbowman" instance=ExtResource("base")]
+unit_type = 1
+stats_data = ExtResource("stats")
+sprite_scale_x = 0.6
+sprite_scale_y = 0.6
+sprite_offset_y = 9.0
+variant_tint = Color(0.42, 0.263, 0.137, 1.0)
+variant_tint_amount = 0.4

@@ -1172,7 +1172,8 @@ func _do_place(click_pos: Vector2) -> void:
 
 	var placed := false
 	if D.is_unit_mode(place_mode):
-		spawner_module.place_player_unit(D.PLACE_MODE_TO_UNIT[place_mode], click_pos)
+		var stats_id: StringName = D.PLACE_MODE_TO_STATS_ID.get(place_mode, &"")
+		spawner_module.place_player_unit(D.PLACE_MODE_TO_UNIT[place_mode], click_pos, stats_id)
 		placed = true
 	elif D.is_building_mode(place_mode):
 		var bt: int = D.PLACE_MODE_TO_BUILDING[place_mode]
@@ -1298,9 +1299,11 @@ static func save_player_selected_skills(skill_ids: Array) -> bool:
 # 玩家战前编制（最多 10 个 PlaceMode，全局共享）
 # ============================================================
 
-const LOADOUT_SLOTS_COUNT := 10
+const LOADOUT_SLOTS_COUNT := 15
 const DEFAULT_PLAYER_LOADOUT := [
 	D.PlaceMode.SOLDIER, D.PlaceMode.ARCHER, D.PlaceMode.LANCER, D.PlaceMode.MONK_UNIT,
+	D.PlaceMode.SHIELDBEARER, D.PlaceMode.BERSERKER, D.PlaceMode.CROSSBOWMAN,
+	D.PlaceMode.PYROMANCER, D.PlaceMode.CRYOMANCER,
 	D.PlaceMode.WALL, D.PlaceMode.TOWER, D.PlaceMode.BARRACKS,
 	D.PlaceMode.ARCHERY_RANGE, D.PlaceMode.MONASTERY, D.PlaceMode.CASTLE,
 ]

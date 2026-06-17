@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://cryo001"]
+
+[ext_resource type="PackedScene" uid="uid://bxunit0001" path="res://scenes/units/unit.tscn" id="base"]
+[ext_resource type="Resource" path="res://resources/stats/cryomancer_stats.tres" id="stats"]
+
+[node name="Cryomancer" instance=ExtResource("base")]
+unit_type = 1
+stats_data = ExtResource("stats")
+sprite_scale_x = 0.6
+sprite_scale_y = 0.6
+sprite_offset_y = 9.0
+variant_tint = Color(0.251, 0.565, 0.878, 1.0)
+variant_tint_amount = 0.5

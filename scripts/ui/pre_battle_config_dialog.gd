@@ -11,7 +11,7 @@ const BF := preload("res://scripts/ui/button_factory.gd")
 const MainScript := preload("res://scripts/main.gd")
 
 const MAX_SKILLS := 4
-const MAX_LOADOUT := 10
+const MAX_LOADOUT := 15
 const MAX_PASSIVES := 3
 
 const SLOT_HOTKEYS := ["Z", "X", "C", "V"]

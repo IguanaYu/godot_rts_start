@@ -6,7 +6,8 @@ const UnitScript := preload("res://scripts/units/unit.gd")
 const BuildingScript := preload("res://scripts/buildings/building.gd")
 
 # --- 放置模式 ---
-enum PlaceMode { NONE, WALL, TOWER, CASTLE, BARRACKS, SOLDIER, ARCHER, MONASTERY, ARCHERY_RANGE, LANCER, MONK_UNIT }
+enum PlaceMode { NONE, WALL, TOWER, CASTLE, BARRACKS, SOLDIER, ARCHER, MONASTERY, ARCHERY_RANGE, LANCER, MONK_UNIT,
+	SHIELDBEARER, BERSERKER, CROSSBOWMAN, PYROMANCER, CRYOMANCER }
 
 # --- 费用 ---
 const COSTS := {
@@ -20,6 +21,11 @@ const COSTS := {
 	PlaceMode.ARCHERY_RANGE: 250,
 	PlaceMode.LANCER: 150,
 	PlaceMode.MONK_UNIT: 80,
+	PlaceMode.SHIELDBEARER: 100,
+	PlaceMode.BERSERKER: 100,
+	PlaceMode.CROSSBOWMAN: 120,
+	PlaceMode.PYROMANCER: 120,
+	PlaceMode.CRYOMANCER: 120,
 }
 
 # --- 显示名称（翻译键，使用时需 tr()） ---
@@ -34,18 +40,27 @@ const MODE_NAMES := {
 	PlaceMode.ARCHERY_RANGE: "ENTITY_ARCHERY",
 	PlaceMode.LANCER: "ENTITY_LANCER",
 	PlaceMode.MONK_UNIT: "ENTITY_MONK",
+	PlaceMode.SHIELDBEARER: "ENTITY_SHIELDBEARER",
+	PlaceMode.BERSERKER: "ENTITY_BERSERKER",
+	PlaceMode.CROSSBOWMAN: "ENTITY_CROSSBOWMAN",
+	PlaceMode.PYROMANCER: "ENTITY_PYROMANCER",
+	PlaceMode.CRYOMANCER: "ENTITY_CRYOMANCER",
 }
 
 # --- 默认全部物品 ---
 const ALL_ITEMS := [
 	PlaceMode.WALL, PlaceMode.TOWER, PlaceMode.SOLDIER, PlaceMode.ARCHER,
 	PlaceMode.CASTLE, PlaceMode.BARRACKS, PlaceMode.MONASTERY,
-	PlaceMode.ARCHERY_RANGE, PlaceMode.LANCER, PlaceMode.MONK_UNIT
+	PlaceMode.ARCHERY_RANGE, PlaceMode.LANCER, PlaceMode.MONK_UNIT,
+	PlaceMode.SHIELDBEARER, PlaceMode.BERSERKER, PlaceMode.CROSSBOWMAN,
+	PlaceMode.PYROMANCER, PlaceMode.CRYOMANCER,
 ]
 
 # --- 固定显示顺序（单位在前，建筑在后） ---
 const DISPLAY_ORDER := [
 	PlaceMode.SOLDIER, PlaceMode.ARCHER, PlaceMode.LANCER, PlaceMode.MONK_UNIT,
+	PlaceMode.SHIELDBEARER, PlaceMode.BERSERKER, PlaceMode.CROSSBOWMAN,
+	PlaceMode.PYROMANCER, PlaceMode.CRYOMANCER,
 	PlaceMode.WALL, PlaceMode.TOWER, PlaceMode.BARRACKS,
 	PlaceMode.ARCHERY_RANGE, PlaceMode.MONASTERY, PlaceMode.CASTLE,
 ]
@@ -76,6 +91,11 @@ const MODE_ICONS := {
 	PlaceMode.ARCHER:        "res://assets/units/blue_archer/Archer_Idle.png",
 	PlaceMode.LANCER:        "res://assets/units/blue_lancer/Lancer_Idle.png",
 	PlaceMode.MONK_UNIT:     "res://assets/units/blue_monk/Idle.png",
+	PlaceMode.SHIELDBEARER:  "res://assets/units/blue_warrior/Warrior_Idle.png",
+	PlaceMode.BERSERKER:     "res://assets/units/blue_warrior/Warrior_Idle.png",
+	PlaceMode.CROSSBOWMAN:   "res://assets/units/blue_archer/Archer_Idle.png",
+	PlaceMode.PYROMANCER:    "res://assets/units/blue_archer/Archer_Idle.png",
+	PlaceMode.CRYOMANCER:    "res://assets/units/blue_archer/Archer_Idle.png",
 }
 
 # --- 预加载按钮图标纹理 ---
@@ -90,6 +110,11 @@ const ICON_TEXTURES := {
 	PlaceMode.ARCHER:        preload("res://assets/units/blue_archer/Archer_Idle.png"),
 	PlaceMode.LANCER:        preload("res://assets/units/blue_lancer/Lancer_Idle.png"),
 	PlaceMode.MONK_UNIT:     preload("res://assets/units/blue_monk/Idle.png"),
+	PlaceMode.SHIELDBEARER:  preload("res://assets/units/blue_warrior/Warrior_Idle.png"),
+	PlaceMode.BERSERKER:     preload("res://assets/units/blue_warrior/Warrior_Idle.png"),
+	PlaceMode.CROSSBOWMAN:   preload("res://assets/units/blue_archer/Archer_Idle.png"),
+	PlaceMode.PYROMANCER:    preload("res://assets/units/blue_archer/Archer_Idle.png"),
+	PlaceMode.CRYOMANCER:    preload("res://assets/units/blue_archer/Archer_Idle.png"),
 	}
 
 # --- Q模式：造兵快捷键 ---
@@ -144,6 +169,11 @@ const UNIT_SCENES := {
 # --- 变体单位场景（按 stats id 查找，优先于 UNIT_SCENES） ---
 const ENEMY_VARIANT_SCENES := {
 	&"elite_archer": "res://scenes/units/elite_archer.tscn",
+	&"shieldbearer": "res://scenes/units/shieldbearer.tscn",
+	&"berserker": "res://scenes/units/berserker.tscn",
+	&"crossbowman": "res://scenes/units/crossbowman.tscn",
+	&"pyromancer": "res://scenes/units/pyromancer.tscn",
+	&"cryomancer": "res://scenes/units/cryomancer.tscn",
 }
 
 # --- PlaceMode → BuildingType 映射 ---
@@ -162,6 +192,20 @@ const PLACE_MODE_TO_UNIT := {
 	PlaceMode.ARCHER: UnitScript.UnitType.ARCHER,
 	PlaceMode.LANCER: UnitScript.UnitType.LANCER,
 	PlaceMode.MONK_UNIT: UnitScript.UnitType.MONK,
+	PlaceMode.SHIELDBEARER: UnitScript.UnitType.SOLDIER,
+	PlaceMode.BERSERKER: UnitScript.UnitType.SOLDIER,
+	PlaceMode.CROSSBOWMAN: UnitScript.UnitType.ARCHER,
+	PlaceMode.PYROMANCER: UnitScript.UnitType.ARCHER,
+	PlaceMode.CRYOMANCER: UnitScript.UnitType.ARCHER,
+}
+
+# --- PlaceMode → stats_id 映射（变体单位） ---
+const PLACE_MODE_TO_STATS_ID := {
+	PlaceMode.SHIELDBEARER: &"shieldbearer",
+	PlaceMode.BERSERKER: &"berserker",
+	PlaceMode.CROSSBOWMAN: &"crossbowman",
+	PlaceMode.PYROMANCER: &"pyromancer",
+	PlaceMode.CRYOMANCER: &"cryomancer",
 }
 
 # --- 网格 ---

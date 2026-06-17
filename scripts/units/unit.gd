@@ -56,6 +56,8 @@ const UpgradeMgrClass = preload("res://scripts/stats/upgrade_manager.gd")
 @export var variant_atk_bonus: int = 0
 @export var variant_speed_mult: float = 1.0
 @export var variant_scale: float = 1.0
+@export var variant_tint: Color = Color.WHITE      # 非白色=启用调色
+@export var variant_tint_amount: float = 0.5
 var stat_set
 var upgrade_mgr
 var steer_lock_time: float = 0.5
@@ -173,6 +175,12 @@ func _init_outline_materials() -> void:
 	_effects_material.set_shader_parameter("outline_enabled", false)
 	_effects_material.set_shader_parameter("slow_enabled", false)
 	_effects_material.set_shader_parameter("slow_tint", Color(0.5, 0.8, 1.0, 1.0))
+	# 变体调色
+	var use_tint := variant_tint != Color.WHITE
+	_effects_material.set_shader_parameter("tint_enabled", use_tint)
+	if use_tint:
+		_effects_material.set_shader_parameter("tint_color", variant_tint)
+		_effects_material.set_shader_parameter("tint_amount", variant_tint_amount)
 	if body_sprite:
 		body_sprite.material = _effects_material
 
@@ -909,13 +917,14 @@ func _calc_best_tangent(units: Array, base_dir: Vector2, acute: bool, pick_small
 
 func _perform_attack() -> void:
 	if attack_target and not attack_target.is_dead():
-		if unit_type == UnitType.MONK:
+		if unit_type == UnitType.MONK and (stats_data == null or stats_data.projectile_data == null):
 			return
 		_is_attacking = true
 		_set_anim("")
 		_set_anim("attack")
 		var damage = stat_set.get_int(StatSetClass.ATTACK_DAMAGE)
-		if unit_type == UnitType.ARCHER:
+		var pd = stats_data.projectile_data if stats_data else null
+		if unit_type == UnitType.ARCHER or (pd != null):
 			_spawn_arrow(attack_target, damage)
 		else:
 			attack_target.take_damage(damage, self)
@@ -923,7 +932,8 @@ func _perform_attack() -> void:
 func _spawn_arrow(target, damage: int = -1) -> void:
 	var spawner = get_tree().current_scene.get("spawner_module")
 	if spawner:
-		spawner.spawn_projectile(null, global_position, target.global_position, target, self, damage, arrow_scene)
+		var pd = stats_data.projectile_data if stats_data else null
+		spawner.spawn_projectile(pd, global_position, target.global_position, target, self, damage, arrow_scene)
 
 func take_damage(amount: int, attacker = null) -> void:
 	if Engine.is_editor_hint():
