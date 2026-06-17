@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://wdrmr001"]
+
+[ext_resource type="Texture2D" uid="uid://cxu763vgva6ga" path="res://assets/units/blue_monk/Idle.png" id="2_monk"]
+[ext_resource type="PackedScene" uid="uid://bxunit0001" path="res://scenes/units/unit.tscn" id="base"]
+[ext_resource type="Resource" path="res://resources/stats/war_drummer_stats.tres" id="stats"]
+
+[node name="WarDrummer" instance=ExtResource("base")]
+unit_type = 3
+stats_data = ExtResource("stats")
+sprite_scale_x = 0.5
+sprite_scale_y = 0.5
+sprite_offset_y = 10.0
+variant_tint = Color(0.831, 0.627, 0.09, 1.0)
+variant_tint_amount = 0.45
+
+[node name="BodySprite" parent="." index="2"]
+position = Vector2(0, -10)
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("2_monk")
+hframes = 6

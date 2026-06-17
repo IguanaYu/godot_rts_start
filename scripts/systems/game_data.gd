@@ -9,7 +9,8 @@ const BuildingScript := preload("res://scripts/buildings/building.gd")
 enum PlaceMode { NONE, WALL, TOWER, CASTLE, BARRACKS, SOLDIER, ARCHER, MONASTERY, ARCHERY_RANGE, LANCER, MONK_UNIT,
 	SHIELDBEARER, BERSERKER, CROSSBOWMAN, PYROMANCER, CRYOMANCER,
 	PIKEMAN, RAM, ARMOR_PIERCER,
-	REVENANT, DUELIST, TROLL, PALADIN }
+	REVENANT, DUELIST, TROLL, PALADIN,
+	WAR_DRUMMER, BANNER_BEARER }
 
 # --- 费用 ---
 const COSTS := {
@@ -35,6 +36,8 @@ const COSTS := {
 	PlaceMode.DUELIST: 120,
 	PlaceMode.TROLL: 160,
 	PlaceMode.PALADIN: 180,
+	PlaceMode.WAR_DRUMMER: 120,
+	PlaceMode.BANNER_BEARER: 150,
 }
 
 # --- 显示名称（翻译键，使用时需 tr()） ---
@@ -61,6 +64,8 @@ const MODE_NAMES := {
 	PlaceMode.DUELIST: "ENTITY_DUELIST",
 	PlaceMode.TROLL: "ENTITY_TROLL",
 	PlaceMode.PALADIN: "ENTITY_PALADIN",
+	PlaceMode.WAR_DRUMMER: "ENTITY_WAR_DRUMMER",
+	PlaceMode.BANNER_BEARER: "ENTITY_BANNER_BEARER",
 }
 
 # --- 默认全部物品 ---
@@ -72,6 +77,7 @@ const ALL_ITEMS := [
 	PlaceMode.PYROMANCER, PlaceMode.CRYOMANCER,
 	PlaceMode.PIKEMAN, PlaceMode.RAM, PlaceMode.ARMOR_PIERCER,
 	PlaceMode.REVENANT, PlaceMode.DUELIST, PlaceMode.TROLL, PlaceMode.PALADIN,
+	PlaceMode.WAR_DRUMMER, PlaceMode.BANNER_BEARER,
 ]
 
 # --- 固定显示顺序（单位在前，建筑在后） ---
@@ -81,6 +87,7 @@ const DISPLAY_ORDER := [
 	PlaceMode.PYROMANCER, PlaceMode.CRYOMANCER,
 	PlaceMode.PIKEMAN, PlaceMode.RAM, PlaceMode.ARMOR_PIERCER,
 	PlaceMode.REVENANT, PlaceMode.DUELIST, PlaceMode.TROLL, PlaceMode.PALADIN,
+	PlaceMode.WAR_DRUMMER, PlaceMode.BANNER_BEARER,
 	PlaceMode.WALL, PlaceMode.TOWER, PlaceMode.BARRACKS,
 	PlaceMode.ARCHERY_RANGE, PlaceMode.MONASTERY, PlaceMode.CASTLE,
 ]
@@ -123,6 +130,8 @@ const MODE_ICONS := {
 	PlaceMode.DUELIST:       "res://assets/units/blue_warrior/Warrior_Idle.png",
 	PlaceMode.TROLL:         "res://assets/units/blue_lancer/Lancer_Idle.png",
 	PlaceMode.PALADIN:       "res://assets/units/blue_warrior/Warrior_Idle.png",
+	PlaceMode.WAR_DRUMMER:   "res://assets/units/blue_monk/Idle.png",
+	PlaceMode.BANNER_BEARER: "res://assets/units/blue_warrior/Warrior_Idle.png",
 }
 
 # --- 预加载按钮图标纹理 ---
@@ -149,6 +158,8 @@ const ICON_TEXTURES := {
 	PlaceMode.DUELIST:       preload("res://assets/units/blue_warrior/Warrior_Idle.png"),
 	PlaceMode.TROLL:         preload("res://assets/units/blue_lancer/Lancer_Idle.png"),
 	PlaceMode.PALADIN:       preload("res://assets/units/blue_warrior/Warrior_Idle.png"),
+	PlaceMode.WAR_DRUMMER:   preload("res://assets/units/blue_monk/Idle.png"),
+	PlaceMode.BANNER_BEARER: preload("res://assets/units/blue_warrior/Warrior_Idle.png"),
 	}
 
 # --- Q模式：造兵快捷键 ---
@@ -215,6 +226,8 @@ const ENEMY_VARIANT_SCENES := {
 	&"duelist": "res://scenes/units/duelist.tscn",
 	&"troll": "res://scenes/units/troll.tscn",
 	&"paladin": "res://scenes/units/paladin.tscn",
+	&"war_drummer": "res://scenes/units/war_drummer.tscn",
+	&"banner_bearer": "res://scenes/units/banner_bearer.tscn",
 }
 
 # --- PlaceMode → BuildingType 映射 ---
@@ -245,6 +258,8 @@ const PLACE_MODE_TO_UNIT := {
 	PlaceMode.DUELIST: UnitScript.UnitType.SOLDIER,
 	PlaceMode.TROLL: UnitScript.UnitType.LANCER,
 	PlaceMode.PALADIN: UnitScript.UnitType.SOLDIER,
+	PlaceMode.WAR_DRUMMER: UnitScript.UnitType.MONK,
+	PlaceMode.BANNER_BEARER: UnitScript.UnitType.SOLDIER,
 }
 
 # --- PlaceMode → stats_id 映射（变体单位） ---
@@ -261,6 +276,8 @@ const PLACE_MODE_TO_STATS_ID := {
 	PlaceMode.DUELIST: &"duelist",
 	PlaceMode.TROLL: &"troll",
 	PlaceMode.PALADIN: &"paladin",
+	PlaceMode.WAR_DRUMMER: &"war_drummer",
+	PlaceMode.BANNER_BEARER: &"banner_bearer",
 }
 
 # --- 网格 ---

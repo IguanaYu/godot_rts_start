@@ -40,6 +40,11 @@ extends Resource
 @export var dodge_chance: float = 0.0       # 闪避概率（0.35 = 35%免伤）
 @export var regen_per_sec: float = 0.0      # 每秒回血
 
+# --- 光环 ---
+@export var aura_range: float = 0.0    # 0 = 无光环
+@export var aura_type: String = ""     # "attack"/"defense"/"regen"/"range_bonus"
+@export var aura_value: float = 0.0    # 数值
+
 # --- 升级系统 ---
 @export var upgrade_hp_per_level: int = 10       # 每级 HP 增加
 @export var upgrade_damage_per_level: int = 2    # 每级攻击力增加

@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://bnrbr001"]
+
+[ext_resource type="PackedScene" uid="uid://bxunit0001" path="res://scenes/units/unit.tscn" id="base"]
+[ext_resource type="Resource" path="res://resources/stats/banner_bearer_stats.tres" id="stats"]
+
+[node name="BannerBearer" instance=ExtResource("base")]
+stats_data = ExtResource("stats")
+sprite_scale_x = 0.6
+sprite_scale_y = 0.6
+sprite_offset_y = 9.0
+variant_tint = Color(0.6, 0.165, 0.165, 1.0)
+variant_tint_amount = 0.4

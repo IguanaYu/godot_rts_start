@@ -82,6 +82,12 @@ var _slow_factor: float = 1.0
 var _slow_timer: float = 0.0
 var _regen_accumulator: float = 0.0
 
+# 光环系统
+var aura_range: float = 0.0
+var aura_type: String = ""
+var aura_value: float = 0.0
+var _aura_scan_timer: float = 0.0
+
 # 命令队列 (Shift)
 const CommandQueue = preload("res://scripts/systems/command_queue.gd")
 var command_queue = CommandQueue.new()
@@ -210,6 +216,10 @@ func _setup_stats() -> void:
 	# 同步 HP（修饰器可能改了 max_hp）
 	if (variant_hp_bonus != 0) and health and not Engine.is_editor_hint():
 		health.setup(stat_set.get_int(StatSetClass.MAX_HP), hp_bar, team)
+	# 光环字段
+	aura_range = stats_data.aura_range
+	aura_type = stats_data.aura_type
+	aura_value = stats_data.aura_value
 
 func _setup_editor_visuals() -> void:
 	_setup_texture()
@@ -468,6 +478,8 @@ func _physics_process(delta: float) -> void:
 			var heal_amt = int(_regen_accumulator)
 			health.heal(heal_amt)
 			_regen_accumulator -= heal_amt
+	# 光环
+	_aura_process(delta)
 	# 建筑内逃生逻辑（优先于正常状态机）
 	if _escaping_building:
 		_escape_timer -= delta
@@ -1282,6 +1294,8 @@ func apply_buff(buff_type: String, value: float) -> void:
 	match buff_type:
 		"defense":
 			stat_set.add_modifier("buff:defense", StatSetClass.DAMAGE_REDUCTION, 0.0, 1.0 - value)
+		"attack":
+			stat_set.add_modifier("buff:attack", StatSetClass.ATTACK_DAMAGE, 0.0, 1.0 + value)
 		"attack_melee":
 			stat_set.add_modifier("buff:attack_melee", StatSetClass.ATTACK_DAMAGE, 0.0, 1.0 + value)
 		"range_bonus":
@@ -1327,6 +1341,32 @@ func _heal_from_lifesteal(damage_dealt: int) -> void:
 		heal_amt += stats_data.lifesteal_flat
 	if heal_amt > 0 and health.hp < health.max_hp:
 		health.heal(heal_amt)
+
+
+## 光环扫描：每 0.5s 对范围内友军施加光环效果
+func _aura_process(delta: float) -> void:
+	if aura_range <= 0.0:
+		return
+	_aura_scan_timer += delta
+	if _aura_scan_timer < 0.5:
+		return
+	_aura_scan_timer = 0.0
+	var neighbors = UnitGrid.query_neighbors(global_position, aura_range)
+	for u in neighbors:
+		if not is_instance_valid(u) or u.is_dead() or u.team != team:
+			continue
+		if global_position.distance_to(u.global_position) > aura_range:
+			continue
+		match aura_type:
+			"regen":
+				if u.health.hp < u.health.max_hp:
+					u.health.heal(int(aura_value * 0.5))
+			"attack":
+				u.apply_buff("attack", aura_value)
+			"defense":
+				u.apply_buff("defense", aura_value)
+			"range_bonus":
+				u.apply_buff("range_bonus", aura_value)
 
 func get_effective_attack_range() -> float:
 	return stat_set.get_value(StatSetClass.ATTACK_RANGE)
