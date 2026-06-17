@@ -21,6 +21,10 @@ ENTITY_CRYOMANCER,Cryomancer,冰霜法师,氷霜魔導
 ENTITY_PIKEMAN,Pikeman,戟兵,パイクマン
 ENTITY_RAM,Ram,攻城槌,破城槌
 ENTITY_ARMOR_PIERCER,Armor Piercer,穿甲弩,アーマーピアサー
+ENTITY_REVENANT,Revenant,亡魂,レブナント
+ENTITY_DUELIST,Duelist,决斗者,デュエリスト
+ENTITY_TROLL,Troll,再生者,トロール
+ENTITY_PALADIN,Paladin,圣骑士,パラディン
 ENTITY_UNIT,Unit,单位,ユニット
 ENTITY_BUILDING,Building,建筑,建物
 UI_BTN_FORMAT,%s[%d] $%d,%s[%d] $%d,%s[%d] $%d

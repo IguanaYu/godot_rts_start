@@ -8,7 +8,8 @@ const BuildingScript := preload("res://scripts/buildings/building.gd")
 # --- 放置模式 ---
 enum PlaceMode { NONE, WALL, TOWER, CASTLE, BARRACKS, SOLDIER, ARCHER, MONASTERY, ARCHERY_RANGE, LANCER, MONK_UNIT,
 	SHIELDBEARER, BERSERKER, CROSSBOWMAN, PYROMANCER, CRYOMANCER,
-	PIKEMAN, RAM, ARMOR_PIERCER }
+	PIKEMAN, RAM, ARMOR_PIERCER,
+	REVENANT, DUELIST, TROLL, PALADIN }
 
 # --- 费用 ---
 const COSTS := {
@@ -30,6 +31,10 @@ const COSTS := {
 	PlaceMode.PIKEMAN: 130,
 	PlaceMode.RAM: 200,
 	PlaceMode.ARMOR_PIERCER: 140,
+	PlaceMode.REVENANT: 130,
+	PlaceMode.DUELIST: 120,
+	PlaceMode.TROLL: 160,
+	PlaceMode.PALADIN: 180,
 }
 
 # --- 显示名称（翻译键，使用时需 tr()） ---
@@ -52,6 +57,10 @@ const MODE_NAMES := {
 	PlaceMode.PIKEMAN: "ENTITY_PIKEMAN",
 	PlaceMode.RAM: "ENTITY_RAM",
 	PlaceMode.ARMOR_PIERCER: "ENTITY_ARMOR_PIERCER",
+	PlaceMode.REVENANT: "ENTITY_REVENANT",
+	PlaceMode.DUELIST: "ENTITY_DUELIST",
+	PlaceMode.TROLL: "ENTITY_TROLL",
+	PlaceMode.PALADIN: "ENTITY_PALADIN",
 }
 
 # --- 默认全部物品 ---
@@ -62,6 +71,7 @@ const ALL_ITEMS := [
 	PlaceMode.SHIELDBEARER, PlaceMode.BERSERKER, PlaceMode.CROSSBOWMAN,
 	PlaceMode.PYROMANCER, PlaceMode.CRYOMANCER,
 	PlaceMode.PIKEMAN, PlaceMode.RAM, PlaceMode.ARMOR_PIERCER,
+	PlaceMode.REVENANT, PlaceMode.DUELIST, PlaceMode.TROLL, PlaceMode.PALADIN,
 ]
 
 # --- 固定显示顺序（单位在前，建筑在后） ---
@@ -70,6 +80,7 @@ const DISPLAY_ORDER := [
 	PlaceMode.SHIELDBEARER, PlaceMode.BERSERKER, PlaceMode.CROSSBOWMAN,
 	PlaceMode.PYROMANCER, PlaceMode.CRYOMANCER,
 	PlaceMode.PIKEMAN, PlaceMode.RAM, PlaceMode.ARMOR_PIERCER,
+	PlaceMode.REVENANT, PlaceMode.DUELIST, PlaceMode.TROLL, PlaceMode.PALADIN,
 	PlaceMode.WALL, PlaceMode.TOWER, PlaceMode.BARRACKS,
 	PlaceMode.ARCHERY_RANGE, PlaceMode.MONASTERY, PlaceMode.CASTLE,
 ]
@@ -108,6 +119,10 @@ const MODE_ICONS := {
 	PlaceMode.PIKEMAN:       "res://assets/units/blue_lancer/Lancer_Idle.png",
 	PlaceMode.RAM:           "res://assets/units/blue_lancer/Lancer_Idle.png",
 	PlaceMode.ARMOR_PIERCER: "res://assets/units/blue_archer/Archer_Idle.png",
+	PlaceMode.REVENANT:      "res://assets/units/blue_warrior/Warrior_Idle.png",
+	PlaceMode.DUELIST:       "res://assets/units/blue_warrior/Warrior_Idle.png",
+	PlaceMode.TROLL:         "res://assets/units/blue_lancer/Lancer_Idle.png",
+	PlaceMode.PALADIN:       "res://assets/units/blue_warrior/Warrior_Idle.png",
 }
 
 # --- 预加载按钮图标纹理 ---
@@ -130,6 +145,10 @@ const ICON_TEXTURES := {
 	PlaceMode.PIKEMAN:       preload("res://assets/units/blue_lancer/Lancer_Idle.png"),
 	PlaceMode.RAM:           preload("res://assets/units/blue_lancer/Lancer_Idle.png"),
 	PlaceMode.ARMOR_PIERCER: preload("res://assets/units/blue_archer/Archer_Idle.png"),
+	PlaceMode.REVENANT:      preload("res://assets/units/blue_warrior/Warrior_Idle.png"),
+	PlaceMode.DUELIST:       preload("res://assets/units/blue_warrior/Warrior_Idle.png"),
+	PlaceMode.TROLL:         preload("res://assets/units/blue_lancer/Lancer_Idle.png"),
+	PlaceMode.PALADIN:       preload("res://assets/units/blue_warrior/Warrior_Idle.png"),
 	}
 
 # --- Q模式：造兵快捷键 ---
@@ -192,6 +211,10 @@ const ENEMY_VARIANT_SCENES := {
 	&"pikeman": "res://scenes/units/pikeman.tscn",
 	&"ram": "res://scenes/units/ram.tscn",
 	&"armor_piercer": "res://scenes/units/armor_piercer.tscn",
+	&"revenant": "res://scenes/units/revenant.tscn",
+	&"duelist": "res://scenes/units/duelist.tscn",
+	&"troll": "res://scenes/units/troll.tscn",
+	&"paladin": "res://scenes/units/paladin.tscn",
 }
 
 # --- PlaceMode → BuildingType 映射 ---
@@ -218,6 +241,10 @@ const PLACE_MODE_TO_UNIT := {
 	PlaceMode.PIKEMAN: UnitScript.UnitType.LANCER,
 	PlaceMode.RAM: UnitScript.UnitType.LANCER,
 	PlaceMode.ARMOR_PIERCER: UnitScript.UnitType.ARCHER,
+	PlaceMode.REVENANT: UnitScript.UnitType.SOLDIER,
+	PlaceMode.DUELIST: UnitScript.UnitType.SOLDIER,
+	PlaceMode.TROLL: UnitScript.UnitType.LANCER,
+	PlaceMode.PALADIN: UnitScript.UnitType.SOLDIER,
 }
 
 # --- PlaceMode → stats_id 映射（变体单位） ---
@@ -230,6 +257,10 @@ const PLACE_MODE_TO_STATS_ID := {
 	PlaceMode.PIKEMAN: &"pikeman",
 	PlaceMode.RAM: &"ram",
 	PlaceMode.ARMOR_PIERCER: &"armor_piercer",
+	PlaceMode.REVENANT: &"revenant",
+	PlaceMode.DUELIST: &"duelist",
+	PlaceMode.TROLL: &"troll",
+	PlaceMode.PALADIN: &"paladin",
 }
 
 # --- 网格 ---

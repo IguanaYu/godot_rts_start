@@ -34,6 +34,12 @@ extends Resource
 @export var bonus_vs_building_multiplier: float = 1.0 # 对建筑倍率
 @export var ignores_damage_reduction: bool = false    # 穿甲：无视目标减伤
 
+# --- 续航系 ---
+@export var lifesteal_ratio: float = 0.0   # 吸血百分比（0.6 = 回复造成伤害的60%）
+@export var lifesteal_flat: int = 0         # 每次攻击固定回血（圣骑士用）
+@export var dodge_chance: float = 0.0       # 闪避概率（0.35 = 35%免伤）
+@export var regen_per_sec: float = 0.0      # 每秒回血
+
 # --- 升级系统 ---
 @export var upgrade_hp_per_level: int = 10       # 每级 HP 增加
 @export var upgrade_damage_per_level: int = 2    # 每级攻击力增加

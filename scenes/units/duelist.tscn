@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://duelt001"]
+
+[ext_resource type="PackedScene" uid="uid://bxunit0001" path="res://scenes/units/unit.tscn" id="base"]
+[ext_resource type="Resource" path="res://resources/stats/duelist_stats.tres" id="stats"]
+
+[node name="Duelist" instance=ExtResource("base")]
+stats_data = ExtResource("stats")
+sprite_scale_x = 0.6
+sprite_scale_y = 0.6
+sprite_offset_y = 9.0
+variant_tint = Color(0.165, 0.541, 0.541, 1.0)
+variant_tint_amount = 0.4

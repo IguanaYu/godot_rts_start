@@ -80,6 +80,7 @@ var _is_healing: bool = false
 var buffs: Dictionary = {}  # {buff_type: {"value": float, "expire": float}}
 var _slow_factor: float = 1.0
 var _slow_timer: float = 0.0
+var _regen_accumulator: float = 0.0
 
 # 命令队列 (Shift)
 const CommandQueue = preload("res://scripts/systems/command_queue.gd")
@@ -460,6 +461,13 @@ func _physics_process(delta: float) -> void:
 		return
 	# 过期 buff 清理
 	_expire_buffs()
+	# 再生
+	if stats_data and stats_data.regen_per_sec > 0.0 and health.hp < health.max_hp:
+		_regen_accumulator += stats_data.regen_per_sec * delta
+		if _regen_accumulator >= 1.0:
+			var heal_amt = int(_regen_accumulator)
+			health.heal(heal_amt)
+			_regen_accumulator -= heal_amt
 	# 建筑内逃生逻辑（优先于正常状态机）
 	if _escaping_building:
 		_escape_timer -= delta
@@ -940,6 +948,9 @@ func take_damage(amount: int, attacker = null) -> void:
 		return
 	if health.is_dead():
 		return
+	# 闪避
+	if stats_data and stats_data.dodge_chance > 0.0 and randf() < stats_data.dodge_chance:
+		return
 	var final_amount := amount
 	# 反特化：attacker 对 self.unit_type 有额外伤害倍率
 	var atk_stats = attacker.stats_data if attacker is Unit else null
@@ -956,6 +967,9 @@ func take_damage(amount: int, attacker = null) -> void:
 		if reduction > 0.0:
 			final_amount = int(final_amount * (1.0 - reduction))
 	health.take_damage(final_amount)
+	# 吸血：attacker 根据造成伤害回血
+	if final_amount > 0 and attacker is Unit:
+		attacker._heal_from_lifesteal(final_amount)
 	# 伤害飘字
 	if final_amount > 0:
 		var main_node := get_tree().current_scene
@@ -1300,6 +1314,19 @@ func get_buff_value(buff_type: String) -> float:
 func apply_slow(factor: float, duration: float) -> void:
 	_slow_factor = 1.0 - factor
 	_slow_timer = duration
+
+
+## 吸血回血：根据造成的伤害和自身吸血属性回血
+func _heal_from_lifesteal(damage_dealt: int) -> void:
+	if not stats_data or damage_dealt <= 0:
+		return
+	var heal_amt := 0
+	if stats_data.lifesteal_ratio > 0.0:
+		heal_amt += int(damage_dealt * stats_data.lifesteal_ratio)
+	if stats_data.lifesteal_flat > 0:
+		heal_amt += stats_data.lifesteal_flat
+	if heal_amt > 0 and health.hp < health.max_hp:
+		health.heal(heal_amt)
 
 func get_effective_attack_range() -> float:
 	return stat_set.get_value(StatSetClass.ATTACK_RANGE)
