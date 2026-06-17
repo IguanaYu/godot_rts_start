@@ -93,6 +93,34 @@ SKILL_SHIELD_WALL,Shield Wall,护盾墙,シールドウォール
 SKILL_SHIELD_WALL_DESC,Deploy a temporary wall at target location,在目标位置部署临时防御墙,目標地点に一時的な防御壁を展開
 SKILL_UNIT_DROP,Unit Drop,空投单位,ユニット投下
 SKILL_UNIT_DROP_DESC,Drop reinforcement units at target location,在目标位置空投增援部队,目標地点に増援ユニットを投下
+SKILL_NAPALM_STRIKE,Napalm Strike,凝固汽油弹,ナパームストライク
+SKILL_NAPALM_STRIKE_DESC,Burn ground for 5s damaging enemies over time,燃烧地面5秒持续对敌方造成伤害,5秒間、敵に継続的なダメージを与える
+SKILL_CLUSTER_BOMB,Cluster Bomb,集束炸弹,クラスター爆弾
+SKILL_CLUSTER_BOMB_DESC,Scatter multiple small explosions across target area,在目标区域散布多个小型爆炸,目標エリアに複数の小爆発を散布
+SKILL_SNIPER_MARK,Sniper Mark,狙击标记,スナイパーマーク
+SKILL_SNIPER_MARK_DESC,Deal massive damage to a single target,对单个目标造成巨额伤害,単一の目標に甚大なダメージを与える
+SKILL_POISON_CLOUD,Poison Cloud,毒气云,毒ガス雲
+SKILL_POISON_CLOUD_DESC,Toxic cloud damages enemies in area for 8s,毒气云在区域内持续伤害敌方8秒,毒ガスが8秒間エリア内の敵にダメージを与える
+SKILL_EMERGENCY_REPAIR,Emergency Repair,紧急维修,緊急修理
+SKILL_EMERGENCY_REPAIR_DESC,Restore 40% HP to all friendly buildings instantly,立即修复所有友方建筑40%生命值,全ての味方建物のHPを40%回復する
+SKILL_FORCE_FIELD,Force Field,力场屏障,フォースフィールド
+SKILL_FORCE_FIELD_DESC,Create an invincible barrier that blocks movement for 8s,创建不可破坏的力场阻挡通行8秒,8秒間、移動を阻害する無敵のバリアを生成
+SKILL_REPAIR_DRONE,Repair Drone,维修无人机,修理ドローン
+SKILL_REPAIR_DRONE_DESC,Drone heals friendly units in area for 10s,无人机在区域内持续治疗友方10秒,10秒間、エリア内の味方を回復するドローン
+SKILL_SUPPLY_DROP,Supply Drop,补给箱,補給箱
+SKILL_SUPPLY_DROP_DESC,Drop a crate granting gold instantly,空投补给箱立即获得金币,補給箱を投下し即座にゴールドを獲得
+SKILL_CONFIG_BUTTON,Skill Loadout,技能配置,スキル編成
+SKILL_CONFIG_TITLE,Select 4 Commander Skills,选择 4 个指挥官技能,コマンダースキルを4つ選択
+SKILL_CONFIG_SELECTED,Selected,已选,選択中
+SKILL_CONFIG_CONFIRM,Confirm,确认,確認
+SKILL_CONFIG_FULL,Skill loadout full - deselect one first,技能槽已满 - 请先取消一个,スキル枠が満杯 - いずれかを解除してください
+PRE_BATTLE_CONFIG_BUTTON,Pre-Battle Loadout,战前配置,戦前編成
+PRE_BATTLE_TITLE,Configure Your Loadout,配置你的战前编制,戦前編成を設定
+TAB_COMMANDER_SKILLS,Commander Skills,指挥官技能,指揮官スキル
+TAB_LOADOUT,Troop Loadout,部队编制,部隊編成
+TAB_PASSIVES,Pre-Battle Passives,战前被动,戦前パッシブ
+LOADOUT_HINT,Pick up to 10 (units + buildings share keys 1-9 0),最多选 10 个（单位+建筑共用 1-9 0 键）,最大10個（ユニット+建物は1-9 0キー共有）
+PASSIVES_HINT,Pick 3 passives - active for the entire battle,选 3 个被动技能 - 整局生效,3つ選択 - 戦闘全体に効果
 SKILL_ENERGY,Energy,能量,エネルギー
 SKILL_COST,Cost,消耗,コスト
 SKILL_COOLDOWN,Cooldown,冷却,クールダウン

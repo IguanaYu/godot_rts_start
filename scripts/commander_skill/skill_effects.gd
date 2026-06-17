@@ -164,3 +164,233 @@ static func _show_area_indicator(main_node: Node2D, pos: Vector2, radius: float,
 	indicator.set("radius", radius)
 	indicator.set("indicator_color", color)
 	main_node.add_child(indicator)
+
+
+# ============================================================
+# Layer 1 扩展技能
+# ============================================================
+
+# --- 持续区域类（凝固汽油弹 / 毒气云 / 维修无人机 共用 _create_persistent_zone） ---
+
+static func napalm_strike(main_node: Node2D, spawner_module: Node, target_pos: Vector2, config: Dictionary) -> void:
+	_create_persistent_zone(
+		main_node, spawner_module, target_pos,
+		config.get("radius", 90.0), config.get("duration", 5.0), config.get("dps", 30),
+		"enemy_units", true, "enemy_buildings",
+		Color(1.0, 0.4, 0.0, 0.35), Color(1.0, 0.3, 0.0),
+		"Napalm Strike"
+	)
+
+
+static func poison_cloud(main_node: Node2D, spawner_module: Node, target_pos: Vector2, config: Dictionary) -> void:
+	_create_persistent_zone(
+		main_node, spawner_module, target_pos,
+		config.get("radius", 110.0), config.get("duration", 8.0), config.get("dps", 15),
+		"enemy_units", false, "",
+		Color(0.4, 0.9, 0.2, 0.3), Color(0.4, 0.9, 0.2),
+		"Poison Cloud"
+	)
+
+
+static func repair_drone(main_node: Node2D, spawner_module: Node, target_pos: Vector2, config: Dictionary) -> void:
+	_create_persistent_zone(
+		main_node, spawner_module, target_pos,
+		config.get("radius", 100.0), config.get("duration", 10.0), -config.get("hps", 8),
+		"player_units", false, "",
+		Color(0.3, 0.8, 1.0, 0.3), Color(0.3, 0.9, 1.0),
+		"Repair Drone"
+	)
+
+
+static func _create_persistent_zone(
+		main_node: Node2D, spawner_module: Node, target_pos: Vector2,
+		radius: float, duration: float, amount_per_sec: int,
+		target_group: String, affect_buildings: bool, building_group: String,
+		visual_color: Color, float_text_color: Color,
+		label_text: String
+) -> void:
+	# 视觉：彩色圆圈
+	var visual := Node2D.new()
+	visual.name = "Visual"
+	visual.set_script(load("res://scripts/commander_skill/circle_renderer.gd"))
+	visual.set("circle_radius", radius)
+	visual.set("circle_color", visual_color)
+
+	# 持续区域逻辑
+	var zone := Node2D.new()
+	zone.name = "PersistentZone"
+	zone.position = target_pos
+	zone.z_index = 2
+	zone.set_script(load("res://scripts/commander_skill/persistent_zone.gd"))
+	zone.set("radius", radius)
+	zone.set("duration", duration)
+	zone.set("amount_per_sec", amount_per_sec)
+	zone.set("target_group", target_group)
+	zone.set("affect_buildings", affect_buildings)
+	zone.set("building_group", building_group)
+	zone.set("main_ref", main_node)
+	zone.set("float_text_color", float_text_color)
+	zone.add_child(visual)
+
+	main_node.add_child(zone)
+	spawner_module.show_floating_text(label_text, visual_color, target_pos)
+
+
+# --- 集束炸弹 ---
+
+static func cluster_bomb(main_node: Node2D, spawner_module: Node, target_pos: Vector2, config: Dictionary) -> void:
+	var radius: float = config.get("radius", 140.0)
+	var damage: int = config.get("damage", 50)
+	var sub_explosions: int = config.get("sub_explosions", 6)
+	var explosion_scene := load("res://scenes/effects/explosion.tscn")
+
+	_show_area_indicator(main_node, target_pos, radius, Color(1.0, 0.5, 0.1, 0.3))
+	spawner_module.show_floating_text("Cluster Bomb", Color(1.0, 0.5, 0.1), target_pos)
+
+	for i in sub_explosions:
+		var angle: float = TAU * float(i) / float(sub_explosions) + randf() * 0.3
+		var dist: float = radius * (0.3 + randf() * 0.6)
+		var pos: Vector2 = target_pos + Vector2(cos(angle), sin(angle)) * dist
+		var delay: float = float(i) * 0.12 + randf() * 0.15
+		var tree: SceneTree = main_node.get_tree()
+		var timer: SceneTreeTimer = tree.create_timer(delay)
+		timer.timeout.connect(_detonate_cluster.bind(main_node, spawner_module, pos, damage, explosion_scene))
+
+
+static func _detonate_cluster(main_node: Node2D, spawner_module: Node, pos: Vector2, damage: int, explosion_scene) -> void:
+	if not is_instance_valid(main_node):
+		return
+	var effect: Node2D = explosion_scene.instantiate()
+	effect.global_position = pos
+	main_node.add_child(effect)
+	if effect.has_node("Sprite"):
+		var sprite: Sprite2D = effect.get_node("Sprite")
+		sprite.scale = Vector2(0.75, 0.75)
+
+	spawner_module.spawn_dust_effect(pos)
+
+	var tree := main_node.get_tree()
+	for unit in tree.get_nodes_in_group("enemy_units"):
+		if unit is CharacterBody2D and not unit.health.is_dead():
+			if unit.global_position.distance_to(pos) <= 35.0:
+				unit.take_damage(damage)
+	for building in tree.get_nodes_in_group("enemy_buildings"):
+		if building.has_method("is_dead") and not building.is_dead():
+			if building.global_position.distance_to(pos) <= 35.0:
+				building.take_damage(damage)
+
+
+# --- 狙击标记 ---
+
+static func sniper_mark(main_node: Node2D, spawner_module: Node, target_pos: Vector2, config: Dictionary) -> void:
+	var radius: float = config.get("radius", 15.0)
+	var damage: int = config.get("damage", 500)
+
+	# 锁定最近的敌方单位
+	var closest = null
+	var closest_dist: float = INF
+	for unit in main_node.get_tree().get_nodes_in_group("enemy_units"):
+		if unit is CharacterBody2D and not unit.health.is_dead():
+			var d: float = unit.global_position.distance_to(target_pos)
+			if d <= radius and d < closest_dist:
+				closest = unit
+				closest_dist = d
+
+	# 锁定标记视觉（红色圆圈）
+	var marker := Node2D.new()
+	marker.position = target_pos
+	marker.z_index = 50
+	var ring := Node2D.new()
+	ring.set_script(load("res://scripts/commander_skill/circle_renderer.gd"))
+	ring.set("circle_radius", radius * 1.8)
+	ring.set("circle_color", Color(1.0, 0.2, 0.1, 0.9))
+	marker.add_child(ring)
+	main_node.add_child(marker)
+
+	spawner_module.show_floating_text("Sniper Mark", Color(1.0, 0.85, 0.0), target_pos)
+
+	# 0.3 秒后伤害（让玩家看到锁定）
+	var timer := main_node.get_tree().create_timer(0.3)
+	timer.timeout.connect(func():
+		if not is_instance_valid(main_node):
+			return
+		if is_instance_valid(marker):
+			marker.queue_free()
+		var exp_scene := load("res://scenes/effects/explosion.tscn")
+		var exp: Node2D = exp_scene.instantiate()
+		exp.global_position = target_pos
+		main_node.add_child(exp)
+		if closest and is_instance_valid(closest) and not closest.health.is_dead():
+			closest.take_damage(damage)
+			spawner_module.show_floating_text("-%d" % damage, Color(1.0, 0.3, 0.1), closest.global_position)
+	)
+
+
+# --- 紧急维修（全图友方建筑） ---
+
+static func emergency_repair(main_node: Node2D, spawner_module: Node, _target_pos: Vector2, config: Dictionary) -> void:
+	var heal_ratio: float = config.get("heal_ratio", 0.4)
+	var tree := main_node.get_tree()
+	var count := 0
+	for building in tree.get_nodes_in_group("player_buildings"):
+		if building.has_method("is_dead") and not building.is_dead():
+			var health_node = building.get("health")
+			if health_node:
+				var amount := int(float(health_node.max_hp) * heal_ratio)
+				health_node.heal(amount)
+				count += 1
+				spawner_module.show_floating_text("+%d" % amount, Color(0.1, 0.9, 0.3), building.global_position)
+
+
+# --- 力场屏障（无敌阻挡） ---
+
+static func force_field(main_node: Node2D, spawner_module: Node, target_pos: Vector2, config: Dictionary) -> void:
+	var duration: float = config.get("duration", 8.0)
+	var radius: float = config.get("radius", 60.0)
+
+	var field := Node2D.new()
+	field.name = "ForceField"
+	field.position = target_pos
+	field.z_index = 2
+
+	# 视觉：紫色圆形
+	var visual := Node2D.new()
+	visual.name = "Visual"
+	visual.set_script(load("res://scripts/commander_skill/circle_renderer.gd"))
+	visual.set("circle_radius", radius)
+	visual.set("circle_color", Color(0.6, 0.3, 0.9, 0.45))
+	field.add_child(visual)
+
+	# 血量组件（HP 巨大模拟无敌）
+	var health_node := Node2D.new()
+	health_node.set_script(load("res://scripts/core/health_component.gd"))
+	field.add_child(health_node)
+	health_node.setup(99999)
+
+	# 倒计时标签
+	var label := Label.new()
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_color_override("font_color", Color(0.8, 0.5, 1.0))
+	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	label.position = Vector2(-15, -25)
+	field.add_child(label)
+
+	# 倒计时脚本
+	field.set_script(load("res://scripts/commander_skill/force_field_timer.gd"))
+	field.set("duration", duration)
+
+	main_node.add_child(field)
+	field.add_to_group("player_buildings")
+
+	spawner_module.show_floating_text("Force Field", Color(0.6, 0.3, 0.9), target_pos)
+
+
+# --- 补给箱（立即加金币） ---
+
+static func supply_drop(main_node: Node2D, spawner_module: Node, target_pos: Vector2, config: Dictionary) -> void:
+	var gold_bonus: int = config.get("gold_bonus", 100)
+	spawner_module.spawn_dust_effect(target_pos)
+	if main_node.has_method("add_gold"):
+		main_node.add_gold(gold_bonus)
+	spawner_module.show_floating_text("+%dG" % gold_bonus, Color(1.0, 0.85, 0.0), target_pos)

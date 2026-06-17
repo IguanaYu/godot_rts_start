@@ -2,6 +2,7 @@ extends Node
 ## 指挥官技能面板UI：顶部技能栏 + 能量条
 
 const SD := preload("res://scripts/commander_skill/commander_skill_data.gd")
+const SLOT_HOTKEYS := [KEY_Z, KEY_X, KEY_C, KEY_V]
 
 const PATH_BAR_BASE := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Bars/SmallBar_Base.png"
 const PATH_BAR_FILL := "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Bars/SmallBar_Fill.png"
@@ -14,6 +15,14 @@ const SKILL_ICONS := {
 	SD.SkillId.HEAL_FIELD: "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_02.png",
 	SD.SkillId.SHIELD_WALL: "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_03.png",
 	SD.SkillId.UNIT_DROP: "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_04.png",
+	SD.SkillId.NAPALM_STRIKE: "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_05.png",
+	SD.SkillId.CLUSTER_BOMB: "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_06.png",
+	SD.SkillId.SNIPER_MARK: "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_07.png",
+	SD.SkillId.POISON_CLOUD: "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_08.png",
+	SD.SkillId.EMERGENCY_REPAIR: "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_09.png",
+	SD.SkillId.FORCE_FIELD: "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_10.png",
+	SD.SkillId.REPAIR_DRONE: "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_11.png",
+	SD.SkillId.SUPPLY_DROP: "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_12.png",
 }
 
 var _main_node: Node2D
@@ -36,6 +45,7 @@ var tooltip_panel: PanelContainer
 var tooltip_label: Label
 var tooltip_timer: Timer
 var tooltip_target_skill: int = -1
+var tooltip_target_slot: int = -1
 
 
 signal skill_button_pressed(skill_id: int)
@@ -130,16 +140,16 @@ func _create_panel() -> void:
 	main_container.add_child(sep)
 
 	# --- 技能按钮 ---
-	for skill_id in _skill_manager.available_skills:
-		_create_skill_button(skill_id, main_container)
+	for i in range(_skill_manager.available_skills.size()):
+		_create_skill_button(_skill_manager.available_skills[i], main_container, i)
 
 
-func _create_skill_button(skill_id: int, container: HBoxContainer) -> void:
+func _create_skill_button(skill_id: int, container: HBoxContainer, slot_index: int) -> void:
 	var config: Dictionary = SD.SKILL_CONFIGS[skill_id]
 	var icon_path: String = SKILL_ICONS.get(skill_id, "")
 	var cost_type: int = config.get("cost_type", SD.CostType.ENERGY)
 	var cost: int = config.get("cost", 0)
-	var hotkey: Key = config.get("hotkey", KEY_Z)
+	var hotkey: Key = SLOT_HOTKEYS[slot_index] if slot_index < SLOT_HOTKEYS.size() else KEY_Z
 	var hotkey_name: String = OS.get_keycode_string(hotkey)
 
 	var wrapper := Control.new()
@@ -196,8 +206,12 @@ func _create_skill_button(skill_id: int, container: HBoxContainer) -> void:
 	# 消耗标签（右下角）
 	var cost_label := Label.new()
 	if cost_type == SD.CostType.ENERGY:
-		cost_label.text = "%dE" % cost
-		cost_label.add_theme_color_override("font_color", Color(0.4, 0.7, 1.0))
+		if cost > 0:
+			cost_label.text = "%dE" % cost
+			cost_label.add_theme_color_override("font_color", Color(0.4, 0.7, 1.0))
+		else:
+			cost_label.text = "FREE"
+			cost_label.add_theme_color_override("font_color", Color(0.3, 0.9, 0.3))
 	else:
 		cost_label.text = "$%d" % cost
 		cost_label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
@@ -267,7 +281,7 @@ func _create_skill_button(skill_id: int, container: HBoxContainer) -> void:
 	btn.pressed.connect(func(): skill_button_pressed.emit(skill_id))
 	var BF := preload("res://scripts/ui/button_factory.gd")
 	BF.add_hover_anim(wrapper, bg, pressed_tex, btn_tex)
-	btn.mouse_entered.connect(_on_skill_hover.bind(skill_id))
+	btn.mouse_entered.connect(_on_skill_hover.bind(skill_id, slot_index))
 	btn.mouse_exited.connect(_on_skill_unhover)
 
 	skill_buttons[skill_id] = wrapper
@@ -378,8 +392,9 @@ func _create_tooltip() -> void:
 	tooltip_panel.add_child(tooltip_label)
 
 
-func _on_skill_hover(skill_id: int) -> void:
+func _on_skill_hover(skill_id: int, slot_index: int) -> void:
 	tooltip_target_skill = skill_id
+	tooltip_target_slot = slot_index
 	tooltip_timer.start()
 
 
@@ -387,6 +402,7 @@ func _on_skill_unhover() -> void:
 	tooltip_timer.stop()
 	tooltip_panel.visible = false
 	tooltip_target_skill = -1
+	tooltip_target_slot = -1
 
 
 func _show_skill_tooltip() -> void:
@@ -399,8 +415,9 @@ func _show_skill_tooltip() -> void:
 	var cost_type: int = config.get("cost_type", SD.CostType.ENERGY)
 	var cost: int = config.get("cost", 0)
 	var cooldown: float = config.get("cooldown", 0.0)
-	var hotkey: Key = config.get("hotkey", KEY_Z)
-	var hotkey_name: String = OS.get_keycode_string(hotkey)
+	var hotkey_name: String = ""
+	if tooltip_target_slot >= 0 and tooltip_target_slot < SLOT_HOTKEYS.size():
+		hotkey_name = OS.get_keycode_string(SLOT_HOTKEYS[tooltip_target_slot])
 
 	var cost_str: String
 	if cost_type == SD.CostType.ENERGY:

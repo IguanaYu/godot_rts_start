@@ -138,3 +138,19 @@ func _execute_skill(skill_id: int, target_pos: Vector2) -> void:
 			SkillEffects.shield_wall(_main_node, _spawner_module, target_pos, SD.SKILL_CONFIGS[skill_id])
 		SD.SkillId.UNIT_DROP:
 			SkillEffects.unit_drop(_main_node, _spawner_module, target_pos, SD.SKILL_CONFIGS[skill_id])
+		SD.SkillId.NAPALM_STRIKE:
+			SkillEffects.napalm_strike(_main_node, _spawner_module, target_pos, SD.SKILL_CONFIGS[skill_id])
+		SD.SkillId.CLUSTER_BOMB:
+			SkillEffects.cluster_bomb(_main_node, _spawner_module, target_pos, SD.SKILL_CONFIGS[skill_id])
+		SD.SkillId.SNIPER_MARK:
+			SkillEffects.sniper_mark(_main_node, _spawner_module, target_pos, SD.SKILL_CONFIGS[skill_id])
+		SD.SkillId.POISON_CLOUD:
+			SkillEffects.poison_cloud(_main_node, _spawner_module, target_pos, SD.SKILL_CONFIGS[skill_id])
+		SD.SkillId.EMERGENCY_REPAIR:
+			SkillEffects.emergency_repair(_main_node, _spawner_module, target_pos, SD.SKILL_CONFIGS[skill_id])
+		SD.SkillId.FORCE_FIELD:
+			SkillEffects.force_field(_main_node, _spawner_module, target_pos, SD.SKILL_CONFIGS[skill_id])
+		SD.SkillId.REPAIR_DRONE:
+			SkillEffects.repair_drone(_main_node, _spawner_module, target_pos, SD.SKILL_CONFIGS[skill_id])
+		SD.SkillId.SUPPLY_DROP:
+			SkillEffects.supply_drop(_main_node, _spawner_module, target_pos, SD.SKILL_CONFIGS[skill_id])
