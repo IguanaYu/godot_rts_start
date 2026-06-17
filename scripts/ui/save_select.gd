@@ -28,6 +28,7 @@ var _slot_empty_borders: Array[Panel] = []
 var _delete_confirm_slot: int = -1
 var _confirm_dialog: Control = null
 var _esc_menu: Control = null
+var _focused_slot: int = 0
 
 # 九宫格纹理
 var np_wood_table: Dictionary
@@ -52,6 +53,8 @@ func _ready() -> void:
 	_create_slot_list()
 	_create_hint_label()
 	_refresh_all_slots()
+	_focused_slot = 0
+	_update_slot_focus()
 
 
 func _process_all_textures() -> void:
@@ -537,7 +540,7 @@ func _cancel_delete() -> void:
 
 func _create_hint_label() -> void:
 	var hint := Label.new()
-	hint.text = tr("SAVE_PRESS_ESC_MENU")
+	hint.text = tr("SAVE_HINT_NAV")
 	hint.add_theme_font_size_override("font_size", 14)
 	hint.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
 	hint.anchor_left = 0.0
@@ -563,14 +566,40 @@ func _load_language_preference() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		if _confirm_dialog:
-			_cancel_delete()
-			return
-		if _esc_menu:
-			_close_esc_menu()
-			return
-		_show_esc_menu()
+	if event is InputEventKey and event.pressed:
+		match event.keycode:
+			KEY_ESCAPE:
+				if _confirm_dialog:
+					_cancel_delete()
+					return
+				if _esc_menu:
+					_close_esc_menu()
+					return
+				_show_esc_menu()
+			KEY_LEFT, KEY_A:
+				if _confirm_dialog or _esc_menu:
+					return
+				_focused_slot = max(0, _focused_slot - 1)
+				_update_slot_focus()
+			KEY_RIGHT, KEY_D:
+				if _confirm_dialog or _esc_menu:
+					return
+				_focused_slot = min(SAVE_SLOTS - 1, _focused_slot + 1)
+				_update_slot_focus()
+			KEY_SPACE, KEY_ENTER:
+				if _confirm_dialog or _esc_menu:
+					return
+				_on_slot_selected(_focused_slot)
+
+
+func _update_slot_focus() -> void:
+	"""高亮当前焦点存档卡"""
+	for i in range(SAVE_SLOTS):
+		if i < _slot_wrappers.size() and i < _slot_bgs.size():
+			if i == _focused_slot:
+				_slot_wrappers[i].modulate = Color(1.15, 1.15, 1.0)
+			else:
+				_slot_wrappers[i].modulate = Color(1.0, 1.0, 1.0)
 
 
 func _show_esc_menu() -> void:

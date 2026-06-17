@@ -1021,7 +1021,7 @@ func _input(event: InputEvent) -> void:
 			upgrade_panel.close()
 			return
 		if ui_module.pause_menu_open:
-			ui_module.close_pause_menu()
+			ui_module.handle_pause_esc()
 			return
 		# 逐层取消：攻击移动 → 放置 → Q/W模式 → 暂停菜单
 		if combat_ctrl.attack_move_mode:

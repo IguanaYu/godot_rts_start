@@ -304,3 +304,6 @@ STAGE_HOLD_THE_LINE,Hold the line,坚守防线,防衛線を守れ
 STAGE_COUNTERATTACK,Counterattack — destroy enemy bases,反攻 — 摧毁敌方基地,反撃 — 敵基地を破壊せよ
 STAGE_OUTPOST,Destroy the northern outpost,摧毁北方前哨,北の前哨基地を破壊せよ
 STAGE_MAIN_ASSAULT,Assault the main base,总攻主基地,主基地を強襲せよ
+MAIN_MENU_HINT_NAV,↑↓ Navigate · SPACE/ENTER Select · ESC Back,↑↓ 导航 · 空格/回车 确认 · ESC 返回,↑↓ 移動 · SPACE/ENTER 決定 · ESC 戻る
+LEVEL_HINT_NAV,↑↓ Select Level · SPACE/ENTER Start · TAB Switch Tab,↑↓ 选择关卡 · 空格/回车 开始 · TAB 切换标签,↑↓ 選択 · SPACE/ENTER 開始 · TAB 切替
+SAVE_HINT_NAV,←→ Select Slot · SPACE/ENTER Enter,←→ 选择存档 · 空格/回车 进入,←→ 選択 · SPACE/ENTER 入る

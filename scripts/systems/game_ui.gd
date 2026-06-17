@@ -65,6 +65,10 @@ var tooltip_target_mode: int = -1
 var pause_menu_open: bool = false
 var pause_canvas: CanvasLayer
 
+# ESC 分层状态跟踪
+var _settings_active: bool = false
+var _keybinds_active: bool = false
+
 var objectives_panel: Node = null
 # 选择信息
 var selection_info_label: Label
@@ -1222,6 +1226,17 @@ func open_pause_menu() -> void:
 	_main_node.get_tree().paused = true
 
 
+func handle_pause_esc() -> void:
+	"""Close topmost layer: keybinds -> settings -> full pause menu."""
+	if _keybinds_active:
+		_close_keybinds_page()
+		return
+	if _settings_active:
+		_close_settings_page()
+		return
+	_close_pause_menu()
+
+
 func _close_pause_menu() -> void:
 	pause_menu_open = false
 	pause_canvas.visible = false
@@ -1335,6 +1350,7 @@ func _on_camera_sensitivity_changed(value: float) -> void:
 # 设置子页面（九宫格风格，分区布局）
 # ============================================================
 func _open_settings_page() -> void:
+	_settings_active = true
 	var BF := preload("res://scripts/ui/button_factory.gd")
 	# 隐藏暂停主菜单
 	for child in _pause_overlay.get_children():
@@ -1570,6 +1586,7 @@ func _make_section_label(text: String) -> Label:
 
 
 func _close_settings_page() -> void:
+	_settings_active = false
 	for child in _pause_overlay.get_children():
 		if child.name == "SettingsPage":
 			child.queue_free()
@@ -1602,6 +1619,7 @@ func _refresh_lang_buttons_recursive(node: Node, current_locale: String) -> void
 
 
 func _open_keybinds_page() -> void:
+	_keybinds_active = true
 	# 隐藏设置页
 	for child in _pause_overlay.get_children():
 		if child.name == "SettingsPage":
@@ -1695,6 +1713,7 @@ func _open_keybinds_page() -> void:
 
 
 func _close_keybinds_page() -> void:
+	_keybinds_active = false
 	for child in _pause_overlay.get_children():
 		if child.name == "KeybindsPage":
 			child.queue_free()

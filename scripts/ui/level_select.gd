@@ -347,7 +347,7 @@ func _save_language_preference(locale_code: String) -> void:
 func _refresh_ui() -> void:
 	_banner_title.text = tr("LEVEL_SELECT_TITLE")
 	start_button_label.text = tr("LEVEL_START_MISSION")
-	_hint_label.text = tr("LEVEL_PRESS_ESC_MENU")
+	_hint_label.text = tr("LEVEL_HINT_NAV")
 	for i in range(_current_levels.size()):
 		button_labels[i].text = tr(_current_levels[i].name_key)
 	_update_right_panel(selected_index)
@@ -861,7 +861,7 @@ func _update_difficulty_highlight() -> void:
 # ============================================================
 func _create_hint_label() -> void:
 	_hint_label = Label.new()
-	_hint_label.text = tr("LEVEL_PRESS_ESC_MENU")
+	_hint_label.text = tr("LEVEL_HINT_NAV")
 	_hint_label.add_theme_font_size_override("font_size", 14)
 	_hint_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
 	_hint_label.anchor_left = 0.0
@@ -1068,6 +1068,37 @@ func _input(event: InputEvent) -> void:
 				_close_esc_menu()
 				return
 			_show_esc_menu()
+		elif event.keycode == KEY_UP or event.keycode == KEY_W:
+			if _esc_menu:
+				return
+			var new_idx := selected_index
+			while new_idx > 0:
+				new_idx -= 1
+				if _is_test_mode or not _is_level_locked(new_idx):
+					_select_level(new_idx)
+					break
+		elif event.keycode == KEY_DOWN or event.keycode == KEY_S:
+			if _esc_menu:
+				return
+			var new_idx := selected_index
+			while new_idx < _current_levels.size() - 1:
+				new_idx += 1
+				if _is_test_mode or not _is_level_locked(new_idx):
+					_select_level(new_idx)
+					break
+		elif event.keycode == KEY_TAB or event.keycode == KEY_RIGHT or event.keycode == KEY_LEFT:
+			if _esc_menu:
+				return
+			if _is_test_mode:
+				_switch_to_campaign_mode()
+			else:
+				_switch_to_test_mode()
+		elif event.keycode == KEY_SPACE or event.keycode == KEY_ENTER:
+			if _esc_menu:
+				return
+			if selected_index >= 0 and selected_index < _current_levels.size():
+				if _is_test_mode or not _is_level_locked(selected_index):
+					_on_start_pressed()
 
 
 # ============================================================

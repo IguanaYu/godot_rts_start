@@ -29,6 +29,13 @@ var _settings_label: Label
 var _quit_label: Label
 var _switch_save_label: Label
 
+# 键盘导航
+var _focus_index: int = 0
+var _button_wrappers: Array[Control] = []
+var _button_bgs: Array[NinePatchRect] = []
+var _button_reg_np: Array = []
+var _button_prs_np: Array = []
+
 var np_wood_table: Dictionary
 var np_btn_blue: Dictionary
 var np_btn_blue_prs: Dictionary
@@ -49,6 +56,7 @@ func _ready() -> void:
 	_create_title()
 	_create_buttons()
 	_create_language_option()
+	_create_hint_label()
 
 
 func _process_all_textures() -> void:
@@ -146,6 +154,7 @@ func _create_buttons() -> void:
 
 	# 1. Start Game - 红色按钮（直接进入上次活动存档）
 	_start_label = _make_menu_button(tr("MAIN_MENU_START"), np_btn_red, np_btn_red_prs, Vector2(0, 60), _on_start_pressed)
+	_start_label.get_parent().name = "BtnStart"
 	vbox.add_child(_start_label.get_parent())
 
 	# 2. Switch Save - 蓝色按钮（进入存档选择界面）
@@ -163,6 +172,58 @@ func _create_buttons() -> void:
 	# 5. Quit - 蓝色按钮
 	_quit_label = _make_menu_button(tr("UI_QUIT_GAME"), np_btn_blue, np_btn_blue_prs, Vector2(0, 60), _on_quit_pressed)
 	vbox.add_child(_quit_label.get_parent())
+
+	# 收集按钮用于键盘导航（按创建顺序）
+	# 每个 wrapper: child[0] = NinePatchRect (bg)
+	_button_wrappers = []
+	_button_bgs = []
+	_button_reg_np = []
+	_button_prs_np = []
+	var btn_infos = [
+		[_start_label.get_parent(), np_btn_red, np_btn_red_prs],
+		[_switch_save_label.get_parent(), np_btn_blue, np_btn_blue_prs],
+		[mp_label.get_parent(), np_btn_blue, np_btn_blue_prs],
+		[_settings_label.get_parent(), np_btn_blue, np_btn_blue_prs],
+		[_quit_label.get_parent(), np_btn_blue, np_btn_blue_prs],
+	]
+	for info in btn_infos:
+		_button_wrappers.append(info[0])
+		_button_bgs.append(info[0].get_child(0))
+		_button_reg_np.append(info[1])
+		_button_prs_np.append(info[2])
+
+	# 初始焦点
+	_focus_index = 0
+	_update_focus()
+
+
+func _update_focus() -> void:
+	"""更新焦点高亮：选中项用按下纹理，其余用普通纹理"""
+	for i in range(_button_bgs.size()):
+		var bg: NinePatchRect = _button_bgs[i]
+		var reg: Dictionary = _button_reg_np[i]
+		var prs: Dictionary = _button_prs_np[i]
+		if i == _focus_index:
+			bg.texture = prs.texture
+			bg.patch_margin_left = prs.margin_left
+			bg.patch_margin_right = prs.margin_right
+			bg.patch_margin_top = prs.margin_top
+			bg.patch_margin_bottom = prs.margin_bottom
+		else:
+			bg.texture = reg.texture
+			bg.patch_margin_left = reg.margin_left
+			bg.patch_margin_right = reg.margin_right
+			bg.patch_margin_top = reg.margin_top
+			bg.patch_margin_bottom = reg.margin_bottom
+
+
+func _call_focused_button() -> void:
+	match _focus_index:
+		0: _on_start_pressed()
+		1: _on_switch_save_pressed()
+		2: _on_multiplayer_pressed()
+		3: _on_settings_pressed()
+		4: _on_quit_pressed()
 
 
 func _make_menu_button(text: String, np: Dictionary, np_prs: Dictionary, min_size: Vector2, callback: Callable) -> Label:
@@ -229,6 +290,20 @@ func _create_language_option() -> void:
 	_lang_option.custom_minimum_size = Vector2(140, 32)
 	_lang_option.item_selected.connect(_on_language_selected)
 	hbox.add_child(_lang_option)
+
+
+func _create_hint_label() -> void:
+	var hint := Label.new()
+	hint.text = tr("MAIN_MENU_HINT_NAV")
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.add_theme_font_size_override("font_size", 14)
+	hint.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+	hint.anchor_left = 0.0
+	hint.anchor_right = 1.0
+	hint.anchor_top = 0.94
+	hint.anchor_bottom = 0.98
+	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(hint)
 
 
 func _on_start_pressed() -> void:
@@ -631,10 +706,26 @@ func _on_settings_sfx_volume_changed(value: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		if _settings_overlay:
-			_close_settings_overlay()
-			return
+	if event is InputEventKey and event.pressed:
+		match event.keycode:
+			KEY_ESCAPE:
+				if _settings_overlay:
+					_close_settings_overlay()
+					return
+			KEY_UP, KEY_W:
+				if _settings_overlay:
+					return
+				_focus_index = max(0, _focus_index - 1)
+				_update_focus()
+			KEY_DOWN, KEY_S:
+				if _settings_overlay:
+					return
+				_focus_index = min(_button_wrappers.size() - 1, _focus_index + 1)
+				_update_focus()
+			KEY_SPACE, KEY_ENTER:
+				if _settings_overlay:
+					return
+				_call_focused_button()
 
 
 # ============================================================
