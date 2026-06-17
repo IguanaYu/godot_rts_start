@@ -142,6 +142,34 @@ var levels := [
 			"icon": PATH_ICON_04,
 			"ribbon_row": 9,
 		},
+		{
+			"name_key": "LEVEL_17_NAME",
+			"desc_key": "LEVEL_17_DESC",
+			"scene": "res://scenes/maps/map_17.tscn",
+			"icon": PATH_ICON_01,
+			"ribbon_row": 1,
+		},
+		{
+			"name_key": "LEVEL_18_NAME",
+			"desc_key": "LEVEL_18_DESC",
+			"scene": "res://scenes/maps/map_18.tscn",
+			"icon": PATH_ICON_02,
+			"ribbon_row": 3,
+		},
+		{
+			"name_key": "LEVEL_19_NAME",
+			"desc_key": "LEVEL_19_DESC",
+			"scene": "res://scenes/maps/map_19.tscn",
+			"icon": PATH_ICON_03,
+			"ribbon_row": 5,
+		},
+		{
+			"name_key": "LEVEL_20_NAME",
+			"desc_key": "LEVEL_20_DESC",
+			"scene": "res://scenes/maps/map_20.tscn",
+			"icon": PATH_ICON_04,
+			"ribbon_row": 7,
+		},
 	]
 
 # === 测试关卡数据 ===

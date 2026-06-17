@@ -461,6 +461,11 @@ func _setup_capture_points() -> void:
 
 # 占领 capture_point 后的回调：检查是否配置了 AI 队友延迟增援
 func _on_capture_point_captured(_team: int, point: CapturePoint) -> void:
+	# 集结点被占领 → 指定小队转为进攻（关卡4阶段切换）
+	if point.name == "RallyCP":
+		var rally_target: Vector2 = point.get_meta("rally_attack_target", Vector2.ZERO)
+		if rally_target != Vector2.ZERO:
+			AllyCommander.issue_squad_attack_order("south", rally_target)
 	var delay: float = point.ally_reinforcement_delay
 	if delay <= 0.0 or point.ally_reinforcement_groups.is_empty():
 		return
@@ -473,6 +478,14 @@ func _on_capture_point_captured(_team: int, point: CapturePoint) -> void:
 	# 延迟生成
 	var timer := get_tree().create_timer(delay)
 	timer.timeout.connect(_on_ally_reinforcement_timeout.bind(point.ally_reinforcement_groups, spawn_pos, target))
+	# === 连续增援波次 ===
+	var repeat: int = point.ally_reinforcement_repeat
+	if repeat > 0:
+		var interval: float = point.ally_reinforcement_interval
+		for i in range(repeat):
+			var wave_delay: float = delay + (i + 1) * interval
+			var rtimer := get_tree().create_timer(wave_delay)
+			rtimer.timeout.connect(_on_ally_reinforcement_timeout.bind(point.ally_reinforcement_groups, spawn_pos, target))
 
 
 func _on_ally_reinforcement_timeout(groups: Array, spawn_pos: Vector2, target: Vector2) -> void:
@@ -684,7 +697,10 @@ func _spawn_ai_allies() -> void:
 	if map_config == null or map_config.ai_allies.is_empty():
 		return
 	for spawn in map_config.ai_allies:
-		spawner_module.spawn_ally_unit_initial(spawn.type, spawn.pos)
+		var behavior: String = spawn.get("behavior", "follow")
+		var defend_pos: Vector2 = spawn.get("defend_pos", Vector2.ZERO)
+		var squad: String = spawn.get("squad_id", "general")
+		spawner_module.spawn_ally_unit_initial(spawn.type, spawn.pos, behavior, defend_pos, squad)
 
 
 # === AI 队友求救系统回调 ===

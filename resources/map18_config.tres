@@ -1,0 +1,150 @@
+[gd_resource type="Resource" script_class="MapConfig" format=3]
+
+[ext_resource type="Script" path="res://scripts/map_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+map_name = "Two Fronts"
+map_bounds = Rect2(-100, -100, 2200, 600)
+nav_bounds = Array[Vector2]([Vector2(-100, -100), Vector2(2100, -100), Vector2(2100, 500), Vector2(-100, 500)])
+initial_gold = 4000
+camera_start = Vector2(200, 300)
+player_units = Array[Dictionary]([{
+"type": 0,
+"pos": Vector2(180, 280)
+}, {
+"type": 0,
+"pos": Vector2(180, 320)
+}, {
+"type": 0,
+"pos": Vector2(220, 250)
+}, {
+"type": 0,
+"pos": Vector2(220, 350)
+}, {
+"type": 1,
+"pos": Vector2(150, 270)
+}, {
+"type": 1,
+"pos": Vector2(150, 330)
+}, {
+"type": 2,
+"pos": Vector2(200, 300)
+}])
+player_buildings = Array[Dictionary]([{
+"type": 2,
+"grid_pos": Vector2i(1, 3)
+}, {
+"type": 3,
+"grid_pos": Vector2i(4, 3)
+}])
+ai_allies = Array[Dictionary]([{
+"type": 0,
+"pos": Vector2(850, 130),
+"behavior": "defend",
+"defend_pos": Vector2(900, 130),
+"squad_id": "north"
+}, {
+"type": 0,
+"pos": Vector2(850, 170),
+"behavior": "defend",
+"defend_pos": Vector2(900, 170),
+"squad_id": "north"
+}, {
+"type": 1,
+"pos": Vector2(820, 140),
+"behavior": "defend",
+"defend_pos": Vector2(870, 140),
+"squad_id": "north"
+}, {
+"type": 1,
+"pos": Vector2(820, 180),
+"behavior": "defend",
+"defend_pos": Vector2(870, 180),
+"squad_id": "north"
+}, {
+"type": 0,
+"pos": Vector2(850, 430),
+"behavior": "defend",
+"defend_pos": Vector2(900, 430),
+"squad_id": "south"
+}, {
+"type": 0,
+"pos": Vector2(850, 470),
+"behavior": "defend",
+"defend_pos": Vector2(900, 470),
+"squad_id": "south"
+}, {
+"type": 1,
+"pos": Vector2(820, 440),
+"behavior": "defend",
+"defend_pos": Vector2(870, 440),
+"squad_id": "south"
+}, {
+"type": 3,
+"pos": Vector2(800, 450),
+"behavior": "defend",
+"defend_pos": Vector2(850, 450),
+"squad_id": "south"
+}])
+enemy_units = Array[Dictionary]([{
+"type": 0,
+"pos": Vector2(1800, 130)
+}, {
+"type": 0,
+"pos": Vector2(1800, 170)
+}, {
+"type": 1,
+"pos": Vector2(1850, 150)
+}, {
+"type": 2,
+"pos": Vector2(1750, 120)
+}, {
+"type": 2,
+"pos": Vector2(1750, 180)
+}, {
+"type": 0,
+"pos": Vector2(1800, 430)
+}, {
+"type": 0,
+"pos": Vector2(1800, 470)
+}, {
+"type": 1,
+"pos": Vector2(1850, 450)
+}, {
+"type": 2,
+"pos": Vector2(1750, 420)
+}, {
+"type": 2,
+"pos": Vector2(1750, 480)
+}])
+enemy_buildings = Array[Dictionary]([{
+"type": 2,
+"grid_pos": Vector2i(28, 1)
+}, {
+"type": 1,
+"grid_pos": Vector2i(27, 0)
+}, {
+"type": 1,
+"grid_pos": Vector2i(27, 4)
+}, {
+"type": 0,
+"grid_pos": Vector2i(27, 2)
+}, {
+"type": 2,
+"grid_pos": Vector2i(28, 5)
+}, {
+"type": 1,
+"grid_pos": Vector2i(27, 5)
+}, {
+"type": 1,
+"grid_pos": Vector2i(27, 7)
+}, {
+"type": 0,
+"grid_pos": Vector2i(27, 6)
+}])
+available_items = Array[int]([1, 2, 5, 6, 3, 4, 7, 8, 9, 10])
+environment = {"trees": 10, "rocks": 6, "bushes": 8, "sheep": 3}
+terrain_theme = 0
+border_width = 1
+map_description = "Defend two fronts with AI allies holding each line. Decide where to reinforce!"

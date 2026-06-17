@@ -40,6 +40,8 @@ enum TriggerType { CLEAR_AREA, KILL_TARGETS, MISSION_COUNTER }
 # --- AI 队友延迟增援（占领后过 delay 秒召唤黄色盟军波次）---
 @export var ally_reinforcement_delay: float = 0.0  # 0 = 无增援
 @export var ally_reinforcement_groups: Array = []  # [{type=0, count=3}, ...]
+@export var ally_reinforcement_repeat: int = 0        # 连续增援波数（0=仅一次，>0=额外重复 N 波）
+@export var ally_reinforcement_interval: float = 30.0  # 每波间隔秒数
 
 # --- 控制 ---
 @export var enabled_on_start: bool = true

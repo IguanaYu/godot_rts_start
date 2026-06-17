@@ -21,6 +21,8 @@ var _follow_recheck_timer: float = 0.0
 var _scan_phase: int = 0
 var _force_target_pos: Vector2 = Vector2.ZERO
 
+var squad_id: String = "general"  # 小队标识，默认全局
+
 var unit: Unit
 
 
@@ -181,4 +183,19 @@ func issue_defend_order(pos: Vector2) -> void:
 	_force_target_pos = pos
 	ally_state = AllyState.FORCE_DEFEND
 	unit.move_to(pos)
+
+
+## 外部调用：设置 AI 队友的初始行为（用于分兵驻防）
+func set_initial_behavior(behavior: String, pos: Vector2 = Vector2.ZERO) -> void:
+	match behavior:
+		"defend":
+			ally_state = AllyState.FORCE_DEFEND
+			_force_target_pos = pos
+			unit.move_to(pos)
+		"attack_move":
+			ally_state = AllyState.FORCE_ATTACK
+			_force_target_pos = pos
+			unit.attack_move_to(pos)
+		"follow", _:
+			pass  # 默认 FOLLOW_PLAYER，无需操作
 

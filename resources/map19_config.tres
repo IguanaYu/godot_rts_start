@@ -1,0 +1,252 @@
+[gd_resource type="Resource" script_class="MapConfig" format=3]
+
+[ext_resource type="Script" path="res://scripts/map_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+map_name = "Steel Torrent"
+map_bounds = Rect2(-200, -200, 3400, 1200)
+nav_bounds = Array[Vector2]([Vector2(-200, -200), Vector2(3200, -200), Vector2(3200, 1000), Vector2(-200, 1000)])
+initial_gold = 6000
+camera_start = Vector2(300, 600)
+player_units = Array[Dictionary]([{
+"type": 0,
+"pos": Vector2(250, 570)
+}, {
+"type": 0,
+"pos": Vector2(250, 630)
+}, {
+"type": 0,
+"pos": Vector2(300, 550)
+}, {
+"type": 0,
+"pos": Vector2(300, 650)
+}, {
+"type": 0,
+"pos": Vector2(350, 600)
+}, {
+"type": 1,
+"pos": Vector2(200, 570)
+}, {
+"type": 1,
+"pos": Vector2(200, 630)
+}, {
+"type": 1,
+"pos": Vector2(220, 600)
+}, {
+"type": 2,
+"pos": Vector2(280, 580)
+}, {
+"type": 2,
+"pos": Vector2(280, 620)
+}])
+player_buildings = Array[Dictionary]([{
+"type": 2,
+"grid_pos": Vector2i(1, 8)
+}, {
+"type": 3,
+"grid_pos": Vector2i(4, 7)
+}, {
+"type": 3,
+"grid_pos": Vector2i(4, 10)
+}])
+ai_allies = Array[Dictionary]([{
+"type": 0,
+"pos": Vector2(150, 580)
+}, {
+"type": 0,
+"pos": Vector2(150, 620)
+}, {
+"type": 0,
+"pos": Vector2(170, 600)
+}, {
+"type": 1,
+"pos": Vector2(120, 570)
+}, {
+"type": 1,
+"pos": Vector2(120, 630)
+}, {
+"type": 2,
+"pos": Vector2(180, 650)
+}])
+enemy_units = Array[Dictionary]([{
+"type": 0,
+"pos": Vector2(750, 550)
+}, {
+"type": 0,
+"pos": Vector2(750, 650)
+}, {
+"type": 1,
+"pos": Vector2(780, 570)
+}, {
+"type": 1,
+"pos": Vector2(780, 630)
+}, {
+"type": 1,
+"pos": Vector2(800, 600)
+}, {
+"type": 0,
+"pos": Vector2(720, 580)
+}, {
+"type": 0,
+"pos": Vector2(720, 620)
+}, {
+"type": 2,
+"pos": Vector2(760, 600)
+}, {
+"type": 0,
+"pos": Vector2(1350, 530)
+}, {
+"type": 0,
+"pos": Vector2(1350, 670)
+}, {
+"type": 0,
+"pos": Vector2(1380, 550)
+}, {
+"type": 0,
+"pos": Vector2(1380, 650)
+}, {
+"type": 1,
+"pos": Vector2(1400, 570)
+}, {
+"type": 1,
+"pos": Vector2(1400, 630)
+}, {
+"type": 1,
+"pos": Vector2(1420, 600)
+}, {
+"type": 2,
+"pos": Vector2(1330, 580)
+}, {
+"type": 2,
+"pos": Vector2(1330, 620)
+}, {
+"type": 0,
+"pos": Vector2(1300, 600)
+}, {
+"type": 0,
+"pos": Vector2(1950, 500)
+}, {
+"type": 0,
+"pos": Vector2(1950, 700)
+}, {
+"type": 0,
+"pos": Vector2(1980, 530)
+}, {
+"type": 0,
+"pos": Vector2(1980, 670)
+}, {
+"type": 0,
+"pos": Vector2(2000, 560)
+}, {
+"type": 0,
+"pos": Vector2(2000, 640)
+}, {
+"type": 1,
+"pos": Vector2(2020, 550)
+}, {
+"type": 1,
+"pos": Vector2(2020, 650)
+}, {
+"type": 1,
+"pos": Vector2(2040, 580)
+}, {
+"type": 1,
+"pos": Vector2(2040, 620)
+}, {
+"type": 1,
+"pos": Vector2(2060, 600)
+}, {
+"type": 2,
+"pos": Vector2(1930, 540)
+}, {
+"type": 2,
+"pos": Vector2(1930, 660)
+}, {
+"type": 2,
+"pos": Vector2(1960, 580)
+}, {
+"type": 2,
+"pos": Vector2(1960, 620)
+}, {
+"type": 0,
+"pos": Vector2(2750, 560)
+}, {
+"type": 0,
+"pos": Vector2(2750, 640)
+}, {
+"type": 1,
+"pos": Vector2(2780, 600)
+}])
+enemy_buildings = Array[Dictionary]([{
+"type": 1,
+"grid_pos": Vector2i(11, 7)
+}, {
+"type": 1,
+"grid_pos": Vector2i(11, 11)
+}, {
+"type": 0,
+"grid_pos": Vector2i(11, 9)
+}, {
+"type": 1,
+"grid_pos": Vector2i(20, 7)
+}, {
+"type": 1,
+"grid_pos": Vector2i(20, 11)
+}, {
+"type": 1,
+"grid_pos": Vector2i(22, 9)
+}, {
+"type": 0,
+"grid_pos": Vector2i(20, 9)
+}, {
+"type": 0,
+"grid_pos": Vector2i(21, 8)
+}, {
+"type": 0,
+"grid_pos": Vector2i(21, 10)
+}, {
+"type": 1,
+"grid_pos": Vector2i(30, 7)
+}, {
+"type": 1,
+"grid_pos": Vector2i(30, 11)
+}, {
+"type": 1,
+"grid_pos": Vector2i(32, 8)
+}, {
+"type": 1,
+"grid_pos": Vector2i(32, 10)
+}, {
+"type": 0,
+"grid_pos": Vector2i(30, 9)
+}, {
+"type": 0,
+"grid_pos": Vector2i(31, 8)
+}, {
+"type": 0,
+"grid_pos": Vector2i(31, 10)
+}, {
+"type": 2,
+"grid_pos": Vector2i(43, 8)
+}, {
+"type": 1,
+"grid_pos": Vector2i(41, 7)
+}, {
+"type": 1,
+"grid_pos": Vector2i(41, 11)
+}, {
+"type": 1,
+"grid_pos": Vector2i(42, 8)
+}, {
+"type": 1,
+"grid_pos": Vector2i(42, 10)
+}, {
+"type": 0,
+"grid_pos": Vector2i(42, 9)
+}])
+available_items = Array[int]([1, 2, 5, 6, 3, 4, 7, 8, 9, 10])
+environment = {"trees": 15, "rocks": 10, "bushes": 12, "sheep": 5}
+terrain_theme = 0
+border_width = 1
+map_description = "A massive allied assault across the open plains. Capture strategic points to trigger continuous reinforcements."

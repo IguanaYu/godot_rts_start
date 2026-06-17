@@ -1,0 +1,171 @@
+[gd_resource type="Resource" script_class="MapConfig" format=3]
+
+[ext_resource type="Script" path="res://scripts/map_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+map_name = "Breakthrough"
+map_bounds = Rect2(-200, -200, 3000, 1500)
+nav_bounds = Array[Vector2]([Vector2(-200, -200), Vector2(2800, -200), Vector2(2800, 1300), Vector2(-200, 1300)])
+initial_gold = 5000
+camera_start = Vector2(300, 300)
+player_units = Array[Dictionary]([{
+"type": 0,
+"pos": Vector2(250, 250)
+}, {
+"type": 0,
+"pos": Vector2(250, 350)
+}, {
+"type": 0,
+"pos": Vector2(300, 200)
+}, {
+"type": 0,
+"pos": Vector2(300, 400)
+}, {
+"type": 0,
+"pos": Vector2(350, 300)
+}, {
+"type": 1,
+"pos": Vector2(200, 230)
+}, {
+"type": 1,
+"pos": Vector2(200, 370)
+}, {
+"type": 1,
+"pos": Vector2(220, 300)
+}, {
+"type": 2,
+"pos": Vector2(280, 260)
+}, {
+"type": 2,
+"pos": Vector2(280, 340)
+}])
+player_buildings = Array[Dictionary]([{
+"type": 2,
+"grid_pos": Vector2i(1, 3)
+}, {
+"type": 3,
+"grid_pos": Vector2i(4, 3)
+}])
+ai_allies = Array[Dictionary]([{
+"type": 0,
+"pos": Vector2(700, 570),
+"behavior": "defend",
+"defend_pos": Vector2(750, 570),
+"squad_id": "south"
+}, {
+"type": 0,
+"pos": Vector2(700, 630),
+"behavior": "defend",
+"defend_pos": Vector2(750, 630),
+"squad_id": "south"
+}, {
+"type": 1,
+"pos": Vector2(680, 580),
+"behavior": "defend",
+"defend_pos": Vector2(730, 580),
+"squad_id": "south"
+}, {
+"type": 1,
+"pos": Vector2(680, 620),
+"behavior": "defend",
+"defend_pos": Vector2(730, 620),
+"squad_id": "south"
+}, {
+"type": 2,
+"pos": Vector2(720, 600),
+"behavior": "defend",
+"defend_pos": Vector2(770, 600),
+"squad_id": "south"
+}, {
+"type": 3,
+"pos": Vector2(660, 600),
+"behavior": "defend",
+"defend_pos": Vector2(710, 600),
+"squad_id": "south"
+}, {
+"type": 0,
+"pos": Vector2(150, 280)
+}, {
+"type": 1,
+"pos": Vector2(150, 320)
+}])
+enemy_units = Array[Dictionary]([{
+"type": 0,
+"pos": Vector2(700, 200)
+}, {
+"type": 0,
+"pos": Vector2(700, 400)
+}, {
+"type": 1,
+"pos": Vector2(750, 250)
+}, {
+"type": 1,
+"pos": Vector2(750, 350)
+}, {
+"type": 2,
+"pos": Vector2(730, 300)
+}, {
+"type": 0,
+"pos": Vector2(2300, 950)
+}, {
+"type": 0,
+"pos": Vector2(2300, 1050)
+}, {
+"type": 0,
+"pos": Vector2(2350, 900)
+}, {
+"type": 0,
+"pos": Vector2(2350, 1100)
+}, {
+"type": 1,
+"pos": Vector2(2400, 950)
+}, {
+"type": 1,
+"pos": Vector2(2400, 1050)
+}, {
+"type": 2,
+"pos": Vector2(2320, 1000)
+}, {
+"type": 2,
+"pos": Vector2(2380, 1000)
+}])
+enemy_buildings = Array[Dictionary]([{
+"type": 1,
+"grid_pos": Vector2i(11, 3)
+}, {
+"type": 1,
+"grid_pos": Vector2i(11, 6)
+}, {
+"type": 0,
+"grid_pos": Vector2i(11, 4)
+}, {
+"type": 0,
+"grid_pos": Vector2i(11, 5)
+}, {
+"type": 3,
+"grid_pos": Vector2i(13, 4)
+}, {
+"type": 2,
+"grid_pos": Vector2i(37, 14)
+}, {
+"type": 1,
+"grid_pos": Vector2i(36, 14)
+}, {
+"type": 1,
+"grid_pos": Vector2i(36, 17)
+}, {
+"type": 0,
+"grid_pos": Vector2i(36, 15)
+}, {
+"type": 0,
+"grid_pos": Vector2i(36, 16)
+}, {
+"type": 3,
+"grid_pos": Vector2i(34, 14)
+}])
+available_items = Array[int]([1, 2, 5, 6, 3, 4, 7, 8, 9, 10])
+environment = {"trees": 12, "rocks": 8, "bushes": 10, "sheep": 4}
+terrain_theme = 0
+border_width = 1
+map_description = "Split your forces: attack the north outpost while AI allies hold the south. Rally to crush the main base!"

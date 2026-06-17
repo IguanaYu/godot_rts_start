@@ -1,0 +1,120 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/systems_game/capture_point.gd" id="capture_point"]
+[ext_resource type="Script" path="res://scripts/main.gd" id="main_script"]
+[ext_resource type="Resource" path="res://resources/map20_config.tres" id="map_config"]
+[ext_resource type="Script" path="res://scripts/systems_game/wave_manager.gd" id="wave_manager"]
+[ext_resource type="Script" path="res://scripts/victory/victory_destroy_base.gd" id="victory_destroy_base"]
+
+[sub_resource type="NavigationPolygon" id="NavPoly_20"]
+vertices = PackedVector2Array(-200, -200, 2800, -200, 2800, 1300, -200, 1300)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
+
+[node name="Map20" type="Node2D"]
+script = ExtResource("main_script")
+map_config = ExtResource("map_config")
+
+[node name="Ground" type="ColorRect" parent="."]
+offset_left = -200.0
+offset_top = -200.0
+offset_right = 2800.0
+offset_bottom = 1300.0
+color = Color(0.35, 0.55, 0.25, 1)
+
+[node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
+navigation_polygon = SubResource("NavPoly_20")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+
+[node name="PlayerUnits" type="Node2D" parent="."]
+
+[node name="EnemyUnits" type="Node2D" parent="."]
+
+[node name="Buildings" type="Node2D" parent="."]
+
+[node name="SelectionBox" type="ColorRect" parent="."]
+visible = false
+mouse_filter = 2
+color = Color(0.4, 0.7, 1, 0.25)
+
+[node name="PreviewRect" type="ColorRect" parent="."]
+visible = false
+mouse_filter = 2
+color = Color(0, 1, 0, 0.3)
+
+[node name="ResultLabel" type="Label" parent="."]
+offset_left = 1200.0
+offset_top = 600.0
+offset_right = 1600.0
+offset_bottom = 700.0
+theme_override_font_sizes/font_size = 48
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AttackMoveIndicator" type="Label" parent="."]
+visible = false
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 200.0
+offset_bottom = 40.0
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+theme_override_font_sizes/font_size = 20
+text = "Attack Move (Click)"
+
+[node name="WaveManager" type="Node" parent="."]
+script = ExtResource("wave_manager")
+clear_then_next = true
+waves = Array[Dictionary]([
+{
+"delay": 45.0,
+"post_clear_delay": 15.0,
+"wave_attack": true,
+"wave_target": Vector2(750, 600),
+"spawn_point_path": NodePath("../SouthWaveSpawn"),
+"formation": "column",
+"spacing": 45.0,
+"groups": Array[Dictionary]([{"type": 0, "count": 3}, {"type": 1, "count": 1}])
+},
+{
+"delay": 15.0,
+"post_clear_delay": 15.0,
+"wave_attack": true,
+"wave_target": Vector2(750, 600),
+"spawn_point_path": NodePath("../SouthWaveSpawn"),
+"formation": "grid",
+"spacing": 45.0,
+"groups": Array[Dictionary]([{"type": 0, "count": 4}, {"type": 1, "count": 2}, {"type": 2, "count": 1}])
+},
+{
+"delay": 15.0,
+"post_clear_delay": 0.0,
+"wave_attack": true,
+"wave_target": Vector2(750, 600),
+"spawn_point_path": NodePath("../SouthWaveSpawn"),
+"formation": "grid",
+"spacing": 45.0,
+"groups": Array[Dictionary]([{"type": 0, "count": 5}, {"type": 1, "count": 3}, {"type": 2, "count": 2}])
+}
+])
+
+[node name="SouthWaveSpawn" type="Marker2D" parent="."]
+position = Vector2(2400, 800)
+
+[node name="VictoryDestroyBase" type="Node" parent="."]
+script = ExtResource("victory_destroy_base")
+
+[node name="RallyDetectionArea" type="Marker2D" parent="."]
+position = Vector2(1000, 400)
+
+[node name="RallyCP" type="Area2D" parent="."]
+position = Vector2(1000, 400)
+script = ExtResource("capture_point")
+detection_area = NodePath("../RallyDetectionArea")
+detection_radius = 150.0
+can_enemy_capture = false
+reward_gold = 500
+ally_reinforcement_delay = 3.0
+ally_reinforcement_groups = Array[Dictionary]([{"type": 0, "count": 4}, {"type": 1, "count": 3}, {"type": 2, "count": 2}])
+ally_reinforcement_repeat = 1
+ally_reinforcement_interval = 20.0
+meta/rally_attack_target = Vector2(2464, 992)

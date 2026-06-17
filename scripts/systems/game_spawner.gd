@@ -163,7 +163,9 @@ func spawn_slot_initial(slot: Dictionary, slot_idx: int, owner_id: int, color: i
 		LockstepSync.register_unit(building)
 
 # 单机模式 AI 队友（owner_id=-2, alliance_id=0, color=YELLOW, slot=2）
-func spawn_ally_unit_initial(unit_type: int, pos: Vector2) -> void:
+func spawn_ally_unit_initial(unit_type: int, pos: Vector2, \
+		behavior: String = "follow", defend_pos: Vector2 = Vector2.ZERO, \
+		squad_id: String = "general") -> void:
 	var unit := create_unit(unit_type, 0, pos, &"", -2, Faction.ColorId.YELLOW, 2)
 	unit.net_id = _next_net_id
 	_next_net_id += 1
@@ -176,6 +178,9 @@ func spawn_ally_unit_initial(unit_type: int, pos: Vector2) -> void:
 	ai.name = "AllyAI"
 	ai.set_script(load("res://scripts/units/ally_ai.gd"))
 	unit.add_child(ai)
+	ai.squad_id = squad_id
+	if behavior != "follow" and ai.has_method("set_initial_behavior"):
+		ai.set_initial_behavior(behavior, defend_pos)
 	spawn_spawn_effect(pos, UnitScript.Team.PLAYER, unit)
 
 

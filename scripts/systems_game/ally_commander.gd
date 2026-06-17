@@ -34,3 +34,31 @@ func issue_defend_order(world_pos: Vector2) -> void:
 		var ai := u.get_node_or_null("AllyAI")
 		if ai != null and ai.has_method("issue_defend_order"):
 			ai.issue_defend_order(world_pos)
+
+
+## 对指定小队下达攻击指令
+func issue_squad_attack_order(squad_id: String, world_pos: Vector2) -> void:
+	for u in get_tree().get_nodes_in_group("player_units"):
+		if not (u is CharacterBody2D):
+			continue
+		if u.is_dead():
+			continue
+		if u.owner_id != -2:
+			continue
+		var ai := u.get_node_or_null("AllyAI")
+		if ai != null and ai.squad_id == squad_id:
+			ai.issue_attack_order(world_pos)
+
+
+## 对指定小队下达防御指令
+func issue_squad_defend_order(squad_id: String, world_pos: Vector2) -> void:
+	for u in get_tree().get_nodes_in_group("player_units"):
+		if not (u is CharacterBody2D):
+			continue
+		if u.is_dead():
+			continue
+		if u.owner_id != -2:
+			continue
+		var ai := u.get_node_or_null("AllyAI")
+		if ai != null and ai.squad_id == squad_id:
+			ai.issue_defend_order(world_pos)

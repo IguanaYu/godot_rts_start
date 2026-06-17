@@ -1,0 +1,89 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/systems_game/capture_point.gd" id="capture_point"]
+[ext_resource type="Script" path="res://scripts/main.gd" id="main_script"]
+[ext_resource type="Resource" path="res://resources/map17_config.tres" id="map_config"]
+[ext_resource type="Script" path="res://scripts/victory/victory_destroy_base.gd" id="victory_destroy_base"]
+
+[sub_resource type="NavigationPolygon" id="NavPoly_17"]
+vertices = PackedVector2Array(-100, -100, 2100, -100, 2100, 500, -100, 500)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
+
+[node name="Map17" type="Node2D"]
+script = ExtResource("main_script")
+map_config = ExtResource("map_config")
+
+[node name="Ground" type="ColorRect" parent="."]
+offset_left = -100.0
+offset_top = -100.0
+offset_right = 2100.0
+offset_bottom = 500.0
+color = Color(0.35, 0.55, 0.25, 1)
+
+[node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
+navigation_polygon = SubResource("NavPoly_17")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+
+[node name="PlayerUnits" type="Node2D" parent="."]
+
+[node name="EnemyUnits" type="Node2D" parent="."]
+
+[node name="Buildings" type="Node2D" parent="."]
+
+[node name="SelectionBox" type="ColorRect" parent="."]
+visible = false
+mouse_filter = 2
+color = Color(0.4, 0.7, 1, 0.25)
+
+[node name="PreviewRect" type="ColorRect" parent="."]
+visible = false
+mouse_filter = 2
+color = Color(0, 1, 0, 0.3)
+
+[node name="ResultLabel" type="Label" parent="."]
+offset_left = 350.0
+offset_top = 200.0
+offset_right = 650.0
+offset_bottom = 300.0
+theme_override_font_sizes/font_size = 48
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AttackMoveIndicator" type="Label" parent="."]
+visible = false
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 200.0
+offset_bottom = 40.0
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+theme_override_font_sizes/font_size = 20
+text = "Attack Move (Click)"
+
+[node name="VictoryDestroyBase" type="Node" parent="."]
+script = ExtResource("victory_destroy_base")
+
+[node name="DetectionArea1" type="Marker2D" parent="."]
+position = Vector2(700, 300)
+
+[node name="CapturePoint1" type="Area2D" parent="."]
+position = Vector2(700, 300)
+script = ExtResource("capture_point")
+detection_area = NodePath("../DetectionArea1")
+can_enemy_capture = false
+reward_gold = 200
+ally_reinforcement_delay = 10.0
+ally_reinforcement_groups = Array[Dictionary]([{"type": 0, "count": 3}, {"type": 1, "count": 2}])
+
+[node name="DetectionArea2" type="Marker2D" parent="."]
+position = Vector2(1300, 300)
+
+[node name="CapturePoint2" type="Area2D" parent="."]
+position = Vector2(1300, 300)
+script = ExtResource("capture_point")
+detection_area = NodePath("../DetectionArea2")
+can_enemy_capture = false
+reward_gold = 150
+ally_reinforcement_delay = 8.0
+ally_reinforcement_groups = Array[Dictionary]([{"type": 2, "count": 2}])
+enabled_on_start = false

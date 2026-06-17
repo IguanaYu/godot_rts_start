@@ -12,12 +12,14 @@ const LEVELS := [
 	"map_5", "map_6", "map_7", "map_8",
 	"map_9", "map_10", "map_11", "map_12",
 	"map_13", "map_14", "map_15", "map_16",
+	"map_17", "map_18", "map_19", "map_20",
 ]
 const LEVEL_SCORES := {
 	"map_1": 10, "map_2": 15, "map_3": 20, "map_4": 25,
 	"map_5": 20, "map_6": 30, "map_7": 30, "map_8": 35,
 	"map_9": 40, "map_10": 40, "map_11": 40, "map_12": 45,
 	"map_13": 45, "map_14": 45, "map_15": 50, "map_16": 50,
+	"map_17": 40, "map_18": 50, "map_19": 60, "map_20": 70,
 }
 
 var _current_slot: int = -1
