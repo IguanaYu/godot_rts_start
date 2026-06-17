@@ -1,0 +1,59 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/stats/unit_stats.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"warden"
+unit_type = 0
+category = "normal"
+parent_id = &"soldier"
+max_hp = 130
+attack_damage = 7
+attack_range = 36.0
+attack_cooldown = 1.0
+move_speed = 95.0
+damage_reduction = 0.0
+heal_range = 0.0
+heal_amount = 0
+heal_cooldown = 0.0
+heal_scan_range = 0.0
+sprite_scale = 0.9
+projectile_data = null
+bonus_vs_unit_types = []
+bonus_vs_multiplier = 1.0
+bonus_vs_building_multiplier = 1.0
+ignores_damage_reduction = false
+lifesteal_ratio = 0.0
+lifesteal_flat = 0
+dodge_chance = 0.0
+regen_per_sec = 0.0
+aura_range = 140.0
+aura_type = "shield"
+aura_value = 60.0
+explode_damage = 0
+explode_radius = 0.0
+vengeance_buff_value = 0.0
+vengeance_buff_duration = 0.0
+vengeance_scan_range = 0.0
+knockback_force = 0.0
+chain_count = 0
+chain_falloff = 0.7
+chain_range = 120.0
+cone_range = 0.0
+cone_angle = 0.0
+stealth_on_idle = false
+stealth_reveal_duration = 2.0
+blink_range = 0.0
+blink_cooldown = 5.0
+shield_amount = 60
+shield_aura_range = 140.0
+shield_cooldown = 3.0
+taunt_range = 0.0
+taunt_duration = 0.0
+taunt_pulse_interval = 1.0
+upgrade_hp_per_level = 0
+upgrade_damage_per_level = 0
+upgrade_speed_per_level = 0.0
+max_upgrade_level = 0
+upgrade_cost = 0

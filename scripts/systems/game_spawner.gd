@@ -443,6 +443,29 @@ func spawn_unit_near(type: int, pos: Vector2, team: int) -> CharacterBody2D:
 		unit.add_child(ai)
 	return unit
 
+# --- 召唤物生成（Necromancer 用） ---
+func spawn_summon(type: int, stats_id: StringName, pos: Vector2, team: int) -> CharacterBody2D:
+	var offset := Vector2(randf_range(-40, 40), randf_range(-40, 40))
+	var unit := create_unit(type, team, pos + offset, stats_id)
+	unit.net_id = _next_net_id
+	_next_net_id += 1
+	LockstepSync.register_unit(unit)
+	if team == UnitScript.Team.PLAYER:
+		_player_units_node.add_child(unit)
+		unit.add_to_group("player_units")
+		if _upgrade_manager:
+			_upgrade_manager.apply_all_stat_upgrades_to_unit(unit)
+		spawn_spawn_effect(pos + offset, team, unit)
+	else:
+		_enemy_units_node.add_child(unit)
+		spawn_spawn_effect(pos + offset, team, unit)
+		unit.add_to_group("enemy_units")
+		var ai := Node2D.new()
+		ai.name = "EnemyAI"
+		ai.set_script(load("res://scripts/units/enemy_ai.gd"))
+		unit.add_child(ai)
+	return unit
+
 # --- 难度乘数 ---
 
 func _apply_difficulty_modifiers(unit: CharacterBody2D) -> void:

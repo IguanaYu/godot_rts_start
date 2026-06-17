@@ -88,6 +88,25 @@ var aura_type: String = ""
 var aura_value: float = 0.0
 var _aura_scan_timer: float = 0.0
 
+# 隐身 / 闪现（2B Step4）
+var _stealth_reveal_timer: float = 0.0  # 显形倒计时（>0 时被敌方看见）
+var _blink_timer: float = 0.0           # 闪现冷却
+
+# 护盾 / 嘲讽（2B Step5）
+var _shield_hp: int = 0                 # 当前护盾值
+var _shield_aura_timer: float = 0.0     # 护盾光环脉冲计时
+var _taunt_pulse_timer: float = 0.0     # 嘲讽脉冲计时
+var _taunt_expire_timer: float = 0.0    # 被嘲讽的剩余时间（>0 时强制攻击嘲讽者）
+
+# 中毒 DoT（2B Step6）
+var _poison_dps: float = 0.0            # 当前中毒每秒伤害
+var _poison_timer: float = 0.0          # 中毒剩余时间
+var _poison_accumulator: float = 0.0    # DoT 累积器
+
+# 召唤系统（2B Step7）
+var _summoned_minions: Array = []       # 当前存活的召唤物引用
+var _summon_lifetime: float = 0.0       # 召唤物存活秒数（0=永久），从 stats 同步
+
 # 命令队列 (Shift)
 const CommandQueue = preload("res://scripts/systems/command_queue.gd")
 var command_queue = CommandQueue.new()
@@ -481,8 +500,26 @@ func _physics_process(delta: float) -> void:
 			var heal_amt = int(_regen_accumulator)
 			health.heal(heal_amt)
 			_regen_accumulator -= heal_amt
+	# 中毒 DoT
+	if _poison_timer > 0.0:
+		_poison_timer = max(0.0, _poison_timer - delta)
+		_poison_accumulator += _poison_dps * delta
+		if _poison_accumulator >= 1.0:
+			var dot_dmg = int(_poison_accumulator)
+			health.take_damage(dot_dmg)
+			_poison_accumulator -= dot_dmg
 	# 光环
 	_aura_process(delta)
+	# 嘲讽（Stoneguard）：周期性强制周围敌人攻击自己
+	_taunt_process(delta)
+	# 隐身/显形管理
+	_stealth_process(delta)
+	# 闪现冷却递减
+	if _blink_timer > 0.0:
+		_blink_timer = max(0.0, _blink_timer - delta)
+	# 被嘲讽状态倒计时
+	if _taunt_expire_timer > 0.0:
+		_taunt_expire_timer = max(0.0, _taunt_expire_timer - delta)
 	# 建筑内逃生逻辑（优先于正常状态机）
 	if _escaping_building:
 		_escape_timer -= delta
@@ -588,6 +625,10 @@ func _attack_process(delta: float) -> void:
 
 	var dist := _get_dist_to_target(attack_target)
 	if dist > get_effective_attack_range():
+		# 闪现者：距目标过远时瞬移到目标附近
+		if stats_data and stats_data.blink_range > 0.0 and _blink_timer <= 0.0:
+			_try_blink_toward(attack_target)
+			dist = _get_dist_to_target(attack_target)
 		if hold_position_mode:
 			attack_target = null
 			attack_command_source = CommandSource.NONE
@@ -689,6 +730,9 @@ func _find_closest_enemy_in_range(scan_range: float):
 			continue
 		if u.team == team:
 			continue  # grid 同时含友军和敌军，跳过同队
+		# 隐身单位敌方不可见（仅对 Unit 有效）
+		if u.has_method("is_stealthed") and u.is_stealthed():
+			continue
 		var d := global_position.distance_to(u.global_position)
 		if d < scan_range and d < closest_dist:
 			closest = u
@@ -735,6 +779,9 @@ func _heal_process(delta: float) -> void:
 	else:
 		if attack_timer <= 0.0:
 			heal_target.heal(stat_set.get_int(StatSetClass.HEAL_AMOUNT))
+			# 审判官：治疗时清除友军 debuff
+			if stats_data and stats_data.cleanse_on_heal and heal_target.has_method("cleanse_debuffs"):
+				heal_target.cleanse_debuffs()
 			attack_timer = stat_set.get_value(StatSetClass.HEAL_COOLDOWN)
 			_is_healing = true
 
@@ -948,6 +995,8 @@ func _perform_attack() -> void:
 		_is_attacking = true
 		_set_anim("")
 		_set_anim("attack")
+		# 隐身单位攻击时显形
+		_reveal_stealth_temporarily()
 		var damage = stat_set.get_int(StatSetClass.ATTACK_DAMAGE)
 		var pd = stats_data.projectile_data if stats_data else null
 		# 锥形攻击：对前方扇形范围内所有敌人造成伤害
@@ -966,6 +1015,8 @@ func _perform_attack() -> void:
 			if stats_data and stats_data.knockback_force > 0.0 and attack_target is Unit and is_instance_valid(attack_target):
 				var dir = (attack_target.global_position - global_position).normalized()
 				attack_target.global_position += dir * stats_data.knockback_force
+		# 召唤：攻击命中后概率召唤一个 minion（Necromancer）
+		_try_summon_minion()
 
 ## 连锁闪电：主目标受伤后弹射到附近 N 个敌人
 func _do_chain_attack(damage: int) -> void:
@@ -1091,7 +1142,17 @@ func take_damage(amount: int, attacker = null) -> void:
 		var reduction = stat_set.get_value(StatSetClass.DAMAGE_REDUCTION)
 		if reduction > 0.0:
 			final_amount = int(final_amount * (1.0 - reduction))
+	# 护盾抵扣：先扣护盾，剩余伤害才进血量
+	if _shield_hp > 0 and final_amount > 0:
+		if _shield_hp >= final_amount:
+			_shield_hp -= final_amount
+			final_amount = 0
+		else:
+			final_amount -= _shield_hp
+			_shield_hp = 0
 	health.take_damage(final_amount)
+	# 受击时显形
+	_reveal_stealth_temporarily()
 	# 吸血：attacker 根据造成伤害回血
 	if final_amount > 0 and attacker is Unit:
 		attacker._heal_from_lifesteal(final_amount)
@@ -1466,6 +1527,96 @@ func apply_slow(factor: float, duration: float) -> void:
 	_slow_timer = duration
 
 
+## 施加中毒 DoT（Venomblade 的 PoisonEffect 调用）
+func apply_poison(dps: float, duration: float) -> void:
+	_poison_dps = dps
+	_poison_timer = duration
+	_poison_accumulator = 0.0
+
+
+## 清除自身所有 debuff（中毒/减速）
+func cleanse_debuffs() -> void:
+	_poison_dps = 0.0
+	_poison_timer = 0.0
+	_poison_accumulator = 0.0
+	_slow_timer = 0.0
+	_slow_factor = 1.0
+	if _effects_material:
+		_effects_material.set_shader_parameter("slow_enabled", false)
+
+
+## 驱散：命中目标时清除其所有增益 buff（Inquisitor）
+func dispel_target(target_node) -> void:
+	if not stats_data or not stats_data.dispel_on_hit:
+		return
+	if target_node == null or not is_instance_valid(target_node):
+		return
+	if target_node.has_method("clear_buffs"):
+		target_node.clear_buffs()
+
+
+## 清除自身所有增益 buff（被驱散时调用）
+func clear_buffs() -> void:
+	var keys = buffs.keys()
+	for bt in keys:
+		stat_set.remove_source("buff:" + bt)
+		buffs.erase(bt)
+
+
+# ============== 召唤系统（2B Step7） ==============
+
+## 攻击命中后尝试召唤一个 minion（Necromancer）
+func _try_summon_minion() -> void:
+	if stats_data == null or stats_data.summon_max <= 0:
+		return
+	# 概率检查
+	if randf() > stats_data.summon_chance:
+		return
+	# 清理已失效的 minion 引用
+	_prune_dead_minions()
+	# 达到上限则不召唤
+	if _summoned_minions.size() >= stats_data.summon_max:
+		return
+	# 通过 spawner 生成召唤物
+	var spawner = get_tree().current_scene.get("spawner_module")
+	if spawner == null:
+		return
+	var minion = spawner.spawn_summon(
+		stats_data.summon_type,
+		stats_data.summon_stats_id,
+		global_position,
+		team
+	)
+	if minion == null:
+		return
+	minion.connect("died", Callable(self, "_on_minion_died"))
+	_summoned_minions.append(minion)
+	# 有限寿命：到时自动死亡
+	if stats_data.summon_lifetime > 0.0:
+		var tw := create_tween()
+		tw.tween_interval(stats_data.summon_lifetime)
+		tw.tween_callback(func():
+			if is_instance_valid(minion) and not minion.is_dead():
+				minion.die()
+		)
+
+
+## 清理已死亡/失效的 minion 引用
+func _prune_dead_minions() -> void:
+	var alive: Array = []
+	for m in _summoned_minions:
+		if is_instance_valid(m) and not m.is_dead():
+			alive.append(m)
+	_summoned_minions = alive
+
+
+## minion 死亡时从列表移除
+func _on_minion_died(_minion: Unit) -> void:
+	_prune_dead_minions()
+
+
+
+
 ## 吸血回血：根据造成的伤害和自身吸血属性回血
 func _heal_from_lifesteal(damage_dealt: int) -> void:
 	if not stats_data or damage_dealt <= 0:
@@ -1499,6 +1650,100 @@ func _on_ally_died(_ally: Unit) -> void:
 	apply_buff_duration("attack", stats_data.vengeance_buff_value, dur_msec)
 
 
+# ============== 隐身 / 闪现（2B Step4） ==============
+
+## 当前是否处于隐身状态（敌方 AI 索敌时跳过）
+func is_stealthed() -> bool:
+	if stats_data == null or not stats_data.stealth_on_idle:
+		return false
+	return _stealth_reveal_timer <= 0.0
+
+
+## 每帧更新隐身视觉效果 + 显形倒计时
+func _stealth_process(delta: float) -> void:
+	if stats_data == null or not stats_data.stealth_on_idle:
+		return
+	if _stealth_reveal_timer > 0.0:
+		_stealth_reveal_timer = max(0.0, _stealth_reveal_timer - delta)
+	# 视觉：隐身时半透明，显形时不透明
+	if is_stealthed():
+		modulate.a = 0.35
+	else:
+		modulate.a = 1.0
+
+
+## 受击 / 攻击后短暂显形
+func _reveal_stealth_temporarily() -> void:
+	if stats_data != null and stats_data.stealth_on_idle:
+		_stealth_reveal_timer = stats_data.stealth_reveal_duration
+
+
+## 闪现者：朝目标方向瞬移一段距离（只在追击距离过远且冷却完成时触发）
+func _try_blink_toward(target_node) -> void:
+	if stats_data == null or stats_data.blink_range <= 0.0:
+		return
+	if _blink_timer > 0.0:
+		return
+	if target_node == null or not is_instance_valid(target_node):
+		return
+	var dir := global_position.direction_to(target_node.global_position)
+	if dir.length_squared() < 0.001:
+		return
+	global_position += dir * stats_data.blink_range
+	_blink_timer = stats_data.blink_cooldown
+
+
+# ============== 护盾 / 嘲讽（2B Step5） ==============
+
+## 当前护盾值（供 UI / 调试用）
+func get_shield_hp() -> int:
+	return _shield_hp
+
+
+## 嘲讽者：周期性扫描范围内敌方单位，强制其攻击自己
+func _taunt_process(delta: float) -> void:
+	if stats_data == null or stats_data.taunt_range <= 0.0:
+		return
+	_taunt_pulse_timer += delta
+	if _taunt_pulse_timer < stats_data.taunt_pulse_interval:
+		return
+	_taunt_pulse_timer = 0.0
+	var dur := stats_data.taunt_duration
+	for u in UnitGrid.query_neighbors(global_position, stats_data.taunt_range):
+		if not is_instance_valid(u) or u.is_dead():
+			continue
+		if u.team == team:
+			continue
+		if not (u is Unit):
+			continue
+		if global_position.distance_to(u.global_position) > stats_data.taunt_range:
+			continue
+		# 隐身单位不参与嘲讽（避免暴露位置）
+		if u.has_method("is_stealthed") and u.is_stealthed():
+			continue
+		u.force_attack_target(self, dur)
+
+
+## 被嘲讽时由嘲讽者调用：强制锁定目标并进入 ATTACK 状态
+func force_attack_target(target_node, duration_sec: float) -> void:
+	if target_node == null or not is_instance_valid(target_node):
+		return
+	if target_node.is_dead():
+		return
+	attack_target = target_node
+	attack_command_source = CommandSource.AUTO
+	_taunt_expire_timer = max(_taunt_expire_timer, duration_sec)
+	if state != UnitState.ATTACK:
+		state = UnitState.ATTACK
+
+
+## 是否处于被嘲讽状态（供 AI 决策参考）
+func is_taunted() -> bool:
+	return _taunt_expire_timer > 0.0
+
+
+
+
 ## 光环扫描：每 0.5s 对范围内友军施加光环效果
 func _aura_process(delta: float) -> void:
 	if aura_range <= 0.0:
@@ -1523,6 +1768,10 @@ func _aura_process(delta: float) -> void:
 				u.apply_buff("defense", aura_value)
 			"range_bonus":
 				u.apply_buff("range_bonus", aura_value)
+			"shield":
+				# 护盾叠加（不超过 aura_value 上限）
+				if u._shield_hp < int(aura_value):
+					u._shield_hp = int(aura_value)
 
 func get_effective_attack_range() -> float:
 	return stat_set.get_value(StatSetClass.ATTACK_RANGE)

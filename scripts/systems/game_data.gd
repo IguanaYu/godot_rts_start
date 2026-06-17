@@ -13,7 +13,7 @@ enum PlaceMode { NONE, WALL, TOWER, CASTLE, BARRACKS, SOLDIER, ARCHER, MONASTERY
 	WAR_DRUMMER, BANNER_BEARER,
 	BOMBER, AVENGER,
 	HAMMERER,
-	STORMCALLER, SALAMANDER }
+	STORMCALLER, SALAMANDER, SHADOWBLADE, BLINKER, WARDEN, STONEGUARD, VENOMBLADE, INQUISITOR, NECROMANCER }
 
 # --- 费用 ---
 const COSTS := {
@@ -46,6 +46,13 @@ const COSTS := {
 	PlaceMode.HAMMERER: 130,
 	PlaceMode.STORMCALLER: 140,
 	PlaceMode.SALAMANDER: 130,
+	PlaceMode.SHADOWBLADE: 130,
+	PlaceMode.BLINKER: 130,
+	PlaceMode.WARDEN: 150,
+	PlaceMode.STONEGUARD: 220,
+	PlaceMode.VENOMBLADE: 120,
+	PlaceMode.INQUISITOR: 130,
+	PlaceMode.NECROMANCER: 160,
 }
 
 # --- 显示名称（翻译键，使用时需 tr()） ---
@@ -79,6 +86,13 @@ const MODE_NAMES := {
 	PlaceMode.HAMMERER: "ENTITY_HAMMERER",
 	PlaceMode.STORMCALLER: "ENTITY_STORMCALLER",
 	PlaceMode.SALAMANDER: "ENTITY_SALAMANDER",
+	PlaceMode.SHADOWBLADE: "ENTITY_SHADOWBLADE",
+	PlaceMode.BLINKER: "ENTITY_BLINKER",
+	PlaceMode.WARDEN: "ENTITY_WARDEN",
+	PlaceMode.STONEGUARD: "ENTITY_STONEGUARD",
+	PlaceMode.VENOMBLADE: "ENTITY_VENOMBLADE",
+	PlaceMode.INQUISITOR: "ENTITY_INQUISITOR",
+	PlaceMode.NECROMANCER: "ENTITY_NECROMANCER",
 }
 
 # --- 默认全部物品 ---
@@ -94,6 +108,10 @@ const ALL_ITEMS := [
 	PlaceMode.BOMBER, PlaceMode.AVENGER,
 	PlaceMode.HAMMERER,
 	PlaceMode.STORMCALLER, PlaceMode.SALAMANDER,
+	PlaceMode.SHADOWBLADE, PlaceMode.BLINKER,
+	PlaceMode.WARDEN, PlaceMode.STONEGUARD,
+	PlaceMode.VENOMBLADE, PlaceMode.INQUISITOR,
+	PlaceMode.NECROMANCER,
 ]
 
 # --- 固定显示顺序（单位在前，建筑在后） ---
@@ -106,6 +124,10 @@ const DISPLAY_ORDER := [
 	PlaceMode.WAR_DRUMMER, PlaceMode.BANNER_BEARER,
 	PlaceMode.BOMBER, PlaceMode.AVENGER, PlaceMode.HAMMERER,
 	PlaceMode.STORMCALLER, PlaceMode.SALAMANDER,
+	PlaceMode.SHADOWBLADE, PlaceMode.BLINKER,
+	PlaceMode.WARDEN, PlaceMode.STONEGUARD,
+	PlaceMode.VENOMBLADE, PlaceMode.INQUISITOR,
+	PlaceMode.NECROMANCER,
 	PlaceMode.WALL, PlaceMode.TOWER, PlaceMode.BARRACKS,
 	PlaceMode.ARCHERY_RANGE, PlaceMode.MONASTERY, PlaceMode.CASTLE,
 ]
@@ -155,6 +177,13 @@ const MODE_ICONS := {
 	PlaceMode.HAMMERER: "res://assets/units/blue_lancer/Lancer_Idle.png",
 	PlaceMode.STORMCALLER: "res://assets/units/blue_archer/Archer_Idle.png",
 	PlaceMode.SALAMANDER: "res://assets/units/blue_lancer/Lancer_Idle.png",
+	PlaceMode.SHADOWBLADE: "res://assets/units/blue_warrior/Warrior_Idle.png",
+	PlaceMode.BLINKER: "res://assets/units/blue_warrior/Warrior_Idle.png",
+	PlaceMode.WARDEN: "res://assets/units/blue_warrior/Warrior_Idle.png",
+	PlaceMode.STONEGUARD: "res://assets/units/blue_lancer/Lancer_Idle.png",
+	PlaceMode.VENOMBLADE: "res://assets/units/blue_archer/Archer_Idle.png",
+	PlaceMode.INQUISITOR: "res://assets/units/blue_archer/Archer_Idle.png",
+	PlaceMode.NECROMANCER: "res://assets/units/blue_archer/Archer_Idle.png",
 }
 
 # --- 预加载按钮图标纹理 ---
@@ -183,6 +212,13 @@ const ICON_TEXTURES := {
 	PlaceMode.PALADIN:       preload("res://assets/units/blue_warrior/Warrior_Idle.png"),
 	PlaceMode.WAR_DRUMMER:   preload("res://assets/units/blue_monk/Idle.png"),
 	PlaceMode.BANNER_BEARER: preload("res://assets/units/blue_warrior/Warrior_Idle.png"),
+	PlaceMode.SHADOWBLADE: preload("res://assets/units/blue_warrior/Warrior_Idle.png"),
+	PlaceMode.BLINKER: preload("res://assets/units/blue_warrior/Warrior_Idle.png"),
+	PlaceMode.WARDEN: preload("res://assets/units/blue_warrior/Warrior_Idle.png"),
+	PlaceMode.STONEGUARD: preload("res://assets/units/blue_lancer/Lancer_Idle.png"),
+	PlaceMode.VENOMBLADE: preload("res://assets/units/blue_archer/Archer_Idle.png"),
+	PlaceMode.INQUISITOR: preload("res://assets/units/blue_archer/Archer_Idle.png"),
+	PlaceMode.NECROMANCER: preload("res://assets/units/blue_archer/Archer_Idle.png"),
 	}
 
 # --- Q模式：造兵快捷键 ---
@@ -256,6 +292,14 @@ const ENEMY_VARIANT_SCENES := {
 	&"hammerer": "res://scenes/units/hammerer.tscn",
 	&"stormcaller": "res://scenes/units/stormcaller.tscn",
 	&"salamander": "res://scenes/units/salamander.tscn",
+	&"shadowblade": "res://scenes/units/shadowblade.tscn",
+	&"blinker": "res://scenes/units/blinker.tscn",
+	&"warden": "res://scenes/units/warden.tscn",
+	&"stoneguard": "res://scenes/units/stoneguard.tscn",
+	&"venomblade": "res://scenes/units/venomblade.tscn",
+	&"inquisitor": "res://scenes/units/inquisitor.tscn",
+	&"necromancer": "res://scenes/units/necromancer.tscn",
+	&"skeleton": "res://scenes/units/skeleton.tscn",
 }
 
 # --- PlaceMode → BuildingType 映射 ---
@@ -293,6 +337,13 @@ const PLACE_MODE_TO_UNIT := {
 	PlaceMode.HAMMERER: UnitScript.UnitType.LANCER,
 	PlaceMode.STORMCALLER: UnitScript.UnitType.ARCHER,
 	PlaceMode.SALAMANDER: UnitScript.UnitType.LANCER,
+	PlaceMode.SHADOWBLADE: UnitScript.UnitType.SOLDIER,
+	PlaceMode.BLINKER: UnitScript.UnitType.SOLDIER,
+	PlaceMode.WARDEN: UnitScript.UnitType.SOLDIER,
+	PlaceMode.STONEGUARD: UnitScript.UnitType.LANCER,
+	PlaceMode.VENOMBLADE: UnitScript.UnitType.ARCHER,
+	PlaceMode.INQUISITOR: UnitScript.UnitType.ARCHER,
+	PlaceMode.NECROMANCER: UnitScript.UnitType.ARCHER,
 }
 
 # --- PlaceMode → stats_id 映射（变体单位） ---
@@ -316,6 +367,13 @@ const PLACE_MODE_TO_STATS_ID := {
 	PlaceMode.HAMMERER: &"hammerer",
 	PlaceMode.STORMCALLER: &"stormcaller",
 	PlaceMode.SALAMANDER: &"salamander",
+	PlaceMode.SHADOWBLADE: &"shadowblade",
+	PlaceMode.BLINKER: &"blinker",
+	PlaceMode.WARDEN: &"warden",
+	PlaceMode.STONEGUARD: &"stoneguard",
+	PlaceMode.VENOMBLADE: &"venomblade",
+	PlaceMode.INQUISITOR: &"inquisitor",
+	PlaceMode.NECROMANCER: &"necromancer",
 }
 
 # --- 网格 ---

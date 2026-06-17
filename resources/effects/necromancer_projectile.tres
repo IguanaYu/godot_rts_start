@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ProjectileData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/projectile_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+speed = 420.0
+arc_height = 35.0
+effects = []
+shot_count = 1
+spread_angle = 0.0

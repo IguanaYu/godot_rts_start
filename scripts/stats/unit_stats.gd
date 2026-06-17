@@ -64,6 +64,35 @@ extends Resource
 @export var cone_range: float = 0.0        # 锥形攻击范围，0=无锥形
 @export var cone_angle: float = 0.0        # 锥形角度（度），如 90=前方90度扇形
 
+# --- 隐身 ---
+@export var stealth_on_idle: bool = false   # 非战斗时自动隐身（半透明+不被索敌）
+@export var stealth_reveal_duration: float = 2.0  # 攻击/受击后显形秒数
+
+# --- 闪现 ---
+@export var blink_range: float = 0.0        # 闪现距离，0=无闪现
+@export var blink_cooldown: float = 5.0     # 闪现冷却秒数
+
+# --- 护盾光环（Warden） ---
+@export var shield_amount: int = 0          # 每次加的护盾值，0=无护盾光环
+@export var shield_aura_range: float = 0.0  # 护盾光环范围
+@export var shield_cooldown: float = 3.0    # 加盾周期（秒）
+
+# --- 嘲讽（Stoneguard） ---
+@export var taunt_range: float = 0.0        # 嘲讽范围，0=无嘲讽
+@export var taunt_duration: float = 0.0     # 嘲讽持续秒数
+@export var taunt_pulse_interval: float = 1.0  # 嘲讽脉冲间隔（秒）
+
+# --- 驱散（Inquisitor） ---
+@export var dispel_on_hit: bool = false     # 命中时清除目标所有增益 buff
+@export var cleanse_on_heal: bool = false   # 治疗友军时清除其 debuff（中毒/减速）
+
+# --- 召唤（Necromancer） ---
+@export var summon_max: int = 0             # 同时可维持的召唤物上限，0=不召唤
+@export var summon_stats_id: StringName = &""  # 召唤物使用的 stats_id
+@export var summon_type: int = 0            # 召唤物 UnitType
+@export var summon_chance: float = 1.0      # 每次攻击命中时召唤概率（0-1）
+@export var summon_lifetime: float = 15.0   # 召唤物存活秒数（0=永久）
+
 # --- 升级系统 ---
 @export var upgrade_hp_per_level: int = 10       # 每级 HP 增加
 @export var upgrade_damage_per_level: int = 2    # 每级攻击力增加
