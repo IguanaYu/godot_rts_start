@@ -1681,6 +1681,10 @@ func _setup_skills() -> void:
 		comp.name = "Skill_" + skill_res.skill_name
 		add_child(comp)
 		skill_components.append(comp)
+	# Phase 3：按 priority 降序排列（高优先级先获得蓝量分配）
+	skill_components.sort_custom(func(a: Node, b: Node):
+		return a.skill_resource.priority > b.skill_resource.priority
+	)
 
 
 ## 根据技能名创建对应的 SkillComponent（preload + duck typing）
