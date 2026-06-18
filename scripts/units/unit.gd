@@ -9,7 +9,6 @@ enum CommandSource { NONE, PLAYER, AUTO }
 
 const HealEffectScene := preload("res://scenes/effects/heal_effect.tscn")
 const UnitEffectsShader := preload("res://shaders/unit_effects.gdshader")
-const SkillFloatingText := preload("res://scripts/effects/skill_floating_text.gd")
 
 var _effects_material: ShaderMaterial = null
 
@@ -787,7 +786,7 @@ func _heal_process(delta: float) -> void:
 	else:
 		if attack_timer <= 0.0:
 			heal_target.heal(stat_set.get_int(StatSetClass.HEAL_AMOUNT))
-			SkillFloatingText.show(self, "治疗")
+			_show_skill_text("治疗")
 			# 审判官：治疗时清除友军 debuff
 			if stats_data and stats_data.cleanse_on_heal and heal_target.has_method("cleanse_debuffs"):
 				heal_target.cleanse_debuffs()
@@ -1064,7 +1063,7 @@ func _do_chain_attack(damage: int) -> void:
 		best.take_damage(current_dmg, self)
 		# 只在首次命中时显示文字（后续弹跳不重复显示）
 		if i == 0:
-			SkillFloatingText.show(self, "连锁闪电")
+			_show_skill_text("连锁闪电")
 		chained.append(best)
 		chain_points.append(best.global_position)
 		current_target = best
@@ -1093,7 +1092,7 @@ func _do_cone_attack(damage: int) -> void:
 			u.take_damage(damage, self)
 	# 锥形视觉特效
 	_show_cone_effect(aim_dir, stats_data.cone_range, stats_data.cone_angle)
-	SkillFloatingText.show(self, "锥形攻击")
+	_show_skill_text("锥形攻击")
 
 ## 连锁闪电特效：在世界空间画短暂折线
 func _show_chain_effect(points: Array) -> void:
@@ -1569,7 +1568,7 @@ func dispel_target(target_node) -> void:
 		return
 	if target_node.has_method("clear_buffs"):
 		target_node.clear_buffs()
-	SkillFloatingText.show(self, "驱散")
+	_show_skill_text("驱散")
 
 
 ## 清除自身所有增益 buff（被驱散时调用）
@@ -1627,7 +1626,7 @@ func _try_summon_minion() -> void:
 				if is_instance_valid(minion) and not minion.is_dead():
 					minion.die()
 			)
-		SkillFloatingText.show(self, "召唤")
+		_show_skill_text("召唤")
 
 	spawner.spawn_projectile(null, global_position, target_pos, null, self, 0, SummonProjectileScene, callback)
 
@@ -1722,7 +1721,7 @@ func _try_blink_toward(target_node) -> void:
 		return
 	global_position += dir * stats_data.blink_range
 	_blink_timer = stats_data.blink_cooldown
-	SkillFloatingText.show(self, "闪现")
+	_show_skill_text("闪现")
 
 
 # ============== 护盾 / 嘲讽（2B Step5） ==============
@@ -1754,7 +1753,7 @@ func _taunt_process(delta: float) -> void:
 		if u.has_method("is_stealthed") and u.is_stealthed():
 			continue
 		u.force_attack_target(self, dur)
-		SkillFloatingText.show(self, "嘲讽")
+		_show_skill_text("嘲讽")
 
 
 ## 被嘲讽时由嘲讽者调用：强制锁定目标并进入 ATTACK 状态
@@ -1853,10 +1852,19 @@ func _convert_unit(target: Unit) -> void:
 	target.attack_command_source = CommandSource.NONE
 	if target.state == UnitState.ATTACK:
 		target.state = UnitState.GUARD
-	SkillFloatingText.show(self, "劝化")
+	_show_skill_text("劝化")
 
 
 
+
+## 在单位头顶显示技能名浮动文字（绿色）
+func _show_skill_text(skill_name: String) -> void:
+	if not is_instance_valid(self):
+		return
+	var ft := Node2D.new()
+	ft.set_script(load("res://scripts/effects/floating_text.gd"))
+	get_tree().current_scene.add_child(ft)
+	ft.setup(skill_name, Color(0.3, 1.0, 0.3), global_position + Vector2(0, -40))
 
 ## 光环扫描：每 0.5s 对范围内友军施加光环效果
 func _aura_process(delta: float) -> void:
