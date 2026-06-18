@@ -62,7 +62,9 @@ func _physics_process(_delta: float) -> void:
 		return
 
 	# 如果单位正在被外部指令移动中，AI 不干预
-	if unit.state == Unit.UnitState.MOVE:
+	# 例外：AI 追击时 unit.move_to() 会设 MOVE 状态，此时必须继续跑 AI 逻辑
+	# 否则 leash 检查永远不执行，敌人会追到天涯海角
+	if unit.state == Unit.UnitState.MOVE and ai_state == AIState.PATROL:
 		return
 
 	match ai_state:
