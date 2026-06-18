@@ -103,3 +103,9 @@ extends Resource
 @export var upgrade_speed_per_level: float = 5.0 # 每级速度增加
 @export var max_upgrade_level: int = 3           # 最大升级等级
 @export var upgrade_cost: int = 200              # 每次升级费用
+
+# --- 技能系统（Phase 2） ---
+@export var skills: Array[Resource] = []        # SkillResource 数组
+@export var mana_type: int = 0                  # 0=NONE, 1=MAGE, 2=ARCHER
+@export var max_mana: float = 0.0               # 最大蓝量
+@export var mana_regen: float = 0.0             # 每秒回蓝

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="SkillResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/skills/skill_resource.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+skill_name = "召唤"
+skill_id = &"summon"
+category = 0
+delivery_type = 1
+target_type = 3
+trigger_condition = 0
+cooldown = 0.0
+mana_cost = 5.0
+cast_range = 0.0
+trigger_interval = 1.0
+priority = 20
+effect_scene = null
+projectile_data = null

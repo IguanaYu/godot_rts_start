@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="UnitStats" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/stats/unit_stats.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/skills/heal.tres" id="skill_1"]
 
 [resource]
 script = ExtResource("1")
@@ -24,3 +25,7 @@ upgrade_damage_per_level = 0
 upgrade_speed_per_level = 3.0
 max_upgrade_level = 3
 upgrade_cost = 200
+skills = [ExtResource("skill_1")]
+mana_type = 1
+max_mana = 80.0
+mana_regen = 3.0

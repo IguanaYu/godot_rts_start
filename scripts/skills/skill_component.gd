@@ -1,0 +1,200 @@
+extends Node
+## 技能运行时组件基类（无 class_name，通过 preload + duck typing 使用）
+##
+## 子类 override _apply_effect() 实现具体技能效果。
+## 需要每帧逻辑的子类 override _skill_process(delta)。
+
+var skill_resource: Resource
+var cooldown_timer: float = 0.0
+var trigger_timer: float = 0.0
+var _target = null
+
+
+func _ready() -> void:
+	if skill_resource == null:
+		push_error("SkillComponent has no skill_resource")
+		return
+
+
+## 能否激活（检查冷却+蓝量）
+func can_activate() -> bool:
+	if cooldown_timer > 0.0:
+		return false
+	if skill_resource.mana_cost > 0.0:
+		var u = get_parent()
+		if u and "mana" in u and u.mana < skill_resource.mana_cost:
+			return false
+	return true
+
+
+## 寻找目标（按 target_type 选择）
+func find_target():
+	match skill_resource.target_type:
+		0:  # ENEMY_NEAREST
+			return _find_nearest_enemy()
+		1:  # ALLY_NEAREST_WOUNDED
+			return _find_nearest_wounded_ally()
+		2:  # SELF
+			return get_parent()
+		3:  # CURRENT_ATTACK_TARGET
+			var u = get_parent()
+			return u.attack_target if u and "attack_target" in u else null
+	return null
+
+
+## 释放技能
+func activate(target) -> void:
+	if not can_activate():
+		return
+	if target == null or not is_instance_valid(target):
+		return
+
+	# 扣蓝
+	var u = get_parent()
+	if u and "mana" in u and skill_resource.mana_cost > 0.0:
+		u.mana = max(0.0, u.mana - skill_resource.mana_cost)
+
+	# 设冷却
+	cooldown_timer = skill_resource.cooldown
+
+	# 按交付方式执行
+	match skill_resource.delivery_type:
+		0:  # PROJECTILE
+			_deliver_projectile(target)
+		1:  # INSTANT_SELF
+			_apply_effect(u, u)
+		2:  # INSTANT_RANGE
+			_apply_effect(u, target)
+
+	# 浮动文字
+	_show_skill_text(skill_resource.skill_name)
+
+
+## 每帧处理（由 unit.gd 的 _physics_process 调用）
+func _skill_process(delta: float) -> void:
+	# 冷却递减
+	if cooldown_timer > 0.0:
+		cooldown_timer = max(0.0, cooldown_timer - delta)
+
+	# PERIODIC_SCAN 技能：按 trigger_interval 扫描触发
+	if skill_resource and skill_resource.trigger_condition == 1:  # PERIODIC_SCAN
+		trigger_timer += delta
+		if trigger_timer >= skill_resource.trigger_interval:
+			trigger_timer = 0.0
+			if can_activate():
+				var t = find_target()
+				if t != null:
+					activate(t)
+
+
+## 弹道交付
+func _deliver_projectile(target) -> void:
+	var u = get_parent()
+	if u == null:
+		return
+	var tree = u.get_tree()
+	if tree == null:
+		return
+	var spawner = tree.current_scene.get("spawner_module")
+	if spawner == null:
+		return
+
+	var target_pos = target.global_position if target.has_method("get_global_position") else u.global_position
+	var captured_target = target
+	var callback = func():
+		if not is_instance_valid(u):
+			return
+		var final_target = captured_target
+		if is_instance_valid(captured_target) and (not "is_dead" in captured_target or not captured_target.is_dead()):
+			final_target = captured_target
+		_apply_effect(u, final_target)
+
+	spawner.spawn_projectile(
+		skill_resource.projectile_data,
+		u.global_position,
+		target_pos,
+		null, u, 0,
+		skill_resource.effect_scene,
+		callback
+	)
+
+
+## 实际效果（由子类重写）
+func _apply_effect(caster, target) -> void:
+	pass
+
+
+## 显示技能名浮动文字
+func _show_skill_text(name: String) -> void:
+	var u = get_parent()
+	if not is_instance_valid(u):
+		return
+	var ft = Node2D.new()
+	ft.set_script(preload("res://scripts/effects/floating_text.gd"))
+	u.get_tree().current_scene.add_child(ft)
+	ft.setup(name, Color(0.3, 1.0, 0.3), u.global_position + Vector2(0, -40))
+
+
+# ============== 通用目标搜索工具 ==============
+
+func _find_nearest_enemy():
+	var u = get_parent()
+	if u == null:
+		return null
+	var best = null
+	var best_dist = skill_resource.cast_range if skill_resource.cast_range > 0.0 else 99999.0
+	for unit in _get_all_units():
+		if not is_instance_valid(unit) or unit == u:
+			continue
+		if "is_dead" in unit and unit.is_dead():
+			continue
+		if "team" in unit and unit.team == u.team:
+			continue
+		if "is_stealthed" in unit and unit.has_method("is_stealthed") and unit.is_stealthed():
+			continue
+		var d = u.global_position.distance_to(unit.global_position)
+		if d <= best_dist:
+			best_dist = d
+			best = unit
+	return best
+
+
+func _find_nearest_wounded_ally():
+	var u = get_parent()
+	if u == null:
+		return null
+	var best = null
+	var best_dist = skill_resource.cast_range if skill_resource.cast_range > 0.0 else 99999.0
+	for unit in _get_all_units():
+		if not is_instance_valid(unit) or unit == u:
+			continue
+		if "is_dead" in unit and unit.is_dead():
+			continue
+		if "team" in unit and unit.team != u.team:
+			continue
+		if "health" in unit and unit.health and unit.health.hp >= unit.health.max_hp:
+			continue
+		var d = u.global_position.distance_to(unit.global_position)
+		if d <= best_dist:
+			best_dist = d
+			best = unit
+	return best
+
+
+func _get_all_units():
+	var tree = get_tree()
+	if tree == null:
+		return []
+	var u = get_parent()
+	if u == null:
+		return []
+	var scene = tree.current_scene
+	if scene and scene.has_method("get_all_units"):
+		return scene.get_all_units()
+	# fallback
+	var result: Array = []
+	var groups: Array = ["player_units", "enemy_units"]
+	for g in groups:
+		for node in tree.get_nodes_in_group(g):
+			result.append(node)
+	return result

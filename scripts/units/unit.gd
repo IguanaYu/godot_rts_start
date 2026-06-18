@@ -2,7 +2,7 @@
 extends CharacterBody2D
 class_name Unit
 
-enum UnitState { GUARD, HOLD_POSITION, MOVE, ATTACK_MOVE, ATTACK, HEAL, DEAD, PATROL }
+enum UnitState { GUARD, HOLD_POSITION, MOVE, ATTACK_MOVE, ATTACK, DEAD, PATROL }
 enum UnitType { SOLDIER, ARCHER, LANCER, MONK }
 enum Team { PLAYER, ENEMY }
 enum CommandSource { NONE, PLAYER, AUTO }
@@ -72,10 +72,6 @@ var attack_move_target: Vector2 = Vector2.ZERO
 var attack_move_scan_range: float = 300.0
 var hold_position_mode: bool = false
 
-# Monk 治疗系统
-var heal_target = null
-var _is_healing: bool = false
-
 # Buff 系统
 var buffs: Dictionary = {}  # {buff_type: {"value": float, "expire": float}}
 var _slow_factor: float = 1.0
@@ -88,29 +84,24 @@ var aura_type: String = ""
 var aura_value: float = 0.0
 var _aura_scan_timer: float = 0.0
 
-# 隐身 / 闪现（2B Step4）
-var _stealth_reveal_timer: float = 0.0  # 显形倒计时（>0 时被敌方看见）
-var _blink_timer: float = 0.0           # 闪现冷却
-
-# 护盾 / 嘲讽（2B Step5）
-var _shield_hp: int = 0                 # 当前护盾值
-var _shield_aura_timer: float = 0.0     # 护盾光环脉冲计时
-var _taunt_pulse_timer: float = 0.0     # 嘲讽脉冲计时
-var _taunt_expire_timer: float = 0.0    # 被嘲讽的剩余时间（>0 时强制攻击嘲讽者）
+# 技能系统（Phase 2）
+var skill_components: Array = []        # SkillComponent 子节点列表
+var mana: float = 0.0                   # 当前蓝量
+var max_mana: float = 0.0               # 最大蓝量
+var mana_regen: float = 0.0             # 每秒回蓝
+var mana_type: int = 0                  # 0=NONE, 1=MAGE, 2=ARCHER
+# 护盾值（保留在 unit.gd 供 take_damage 使用）
+var _shield_hp: int = 0
+var _taunt_expire_timer: float = 0.0    # 被嘲讽的剩余时间
 
 # 中毒 DoT（2B Step6）
 var _poison_dps: float = 0.0            # 当前中毒每秒伤害
 var _poison_timer: float = 0.0          # 中毒剩余时间
 var _poison_accumulator: float = 0.0    # DoT 累积器
 
-# 召唤系统（2B Step7）
+# 召唤系统（Phase 2 — 仍保留在 unit.gd 供 summon_effect 调用）
 var _summoned_minions: Array = []       # 当前存活的召唤物引用
 var _summon_lifetime: float = 0.0       # 召唤物存活秒数（0=永久），从 stats 同步
-
-# 劝化系统（2B Step8）
-var _convert_target: Node = null        # 当前劝化引导目标
-var _convert_channel: float = 0.0       # 已引导秒数
-var _convert_aura_timer: float = 0.0    # 劝化目标扫描计时
 
 # 命令队列 (Shift)
 const CommandQueue = preload("res://scripts/systems/command_queue.gd")
@@ -247,6 +238,13 @@ func _setup_stats() -> void:
 	aura_range = stats_data.aura_range
 	aura_type = stats_data.aura_type
 	aura_value = stats_data.aura_value
+	# Phase 2：蓝量初始化
+	max_mana = stats_data.max_mana
+	mana_regen = stats_data.mana_regen
+	mana_type = stats_data.mana_type
+	mana = max_mana
+	# Phase 2：技能组件初始化
+	_setup_skills()
 
 func _setup_editor_visuals() -> void:
 	_setup_texture()
@@ -265,6 +263,12 @@ func _setup_visuals() -> void:
 	# HPBar 跟随上移
 	hp_bar.offset_top += sprite_lift + sprite_offset_y
 	hp_bar.offset_bottom += sprite_lift + sprite_offset_y
+	# ManaBar 跟随上移（如果存在）
+	if has_node("ManaBar"):
+		var mb := $ManaBar as ProgressBar
+		mb.offset_top += sprite_lift + sprite_offset_y
+		mb.offset_bottom += sprite_lift + sprite_offset_y
+		mb.visible = max_mana > 0.0
 
 	# 创建头顶状态指示小圆点
 	_state_indicator = ColorRect.new()
@@ -422,11 +426,7 @@ func _update_animation() -> void:
 				target_anim = "attack"
 		else:
 			target_anim = "idle"
-	elif state == UnitState.HEAL:
-		if velocity.length_squared() > 1.0:
-			target_anim = "run"
-		else:
-			target_anim = "idle"
+	# UnitState.HEAL removed in Phase 2
 	_set_anim(target_anim)
 
 
@@ -515,15 +515,12 @@ func _physics_process(delta: float) -> void:
 			_poison_accumulator -= dot_dmg
 	# 光环
 	_aura_process(delta)
-	# 嘲讽（Stoneguard）：周期性强制周围敌人攻击自己
-	_taunt_process(delta)
-	# 劝化（Enchanter）：引导转化敌方单位
-	_convert_process(delta)
-	# 隐身/显形管理
-	_stealth_process(delta)
-	# 闪现冷却递减
-	if _blink_timer > 0.0:
-		_blink_timer = max(0.0, _blink_timer - delta)
+	# Phase 2：技能组件处理（冷却递减 + PERIODIC_SCAN/PASSIVE 触发）
+	for comp in skill_components:
+		comp._skill_process(delta)
+	# Phase 2：蓝量恢复
+	if max_mana > 0.0 and mana < max_mana and mana_regen > 0.0:
+		mana = min(max_mana, mana + mana_regen * delta)
 	# 被嘲讽状态倒计时
 	if _taunt_expire_timer > 0.0:
 		_taunt_expire_timer = max(0.0, _taunt_expire_timer - delta)
@@ -558,8 +555,6 @@ func _physics_process(delta: float) -> void:
 			_attack_move_process(delta)
 		UnitState.ATTACK:
 			_attack_process(delta)
-		UnitState.HEAL:
-			_heal_process(delta)
 
 	# 减速效果
 	if _slow_timer > 0.0:
@@ -632,10 +627,13 @@ func _attack_process(delta: float) -> void:
 
 	var dist := _get_dist_to_target(attack_target)
 	if dist > get_effective_attack_range():
-		# 闪现者：距目标过远时瞬移到目标附近
-		if stats_data and stats_data.blink_range > 0.0 and _blink_timer <= 0.0:
-			_try_blink_toward(attack_target)
-			dist = _get_dist_to_target(attack_target)
+		# Phase 2：ON_CHASE 技能触发（闪现）
+		for comp in skill_components:
+			if comp.skill_resource and comp.skill_resource.trigger_condition == 2:  # ON_CHASE
+				if comp.has_method("try_blink"):
+					if comp.try_blink(attack_target):
+						dist = _get_dist_to_target(attack_target)
+						break
 		if hold_position_mode:
 			attack_target = null
 			attack_command_source = CommandSource.NONE
@@ -681,28 +679,7 @@ func _attack_process(delta: float) -> void:
 			attack_timer = stat_set.get_value(StatSetClass.ATTACK_COOLDOWN)
 
 func _attack_move_process(delta: float) -> void:
-	# Monk 攻击移动时优先治疗
-	if unit_type == UnitType.MONK:
-		if _should_scan_this_frame():
-			_cached_scan_wounded = _find_wounded_ally(stat_set.get_value(StatSetClass.HEAL_SCAN_RANGE))
-		if _is_target_alive(_cached_scan_wounded):
-			heal_target = _cached_scan_wounded
-			nav_agent.target_position = _cached_scan_wounded.global_position
-			state = UnitState.HEAL
-			return
-		if nav_agent.is_navigation_finished():
-			state = UnitState.GUARD
-			return
-		var next_pos := nav_agent.get_next_path_position()
-		var base_dir := global_position.direction_to(next_pos)
-		if _is_blocked:
-			velocity = _get_steered_direction(base_dir, delta) * stat_set.get_value(StatSetClass.MOVE_SPEED)
-		else:
-			_lateral_dir = Vector2.ZERO
-			_lateral_timer = 0.0
-			velocity = base_dir * stat_set.get_value(StatSetClass.MOVE_SPEED)
-		return
-
+	# Phase 2：Monk 治疗由技能组件处理，不再特殊分支
 	if _should_scan_this_frame():
 		_cached_scan_enemy = _find_closest_enemy_in_range(attack_move_scan_range)
 	var closest = _cached_scan_enemy if _is_target_alive(_cached_scan_enemy) else null
@@ -752,47 +729,6 @@ func _find_closest_enemy_in_range(scan_range: float):
 			closest = b
 			closest_dist = d
 	return closest
-
-func _find_wounded_ally(scan_range: float):
-	var closest = null
-	var closest_dist: float = INF
-	for u in UnitGrid.query_neighbors(global_position, scan_range):
-		if u == self:
-			continue
-		if u.is_dead():
-			continue
-		if u.team != team:
-			continue
-		if u.health.hp >= u.health.max_hp:
-			continue
-		var d := global_position.distance_to(u.global_position)
-		if d < scan_range and d < closest_dist:
-			closest = u
-			closest_dist = d
-	return closest
-
-func _heal_process(delta: float) -> void:
-	if heal_target == null or heal_target.is_dead() or heal_target.health.hp >= heal_target.health.max_hp:
-		heal_target = null
-		_is_healing = false
-		state = UnitState.GUARD
-		return
-	var dist := global_position.distance_to(heal_target.global_position)
-	if dist > stat_set.get_value(StatSetClass.HEAL_RANGE):
-		nav_agent.target_position = heal_target.global_position
-		if not nav_agent.is_navigation_finished():
-			var next_pos := nav_agent.get_next_path_position()
-			velocity = global_position.direction_to(next_pos) * stat_set.get_value(StatSetClass.MOVE_SPEED)
-	else:
-		if attack_timer <= 0.0:
-			heal_target.heal(stat_set.get_int(StatSetClass.HEAL_AMOUNT))
-			_show_skill_text("治疗")
-			# 审判官：治疗时清除友军 debuff
-			if stats_data and stats_data.cleanse_on_heal and heal_target.has_method("cleanse_debuffs"):
-				heal_target.cleanse_debuffs()
-			attack_timer = stat_set.get_value(StatSetClass.HEAL_COOLDOWN)
-			_is_healing = true
-
 func _patrol_process(delta: float) -> void:
 	if patrol_points.is_empty():
 		state = UnitState.GUARD
@@ -818,16 +754,7 @@ func _patrol_process(delta: float) -> void:
 		velocity = global_position.direction_to(next_pos) * stat_set.get_value(StatSetClass.MOVE_SPEED)
 
 func _guard_process(delta: float) -> void:
-	# Monk 优先寻找受伤友军
-	if unit_type == UnitType.MONK:
-		if _should_scan_this_frame():
-			_cached_scan_wounded = _find_wounded_ally(stat_set.get_value(StatSetClass.HEAL_SCAN_RANGE))
-		if _is_target_alive(_cached_scan_wounded):
-			heal_target = _cached_scan_wounded
-			nav_agent.target_position = _cached_scan_wounded.global_position
-			state = UnitState.HEAL
-		return
-
+	# Phase 2：Monk 治疗由技能组件处理，不再特殊分支
 	if _should_scan_this_frame():
 		_cached_scan_enemy = _find_closest_enemy_in_range(attack_move_scan_range)
 	var closest = _cached_scan_enemy if _is_target_alive(_cached_scan_enemy) else null
@@ -1026,8 +953,11 @@ func _perform_attack() -> void:
 			if stats_data and stats_data.knockback_force > 0.0 and attack_target is Unit and is_instance_valid(attack_target):
 				var dir = (attack_target.global_position - global_position).normalized()
 				attack_target.global_position += dir * stats_data.knockback_force
-		# 召唤：攻击命中后概率召唤一个 minion（Necromancer）
-		_try_summon_minion()
+		# Phase 2：ON_ATTACK 技能触发（召唤、驱散）
+		for comp in skill_components:
+			if comp.skill_resource and comp.skill_resource.trigger_condition == 0:  # ON_ATTACK
+				if comp.has_method("try_summon"):
+					comp.try_summon()
 
 ## 连锁闪电：主目标受伤后弹射到附近 N 个敌人
 func _do_chain_attack(damage: int) -> void:
@@ -1273,8 +1203,6 @@ func command_patrol(points: Array) -> void:
 	attack_target = null
 	attack_command_source = CommandSource.NONE
 	hold_position_mode = false
-	heal_target = null
-	_is_healing = false
 	if not patrol_points.is_empty():
 		nav_agent.target_position = patrol_points[0]
 		state = UnitState.PATROL
@@ -1285,8 +1213,6 @@ func command_follow(target) -> void:
 	attack_target = null
 	attack_command_source = CommandSource.NONE
 	hold_position_mode = false
-	heal_target = null
-	_is_healing = false
 	state = UnitState.MOVE
 
 func queue_move(target_pos: Vector2) -> void:
@@ -1330,8 +1256,6 @@ func move_to(target_pos: Vector2) -> void:
 	attack_command_source = CommandSource.NONE
 	attack_move_target = Vector2.ZERO
 	hold_position_mode = false
-	heal_target = null
-	_is_healing = false
 	nav_agent.target_position = target_pos
 	state = UnitState.MOVE
 
@@ -1341,8 +1265,6 @@ func attack_move_to(target_pos: Vector2) -> void:
 	attack_command_source = CommandSource.NONE
 	attack_move_target = target_pos
 	hold_position_mode = false
-	heal_target = null
-	_is_healing = false
 	nav_agent.target_position = target_pos
 	state = UnitState.ATTACK_MOVE
 
@@ -1353,8 +1275,6 @@ func stop() -> void:
 	attack_move_target = Vector2.ZERO
 	_is_attacking = false
 	hold_position_mode = false
-	heal_target = null
-	_is_healing = false
 	velocity = Vector2.ZERO
 	nav_agent.target_position = global_position
 	state = UnitState.GUARD
@@ -1366,8 +1286,6 @@ func hold_position() -> void:
 	attack_move_target = Vector2.ZERO
 	_is_attacking = false
 	hold_position_mode = true
-	heal_target = null
-	_is_healing = false
 	velocity = Vector2.ZERO
 	nav_agent.target_position = global_position
 	state = UnitState.HOLD_POSITION
@@ -1377,8 +1295,6 @@ func command_attack(target) -> void:
 	attack_target = target
 	attack_command_source = CommandSource.PLAYER
 	hold_position_mode = false
-	heal_target = null
-	_is_healing = false
 	nav_agent.target_position = _get_building_nav_target(target)
 	state = UnitState.ATTACK
 
@@ -1418,25 +1334,11 @@ func _update_state_indicator() -> void:
 			_state_indicator.color = Color("#F44336")
 		UnitState.MOVE, UnitState.ATTACK_MOVE:
 			_state_indicator.color = Color("#2196F3")
-		UnitState.HEAL:
-			_state_indicator.color = Color("#4CAF50")
 
 func _update_aggro_line() -> void:
 	if state == UnitState.DEAD or aggro_line == null:
 		return
-	# 治疗目标也显示连线
-	if heal_target != null and is_instance_valid(heal_target) and not heal_target.is_dead():
-		if _aggro_target != heal_target:
-			_aggro_target = heal_target
-			aggro_line.visible = true
-			aggro_line.clear_points()
-			aggro_line.add_point(Vector2.ZERO)
-			aggro_line.add_point(heal_target.global_position - global_position)
-		else:
-			# 同一目标，只更新终点（避免 clear+add 触发完全重画）
-			var pts := PackedVector2Array([Vector2.ZERO, heal_target.global_position - global_position])
-			aggro_line.points = pts
-	elif attack_target != null and not attack_target.is_dead():
+	if attack_target != null and not attack_target.is_dead():
 		if _aggro_target != attack_target:
 			_aggro_target = attack_target
 			aggro_line.visible = true
@@ -1682,81 +1584,36 @@ func _on_ally_died(_ally: Unit) -> void:
 
 # ============== 隐身 / 闪现（2B Step4） ==============
 
-## 当前是否处于隐身状态（敌方 AI 索敌时跳过）
+## 当前是否处于隐身状态（委托给 StealthSkill 组件）
 func is_stealthed() -> bool:
 	if stats_data == null or not stats_data.stealth_on_idle:
 		return false
-	return _stealth_reveal_timer <= 0.0
+	for comp in skill_components:
+		if comp.has_method("is_stealthed"):
+			return comp.is_stealthed()
+	return false
 
 
-## 每帧更新隐身视觉效果 + 显形倒计时
-func _stealth_process(delta: float) -> void:
-	if stats_data == null or not stats_data.stealth_on_idle:
-		return
-	if _stealth_reveal_timer > 0.0:
-		_stealth_reveal_timer = max(0.0, _stealth_reveal_timer - delta)
-	# 视觉：隐身时半透明，显形时不透明
-	if is_stealthed():
-		modulate.a = 0.35
-	else:
-		modulate.a = 1.0
-
-
-## 受击 / 攻击后短暂显形
+## 受击/攻击后短暂显形（委托给 StealthSkill 组件）
 func _reveal_stealth_temporarily() -> void:
 	if stats_data != null and stats_data.stealth_on_idle:
-		_stealth_reveal_timer = stats_data.stealth_reveal_duration
+		for comp in skill_components:
+			if comp.has_method("reveal_temporarily"):
+				comp.reveal_temporarily()
+				return
 
-
-## 闪现者：朝目标方向瞬移一段距离（只在追击距离过远且冷却完成时触发）
-func _try_blink_toward(target_node) -> void:
-	if stats_data == null or stats_data.blink_range <= 0.0:
-		return
-	if _blink_timer > 0.0:
-		return
-	if target_node == null or not is_instance_valid(target_node):
-		return
-	var dir := global_position.direction_to(target_node.global_position)
-	if dir.length_squared() < 0.001:
-		return
-	global_position += dir * stats_data.blink_range
-	_blink_timer = stats_data.blink_cooldown
-	_show_skill_text("闪现")
-
-
-# ============== 护盾 / 嘲讽（2B Step5） ==============
 
 ## 当前护盾值（供 UI / 调试用）
 func get_shield_hp() -> int:
 	return _shield_hp
 
 
+## 设置护盾值（供 ShieldSkill 调用）
+func set_shield_hp(amount: int) -> void:
+	_shield_hp = max(_shield_hp, amount)
+
+
 ## 嘲讽者：周期性扫描范围内敌方单位，强制其攻击自己
-func _taunt_process(delta: float) -> void:
-	if stats_data == null or stats_data.taunt_range <= 0.0:
-		return
-	_taunt_pulse_timer += delta
-	if _taunt_pulse_timer < stats_data.taunt_pulse_interval:
-		return
-	_taunt_pulse_timer = 0.0
-	var dur := stats_data.taunt_duration
-	for u in UnitGrid.query_neighbors(global_position, stats_data.taunt_range):
-		if not is_instance_valid(u) or u.is_dead():
-			continue
-		if u.team == team:
-			continue
-		if not (u is Unit):
-			continue
-		if global_position.distance_to(u.global_position) > stats_data.taunt_range:
-			continue
-		# 隐身单位不参与嘲讽（避免暴露位置）
-		if u.has_method("is_stealthed") and u.is_stealthed():
-			continue
-		u.force_attack_target(self, dur)
-		_show_skill_text("嘲讽")
-
-
-## 被嘲讽时由嘲讽者调用：强制锁定目标并进入 ATTACK 状态
 func force_attack_target(target_node, duration_sec: float) -> void:
 	if target_node == null or not is_instance_valid(target_node):
 		return
@@ -1777,53 +1634,6 @@ func is_taunted() -> bool:
 # ============== 劝化（2B Step8） ==============
 
 ## 劝化引导：锁定射程内一个敌方单位，持续引导 convert_channel_time 秒后转化
-func _convert_process(delta: float) -> void:
-	if stats_data == null or stats_data.convert_channel_time <= 0.0:
-		return
-	# 无引导目标时扫描
-	if _convert_target == null or not is_instance_valid(_convert_target) or _convert_target.is_dead():
-		_convert_target = null
-		_convert_channel = 0.0
-		_convert_aura_timer += delta
-		if _convert_aura_timer >= 0.5:
-			_convert_aura_timer = 0.0
-			_convert_target = _find_convert_target()
-		return
-	# 目标超出射程则放弃
-	var dist := global_position.distance_to(_convert_target.global_position)
-	if dist > stats_data.convert_range:
-		_convert_target = null
-		_convert_channel = 0.0
-		return
-	# 引导累加
-	_convert_channel += delta
-	if _convert_channel >= stats_data.convert_channel_time:
-		_convert_unit(_convert_target)
-		_convert_target = null
-		_convert_channel = 0.0
-
-
-## 查找劝化目标：射程内最近的有效敌方单位（非隐身）
-func _find_convert_target() -> Node:
-	var best = null
-	var best_dist: float = stats_data.convert_range
-	for u in UnitGrid.query_neighbors(global_position, stats_data.convert_range):
-		if not is_instance_valid(u) or u.is_dead():
-			continue
-		if u.team == team:
-			continue
-		if not (u is Unit):
-			continue
-		if u.has_method("is_stealthed") and u.is_stealthed():
-			continue
-		var d := global_position.distance_to(u.global_position)
-		if d <= best_dist:
-			best_dist = d
-			best = u
-	return best
-
-
-## 执行转化：切换阵营、分组、父节点
 func _convert_unit(target: Unit) -> void:
 	if target == null or not is_instance_valid(target) or target.is_dead():
 		return
@@ -1855,6 +1665,44 @@ func _convert_unit(target: Unit) -> void:
 	_show_skill_text("劝化")
 
 
+
+
+## Phase 2：根据 stats_data.skills 创建 SkillComponent 子节点
+func _setup_skills() -> void:
+	if stats_data == null or stats_data.skills.is_empty():
+		return
+	for skill_res in stats_data.skills:
+		if skill_res == null:
+			continue
+		var comp: Node = _create_skill_component(skill_res)
+		if comp == null:
+			continue
+		comp.skill_resource = skill_res
+		comp.name = "Skill_" + skill_res.skill_name
+		add_child(comp)
+		skill_components.append(comp)
+
+
+## 根据技能名创建对应的 SkillComponent（preload + duck typing）
+func _create_skill_component(skill_res) -> Node:
+	match skill_res.skill_name:
+		"嘲讽":
+			return load("res://scripts/skills/skill_effects/taunt_effect.gd").new()
+		"闪现":
+			return load("res://scripts/skills/skill_effects/blink_effect.gd").new()
+		"隐身":
+			return load("res://scripts/skills/skill_effects/stealth_effect.gd").new()
+		"劝化":
+			return load("res://scripts/skills/skill_effects/convert_effect.gd").new()
+		"护盾":
+			return load("res://scripts/skills/skill_effects/shield_effect.gd").new()
+		"召唤":
+			return load("res://scripts/skills/skill_effects/summon_effect.gd").new()
+		"治疗":
+			return load("res://scripts/skills/skill_effects/heal_effect.gd").new()
+		"驱散":
+			return load("res://scripts/skills/skill_effects/dispel_effect.gd").new()
+	return null
 
 
 ## 在单位头顶显示技能名浮动文字（绿色）

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="SkillResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/skills/skill_resource.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+skill_name = "护盾"
+skill_id = &"shield"
+category = 0
+delivery_type = 2
+target_type = 1
+trigger_condition = 1
+cooldown = 3.0
+mana_cost = 10.0
+cast_range = 140.0
+trigger_interval = 3.0
+priority = 40
+effect_scene = null
+projectile_data = null

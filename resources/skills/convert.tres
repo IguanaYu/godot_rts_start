@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="SkillResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/skills/skill_resource.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+skill_name = "劝化"
+skill_id = &"convert"
+category = 0
+delivery_type = 1
+target_type = 0
+trigger_condition = 1
+cooldown = 0.0
+mana_cost = 30.0
+cast_range = 180.0
+trigger_interval = 0.5
+priority = 60
+effect_scene = null
+projectile_data = null
