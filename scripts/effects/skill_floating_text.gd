@@ -1,7 +1,8 @@
-extends Node2D
+extends RefCounted
 
 ## 在单位头顶显示技能名浮动文字（绿色）
 ## 复用 floating_text.gd 的弹出→上飘→淡出动画
+## 用 RefCounted 而非 Node2D，避免与 CanvasItem.show() 冲突
 static func show(unit: Node2D, skill_name: String) -> void:
 	if not is_instance_valid(unit):
 		return
