@@ -8,6 +8,7 @@ const SCAN_THROTTLE_FRAMES: int = 6
 
 @export var patrol_radius: float = 150.0
 @export var vision_range: float = 250.0
+@export var leash_range: float = 400.0      # 最大追击距离（距 patrol_center）
 
 var ai_state: AIState = AIState.PATROL
 var patrol_center: Vector2
@@ -78,6 +79,16 @@ func _physics_process(_delta: float) -> void:
 		_scan_for_targets()
 
 
+func _is_beyond_leash() -> bool:
+	return unit.global_position.distance_squared_to(patrol_center) > leash_range * leash_range
+
+
+func _break_leash() -> void:
+	chase_target = null
+	ai_state = AIState.PATROL
+	_pick_new_patrol_point()
+
+
 func _patrol_process(delta: float) -> void:
 	if patrol_wait_timer > 0:
 		patrol_wait_timer -= delta
@@ -102,6 +113,11 @@ func _chase_process() -> void:
 			_pick_new_patrol_point()
 		return
 
+	# Phase 3：超出追击距离则放弃
+	if _is_beyond_leash():
+		_break_leash()
+		return
+
 	var dist: float = unit.global_position.distance_to(chase_target.global_position)
 	var atk_range: float = unit.get_effective_attack_range()
 	if dist <= atk_range:
@@ -121,6 +137,12 @@ func _attack_process() -> void:
 			ai_state = AIState.PATROL
 			_pick_new_patrol_point()
 		return
+
+	# Phase 3：超出追击距离则放弃攻击
+	if _is_beyond_leash():
+		_break_leash()
+		return
+
 	var current_target = unit.attack_target
 	if current_target != chase_target:
 		unit.command_attack(chase_target)
