@@ -501,7 +501,7 @@ func _scale_group_counts(groups: Array) -> Array:
 
 const ArrowScene := preload("res://scenes/effects/arrow.tscn")
 
-func spawn_projectile(data: Resource, from: Vector2, to: Vector2, target, shooter, damage: int, custom_arrow: PackedScene = null) -> void:
+func spawn_projectile(data: Resource, from: Vector2, to: Vector2, target, shooter, damage: int, custom_arrow: PackedScene = null, hit_callback: Callable = Callable()) -> void:
 	var count := 1
 	var spread := 0.0
 	if data:
@@ -523,6 +523,7 @@ func spawn_projectile(data: Resource, from: Vector2, to: Vector2, target, shoote
 		arrow.hit_damage = damage
 		arrow.shooter = shooter
 		arrow.data = data
+		arrow.hit_callback = hit_callback
 
 # --- 特效 ---
 

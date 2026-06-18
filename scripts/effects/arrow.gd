@@ -11,6 +11,7 @@ var hit_target = null
 var hit_damage: int = 0
 var shooter = null
 var data: Resource = null
+var hit_callback: Callable = Callable()
 
 @onready var sprite: ColorRect = $ArrowSprite
 
@@ -45,6 +46,12 @@ func _process(delta: float) -> void:
 
 
 func _on_hit() -> void:
+	# 如果有自定义回调，优先执行回调并跳过默认伤害逻辑
+	if hit_callback.is_valid():
+		hit_callback.call()
+		queue_free()
+		return
+
 	if hit_target != null and is_instance_valid(hit_target) and not hit_target.is_dead():
 		hit_target.take_damage(hit_damage, shooter)
 	# 驱散：射击者命中时清除目标增益（Inquisitor）

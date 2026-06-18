@@ -9,6 +9,7 @@ enum CommandSource { NONE, PLAYER, AUTO }
 
 const HealEffectScene := preload("res://scenes/effects/heal_effect.tscn")
 const UnitEffectsShader := preload("res://shaders/unit_effects.gdshader")
+const SkillFloatingText := preload("res://scripts/effects/skill_floating_text.gd")
 
 var _effects_material: ShaderMaterial = null
 
@@ -786,6 +787,7 @@ func _heal_process(delta: float) -> void:
 	else:
 		if attack_timer <= 0.0:
 			heal_target.heal(stat_set.get_int(StatSetClass.HEAL_AMOUNT))
+			SkillFloatingText.show(self, "治疗")
 			# 审判官：治疗时清除友军 debuff
 			if stats_data and stats_data.cleanse_on_heal and heal_target.has_method("cleanse_debuffs"):
 				heal_target.cleanse_debuffs()
@@ -1060,6 +1062,9 @@ func _do_chain_attack(damage: int) -> void:
 		if best == null:
 			break
 		best.take_damage(current_dmg, self)
+		# 只在首次命中时显示文字（后续弹跳不重复显示）
+		if i == 0:
+			SkillFloatingText.show(self, "连锁闪电")
 		chained.append(best)
 		chain_points.append(best.global_position)
 		current_target = best
@@ -1088,6 +1093,7 @@ func _do_cone_attack(damage: int) -> void:
 			u.take_damage(damage, self)
 	# 锥形视觉特效
 	_show_cone_effect(aim_dir, stats_data.cone_range, stats_data.cone_angle)
+	SkillFloatingText.show(self, "锥形攻击")
 
 ## 连锁闪电特效：在世界空间画短暂折线
 func _show_chain_effect(points: Array) -> void:
@@ -1563,6 +1569,7 @@ func dispel_target(target_node) -> void:
 		return
 	if target_node.has_method("clear_buffs"):
 		target_node.clear_buffs()
+	SkillFloatingText.show(self, "驱散")
 
 
 ## 清除自身所有增益 buff（被驱散时调用）
@@ -1579,36 +1586,50 @@ func clear_buffs() -> void:
 func _try_summon_minion() -> void:
 	if stats_data == null or stats_data.summon_max <= 0:
 		return
-	# 概率检查
 	if randf() > stats_data.summon_chance:
 		return
-	# 清理已失效的 minion 引用
 	_prune_dead_minions()
-	# 达到上限则不召唤
 	if _summoned_minions.size() >= stats_data.summon_max:
 		return
-	# 通过 spawner 生成召唤物
+
 	var spawner = get_tree().current_scene.get("spawner_module")
 	if spawner == null:
 		return
-	var minion = spawner.spawn_summon(
-		stats_data.summon_type,
-		stats_data.summon_stats_id,
-		global_position,
-		team
-	)
-	if minion == null:
-		return
-	minion.connect("died", Callable(self, "_on_minion_died"))
-	_summoned_minions.append(minion)
-	# 有限寿命：到时自动死亡
-	if stats_data.summon_lifetime > 0.0:
-		var tw := create_tween()
-		tw.tween_interval(stats_data.summon_lifetime)
-		tw.tween_callback(func():
-			if is_instance_valid(minion) and not minion.is_dead():
-				minion.die()
+
+	# 确定弹道目标位置：当前攻击目标的位置
+	var target_pos: Vector2
+	if attack_target and is_instance_valid(attack_target):
+		target_pos = attack_target.global_position
+	else:
+		target_pos = global_position + Vector2(randf_range(-60, 60), randf_range(-60, 60))
+
+	const SummonProjectileScene := preload("res://scenes/effects/summon_projectile.tscn")
+	var callback := func():
+		if not is_instance_valid(self):
+			return
+		var final_pos := target_pos
+		if attack_target and is_instance_valid(attack_target) and not attack_target.is_dead():
+			final_pos = attack_target.global_position
+		var minion = spawner.spawn_summon(
+			stats_data.summon_type,
+			stats_data.summon_stats_id,
+			final_pos,
+			team
 		)
+		if minion == null:
+			return
+		minion.connect("died", Callable(self, "_on_minion_died"))
+		_summoned_minions.append(minion)
+		if stats_data.summon_lifetime > 0.0:
+			var tw := create_tween()
+			tw.tween_interval(stats_data.summon_lifetime)
+			tw.tween_callback(func():
+				if is_instance_valid(minion) and not minion.is_dead():
+					minion.die()
+			)
+		SkillFloatingText.show(self, "召唤")
+
+	spawner.spawn_projectile(null, global_position, target_pos, null, self, 0, SummonProjectileScene, callback)
 
 
 ## 清理已死亡/失效的 minion 引用
@@ -1701,6 +1722,7 @@ func _try_blink_toward(target_node) -> void:
 		return
 	global_position += dir * stats_data.blink_range
 	_blink_timer = stats_data.blink_cooldown
+	SkillFloatingText.show(self, "闪现")
 
 
 # ============== 护盾 / 嘲讽（2B Step5） ==============
@@ -1732,6 +1754,7 @@ func _taunt_process(delta: float) -> void:
 		if u.has_method("is_stealthed") and u.is_stealthed():
 			continue
 		u.force_attack_target(self, dur)
+		SkillFloatingText.show(self, "嘲讽")
 
 
 ## 被嘲讽时由嘲讽者调用：强制锁定目标并进入 ATTACK 状态
@@ -1830,7 +1853,7 @@ func _convert_unit(target: Unit) -> void:
 	target.attack_command_source = CommandSource.NONE
 	if target.state == UnitState.ATTACK:
 		target.state = UnitState.GUARD
-
+	SkillFloatingText.show(self, "劝化")
 
 
 
