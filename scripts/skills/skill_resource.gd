@@ -14,6 +14,8 @@ enum TargetType {
 	ALLY_NEAREST_WOUNDED,
 	SELF,
 	CURRENT_ATTACK_TARGET,
+	ENEMY_ATTACKING_ALLY,  # 正在攻击友军的敌人（嘲讽用）
+	ALLY_LOWEST_HP,        # 血量百分比最低的友军（治疗/护盾用）
 }
 
 ## 触发条件

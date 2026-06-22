@@ -39,6 +39,10 @@ func find_target():
 		3:  # CURRENT_ATTACK_TARGET
 			var u = get_parent()
 			return u.attack_target if u and "attack_target" in u else null
+		4:  # ENEMY_ATTACKING_ALLY
+			return _find_enemy_attacking_ally()
+		5:  # ALLY_LOWEST_HP
+			return _find_nearest_wounded_ally()
 	return null
 
 
@@ -137,13 +141,22 @@ func _show_skill_text(name: String) -> void:
 
 # ============== 通用目标搜索工具 ==============
 
+## 用 UnitGrid 查询附近单位（替代全量遍历）
+func _query_nearby_units(search_range: float) -> Array:
+	var u = get_parent()
+	if u == null:
+		return []
+	return UnitGrid.query_neighbors(u.global_position, search_range)
+
+
 func _find_nearest_enemy():
 	var u = get_parent()
 	if u == null:
 		return null
+	var search_range = skill_resource.cast_range if skill_resource.cast_range > 0.0 else 300.0
 	var best = null
-	var best_dist = skill_resource.cast_range if skill_resource.cast_range > 0.0 else 99999.0
-	for unit in _get_all_units():
+	var best_dist = search_range
+	for unit in _query_nearby_units(search_range):
 		if not is_instance_valid(unit) or unit == u:
 			continue
 		if "is_dead" in unit and unit.is_dead():
@@ -159,42 +172,65 @@ func _find_nearest_enemy():
 	return best
 
 
+## 找受伤友军：优先血量百分比最低的，同百分比选最近的
 func _find_nearest_wounded_ally():
 	var u = get_parent()
 	if u == null:
 		return null
+	var search_range = skill_resource.cast_range if skill_resource.cast_range > 0.0 else 300.0
 	var best = null
-	var best_dist = skill_resource.cast_range if skill_resource.cast_range > 0.0 else 99999.0
-	for unit in _get_all_units():
+	var best_hp_ratio = 1.0
+	var best_dist = search_range
+	for unit in _query_nearby_units(search_range):
 		if not is_instance_valid(unit) or unit == u:
 			continue
 		if "is_dead" in unit and unit.is_dead():
 			continue
 		if "team" in unit and unit.team != u.team:
 			continue
-		if "health" in unit and unit.health and unit.health.hp >= unit.health.max_hp:
+		if "health" not in unit or unit.health == null:
 			continue
+		if unit.health.hp >= unit.health.max_hp:
+			continue
+		var hp_ratio = float(unit.health.hp) / float(unit.health.max_hp)
 		var d = u.global_position.distance_to(unit.global_position)
-		if d <= best_dist:
+		# 血量百分比更低，或同百分比但更近
+		if hp_ratio < best_hp_ratio or (hp_ratio == best_hp_ratio and d < best_dist):
+			best_hp_ratio = hp_ratio
 			best_dist = d
 			best = unit
 	return best
 
 
-func _get_all_units():
-	var tree = get_tree()
-	if tree == null:
-		return []
+## 找正在攻击友军的敌人（嘲讽优先目标）
+func _find_enemy_attacking_ally():
 	var u = get_parent()
 	if u == null:
-		return []
-	var scene = tree.current_scene
-	if scene and scene.has_method("get_all_units"):
-		return scene.get_all_units()
-	# fallback
-	var result: Array = []
-	var groups: Array = ["player_units", "enemy_units"]
-	for g in groups:
-		for node in tree.get_nodes_in_group(g):
-			result.append(node)
-	return result
+		return null
+	var search_range = skill_resource.cast_range if skill_resource.cast_range > 0.0 else 300.0
+	var best = null
+	var best_dist = search_range
+	for unit in _query_nearby_units(search_range):
+		if not is_instance_valid(unit) or unit == u:
+			continue
+		if "is_dead" in unit and unit.is_dead():
+			continue
+		if "team" in unit and unit.team == u.team:
+			continue
+		if "is_stealthed" in unit and unit.has_method("is_stealthed") and unit.is_stealthed():
+			continue
+		# 检查这个敌人是否正在攻击友军
+		if "attack_target" not in unit or unit.attack_target == null:
+			continue
+		if not is_instance_valid(unit.attack_target):
+			continue
+		if "team" in unit.attack_target and unit.attack_target.team != u.team:
+			continue  # 它在攻击敌人，不是友军
+		var d = u.global_position.distance_to(unit.global_position)
+		if d <= best_dist:
+			best_dist = d
+			best = unit
+	# 没找到正在攻击友军的敌人，fallback 到最近敌人
+	if best == null:
+		return _find_nearest_enemy()
+	return best
