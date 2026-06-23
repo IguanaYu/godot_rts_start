@@ -515,9 +515,11 @@ func _physics_process(delta: float) -> void:
 			_poison_accumulator -= dot_dmg
 	# 光环
 	_aura_process(delta)
-	# Phase 2：技能组件处理（冷却递减 + PERIODIC_SCAN/PASSIVE 触发）
+	# Phase 2：技能组件冷却递减 + 自定义 process
 	for comp in skill_components:
 		comp._skill_process(delta)
+	# Phase 3：统一 AI 决策循环（PERIODIC_SCAN 技能按优先级触发）
+	_skill_ai_tick(delta)
 	# Phase 2：蓝量恢复
 	if max_mana > 0.0 and mana < max_mana and mana_regen > 0.0:
 		mana = min(max_mana, mana + mana_regen * delta)
@@ -605,6 +607,35 @@ func _move_process() -> void:
 	var next_pos := nav_agent.get_next_path_position()
 	var direction := global_position.direction_to(next_pos)
 	velocity = direction * stat_set.get_value(StatSetClass.MOVE_SPEED)
+
+
+## Phase 3：统一技能 AI 决策循环
+## 按 priority 降序遍历 PERIODIC_SCAN 技能，第一个能激活的就触发
+## 跳过 uses_custom_process 的组件（heal/convert 有自己持续逻辑）
+## 同帧只触发一个技能，避免低优先级技能抢蓝
+func _skill_ai_tick(delta: float) -> void:
+	for comp in skill_components:
+		if comp.skill_resource == null:
+			continue
+		if comp.skill_resource.trigger_condition != 1:  # PERIODIC_SCAN
+			continue
+		if comp.uses_custom_process:
+			continue
+		# trigger_interval 节流
+		comp.trigger_timer += delta
+		if comp.trigger_timer < comp.skill_resource.trigger_interval:
+			continue
+		comp.trigger_timer = 0.0
+		# 检查能否激活 + 有无目标
+		if not comp.can_activate():
+			continue
+		var target = comp.find_target()
+		if target == null:
+			continue
+		# 触发！本轮不再检查其他技能
+		comp.activate(target)
+		break
+
 
 func _attack_process(delta: float) -> void:
 	# Monk不攻击，站着不动

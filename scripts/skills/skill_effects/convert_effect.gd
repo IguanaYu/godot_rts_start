@@ -7,6 +7,11 @@ var _channel_time: float = 0.0
 var _scan_timer: float = 0.0
 
 
+func _ready() -> void:
+	super._ready()
+	uses_custom_process = true
+
+
 func _skill_process(delta: float) -> void:
 	# 冷却递减
 	if cooldown_timer > 0.0:

@@ -7,6 +7,7 @@ extends Node
 var skill_resource: Resource
 var cooldown_timer: float = 0.0
 var trigger_timer: float = 0.0
+var uses_custom_process: bool = false  # 子类覆盖了 _skill_process 时设为 true
 var _target = null
 
 
@@ -75,20 +76,10 @@ func activate(target) -> void:
 
 
 ## 每帧处理（由 unit.gd 的 _physics_process 调用）
+## 只做冷却递减，PERIODIC_SCAN 触发由 unit.gd _skill_ai_tick() 统一处理
 func _skill_process(delta: float) -> void:
-	# 冷却递减
 	if cooldown_timer > 0.0:
 		cooldown_timer = max(0.0, cooldown_timer - delta)
-
-	# PERIODIC_SCAN 技能：按 trigger_interval 扫描触发
-	if skill_resource and skill_resource.trigger_condition == 1:  # PERIODIC_SCAN
-		trigger_timer += delta
-		if trigger_timer >= skill_resource.trigger_interval:
-			trigger_timer = 0.0
-			if can_activate():
-				var t = find_target()
-				if t != null:
-					activate(t)
 
 
 ## 弹道交付
