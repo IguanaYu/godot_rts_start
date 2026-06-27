@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/stats/unit_stats.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"lancer_pike"
+unit_type = 2
+category = "commander_variant"
+parent_id = &"lancer"
+max_hp = 220
+attack_damage = 14
+attack_range = 60.0
+attack_cooldown = 1.2
+move_speed = 85.0
+damage_reduction = 0.15
+heal_range = 0.0
+heal_amount = 0
+heal_cooldown = 0.0
+heal_scan_range = 0.0
+sprite_scale = 1.1
+cost_override = 170
+tint = Color(0.75, 0.75, 0.85, 1)
+upgrade_hp_per_level = 18
+upgrade_damage_per_level = 2
+upgrade_speed_per_level = 2.0
+max_upgrade_level = 3
+upgrade_cost = 280

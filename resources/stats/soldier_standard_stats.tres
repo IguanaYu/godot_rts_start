@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/stats/unit_stats.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"soldier_standard"
+unit_type = 0
+category = "commander_variant"
+parent_id = &"soldier"
+max_hp = 100
+attack_damage = 10
+attack_range = 40.0
+attack_cooldown = 0.8
+move_speed = 120.0
+damage_reduction = 0.0
+heal_range = 0.0
+heal_amount = 0
+heal_cooldown = 0.0
+heal_scan_range = 0.0
+sprite_scale = 1.0
+cost_override = -1
+tint = Color(1, 1, 1, 1)
+upgrade_hp_per_level = 10
+upgrade_damage_per_level = 2
+upgrade_speed_per_level = 5.0
+max_upgrade_level = 3
+upgrade_cost = 200

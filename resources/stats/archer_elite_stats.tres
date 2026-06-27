@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/stats/unit_stats.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"archer_elite"
+unit_type = 1
+category = "commander_variant"
+parent_id = &"archer"
+max_hp = 90
+attack_damage = 22
+attack_range = 230.0
+attack_cooldown = 1.0
+move_speed = 170.0
+damage_reduction = 0.0
+heal_range = 0.0
+heal_amount = 0
+heal_cooldown = 0.0
+heal_scan_range = 0.0
+sprite_scale = 1.15
+cost_override = 160
+tint = Color(1, 0.85, 0.7, 1)
+upgrade_hp_per_level = 10
+upgrade_damage_per_level = 4
+upgrade_speed_per_level = 5.0
+max_upgrade_level = 3
+upgrade_cost = 300

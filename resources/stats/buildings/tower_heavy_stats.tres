@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="BuildingStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/stats/building_stats.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"tower_heavy"
+building_type = 1
+category = "commander_variant"
+parent_id = &"tower"
+max_hp = 250
+grid_size = Vector2i(1, 1)
+cost_override = 130
+build_time = 6.0
+attack_damage = 20.0
+attack_range = 170.0
+attack_cooldown = 2.0
+production_cooldown = 0.0
+production_variant_ids = []
+is_gold_producer = false
+aura_range = 0.0
+aura_type = ""
+aura_value = 0.0
+tint = Color(0.85, 0.95, 1, 1)
+sprite_scale = 1.15

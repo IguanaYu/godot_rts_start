@@ -329,3 +329,36 @@ ENTITY_VENOMBLADE,Venomblade,毒刃刺客,ヴェノムブレード
 ENTITY_INQUISITOR,Inquisitor,审判官,インクイジター
 ENTITY_NECROMANCER,Necromancer,死灵法师,ネクロマンサー
 ENTITY_ENCHANTER,Enchanter,劝化者,エンチャンター
+COMMANDER_SELECT_TITLE,Select Commander,选择指挥官,指揮官を選択
+BTN_BACK,Back,返回,戻る
+BTN_CONFIRM,Confirm,确认,確認
+COMMANDER_DETAIL_VARIANTS,Unit variants: %d / Building variants: %d,单位变体：%d / 建筑变体：%d,ユニットバリアント：%d / 建築バリアント：%d
+COMMANDER_DETAIL_SKILLS,Active skills: %d,面板技能：%d,アクティブスキル：%d
+COMMANDER_DETAIL_PASSIVES,Passive skills: %d,被动技能：%d,パッシブスキル：%d
+COMMANDER_DETAIL_GOLD_BONUS,Starting gold bonus: +%d,起始金币加成：+%d,開始ゴールドボーナス：+%d
+COMMANDER_TEST_ALL,Test (All-purpose),测试（全能）,テスト（万能）
+COMMANDER_BALANCED,Balanced,Balanced（中规中矩）,バランス
+COMMANDER_TEST_ALL_DESC,All unit/building variants available. Suicide explosion on unit death.,所有单位/建筑变体可用。单位死亡时自爆。,全ユニット/建築バリアント利用可能。ユニット死亡時に自爆。
+COMMANDER_BALANCED_DESC,Defensive playstyle with economy bonus and fortify skill.,防御玩法，经济加成 + 强化技能。,防御プレイスタイル、経済ボーナスと強化スキル。
+COMMANDER_BALANCED_NAME,Balanced,Balanced（中规中矩）,バランス
+COMMANDER_TEST_ALL_NAME,Test (All-purpose),测试（全能）,テスト（万能）
+SKILL_FORTIFY,Fortify,强化,要塞化
+SKILL_FORTIFY_DESC,All friendly buildings: +50% max HP +30% attack for 12s,所有友方建筑：+50%最大生命 +30%攻击力 持续12秒,全味方建物：最大HP+50% 攻撃力+30% 12秒間
+CMD_TAB_LOADOUT,Troop Loadout,部队编制,部隊編成
+CMD_TAB_BUILDINGS,Building Variants,建筑变体,建築バリアント
+CMD_TAB_SKILLS,Panel Skills,面板技能,パネルスキル
+CMD_TAB_PASSIVES,Passive Skills,被动技能,パッシブスキル
+CMD_TAB_UNITS,Units,单位,ユニット
+CMD_TAB_BUILDINGS_LOADOUT,Buildings,建筑,建物
+CMD_COUNT_LOADOUT,Loadout: %d / %d,编制：%d / %d,編成：%d / %d
+CMD_COUNT_SKILLS,Skills: %d / %d,技能：%d / %d,スキル：%d / %d
+CMD_COUNT_PASSIVES,Passives: %d / %d,被动：%d / %d,パッシブ：%d / %d
+CMD_BUILDING_HP,HP: %d,生命：%d,HP：%d
+CMD_SKILL_COST,Cost: %d,消耗：%d,コスト：%d
+CMD_SKILL_COOLDOWN,Cooldown: %ds,冷却：%d秒,クールダウン：%d秒
+PASSIVE_SUICIDE_EXPLOSION,Suicide Explosion,自爆,自爆
+PASSIVE_SUICIDE_EXPLOSION_DESC,Units explode on death dealing 150% attack damage to nearby enemies.,单位死亡时自爆对周围敌方造成150%攻击伤害。,ユニット死亡時に自爆し、周囲の敵に攻撃力150%のダメージを与える。
+PASSIVE_ECONOMY_BOOST,Economy Boost,经济加成,経済ブースト
+PASSIVE_ECONOMY_BOOST_DESC,Buildings generate extra gold over time.,建筑持续产出额外金币。,建物が時間経過で追加ゴールドを産出する。
+PASSIVE_COMBAT_AURA_BUFF,Combat Aura,战斗光环,戦闘オーラ
+PASSIVE_COMBAT_AURA_BUFF_DESC,New units near friendly buildings gain temporary attack bonus.,新单位在友方建筑光环内获得临时攻击加成。,新しいユニットが味方建物のオーラ内で一時的な攻撃ボーナスを得る。

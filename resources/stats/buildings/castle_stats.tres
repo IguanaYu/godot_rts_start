@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="BuildingStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/stats/building_stats.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"castle"
+building_type = 2
+category = "normal"
+parent_id = &""
+max_hp = 500
+grid_size = Vector2i(3, 3)
+cost_override = -1
+build_time = 5.0
+attack_damage = 0.0
+attack_range = 0.0
+attack_cooldown = 1.5
+production_cooldown = 10.0
+production_variant_ids = []
+is_gold_producer = true
+aura_range = 200.0
+aura_type = "defense"
+aura_value = 0.1
+tint = Color(1, 1, 1, 1)
+sprite_scale = 1.0

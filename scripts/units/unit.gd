@@ -221,6 +221,9 @@ func _setup_stats() -> void:
 	if stats_data.sprite_scale != 1.0:
 		sprite_scale_x *= stats_data.sprite_scale
 		sprite_scale_y *= stats_data.sprite_scale
+	# 应用指挥官变体 tint（WHITE = 不变）
+	if body_sprite and stats_data.tint != Color.WHITE:
+		body_sprite.modulate = stats_data.tint
 	# 应用变体修饰器（通过 add_modifier 改实际属性）
 	if variant_hp_bonus != 0:
 		stat_set.add_modifier("variant", StatSetClass.MAX_HP, float(variant_hp_bonus))

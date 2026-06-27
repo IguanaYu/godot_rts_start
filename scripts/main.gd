@@ -165,6 +165,16 @@ func _run_init_steps() -> void:
 	# Step 7: 指挥官技能系统（依赖 spawner）
 	LoadRouter.report_init_progress(0.70)
 	const CSD := preload("res://scripts/commander_skill/commander_skill_data.gd")
+	# 注入玩家指挥官 profile（决定可用单位/建筑变体 + 面板技能 + 起始金币）
+	var selected_id: StringName = CommanderChoice.player_selected_id
+	if selected_id == &"" or not CommanderRegistry.has_profile(selected_id):
+		selected_id = &"balanced"
+	var commander_profile = CommanderRegistry.get_profile(selected_id)
+	CommanderContext.set_player_profile(commander_profile)
+	PassiveSkillManager.set_profile(commander_profile)
+	if commander_profile != null and commander_profile.starting_gold_bonus > 0:
+		gold += commander_profile.starting_gold_bonus
+		ui_module.update_gold(gold) if ui_module.has_method("update_gold") else null
 	commander_skill_manager = Node.new()
 	commander_skill_manager.set_script(load("res://scripts/commander_skill/commander_skill_manager.gd"))
 	add_child(commander_skill_manager)
@@ -329,6 +339,9 @@ func _on_game_ended(result: String) -> void:
 	if sm:
 		var diff_level := DifficultyClass.load_from_config()
 		sm.end_game_session(result, diff_level)
+		# 首次胜利解锁 test_all 指挥官
+		if result == "victory" and not sm.is_commander_unlocked("test_all"):
+			sm.unlock_commander("test_all")
 
 	if result == "victory":
 		_show_victory_panel(sm)
@@ -869,6 +882,12 @@ func _on_unit_died(unit: CharacterBody2D) -> void:
 	for child in get_children():
 		if child is CapturePoint:
 			child.notify_kill()
+	# 被动技能触发：单位死亡
+	var died_alliance: int = unit.get("alliance_id") if "alliance_id" in unit else -1
+	PassiveSkillManager.emit_trigger(
+		preload("res://scripts/commander/passive_triggers.gd").UNIT_DIED,
+		{"unit": unit, "alliance_id": died_alliance}
+	)
 
 # --- 每帧更新 ---
 

@@ -69,6 +69,11 @@ var production_cooldown: float = 0.0
 var production_unit_type: int = -1  # UnitType 枚举值，-1 = 不生产
 @export var disable_production: bool = false
 
+# 指挥官变体：当前建筑对应的 BuildingStats 资源（运行时由 _apply_commander_building_stats 设置）
+var building_stats = null
+# 产兵轮转索引：变体建筑在多个 stats_id 间轮转生产
+var _production_variant_index: int = 0
+
 # 光环系统
 var aura_range: float = 0.0
 var aura_type: String = ""
@@ -173,8 +178,42 @@ func _setup_stats() -> void:
 			aura_range = 150.0
 			aura_type = "range_bonus"
 			aura_value = 25.0
-	if health and not Engine.is_editor_hint():
+	# 指挥官变体覆盖（运行时按 owner_id 查 CommanderProfile.building_variants）
+	_apply_commander_building_stats(max_hp)
+
+
+func _apply_commander_building_stats(fallback_max_hp: int) -> void:
+	if Engine.is_editor_hint():
+		# 编辑器模式：CommanderContext 未就绪，用 fallback 硬编码值
+		if health and fallback_max_hp > 0:
+			health.setup(fallback_max_hp, hp_bar, team)
+		return
+	var sid: StringName = CommanderContext.get_default_building_stats_id(int(building_type), alliance_id)
+	if sid == &"" or not BuildingStatsRegistry.has_id(sid):
+		if health and fallback_max_hp > 0:
+			health.setup(fallback_max_hp, hp_bar, team)
+		return
+	var stats = BuildingStatsRegistry.get_by_id(sid)
+	building_stats = stats
+	# 应用变体属性覆盖
+	var max_hp: int = stats.max_hp
+	grid_size = stats.grid_size
+	if stats.production_cooldown > 0.0:
+		production_cooldown = stats.production_cooldown
+	if stats.attack_damage > 0.0:
+		attack_damage = stats.attack_damage
+	if stats.attack_range > 0.0:
+		attack_range = stats.attack_range
+	if stats.attack_cooldown > 0.0:
+		attack_cooldown = stats.attack_cooldown
+	aura_range = stats.aura_range
+	aura_type = stats.aura_type
+	aura_value = stats.aura_value
+	if health:
 		health.setup(max_hp, hp_bar, team)
+	# 应用指挥官变体 tint（WHITE = 不变）
+	if body_sprite and stats.tint != Color.WHITE:
+		body_sprite.modulate = stats.tint
 
 func _setup_editor_visuals() -> void:
 	_setup_texture()
@@ -448,13 +487,31 @@ func _production_process(delta: float) -> void:
 			_spawn_produced_unit()
 
 func _spawn_produced_unit() -> void:
-	var scene_path: String = D.UNIT_SCENES.get(production_unit_type, "")
+	# 取当前轮转变体的 stats_id（按 alliance_id 查 CommanderContext）
+	var stats_id: StringName = &""
+	var variant_ids: Array = CommanderContext.get_unit_variant_ids_for_building(int(building_type), alliance_id)
+	if variant_ids.size() > 0:
+		stats_id = variant_ids[_production_variant_index % variant_ids.size()]
+		_production_variant_index = (_production_variant_index + 1) % variant_ids.size()
+	# 取 unit_type（按建筑类型派生，BARRACKS→SOLDIER, MONASTERY→MONK, ARCHERY→ARCHER）
+	var unit_type: int = production_unit_type
+	if unit_type < 0:
+		return
+	# 场景路由：变体 stats_id 优先，否则用基础 UNIT_SCENES
+	var scene_path: String = ""
+	if stats_id != &"":
+		scene_path = D.ENEMY_VARIANT_SCENES.get(stats_id, "")
+	if scene_path == "":
+		scene_path = D.UNIT_SCENES.get(unit_type, "")
 	if scene_path == "":
 		return
 	var unit_scene := load(scene_path)
 	if unit_scene == null:
 		return
 	var unit: CharacterBody2D = unit_scene.instantiate()
+	# 按 stats_id 替换 stats_data（指挥官变体复用基础兵种场景，靠 stats_data 区分属性）
+	if stats_id != &"" and UnitStatsRegistry.has_id(stats_id):
+		unit.set("stats_data", UnitStatsRegistry.get_by_id(stats_id))
 	# 继承建筑的所有势力字段（alliance_id setter 同步 team）
 	unit.set("alliance_id", alliance_id)
 	unit.set("owner_id", owner_id)

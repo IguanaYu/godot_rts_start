@@ -17,6 +17,8 @@ enum SkillId {
 	FORCE_FIELD,       # 力场屏障（无敌阻挡）
 	REPAIR_DRONE,      # 维修无人机（持续治疗）
 	SUPPLY_DROP,       # 补给箱（免费冷却换金币）
+	# --- balanced 独占 ---
+	FORTIFY,
 }
 
 enum CastType {
@@ -167,12 +169,26 @@ const SKILL_CONFIGS := {
 		"gold_bonus": 100,
 		"hotkey": KEY_L,
 	},
+	# --- balanced 独占 ---
+	SkillId.FORTIFY: {
+		"name": "SKILL_FORTIFY",
+		"description": "SKILL_FORTIFY_DESC",
+		"cost_type": CostType.ENERGY,
+		"cost": 35,
+		"cooldown": 60.0,
+		"cast_type": CastType.INSTANT,
+		"duration": 12.0,
+		"max_hp_bonus": 0.5,
+		"attack_bonus": 0.3,
+		"hotkey": KEY_G,
+	},
 }
 
 const ALL_SKILLS := [
 	SkillId.ORBITAL_STRIKE, SkillId.HEAL_FIELD, SkillId.SHIELD_WALL, SkillId.UNIT_DROP,
 	SkillId.NAPALM_STRIKE, SkillId.CLUSTER_BOMB, SkillId.SNIPER_MARK, SkillId.POISON_CLOUD,
 	SkillId.EMERGENCY_REPAIR, SkillId.FORCE_FIELD, SkillId.REPAIR_DRONE, SkillId.SUPPLY_DROP,
+	SkillId.FORTIFY,
 ]
 
 
@@ -190,4 +206,5 @@ const SKILL_ICONS_BY_ID := {
 	SkillId.FORCE_FIELD: "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_10.png",
 	SkillId.REPAIR_DRONE: "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_11.png",
 	SkillId.SUPPLY_DROP: "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_12.png",
+	SkillId.FORTIFY: "res://assets/Tiny Swords (Free Pack)/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_04.png",
 }

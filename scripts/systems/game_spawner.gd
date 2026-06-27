@@ -45,6 +45,9 @@ func create_unit(type: int, alliance_id: int, pos: Vector2, stats_id: StringName
 		scene_path = D.UNIT_SCENES.get(type, "res://scenes/units/soldier.tscn")
 	var unit_scene := load(scene_path)
 	var unit: CharacterBody2D = unit_scene.instantiate()
+	# 按 stats_id 替换 stats_data（指挥官变体复用基础兵种场景，靠 stats_data 区分属性）
+	if stats_id != &"" and UnitStatsRegistry.has_id(stats_id):
+		unit.set("stats_data", UnitStatsRegistry.get_by_id(stats_id))
 	unit.set("alliance_id", alliance_id)  # setter 会同步 team
 	unit.set("owner_id", owner_id)
 	unit.set("faction_color", color)
@@ -122,6 +125,10 @@ func _spawn_ai_alliances_from_config(map_config: Resource) -> void:
 			continue
 		var alliance_id: int = alliance.get("id", 1)
 		var alliance_color: int = alliance.get("color", Faction.ColorId.RED)
+		# 按关卡配置注入该 AI 联盟的指挥官 profile（决定可用变体）
+		var commander_id: StringName = StringName(alliance.get("commander_id", &""))
+		if commander_id != &"" and CommanderRegistry.has_profile(commander_id):
+			CommanderContext.set_profile_for_alliance(alliance_id, CommanderRegistry.get_profile(commander_id))
 		var slots: Array = alliance.get("slots", [])
 		for slot_idx in slots.size():
 			var slot: Dictionary = slots[slot_idx]

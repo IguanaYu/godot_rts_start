@@ -156,6 +156,55 @@ static func unit_drop(main_node: Node2D, spawner_module: Node, target_pos: Vecto
 			u.attack_move_to(main_node.global_rally_point)
 
 
+static func fortify(main_node: Node2D, spawner_module: Node, _target_pos: Vector2, config: Dictionary) -> void:
+	# 即时技能：所有玩家建筑瞬间回满血 + max_hp +50%（持续 12s 后恢复 max_hp）
+	var duration: float = config.get("duration", 12.0)
+	var max_hp_bonus: float = config.get("max_hp_bonus", 0.5)
+
+	var tree := main_node.get_tree()
+	var buffed: Array = []  # 记录 buff 状态用于到期恢复
+	for building in tree.get_nodes_in_group("player_buildings"):
+		if not is_instance_valid(building):
+			continue
+		if building.has_method("is_dead") and building.is_dead():
+			continue
+		if building.has_node("HealthComponent"):
+			var health = building.get_node("HealthComponent")
+			var old_max: int = health.max_hp
+			var new_max: int = int(old_max * (1.0 + max_hp_bonus))
+			health.max_hp = new_max
+			health.hp = new_max  # 回满
+			health._update_hp_bar()
+			buffed.append({"building": building, "old_max": old_max})
+
+	# 显示一个全屏特效：每个建筑周围画一个绿色光环
+	for entry in buffed:
+		var b = entry.building
+		if is_instance_valid(b):
+			_show_area_indicator(main_node, b.global_position, 80.0, Color(0.4, 0.9, 0.5, 0.4))
+
+	# 计时器：duration 秒后恢复 max_hp
+	var timer := Timer.new()
+	timer.wait_time = duration
+	timer.one_shot = true
+	timer.name = "FortifyTimer"
+	main_node.add_child(timer)
+	timer.timeout.connect(func():
+		for entry in buffed:
+			var b = entry.building
+			if is_instance_valid(b) and b.has_node("HealthComponent"):
+				var health = b.get_node("HealthComponent")
+				health.max_hp = entry.old_max
+				health.hp = mini(health.hp, health.max_hp)
+				health._update_hp_bar()
+		timer.queue_free()
+	)
+	timer.start()
+
+	# 浮动文字
+	spawner_module.show_floating_text("FORTIFY!", Color(0.4, 0.9, 0.5), main_node.get_global_mouse_position())
+
+
 static func _show_area_indicator(main_node: Node2D, pos: Vector2, radius: float, color: Color) -> void:
 	var indicator := Node2D.new()
 	indicator.position = pos

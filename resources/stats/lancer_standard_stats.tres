@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/stats/unit_stats.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"lancer_standard"
+unit_type = 2
+category = "commander_variant"
+parent_id = &"lancer"
+max_hp = 180
+attack_damage = 12
+attack_range = 45.0
+attack_cooldown = 1.0
+move_speed = 100.0
+damage_reduction = 0.0
+heal_range = 0.0
+heal_amount = 0
+heal_cooldown = 0.0
+heal_scan_range = 0.0
+sprite_scale = 1.0
+cost_override = -1
+tint = Color(1, 1, 1, 1)
+upgrade_hp_per_level = 15
+upgrade_damage_per_level = 2
+upgrade_speed_per_level = 3.0
+max_upgrade_level = 3
+upgrade_cost = 200

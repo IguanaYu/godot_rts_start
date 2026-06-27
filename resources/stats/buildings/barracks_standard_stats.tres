@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="BuildingStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/stats/building_stats.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"barracks_standard"
+building_type = 3
+category = "commander_variant"
+parent_id = &"barracks"
+max_hp = 250
+grid_size = Vector2i(2, 2)
+cost_override = -1
+build_time = 5.0
+attack_damage = 0.0
+attack_range = 0.0
+attack_cooldown = 1.5
+production_cooldown = 25.0
+production_variant_ids = []
+is_gold_producer = false
+aura_range = 150.0
+aura_type = "attack_melee"
+aura_value = 0.15
+tint = Color(1, 1, 1, 1)
+sprite_scale = 1.0

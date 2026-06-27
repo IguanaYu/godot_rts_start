@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="BuildingStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/stats/building_stats.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"archery_longbow_hall"
+building_type = 5
+category = "commander_variant"
+parent_id = &"archery"
+max_hp = 240
+grid_size = Vector2i(2, 2)
+cost_override = 150
+build_time = 6.0
+attack_damage = 0.0
+attack_range = 0.0
+attack_cooldown = 1.5
+production_cooldown = 32.0
+production_variant_ids = []
+is_gold_producer = false
+aura_range = 180.0
+aura_type = "range_bonus"
+aura_value = 35.0
+tint = Color(0.85, 0.95, 1, 1)
+sprite_scale = 1.1

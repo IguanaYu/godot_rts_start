@@ -60,6 +60,11 @@ func load_slot(slot: int) -> Dictionary:
 	for level_id in LEVELS:
 		if not data.get("levels", {}).has(level_id):
 			data["levels"][level_id] = _empty_level_entry()
+	# 旧档迁移：补全 unlocked_commanders / last_selected_commander
+	if not data.has("unlocked_commanders") or data["unlocked_commanders"] == null:
+		data["unlocked_commanders"] = ["balanced"]
+	if not data.has("last_selected_commander") or data["last_selected_commander"] == null:
+		data["last_selected_commander"] = "balanced"
 	return data
 
 
@@ -91,6 +96,8 @@ func _empty_slot() -> Dictionary:
 		"last_played": "",
 		"total_score": 0,
 		"levels": levels,
+		"unlocked_commanders": ["balanced"],
+		"last_selected_commander": "balanced",
 	}
 
 
@@ -240,3 +247,43 @@ func format_date(date_str: String) -> String:
 		return "--"
 	# ISO datetime "2026-06-03T14:30:00" -> "2026-06-03"
 	return date_str.split("T")[0]
+
+
+# === 指挥官解锁 ===
+
+func get_unlocked_commanders() -> Array:
+	if _current_slot < 0:
+		return ["balanced"]
+	var data := load_slot(_current_slot)
+	return data.get("unlocked_commanders", ["balanced"])
+
+
+func is_commander_unlocked(cmd_id: String) -> bool:
+	return cmd_id in get_unlocked_commanders()
+
+
+func unlock_commander(cmd_id: String) -> void:
+	if _current_slot < 0:
+		return
+	var data := load_slot(_current_slot)
+	var unlocked: Array = data.get("unlocked_commanders", ["balanced"])
+	if cmd_id in unlocked:
+		return
+	unlocked.append(cmd_id)
+	data["unlocked_commanders"] = unlocked
+	save_current_data(data)
+
+
+func get_last_selected_commander() -> String:
+	if _current_slot < 0:
+		return "balanced"
+	var data := load_slot(_current_slot)
+	return data.get("last_selected_commander", "balanced")
+
+
+func set_last_selected_commander(cmd_id: String) -> void:
+	if _current_slot < 0:
+		return
+	var data := load_slot(_current_slot)
+	data["last_selected_commander"] = cmd_id
+	save_current_data(data)

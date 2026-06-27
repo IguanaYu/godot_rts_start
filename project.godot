@@ -29,6 +29,12 @@ UnitGrid="*res://scripts/core/unit_spatial_grid.gd"
 NetworkStatus="*res://scripts/ui/network_status.gd"
 AllyDistressSignal="*res://scripts/systems_game/ally_distress_signal.gd"
 AllyCommander="*res://scripts/systems_game/ally_commander.gd"
+UnitStatsRegistry="*res://scripts/stats/unit_stats_registry.gd"
+BuildingStatsRegistry="*res://scripts/stats/building_stats_registry.gd"
+CommanderRegistry="*res://scripts/commander/commander_registry.gd"
+CommanderContext="*res://scripts/commander/commander_context.gd"
+PassiveSkillManager="*res://scripts/commander/passive_skill_manager.gd"
+CommanderChoice="*res://scripts/commander/commander_choice.gd"
 
 [display]
 
