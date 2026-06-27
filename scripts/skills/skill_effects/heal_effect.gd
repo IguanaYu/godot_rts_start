@@ -43,25 +43,24 @@ func _skill_process(delta: float) -> void:
 
 	var dist: float = u.global_position.distance_to(_heal_target.global_position)
 	if dist <= heal_range:
-		# 治疗
-		var heal_amt := 8
-		if u.stats_data and u.stats_data.heal_amount > 0:
-			heal_amt = u.stats_data.heal_amount
-		if _heal_target.has_method("heal"):
-			_heal_target.heal(heal_amt)
-		elif _heal_target.health:
-			_heal_target.health.heal(heal_amt)
-
-		# 审判官：治疗时清除友军 debuff
-		if u.stats_data and u.stats_data.cleanse_on_heal and _heal_target.has_method("cleanse_debuffs"):
-			_heal_target.cleanse_debuffs()
-
-		var heal_cd := 1.0
-		if u.stats_data and u.stats_data.heal_cooldown > 0.0:
-			heal_cd = u.stats_data.heal_cooldown
-		cooldown_timer = heal_cd
-		_show_skill_text(skill_resource.skill_name)
+		# 统一入口：扣蓝(mana_cost=0 不扣) + 设冷却(cooldown=1.0) + _apply_effect + 文字 + 信号
+		activate(_heal_target)
 	else:
 		# 朝目标移动（设置导航目标，但不改变 unit 状态）
 		if u.has_method("move_to") and u.nav_agent:
 			u.nav_agent.target_position = _heal_target.global_position
+
+
+func _apply_effect(caster, target) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	var heal_amt := 8
+	if caster.stats_data and caster.stats_data.heal_amount > 0:
+		heal_amt = caster.stats_data.heal_amount
+	if target.has_method("heal"):
+		target.heal(heal_amt)
+	elif target.health:
+		target.health.heal(heal_amt)
+	# 审判官：治疗时清除友军 debuff
+	if caster.stats_data and caster.stats_data.cleanse_on_heal and target.has_method("cleanse_debuffs"):
+		target.cleanse_debuffs()

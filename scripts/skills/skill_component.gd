@@ -10,6 +10,9 @@ var trigger_timer: float = 0.0
 var uses_custom_process: bool = false  # 子类覆盖了 _skill_process 时设为 true
 var _target = null
 
+## 技能激活时发出，供 unit 监听做跨切面逻辑（扣钱/扣血/日志等）
+signal skill_activated(target)
+
 
 func _ready() -> void:
 	if skill_resource == null:
@@ -61,6 +64,9 @@ func activate(target) -> void:
 
 	# 设冷却
 	cooldown_timer = skill_resource.cooldown
+
+	# 跨切面信号：供 unit 监听做扣钱/扣血/日志等
+	skill_activated.emit(target)
 
 	# 按交付方式执行
 	match skill_resource.delivery_type:

@@ -50,10 +50,12 @@ func _skill_process(delta: float) -> void:
 		channel_needed = u.stats_data.convert_channel_time
 	_channel_time += delta
 	if _channel_time >= channel_needed:
-		_do_convert(u, _channel_target)
+		var saved_target = _channel_target
+		_do_convert(u, saved_target)
+		# 统一入口：扣蓝(mana_cost=0 不扣) + 设冷却(cooldown=0) + 文字 + 信号
+		activate(saved_target)
 		_channel_target = null
 		_channel_time = 0.0
-		cooldown_timer = skill_resource.cooldown
 
 
 func _find_convert_target():
@@ -63,7 +65,7 @@ func _find_convert_target():
 	var best = null
 	var best_dist: float = 99999.0
 	var max_range: float = skill_resource.cast_range if skill_resource.cast_range > 0.0 else 200.0
-	for unit in _get_all_units():
+	for unit in _query_nearby_units(max_range):
 		if not is_instance_valid(unit) or unit == u:
 			continue
 		if "is_dead" in unit and unit.is_dead():
@@ -108,5 +110,4 @@ func _do_convert(caster, target) -> void:
 		target.attack_command_source = 0
 		if target.state == 4:  # ATTACK
 			target.state = 0  # GUARD
-
-	_show_skill_text(skill_resource.skill_name)
+	# 浮动文字由 activate() 统一处理

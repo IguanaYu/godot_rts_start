@@ -658,13 +658,13 @@ func _attack_process(delta: float) -> void:
 
 	var dist := _get_dist_to_target(attack_target)
 	if dist > get_effective_attack_range():
-		# Phase 2：ON_CHASE 技能触发（闪现）
+		# Phase 3：ON_CHASE 技能触发（闪现）— 统一走 activate()
 		for comp in skill_components:
 			if comp.skill_resource and comp.skill_resource.trigger_condition == 2:  # ON_CHASE
-				if comp.has_method("try_blink"):
-					if comp.try_blink(attack_target):
-						dist = _get_dist_to_target(attack_target)
-						break
+				if comp.can_activate():
+					comp.activate(attack_target)
+					dist = _get_dist_to_target(attack_target)
+					break
 		if hold_position_mode:
 			attack_target = null
 			attack_command_source = CommandSource.NONE
@@ -984,11 +984,12 @@ func _perform_attack() -> void:
 			if stats_data and stats_data.knockback_force > 0.0 and attack_target is Unit and is_instance_valid(attack_target):
 				var dir = (attack_target.global_position - global_position).normalized()
 				attack_target.global_position += dir * stats_data.knockback_force
-		# Phase 2：ON_ATTACK 技能触发（召唤、驱散）
+		# Phase 3：ON_ATTACK 技能触发（召唤、驱散）— 统一走 activate()
 		for comp in skill_components:
 			if comp.skill_resource and comp.skill_resource.trigger_condition == 0:  # ON_ATTACK
-				if comp.has_method("try_summon"):
-					comp.try_summon()
+				if comp.can_activate():
+					comp.activate(attack_target)
+					break
 
 ## 连锁闪电：主目标受伤后弹射到附近 N 个敌人
 func _do_chain_attack(damage: int) -> void:
@@ -1712,10 +1713,17 @@ func _setup_skills() -> void:
 		comp.name = "Skill_" + skill_res.skill_name
 		add_child(comp)
 		skill_components.append(comp)
+		comp.skill_activated.connect(_on_unit_skill_activated)
 	# Phase 3：按 priority 降序排列（高优先级先获得蓝量分配）
 	skill_components.sort_custom(func(a: Node, b: Node):
 		return a.skill_resource.priority > b.skill_resource.priority
 	)
+
+
+## Phase 3：技能激活信号回调 — 跨切面扩展点
+## 未来在此添加扣钱、扣血、日志、事件推送等逻辑
+func _on_unit_skill_activated(target) -> void:
+	pass
 
 
 ## 根据技能名创建对应的 SkillComponent（preload + duck typing）
