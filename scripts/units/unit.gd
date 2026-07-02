@@ -9,6 +9,7 @@ enum CommandSource { NONE, PLAYER, AUTO }
 
 const HealEffectScene := preload("res://scenes/effects/heal_effect.tscn")
 const UnitEffectsShader := preload("res://shaders/unit_effects.gdshader")
+const AggroComp := preload("res://scripts/core/aggro_component.gd")
 
 var _effects_material: ShaderMaterial = null
 
@@ -1141,6 +1142,12 @@ func take_damage(amount: int, attacker = null) -> void:
 		var main_node := get_tree().current_scene
 		if main_node and main_node.has_method("show_damage_number"):
 			main_node.show_damage_number(final_amount, global_position)
+	# 威胁值累积：敌方 AI 持有 AggroComponent 时，按伤害注入威胁值
+	# 首次受伤额外加成由 AggroComponent.add_threat 内部处理
+	if final_amount > 0 and attacker is Unit:
+		var aggro := get_node_or_null("EnemyAI/AggroComponent")
+		if aggro:
+			aggro.add_threat(attacker, final_amount * AggroComp.DAMAGE_FACTOR, AggroComp.ThreatSource.DAMAGE)
 	if attacker:
 		if team == Team.ENEMY:
 			_alert_enemy_response(attacker)

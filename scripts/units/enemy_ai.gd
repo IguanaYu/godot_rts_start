@@ -2,9 +2,11 @@ extends Node2D
 ## 敌方 AI：巡逻/追击/攻击/波次攻击
 ## 通过类型化引用直接调用 Unit 方法（无字符串调用）
 
-enum AIState { PATROL, CHASE, ATTACK, WAVE_ATTACK }
+enum AIState { PATROL, CHASE, ATTACK, WAVE_ATTACK, RETURN_HOME }
 
 const SCAN_THROTTLE_FRAMES: int = 6
+const AggroComp := preload("res://scripts/core/aggro_component.gd")
+const FloatingTextScript := preload("res://scripts/effects/floating_text.gd")
 
 @export var patrol_radius: float = 150.0
 @export var vision_range: float = 250.0
@@ -20,6 +22,7 @@ var previous_state: AIState = AIState.PATROL
 
 var unit: Unit
 var _scan_phase: int = 0
+var _aggro: AggroComp  # 威胁值表组件（仅敌方 AI 持有）
 
 
 func _ready() -> void:
@@ -27,6 +30,10 @@ func _ready() -> void:
 	patrol_center = unit.global_position
 	_pick_new_patrol_point()
 	_scan_phase = get_instance_id() % SCAN_THROTTLE_FRAMES
+	# 挂载威胁值表组件（命名固定，避免 get_children() 误匹配）
+	_aggro = AggroComp.new()
+	_aggro.name = "AggroComponent"
+	add_child(_aggro)
 
 
 func _should_scan_this_frame() -> bool:
@@ -76,6 +83,15 @@ func _physics_process(_delta: float) -> void:
 			_attack_process()
 		AIState.WAVE_ATTACK:
 			_wave_attack_process()
+		AIState.RETURN_HOME:
+			_return_home_process()
+
+	# 威胁值表维护：每帧衰减 + 位置威胁累积
+	# RETURN_HOME 态不累积位置威胁（否则玩家追上来立刻切 CHASE，
+	# 单位在 leash 边缘反复横跳，原地抽搐+疯狂跳"回家"文字）
+	_aggro.decay(_delta)
+	if ai_state != AIState.RETURN_HOME:
+		_aggro.tick_proximity(_delta, unit.global_position)
 
 	if _should_scan_this_frame():
 		_scan_for_targets()
@@ -86,9 +102,19 @@ func _is_beyond_leash() -> bool:
 
 
 func _break_leash() -> void:
+	# 脱战：清空威胁值表，走回出生点（patrol_center 即 spawn 位置）
+	_aggro.clear()
 	chase_target = null
-	ai_state = AIState.PATROL
-	_pick_new_patrol_point()
+	ai_state = AIState.RETURN_HOME
+	unit.move_to(patrol_center)
+	_show_text("回家", Color(0.5, 0.7, 1.0))
+
+
+func _return_home_process() -> void:
+	# 回到出生点附近 → 切回 PATROL（不回血，由用户决策）
+	if unit.global_position.distance_squared_to(patrol_center) < 20.0 * 20.0:
+		ai_state = AIState.PATROL
+		_pick_new_patrol_point()
 
 
 func _patrol_process(delta: float) -> void:
@@ -105,6 +131,7 @@ func _patrol_process(delta: float) -> void:
 
 
 func _chase_process() -> void:
+	# 切目标由 _scan_for_targets（每 6 帧）统一处理，避免每帧切目标导致滑步
 	if _is_target_invalid():
 		chase_target = null
 		if previous_state == AIState.WAVE_ATTACK:
@@ -130,6 +157,7 @@ func _chase_process() -> void:
 
 
 func _attack_process() -> void:
+	# 切目标由 _scan_for_targets（每 6 帧）统一处理
 	if _is_target_invalid():
 		chase_target = null
 		if previous_state == AIState.WAVE_ATTACK:
@@ -174,9 +202,63 @@ func _is_target_invalid() -> bool:
 
 
 func _scan_for_targets() -> void:
-	if ai_state == AIState.ATTACK or ai_state == AIState.WAVE_ATTACK:
+	# WAVE_ATTACK 是玩家/AI 玩家级指令，不干预
+	if ai_state == AIState.WAVE_ATTACK:
 		return
 
+	# RETURN_HOME 态：彻底不被扫描切目标
+	# 必须真正走回家（距 patrol_center < 20）→ PATROL 态才重新评估
+	# 防止单位在 leash 边缘反复横跳、原地抽搐
+	# 注意：玩家在此期间造成伤害仍会累积 DAMAGE 威胁，单位到家后立刻切 CHASE 反击
+	if ai_state == AIState.RETURN_HOME:
+		return
+
+	# 优先：威胁值表中的最高威胁目标
+	var target = _aggro.get_target()
+
+	# Fallback：最近敌人
+	if target == null:
+		target = _find_closest_in_vision()
+
+	if target == null:
+		return
+
+	# 切目标提示：仅当旧目标非空（不是首次锁定）且确实换了目标时显示
+	var old_target = chase_target
+	var is_switch = old_target != null and target != old_target
+
+	# ATTACK 态切目标：仅更新 chase_target，不切 ai_state
+	# 下一帧 _attack_process 会发现 current_target != chase_target 自然切攻击目标
+	# HOLD_TIME 锁定机制保证不会抖动（1.5s 内 _aggro.get_target() 返回同一目标）
+	if ai_state == AIState.ATTACK:
+		if target != chase_target:
+			chase_target = target
+			if is_switch:
+				_show_text("转火", Color(1.0, 0.6, 0.2))
+		return
+
+	# CHASE 态切目标：仅更新 chase_target（不重置 previous_state、不切 ai_state）
+	if ai_state == AIState.CHASE:
+		if target != chase_target:
+			chase_target = target
+			if is_switch:
+				_show_text("转火", Color(1.0, 0.6, 0.2))
+		return
+
+	# 其他态（PATROL/RETURN_HOME）→ 切到 CHASE
+	chase_target = target
+	previous_state = ai_state
+	ai_state = AIState.CHASE
+
+
+func _show_text(text: String, color: Color) -> void:
+	var ft = Node2D.new()
+	ft.set_script(FloatingTextScript)
+	unit.get_tree().current_scene.add_child(ft)
+	ft.setup(text, color, unit.global_position + Vector2(0, -50))
+
+
+func _find_closest_in_vision():
 	var closest = null
 	var closest_dist: float = INF
 
@@ -213,10 +295,7 @@ func _scan_for_targets() -> void:
 			closest = n
 			closest_dist = d
 
-	if closest != null:
-		chase_target = closest
-		previous_state = ai_state
-		ai_state = AIState.CHASE
+	return closest
 
 
 func _pick_new_patrol_point() -> void:
@@ -226,11 +305,11 @@ func _pick_new_patrol_point() -> void:
 
 
 func on_attacked(attacker) -> void:
-	if ai_state == AIState.ATTACK:
-		return
-	previous_state = ai_state
-	chase_target = attacker
-	ai_state = AIState.CHASE
-	# 打断当前巡逻移动，让AI立即接管
-	if unit.state == Unit.UnitState.MOVE:
+	# 不再立即切目标，避免被诱饵兵反复横跳无限勾引。
+	# 真实威胁值已在 unit.gd::take_damage 注入点累加，
+	# 这里仅刷新 last_seen（用 0 增量保证攻击者留在表内不被衰减清除）。
+	if attacker is Unit:
+		_aggro.add_threat(attacker, 0.0, AggroComp.ThreatSource.DAMAGE)
+	# PATROL 态被打断：切 GUARD 让 _physics_process 接管（威胁表自动选目标）
+	if ai_state == AIState.PATROL and unit.state == Unit.UnitState.MOVE:
 		unit.state = Unit.UnitState.GUARD

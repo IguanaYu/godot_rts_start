@@ -16,6 +16,7 @@ enum TargetType {
 	CURRENT_ATTACK_TARGET,
 	ENEMY_ATTACKING_ALLY,  # 正在攻击友军的敌人（嘲讽用）
 	ALLY_LOWEST_HP,        # 血量百分比最低的友军（治疗/护盾用）
+	ENEMY_HIGHEST_THREAT,  # 威胁值表最高（敌方施法者用，依赖 AggroComponent）
 }
 
 ## 触发条件

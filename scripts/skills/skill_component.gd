@@ -47,6 +47,8 @@ func find_target():
 			return _find_enemy_attacking_ally()
 		5:  # ALLY_LOWEST_HP
 			return _find_nearest_wounded_ally()
+		6:  # ENEMY_HIGHEST_THREAT
+			return _find_highest_threat_enemy()
 	return null
 
 
@@ -231,3 +233,17 @@ func _find_enemy_attacking_ally():
 	if best == null:
 		return _find_nearest_enemy()
 	return best
+
+
+## 找威胁值最高的敌人（敌方施法者专用，依赖 AggroComponent）
+func _find_highest_threat_enemy():
+	var u = get_parent()
+	if u == null:
+		return null
+	var aggro = u.get_node_or_null("EnemyAI/AggroComponent")
+	if aggro == null:
+		return _find_nearest_enemy()
+	var target = aggro.get_target()
+	if target != null:
+		return target
+	return _find_nearest_enemy()
