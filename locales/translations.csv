@@ -259,6 +259,18 @@ TAB_TEST_LEVELS,Test Levels,测试关卡,テストステージ
 TAB_MINI_GAMES,Mini Games,小游戏,ミニゲーム
 MINI_CAPTAIN_NAME,Captain Demo,船长 demo,キャプテン demo
 MINI_CAPTAIN_DESC,"Single-hero RPG demo. Move with mouse, auto-attack, summon minions.","单人 RPG demo。鼠标移动,自动攻击,召唤小兵。","シングルヒーロー RPG demo。マウス移動、自動攻撃、ミニオン召喚。"
+MINI_ASSAULT_NAME,Captain: Assault,船长:进攻,キャプテン:強攻
+MINI_ASSAULT_DESC,"Capture 2 points then destroy the enemy base.","占领 2 个据点,然后摧毁敌方基地。","2つの拠点を占領し、敵基地を破壊せよ。"
+MINI_ALLY_NAME,Captain: Ally Assault,船长:协同进攻,キャプテン:協同強攻
+MINI_ALLY_DESC,"Fight alongside AI allies to capture a point and destroy the base.","与 AI 盟友协同攻占据点并摧毁基地。","AI同盟軍と協力して拠点を占領し、基地を破壊せよ。"
+MINI_SURVIVAL_NAME,Captain: Survival,船长:生存,キャプテン:サバイバル
+MINI_SURVIVAL_DESC,"Endless waves. Survive as long as you can.","无尽波次,尽可能存活。","終わりのない波。できるだけ長く生き残れ。"
+OBJ_ASSAULT_S1,Capture Point A,占领据点 A,拠点 A を占領
+OBJ_ASSAULT_S2,Capture Point B,占领据点 B,拠点 B を占領
+OBJ_ASSAULT_S3,Destroy Enemy Base,摧毁敌方基地,敵基地を破壊
+OBJ_ALLY_S1,Capture Point with Allies,与盟友攻占据点,同盟軍と拠点を占領
+OBJ_ALLY_S2,Destroy Enemy Base,摧毁敌方基地,敵基地を破壊
+OBJ_SURVIVAL,Survive the Endless Waves,在无尽波次中存活,終わりのない波を生き残れ
 UI_PATH_LINES,Path Lines,寻路路径线,パス表示
 UI_SHOW_COLLISIONS,Show Collisions,碰撞区域,コリジョン表示
 LEVEL_5_NAME,Map 5: Skill Awakening,关卡5: 技能觉醒,マップ5: スキル覚醒

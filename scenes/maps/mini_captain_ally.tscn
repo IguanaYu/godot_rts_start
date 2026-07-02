@@ -1,0 +1,133 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" uid="uid://cg2igjmusi0dq" path="res://scripts/main.gd" id="main_script"]
+[ext_resource type="Resource" path="res://resources/mini_captain_ally_config.tres" id="map_config"]
+[ext_resource type="PackedScene" path="res://scenes/mini_captain/hero.tscn" id="hero"]
+[ext_resource type="PackedScene" uid="uid://mmgbo1ded4ro" path="res://scenes/units/soldier.tscn" id="soldier"]
+[ext_resource type="PackedScene" uid="uid://e5by4tc82spk" path="res://scenes/units/archer.tscn" id="archer"]
+[ext_resource type="PackedScene" uid="uid://8rfekrdqs7gf" path="res://scenes/buildings/castle.tscn" id="castle"]
+[ext_resource type="Script" uid="uid://cmp1bdjkabfkb" path="res://scripts/systems_game/capture_point.gd" id="capture_point"]
+[ext_resource type="Script" path="res://scripts/victory/victory_multi_stage.gd" id="victory_multi_stage"]
+[ext_resource type="Script" path="res://scripts/victory/victory_hold_point.gd" id="victory_hold_point"]
+[ext_resource type="Script" uid="uid://jhcf43ds1dy6" path="res://scripts/victory/victory_destroy_base.gd" id="victory_destroy_base"]
+
+[sub_resource type="NavigationPolygon" id="NavPoly_1"]
+vertices = PackedVector2Array(0, 0, 1200, 0, 1200, 700, 0, 700)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
+
+[node name="MiniCaptainAlly" type="Node2D"]
+script = ExtResource("main_script")
+map_config = ExtResource("map_config")
+
+[node name="Ground" type="ColorRect" parent="."]
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 1200.0
+offset_bottom = 700.0
+color = Color(0.35, 0.55, 0.25, 1)
+
+[node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
+navigation_polygon = SubResource("NavPoly_1")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(600, 350)
+
+[node name="PlayerUnits" type="Node2D" parent="."]
+
+[node name="Hero" parent="PlayerUnits" instance=ExtResource("hero")]
+position = Vector2(100, 500)
+
+[node name="EnemyUnits" type="Node2D" parent="."]
+
+[node name="CPGuard1" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(560, 300)
+team = 1
+
+[node name="CPGuard2" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(600, 380)
+team = 1
+
+[node name="CPGuard3" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(540, 340)
+team = 1
+
+[node name="CPGuard4" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(640, 320)
+team = 1
+
+[node name="BaseGuard1" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(980, 300)
+team = 1
+
+[node name="BaseGuard2" parent="EnemyUnits" instance=ExtResource("soldier")]
+position = Vector2(1020, 400)
+team = 1
+
+[node name="BaseGuard3" parent="EnemyUnits" instance=ExtResource("archer")]
+position = Vector2(1000, 340)
+team = 1
+
+[node name="Buildings" type="Node2D" parent="."]
+
+[node name="EnemyCastle" parent="Buildings" instance=ExtResource("castle")]
+position = Vector2(1080, 350)
+team = 1
+
+[node name="CapturePoint" type="Area2D" parent="."]
+position = Vector2(600, 350)
+script = ExtResource("capture_point")
+trigger_type = 0
+detection_radius = 150.0
+capture_radius = 80.0
+can_enemy_capture = true
+allow_recapture = true
+
+[node name="CPMarker" type="Marker2D" parent="."]
+position = Vector2(600, 350)
+
+[node name="SelectionBox" type="ColorRect" parent="."]
+visible = false
+mouse_filter = 2
+color = Color(0.4, 0.7, 1, 0.25)
+
+[node name="PreviewRect" type="ColorRect" parent="."]
+visible = false
+mouse_filter = 2
+color = Color(0, 1, 0, 0.3)
+
+[node name="ResultLabel" type="Label" parent="."]
+offset_left = 300.0
+offset_top = 250.0
+offset_right = 900.0
+offset_bottom = 350.0
+theme_override_font_sizes/font_size = 48
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AttackMoveIndicator" type="Label" parent="."]
+visible = false
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 200.0
+offset_bottom = 40.0
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+theme_override_font_sizes/font_size = 20
+text = "Attack Move (Click)"
+
+[node name="VictoryMultiStage" type="Node" parent="."]
+script = ExtResource("victory_multi_stage")
+stage_names = Array[String](["OBJ_ALLY_S1", "OBJ_ALLY_S2"])
+
+[node name="Stage0" type="Node" parent="VictoryMultiStage"]
+
+[node name="HoldPoint" type="Node" parent="VictoryMultiStage/Stage0"]
+script = ExtResource("victory_hold_point")
+capture_point_path = NodePath("../../../CapturePoint")
+hold_time = 45.0
+description_key = "OBJ_ALLY_S1"
+
+[node name="Stage1" type="Node" parent="VictoryMultiStage"]
+
+[node name="DestroyBase" type="Node" parent="VictoryMultiStage/Stage1"]
+script = ExtResource("victory_destroy_base")
+description_key = "OBJ_ALLY_S2"

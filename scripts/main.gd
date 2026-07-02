@@ -916,6 +916,10 @@ func mp_spawn_unit(player: int, unit_type: int, pos: Vector2):
 # --- 单位死亡 ---
 
 func _on_unit_died(unit: CharacterBody2D) -> void:
+	# mini 模式:英雄死亡 = 失败
+	if is_mini_captain and hero_controller != null and unit == hero_controller.get_hero():
+		_on_game_ended("defeat")
+		return
 	LockstepSync.unregister_unit(unit)
 	# 星级评价：玩家单位死亡计数
 	if unit.is_in_group("player_units"):

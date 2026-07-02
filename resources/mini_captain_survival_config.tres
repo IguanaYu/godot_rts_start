@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="MapConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/map_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+map_name = "Mini Captain: Survival"
+map_bounds = Rect2(0, 0, 800, 500)
+nav_bounds = Array[Vector2]([Vector2(0, 0), Vector2(800, 0), Vector2(800, 500), Vector2(0, 500)])
+initial_gold = 0
+camera_start = Vector2(400, 250)
+
+player_units = Array[Dictionary]([])
+player_buildings = Array[Dictionary]([])
+enemy_units = Array[Dictionary]([])
+enemy_buildings = Array[Dictionary]([])
+ai_allies = Array[Dictionary]([])
+
+environment = {"trees": 0, "rocks": 0, "bushes": 0, "sheep": 0}
+
+available_items = Array[int]([])
+
+terrain_theme = 0
+border_width = 1
+map_description = ""
+
+star_time_3 = 180.0
+star_time_2 = 300.0
+star_deaths_3 = 0
+star_deaths_2 = 3
+
+is_mini_captain = true

@@ -192,6 +192,9 @@ var test_levels := [
 # === 小游戏数据 ===
 var mini_levels := [
 	{"name_key": "MINI_CAPTAIN_NAME", "desc_key": "MINI_CAPTAIN_DESC", "scene": "res://scenes/maps/mini_captain_demo.tscn"},
+	{"name_key": "MINI_ASSAULT_NAME", "desc_key": "MINI_ASSAULT_DESC", "scene": "res://scenes/maps/mini_captain_assault.tscn"},
+	{"name_key": "MINI_ALLY_NAME", "desc_key": "MINI_ALLY_DESC", "scene": "res://scenes/maps/mini_captain_ally.tscn"},
+	{"name_key": "MINI_SURVIVAL_NAME", "desc_key": "MINI_SURVIVAL_DESC", "scene": "res://scenes/maps/mini_captain_survival.tscn"},
 ]
 
 # === 模式切换 ===
