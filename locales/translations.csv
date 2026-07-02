@@ -256,6 +256,9 @@ TEST_T13_NAME,T13: Endless,T13: 无尽模式,T13: エンドレス
 TEST_T13_DESC,"Survive as long as possible. Game ends when your castle falls.","尽可能长时间存活。城堡被毁时游戏结束。","できるだけ長く生き残れ。城が落ちたら終了。"
 TAB_CAMPAIGN,Campaign,战役,キャンペーン
 TAB_TEST_LEVELS,Test Levels,测试关卡,テストステージ
+TAB_MINI_GAMES,Mini Games,小游戏,ミニゲーム
+MINI_CAPTAIN_NAME,Captain Demo,船长 demo,キャプテン demo
+MINI_CAPTAIN_DESC,"Single-hero RPG demo. Move with mouse, auto-attack, summon minions.","单人 RPG demo。鼠标移动,自动攻击,召唤小兵。","シングルヒーロー RPG demo。マウス移動、自動攻撃、ミニオン召喚。"
 UI_PATH_LINES,Path Lines,寻路路径线,パス表示
 UI_SHOW_COLLISIONS,Show Collisions,碰撞区域,コリジョン表示
 LEVEL_5_NAME,Map 5: Skill Awakening,关卡5: 技能觉醒,マップ5: スキル覚醒

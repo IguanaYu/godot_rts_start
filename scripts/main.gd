@@ -43,6 +43,16 @@ var upgrade_manager: Node
 var upgrade_panel: Node
 var _available_skills: Array = []
 
+# mini/captain 小游戏模式
+const HeroControllerScript := preload("res://scripts/mini_captain/hero_controller.gd")
+const PopulationManagerScript := preload("res://scripts/mini_captain/population_manager.gd")
+const SummonLifecycleScript := preload("res://scripts/mini_captain/summon_lifecycle.gd")
+const TestSummonSkillScript := preload("res://scripts/mini_captain/test_summon_skill.gd")
+var hero_controller: HeroController
+var population_manager: PopulationManager
+var summon_lifecycle: SummonLifecycle
+var is_mini_captain: bool = false
+
 # 全局玩家集结点
 var global_rally_point: Vector2 = Vector2.ZERO
 var has_global_rally: bool = false
@@ -107,6 +117,7 @@ func _run_init_steps() -> void:
 	_load_brightness()
 	_load_audio_settings()
 	_replace_ground_with_terrain()
+	is_mini_captain = map_config.is_mini_captain if map_config != null else false
 	await get_tree().process_frame
 
 	# Step 3: UI 模块
@@ -164,50 +175,71 @@ func _run_init_steps() -> void:
 
 	# Step 7: 指挥官技能系统（依赖 spawner）
 	LoadRouter.report_init_progress(0.70)
-	const CSD := preload("res://scripts/commander_skill/commander_skill_data.gd")
-	# 注入玩家指挥官 profile（决定可用单位/建筑变体 + 面板技能 + 起始金币）
-	var selected_id: StringName = CommanderChoice.player_selected_id
-	if selected_id == &"" or not CommanderRegistry.has_profile(selected_id):
-		selected_id = &"balanced"
-	var commander_profile = CommanderRegistry.get_profile(selected_id)
-	CommanderContext.set_player_profile(commander_profile)
-	PassiveSkillManager.set_profile(commander_profile)
-	if commander_profile != null and commander_profile.starting_gold_bonus > 0:
-		gold += commander_profile.starting_gold_bonus
-		ui_module.update_gold(gold) if ui_module.has_method("update_gold") else null
-	commander_skill_manager = Node.new()
-	commander_skill_manager.set_script(load("res://scripts/commander_skill/commander_skill_manager.gd"))
-	add_child(commander_skill_manager)
-	var available_skills: Array = _resolve_available_skills()
-	_available_skills = available_skills
-	commander_skill_manager.initialize(self, spawner_module, func(): return gold, func(cost: int): _spend_gold(cost))
-	commander_skill_manager.set_available_skills(available_skills)
-	commander_skill_panel = Node.new()
-	commander_skill_panel.set_script(load("res://scripts/commander_skill/commander_skill_panel.gd"))
-	add_child(commander_skill_panel)
-	commander_skill_panel.initialize(self, commander_skill_manager)
-	commander_skill_panel.skill_button_pressed.connect(_on_commander_skill_button_pressed)
-	await get_tree().process_frame
+	if is_mini_captain:
+		# mini 模式:跳过指挥官技能系统,但保留 PassiveSkillManager 防 null
+		PassiveSkillManager.set_profile(CommanderRegistry.get_profile(&"balanced"))
+		# 初始化 mini 三件套:人口/召唤生命周期/英雄控制
+		population_manager = PopulationManagerScript.new()
+		add_child(population_manager)
+		summon_lifecycle = SummonLifecycleScript.new()
+		summon_lifecycle.initialize(spawner_module, population_manager)
+		add_child(summon_lifecycle)
+		# 找到预放置的英雄单位
+		var hero_unit: Unit = _find_hero_in_player_units()
+		if hero_unit:
+			hero_controller = HeroControllerScript.new()
+			hero_controller.initialize(hero_unit)
+			add_child(hero_controller)
+			# 挂测试召唤技能(空格触发)
+			var test_skill := TestSummonSkillScript.new()
+			test_skill.initialize(summon_lifecycle, hero_unit)
+			add_child(test_skill)
+		await get_tree().process_frame
+	if not is_mini_captain:
+		const CSD := preload("res://scripts/commander_skill/commander_skill_data.gd")
+		# 注入玩家指挥官 profile（决定可用单位/建筑变体 + 面板技能 + 起始金币）
+		var selected_id: StringName = CommanderChoice.player_selected_id
+		if selected_id == &"" or not CommanderRegistry.has_profile(selected_id):
+			selected_id = &"balanced"
+		var commander_profile = CommanderRegistry.get_profile(selected_id)
+		CommanderContext.set_player_profile(commander_profile)
+		PassiveSkillManager.set_profile(commander_profile)
+		if commander_profile != null and commander_profile.starting_gold_bonus > 0:
+			gold += commander_profile.starting_gold_bonus
+			ui_module.update_gold(gold) if ui_module.has_method("update_gold") else null
+		commander_skill_manager = Node.new()
+		commander_skill_manager.set_script(load("res://scripts/commander_skill/commander_skill_manager.gd"))
+		add_child(commander_skill_manager)
+		var available_skills: Array = _resolve_available_skills()
+		_available_skills = available_skills
+		commander_skill_manager.initialize(self, spawner_module, func(): return gold, func(cost: int): _spend_gold(cost))
+		commander_skill_manager.set_available_skills(available_skills)
+		commander_skill_panel = Node.new()
+		commander_skill_panel.set_script(load("res://scripts/commander_skill/commander_skill_panel.gd"))
+		add_child(commander_skill_panel)
+		commander_skill_panel.initialize(self, commander_skill_manager)
+		commander_skill_panel.skill_button_pressed.connect(_on_commander_skill_button_pressed)
+		await get_tree().process_frame
 
-	# Step 8: 升级系统（双向依赖 spawner）
-	LoadRouter.report_init_progress(0.80)
-	upgrade_manager = Node.new()
-	upgrade_manager.set_script(load("res://scripts/upgrade/upgrade_manager.gd"))
-	add_child(upgrade_manager)
-	upgrade_manager.initialize(self)
-	upgrade_manager.set_spawner(spawner_module)
-	spawner_module.set_upgrade_manager(upgrade_manager)
-	upgrade_panel = Node.new()
-	upgrade_panel.set_script(load("res://scripts/upgrade/upgrade_panel.gd"))
-	add_child(upgrade_panel)
-	upgrade_panel.initialize(self, upgrade_manager)
-	ui_module.upgrade_button_pressed.connect(_on_upgrade_button_pressed)
-	upgrade_manager.token_count_changed.connect(ui_module.update_upgrade_tokens)
-	# TODO: 测试用初始升级币，测试完毕后删除
-	upgrade_manager.add_token(0)  # 1 白银
-	upgrade_manager.add_token(1)  # 1 黄金
-	upgrade_manager.add_token(2)  # 1 钻石
-	await get_tree().process_frame
+		# Step 8: 升级系统（双向依赖 spawner）
+		LoadRouter.report_init_progress(0.80)
+		upgrade_manager = Node.new()
+		upgrade_manager.set_script(load("res://scripts/upgrade/upgrade_manager.gd"))
+		add_child(upgrade_manager)
+		upgrade_manager.initialize(self)
+		upgrade_manager.set_spawner(spawner_module)
+		spawner_module.set_upgrade_manager(upgrade_manager)
+		upgrade_panel = Node.new()
+		upgrade_panel.set_script(load("res://scripts/upgrade/upgrade_panel.gd"))
+		add_child(upgrade_panel)
+		upgrade_panel.initialize(self, upgrade_manager)
+		ui_module.upgrade_button_pressed.connect(_on_upgrade_button_pressed)
+		upgrade_manager.token_count_changed.connect(ui_module.update_upgrade_tokens)
+		# TODO: 测试用初始升级币，测试完毕后删除
+		upgrade_manager.add_token(0)  # 1 白银
+		upgrade_manager.add_token(1)  # 1 黄金
+		upgrade_manager.add_token(2)  # 1 钻石
+		await get_tree().process_frame
 
 	# Step 9: 实体生成 + 多人 + 网格 + 环境 + setup + camera_start
 	LoadRouter.report_init_progress(0.90)
@@ -225,7 +257,8 @@ func _run_init_steps() -> void:
 		LockstepSync.set_game(self)
 		if RelayManager._game_seed != 0:
 			LockstepSync._start_game(RelayManager._game_seed)
-	building_placer.create_grid()
+	if not is_mini_captain:
+		building_placer.create_grid()
 	spawner_module.spawn_environment(map_config, map_bounds)
 	_setup_victory_condition()
 	_setup_capture_points()
@@ -283,6 +316,17 @@ func _init_preplaced_units() -> void:
 		ai.name = "EnemyAI"
 		ai.set_script(load("res://scripts/units/enemy_ai.gd"))
 		unit.add_child(ai)
+
+func _find_hero_in_player_units() -> Unit:
+	# mini 模式:找到带 HeroController 子节点的预放置单位
+	for u in player_units_node.get_children():
+		if u is Unit and u.get_node_or_null("HeroController") != null:
+			return u
+	# fallback:返回第一个 player unit
+	for u in player_units_node.get_children():
+		if u is Unit:
+			return u
+	return null
 
 func _load_from_config() -> void:
 	if map_config == null:
@@ -884,10 +928,11 @@ func _on_unit_died(unit: CharacterBody2D) -> void:
 			child.notify_kill()
 	# 被动技能触发：单位死亡
 	var died_alliance: int = unit.get("alliance_id") if "alliance_id" in unit else -1
-	PassiveSkillManager.emit_trigger(
-		preload("res://scripts/commander/passive_triggers.gd").UNIT_DIED,
-		{"unit": unit, "alliance_id": died_alliance}
-	)
+	if PassiveSkillManager != null and PassiveSkillManager.has_method("emit_trigger"):
+		PassiveSkillManager.emit_trigger(
+			preload("res://scripts/commander/passive_triggers.gd").UNIT_DIED,
+			{"unit": unit, "alliance_id": died_alliance}
+		)
 
 # --- 每帧更新 ---
 
@@ -946,7 +991,7 @@ func _process(delta: float) -> void:
 	if building_placer.show_grid and building_placer.grid_overlay:
 		building_placer.grid_overlay.visible = building_placer.show_grid
 	# 更新指挥官技能目标预览
-	if input_mode.is_commander_skill_cast() and commander_skill_manager.is_casting():
+	if commander_skill_manager != null and input_mode.is_commander_skill_cast() and commander_skill_manager.is_casting():
 		commander_skill_panel.update_target_preview(get_global_mouse_position())
 	# 性能监控：每 2 秒打印一次关键指标
 	_perf_log_timer += delta
@@ -989,6 +1034,9 @@ func _check_victory() -> void:
 		_fallback_check_victory()
 
 func _fallback_check_victory() -> void:
+	# mini 模式:无胜负条件时让游戏持续运行,不触发 fallback 城堡检查
+	if is_mini_captain:
+		return
 	var player_castle_alive := false
 	for b in get_tree().get_nodes_in_group("player_buildings"):
 		if b.has_method("is_dead") and not b.is_dead() and b.building_type == BuildingScript.BuildingType.CASTLE:
@@ -1051,7 +1099,8 @@ func _input(event: InputEvent) -> void:
 			building_placer.cancel_place_mode()
 			return
 		if not input_mode.is_default():
-			commander_skill_manager.cancel_cast()
+			if commander_skill_manager != null:
+				commander_skill_manager.cancel_cast()
 			input_mode.cancel_mode()
 			return
 		ui_module.open_pause_menu()
@@ -1069,7 +1118,7 @@ func _input(event: InputEvent) -> void:
 						combat_ctrl.do_attack_move(get_global_mouse_position())
 						combat_ctrl.set_attack_move_mode(false)
 						cursor_manager.set_attack(false)
-					elif input_mode.is_commander_skill_cast() and commander_skill_manager.is_casting():
+					elif input_mode.is_commander_skill_cast() and commander_skill_manager != null and commander_skill_manager.is_casting():
 						commander_skill_manager.confirm_cast(get_global_mouse_position())
 						input_mode.cancel_mode()
 					elif input_mode.is_rally_placement():
@@ -1086,7 +1135,11 @@ func _input(event: InputEvent) -> void:
 							and click_pos.distance_to(_last_left_click_pos) < DOUBLE_CLICK_DIST
 						_last_left_click_time = now
 						_last_left_click_pos = click_pos
-						combat_ctrl.start_selection(click_pos, is_double_click)
+						if is_mini_captain and hero_controller != null:
+							# mini 模式:左键移动英雄(替代 RTS 框选)
+							hero_controller.move_to(click_pos)
+						else:
+							combat_ctrl.start_selection(click_pos, is_double_click)
 				else:
 					if combat_ctrl.is_selecting:
 						var shift_held := Input.is_key_pressed(KEY_SHIFT)
@@ -1101,7 +1154,8 @@ func _input(event: InputEvent) -> void:
 					cursor_manager.set_attack(false)
 					# Q/W模式下右键退出模式
 					if not input_mode.is_default():
-						commander_skill_manager.cancel_cast()
+						if commander_skill_manager != null:
+							commander_skill_manager.cancel_cast()
 						input_mode.cancel_mode()
 						return
 					building_placer.cancel_place_mode()
@@ -1109,6 +1163,10 @@ func _input(event: InputEvent) -> void:
 					var sb = combat_ctrl.selected_building
 					if sb != null and is_instance_valid(sb) and combat_ctrl.is_empty():
 						_set_global_rally(get_global_mouse_position())
+						return
+					# mini 模式:右键移动英雄(与左键一致)
+					if is_mini_captain and hero_controller != null:
+						hero_controller.move_to(get_global_mouse_position())
 						return
 					combat_ctrl.right_click(get_global_mouse_position())
 			MOUSE_BUTTON_MIDDLE:

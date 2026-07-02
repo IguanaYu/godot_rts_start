@@ -1,0 +1,23 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Texture2D" uid="uid://uwmjnao0x165" path="res://assets/units/blue_warrior/Warrior_Idle.png" id="2_hero"]
+[ext_resource type="PackedScene" uid="uid://bxunit0001" path="res://scenes/units/unit.tscn" id="base"]
+[ext_resource type="Resource" path="res://resources/stats/hero_stats.tres" id="hero_stats"]
+[ext_resource type="Script" path="res://scripts/mini_captain/hero_controller.gd" id="hero_controller_script"]
+[ext_resource type="PackedScene" uid="uid://bxtrail001" path="res://scenes/effects/arrow_trail.tscn" id="trail_arrow"]
+
+[node name="Hero" instance=ExtResource("base")]
+stats_data = ExtResource("hero_stats")
+arrow_scene = ExtResource("trail_arrow")
+sprite_scale_x = 0.8
+sprite_scale_y = 0.8
+sprite_offset_y = 9.0
+
+[node name="BodySprite" parent="." index="2"]
+position = Vector2(0, -11)
+scale = Vector2(0.8, 0.8)
+texture = ExtResource("2_hero")
+hframes = 8
+
+[node name="HeroController" type="Node" parent="."]
+script = ExtResource("hero_controller_script")

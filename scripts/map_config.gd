@@ -58,3 +58,7 @@ extends Resource
 @export var star_time_2: float = 300.0  # 2星时限
 @export var star_deaths_3: int = 0  # 3星死亡上限
 @export var star_deaths_2: int = 3  # 2星死亡上限
+
+# mini/captain 小游戏模式标志位。true 时 main.gd 走 mini 模式分支:
+# 跳过指挥官技能/升级系统,左键改为英雄移动,启用人口+召唤生命周期。
+@export var is_mini_captain: bool = false

@@ -189,8 +189,14 @@ var test_levels := [
 	{"name_key": "TEST_T13_NAME", "desc_key": "TEST_T13_DESC", "scene": "res://scenes/maps/test_endless.tscn"},
 ]
 
+# === 小游戏数据 ===
+var mini_levels := [
+	{"name_key": "MINI_CAPTAIN_NAME", "desc_key": "MINI_CAPTAIN_DESC", "scene": "res://scenes/maps/mini_captain_demo.tscn"},
+]
+
 # === 模式切换 ===
-var _is_test_mode: bool = false
+enum LevelMode { CAMPAIGN, TEST, MINI }
+var _mode: LevelMode = LevelMode.CAMPAIGN
 var _current_levels: Array = []
 var _campaign_tab_bg: NinePatchRect
 var _campaign_tab_label: Label
@@ -198,6 +204,9 @@ var _campaign_tab_wrapper: Control
 var _test_tab_bg: NinePatchRect
 var _test_tab_label: Label
 var _test_tab_wrapper: Control
+var _mini_tab_bg: NinePatchRect
+var _mini_tab_label: Label
+var _mini_tab_wrapper: Control
 
 # === 支持的语言 ===
 var _supported_locales := ["en", "zh", "ja"]
@@ -463,6 +472,37 @@ func _create_banner() -> void:
 		_test_tab_wrapper.add_child(_test_tab_label)
 		BF.add_hover_anim_button(test_btn)
 		tab_row.add_child(_test_tab_wrapper)
+
+		# 小游戏 Tab
+		_mini_tab_wrapper = Control.new()
+		_mini_tab_wrapper.custom_minimum_size = Vector2(140, 36)
+		_mini_tab_bg = _make_ninepatch(np_btn_blue)
+		_mini_tab_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_mini_tab_wrapper.add_child(_mini_tab_bg)
+		var mini_btn := Button.new()
+		mini_btn.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		mini_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		var es3 := StyleBoxEmpty.new()
+		mini_btn.add_theme_stylebox_override("normal", es3)
+		mini_btn.add_theme_stylebox_override("hover", es3)
+		mini_btn.add_theme_stylebox_override("pressed", es3)
+		mini_btn.add_theme_stylebox_override("focus", es3)
+		mini_btn.pressed.connect(_switch_to_mini_mode)
+		_mini_tab_wrapper.add_child(mini_btn)
+		_mini_tab_label = Label.new()
+		_mini_tab_label.text = tr("TAB_MINI_GAMES")
+		_mini_tab_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_mini_tab_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		_mini_tab_label.add_theme_font_size_override("font_size", 16)
+		_mini_tab_label.add_theme_color_override("font_color", Color(1, 1, 1))
+		_mini_tab_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+		_mini_tab_label.add_theme_constant_override("shadow_offset_x", 1)
+		_mini_tab_label.add_theme_constant_override("shadow_offset_y", 1)
+		_mini_tab_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_mini_tab_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_mini_tab_wrapper.add_child(_mini_tab_label)
+		BF.add_hover_anim_button(mini_btn)
+		tab_row.add_child(_mini_tab_wrapper)
 
 
 # ============================================================
@@ -881,7 +921,7 @@ func _select_level(index: int) -> void:
 
 
 func _is_level_locked(index: int) -> bool:
-	if _is_test_mode:
+	if _mode == LevelMode.TEST:
 		return false
 	var sm := _get_save_manager()
 	if not sm:
@@ -891,7 +931,7 @@ func _is_level_locked(index: int) -> bool:
 
 func _update_button_appearances() -> void:
 	for i in range(button_backgrounds.size()):
-		if not _is_test_mode and _is_level_locked(i):
+		if _mode != LevelMode.TEST and _is_level_locked(i):
 			button_backgrounds[i].texture = np_btn_blue.texture
 			button_backgrounds[i].patch_margin_left = np_btn_blue.margin_left
 			button_backgrounds[i].patch_margin_right = np_btn_blue.margin_right
@@ -921,7 +961,7 @@ func _update_right_panel(index: int) -> void:
 	if index < 0 or index >= _current_levels.size():
 		return
 	var level: Dictionary = _current_levels[index]
-	if not _is_test_mode and _is_level_locked(index):
+	if _mode != LevelMode.TEST and _is_level_locked(index):
 		right_title.text = tr(level.name_key)
 		right_desc.text = tr("LEVEL_LOCKED_DESC")
 		if level.has("icon") and level.icon:
@@ -944,7 +984,7 @@ func _update_right_panel(index: int) -> void:
 		right_icon.texture = load(PATH_ICON_01)
 
 	# 通关信息（测试关卡不显示）
-	if _is_test_mode:
+	if _mode == LevelMode.TEST:
 		_completion_status_label.text = ""
 		_completion_time_label.text = ""
 		_completion_play_count_label.text = ""
@@ -986,7 +1026,7 @@ func _update_right_panel(index: int) -> void:
 func _on_button_hover(index: int) -> void:
 	if index >= button_backgrounds.size():
 		return
-	if not _is_test_mode and _is_level_locked(index):
+	if _mode != LevelMode.TEST and _is_level_locked(index):
 		return
 	if index < button_wrappers.size(): button_wrappers[index].scale = Vector2(1.08, 1.08)
 	_update_right_panel(index)
@@ -1003,7 +1043,7 @@ func _on_button_unhover(_index: int) -> void:
 func _on_button_clicked(index: int) -> void:
 	if index >= button_backgrounds.size():
 		return
-	if not _is_test_mode and _is_level_locked(index):
+	if _mode != LevelMode.TEST and _is_level_locked(index):
 		return
 	_select_level(index)
 
@@ -1048,12 +1088,16 @@ func _on_button_up(index: int) -> void:
 func _on_start_pressed() -> void:
 	if selected_index >= 0 and selected_index < _current_levels.size():
 		var level_scene: String = _current_levels[selected_index].scene
-		var level_id: String = "map_%d" % (selected_index + 1) if not _is_test_mode else "test"
+		var level_id: String = "map_%d" % (selected_index + 1) if _mode != LevelMode.TEST else "test"
 		# 正式关卡才存档
-		if not _is_test_mode:
+		if _mode != LevelMode.TEST:
 			var sm := _get_save_manager()
 			if sm:
 				sm.start_game_session(level_id)
+		# 小游戏模式:直进地图,跳过 commander_select
+		if _mode == LevelMode.MINI:
+			LoadRouter.request_load(level_scene, false)
+			return
 		# 路由到指挥官选择界面（暂存关卡，确认后加载）
 		CommanderChoice.set_pending_level(level_scene, level_id)
 		get_tree().change_scene_to_file("res://scenes/ui/commander_select.tscn")
@@ -1076,7 +1120,7 @@ func _input(event: InputEvent) -> void:
 			var new_idx := selected_index
 			while new_idx > 0:
 				new_idx -= 1
-				if _is_test_mode or not _is_level_locked(new_idx):
+				if _mode == LevelMode.TEST or not _is_level_locked(new_idx):
 					_select_level(new_idx)
 					break
 		elif event.keycode == KEY_DOWN or event.keycode == KEY_S:
@@ -1085,13 +1129,13 @@ func _input(event: InputEvent) -> void:
 			var new_idx := selected_index
 			while new_idx < _current_levels.size() - 1:
 				new_idx += 1
-				if _is_test_mode or not _is_level_locked(new_idx):
+				if _mode == LevelMode.TEST or not _is_level_locked(new_idx):
 					_select_level(new_idx)
 					break
 		elif event.keycode == KEY_TAB or event.keycode == KEY_RIGHT or event.keycode == KEY_LEFT:
 			if _esc_menu:
 				return
-			if _is_test_mode:
+			if _mode == LevelMode.TEST:
 				_switch_to_campaign_mode()
 			else:
 				_switch_to_test_mode()
@@ -1099,7 +1143,7 @@ func _input(event: InputEvent) -> void:
 			if _esc_menu:
 				return
 			if selected_index >= 0 and selected_index < _current_levels.size():
-				if _is_test_mode or not _is_level_locked(selected_index):
+				if _mode == LevelMode.TEST or not _is_level_locked(selected_index):
 					_on_start_pressed()
 
 
@@ -1295,7 +1339,7 @@ func _on_esc_back_to_main() -> void:
 
 
 func _switch_to_test_mode() -> void:
-	_is_test_mode = true
+	_mode = LevelMode.TEST
 	_current_levels = test_levels
 	_update_tab_appearance()
 	_rebuild_left_panel()
@@ -1303,40 +1347,51 @@ func _switch_to_test_mode() -> void:
 
 
 func _switch_to_campaign_mode() -> void:
-	_is_test_mode = false
+	_mode = LevelMode.CAMPAIGN
 	_current_levels = levels
 	_update_tab_appearance()
 	_rebuild_left_panel()
 	_select_level(0)
 
 
+func _switch_to_mini_mode() -> void:
+	_mode = LevelMode.MINI
+	_current_levels = mini_levels
+	_update_tab_appearance()
+	_rebuild_left_panel()
+	_select_level(0)
+
+
 func _update_tab_appearance() -> void:
-	if _is_test_mode:
-		_test_tab_bg.texture = np_btn_red.texture
-		_test_tab_bg.patch_margin_left = np_btn_red.margin_left
-		_test_tab_bg.patch_margin_right = np_btn_red.margin_right
-		_test_tab_bg.patch_margin_top = np_btn_red.margin_top
-		_test_tab_bg.patch_margin_bottom = np_btn_red.margin_bottom
-		_test_tab_label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
-		_campaign_tab_bg.texture = np_btn_blue.texture
-		_campaign_tab_bg.patch_margin_left = np_btn_blue.margin_left
-		_campaign_tab_bg.patch_margin_right = np_btn_blue.margin_right
-		_campaign_tab_bg.patch_margin_top = np_btn_blue.margin_top
-		_campaign_tab_bg.patch_margin_bottom = np_btn_blue.margin_bottom
-		_campaign_tab_label.add_theme_color_override("font_color", Color(1, 1, 1))
-	else:
-		_campaign_tab_bg.texture = np_btn_red.texture
-		_campaign_tab_bg.patch_margin_left = np_btn_red.margin_left
-		_campaign_tab_bg.patch_margin_right = np_btn_red.margin_right
-		_campaign_tab_bg.patch_margin_top = np_btn_red.margin_top
-		_campaign_tab_bg.patch_margin_bottom = np_btn_red.margin_bottom
-		_campaign_tab_label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
-		_test_tab_bg.texture = np_btn_blue.texture
-		_test_tab_bg.patch_margin_left = np_btn_blue.margin_left
-		_test_tab_bg.patch_margin_right = np_btn_blue.margin_right
-		_test_tab_bg.patch_margin_top = np_btn_blue.margin_top
-		_test_tab_bg.patch_margin_bottom = np_btn_blue.margin_bottom
-		_test_tab_label.add_theme_color_override("font_color", Color(1, 1, 1))
+	# 当前 mode 的 Tab 高亮(np_btn_red + 金色字),其他两个暗(np_btn_blue + 白字)
+	var active_bg := np_btn_red
+	var idle_bg := np_btn_blue
+	var active_color := Color(1, 0.85, 0.0)
+	var idle_color := Color(1, 1, 1)
+	# campaign
+	var c_active := _mode == LevelMode.CAMPAIGN
+	_campaign_tab_bg.texture = (active_bg if c_active else idle_bg).texture
+	_campaign_tab_bg.patch_margin_left = (active_bg if c_active else idle_bg).margin_left
+	_campaign_tab_bg.patch_margin_right = (active_bg if c_active else idle_bg).margin_right
+	_campaign_tab_bg.patch_margin_top = (active_bg if c_active else idle_bg).margin_top
+	_campaign_tab_bg.patch_margin_bottom = (active_bg if c_active else idle_bg).margin_bottom
+	_campaign_tab_label.add_theme_color_override("font_color", active_color if c_active else idle_color)
+	# test
+	var t_active := _mode == LevelMode.TEST
+	_test_tab_bg.texture = (active_bg if t_active else idle_bg).texture
+	_test_tab_bg.patch_margin_left = (active_bg if t_active else idle_bg).margin_left
+	_test_tab_bg.patch_margin_right = (active_bg if t_active else idle_bg).margin_right
+	_test_tab_bg.patch_margin_top = (active_bg if t_active else idle_bg).margin_top
+	_test_tab_bg.patch_margin_bottom = (active_bg if t_active else idle_bg).margin_bottom
+	_test_tab_label.add_theme_color_override("font_color", active_color if t_active else idle_color)
+	# mini
+	var m_active := _mode == LevelMode.MINI
+	_mini_tab_bg.texture = (active_bg if m_active else idle_bg).texture
+	_mini_tab_bg.patch_margin_left = (active_bg if m_active else idle_bg).margin_left
+	_mini_tab_bg.patch_margin_right = (active_bg if m_active else idle_bg).margin_right
+	_mini_tab_bg.patch_margin_top = (active_bg if m_active else idle_bg).margin_top
+	_mini_tab_bg.patch_margin_bottom = (active_bg if m_active else idle_bg).margin_bottom
+	_mini_tab_label.add_theme_color_override("font_color", active_color if m_active else idle_color)
 
 
 func _rebuild_left_panel() -> void:
