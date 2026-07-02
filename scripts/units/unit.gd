@@ -25,6 +25,8 @@ var owner_id: int = -1
 var slot_id: int = 0
 ## Faction.Color 枚举值，决定贴图目录。
 var faction_color: int = 1
+## 所属据点指挥官 uid 列表（多个=重叠区被多指挥官共管；为空=野生单位）
+var commander_ids: Array[StringName] = []
 @export var sprite_lift: float = 20.0:
 	set(v): sprite_lift = v; _refresh_editor()
 @export var shadow_width: int = 28:

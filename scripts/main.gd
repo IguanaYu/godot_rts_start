@@ -145,6 +145,12 @@ func _run_init_steps() -> void:
 	spawner_module.place_building_callback = building_placer.place_building
 	await get_tree().process_frame
 
+	# Step 5.5: 据点指挥官调度器（依赖 spawner；早于 spawn_from_config 实例化，便于 spawn 时即时 tag）
+	var outpost_commander_manager = Node.new()
+	outpost_commander_manager.name = "OutpostCommanderManager"
+	outpost_commander_manager.set_script(load("res://scripts/outpost/outpost_commander_manager.gd"))
+	add_child(outpost_commander_manager)
+
 	# Step 6: 战斗/选择 + 输入模式 + 控制组
 	LoadRouter.report_init_progress(0.60)
 	combat_ctrl = Node.new()
@@ -233,6 +239,8 @@ func _run_init_steps() -> void:
 		_init_preplaced_units()
 	else:
 		spawner_module.spawn_from_config(map_config)
+		# 兜底：spawn 完成后给所有现存敌方建筑/单位补打 commander_ids
+		spawner_module.tag_all_existing_for_commanders()
 		# 新格式地图：玩家方按 player_sessions 占用情况动态生成 slot
 		_spawn_dynamic_players()
 	# AI 队友（单机模式；预放置和配置生成两种情况都支持）

@@ -54,7 +54,33 @@ func create_unit(type: int, alliance_id: int, pos: Vector2, stats_id: StringName
 	unit.set("slot_id", slot_id)
 	unit.position = pos
 	unit.connect("died", Callable(_main_node, "_on_unit_died"))
+	_tag_commander_if_any(unit)
 	return unit
+
+
+# 给建筑/单位打 commander_ids（如果当前 alliance_id 属于敌方且 Manager 已就绪）
+func _tag_commander_if_any(entity) -> void:
+	if entity == null or not is_instance_valid(entity):
+		return
+	# 仅敌方实体归属据点指挥官
+	if "alliance_id" in entity and entity.alliance_id == 0:
+		return
+	var manager = _main_node.get_node_or_null("OutpostCommanderManager")
+	if manager == null or not manager.has_method("tag_entity"):
+		return
+	manager.tag_entity(entity)
+
+
+# 批量为现存所有 enemy_buildings/enemy_units 补 tag
+# 供 main.gd 在 spawn_from_config 完成后调用
+func tag_all_existing_for_commanders() -> void:
+	var manager = _main_node.get_node_or_null("OutpostCommanderManager")
+	if manager == null or not manager.has_method("tag_entity"):
+		return
+	for b in get_tree().get_nodes_in_group("enemy_buildings"):
+		manager.tag_entity(b)
+	for u in get_tree().get_nodes_in_group("enemy_units"):
+		manager.tag_entity(u)
 
 # --- 从配置生成 ---
 
@@ -117,6 +143,7 @@ func _spawn_legacy_from_config(map_config: Resource) -> void:
 		building.net_id = _next_net_id
 		_next_net_id += 1
 		LockstepSync.register_unit(building)
+		_tag_commander_if_any(building)
 
 # 新格式：生成所有 is_ai=true 的联盟（玩家方 alliance=0 由 main._spawn_dynamic_players 处理）
 func _spawn_ai_alliances_from_config(map_config: Resource) -> void:
@@ -151,6 +178,7 @@ func _spawn_ai_alliances_from_config(map_config: Resource) -> void:
 				building.net_id = _next_net_id
 				_next_net_id += 1
 				LockstepSync.register_unit(building)
+				_tag_commander_if_any(building)
 
 # 联机时按 player_sessions 占用情况动态生成单个玩家 slot 的初始单位/建筑
 func spawn_slot_initial(slot: Dictionary, slot_idx: int, owner_id: int, color: int) -> void:

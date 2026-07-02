@@ -30,6 +30,11 @@ extends Resource
 #             "buildings": Array[{type,grid_pos}] }
 @export var alliances: Array[Dictionary] = []
 
+# === 据点指挥官（新格式；运行时由场景中的 OutpostCommander 节点自注册）===
+# 此字段仅作为可选覆盖，按 commander_uid 覆盖节点上的 OutpostCommanderConfig 默认值
+# 结构：{ "uid_a": OutpostCommanderConfig, "uid_b": ... }
+@export var outpost_commander_overrides: Dictionary = {}
+
 # 敌方随玩家数动态增强：每多 1 个玩家，敌方单位数 ×mult，并可选追加 extra_groups 波次
 @export var enemy_scaling: Dictionary = {"per_player_unit_mult": 1.0, "per_player_extra_groups": []}
 
