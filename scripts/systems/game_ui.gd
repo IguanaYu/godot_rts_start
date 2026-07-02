@@ -442,6 +442,18 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	gold_label.text = tr("UI_GOLD") % current_gold
 	res_vbox.add_child(gold_label)
 
+	# 科技等级显示（暗线，仅显示当前等级）
+	_tech_label = Label.new()
+	_tech_label.name = "TechLevelLabel"
+	_tech_label.add_theme_font_size_override("font_size", 14)
+	_tech_label.add_theme_color_override("font_color", Color(0.3, 0.7, 1.0))
+	_tech_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	_tech_label.add_theme_constant_override("shadow_offset_x", 1)
+	_tech_label.add_theme_constant_override("shadow_offset_y", 1)
+	_tech_label.text = "Tech: 0"
+	res_vbox.add_child(_tech_label)
+
+
 	# 升级币按钮
 	var upgrade_wrapper := Control.new()
 	upgrade_wrapper.custom_minimum_size = Vector2(120, 28)
@@ -1011,6 +1023,21 @@ func update_upgrade_tokens(tokens: Dictionary) -> void:
 	if upgrade_token_button:
 		upgrade_token_button.disabled = (total <= 0)
 		upgrade_token_button.modulate.a = 1.0 if total > 0 else 0.5
+
+
+var _tech_label: Label = null
+var _tech_level: int = 1
+
+func update_tech_level(level: int) -> void:
+	_tech_level = level
+	if _tech_label:
+		_tech_label.text = tr("UI_TECH_LEVEL") % level
+
+
+func update_tech_points(points: int) -> void:
+	if _tech_label:
+		_tech_label.text = "Tech: %d" % points
+
 
 
 func _update_button_affordability(current_gold: int) -> void:

@@ -114,6 +114,10 @@ func place_building(type: int, team: int, gpos: Vector2i, owner_id: int = -1, fa
 			occupied_cells[Vector2i(gpos.x + dx, gpos.y + dy)] = building
 	_rebuild_navigation()
 	building_placed.emit(building)
+	# 连接建造完成信号（用于科技点系统）
+	if building.has_signal("construction_finished"):
+		if not building.construction_finished.is_connected(_on_building_construction_finished):
+			building.construction_finished.connect(_on_building_construction_finished)
 	return building
 
 
@@ -173,6 +177,24 @@ func _on_building_died(building: Node2D) -> void:
 			occupied_cells.erase(Vector2i(gpos.x + dx, gpos.y + dy))
 	_rebuild_navigation()
 	building_died.emit(building)
+	# 科技点：摧毁敌方建筑
+	var main_node := get_tree().current_scene
+	if main_node and main_node.get("tech_point_manager"):
+		var team_val = building.get("team")
+		if team_val == BuildingScript.Team.ENEMY:
+			var TPD := preload("res://scripts/tech/tech_point_data.gd")
+			main_node.tech_point_manager.add_points(TPD.BASE_POINTS.get("kill_building", 100), TPD.CATEGORY_KILL_ENEMY_BUILDING)
+
+
+func _on_building_construction_finished(building: Node2D) -> void:
+	# 科技点：建造建筑完成
+	var main_node := get_tree().current_scene
+	if main_node and main_node.get("tech_point_manager"):
+		var bt = building.get("building_type")
+		var TPD := preload("res://scripts/tech/tech_point_data.gd")
+		var pts: int = TPD.get_build_points(bt)
+		if pts > 0:
+			main_node.tech_point_manager.add_points(pts, TPD.CATEGORY_BUILD_CONSTRUCTION)
 
 
 func _rebuild_navigation() -> void:

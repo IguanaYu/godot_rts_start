@@ -310,6 +310,10 @@ func place_player_unit(unit_type: int, click_pos: Vector2, stats_id: StringName 
 	var main_scene := get_tree().current_scene
 	if main_scene and main_scene.get("has_global_rally"):
 		unit.attack_move_to(main_scene.global_rally_point)
+	# 通知科技点系统：面板造兵（玩家点击放置）
+	if main_scene and main_scene.get("tech_point_manager"):
+		var TPD := preload("res://scripts/tech/tech_point_data.gd")
+		main_scene.tech_point_manager.add_points(TPD.BASE_POINTS.get("produce_unit", 5), TPD.CATEGORY_PRODUCE_UNIT)
 
 # --- 阵型计算 ---
 

@@ -41,6 +41,7 @@ var commander_skill_manager: Node
 var commander_skill_panel: Node
 var upgrade_manager: Node
 var upgrade_panel: Node
+var tech_point_manager: Node = null
 var _available_skills: Array = []
 
 # 全局玩家集结点
@@ -187,6 +188,21 @@ func _run_init_steps() -> void:
 	add_child(commander_skill_panel)
 	commander_skill_panel.initialize(self, commander_skill_manager)
 	commander_skill_panel.skill_button_pressed.connect(_on_commander_skill_button_pressed)
+	await get_tree().process_frame
+
+	# Step 7.5: 科技点系统
+	LoadRouter.report_init_progress(0.75)
+	tech_point_manager = Node.new()
+	tech_point_manager.set_script(load("res://scripts/tech/tech_point_manager.gd"))
+	add_child(tech_point_manager)
+	tech_point_manager.level_unlocked.connect(_on_tech_level_unlocked)
+	tech_point_manager.points_changed.connect(_on_tech_points_changed)
+	var tech_timer := Timer.new()
+	tech_timer.name = "TechPointTimer"
+	tech_timer.wait_time = 60.0
+	tech_timer.autostart = true
+	tech_timer.timeout.connect(_on_tech_passive_timer)
+	add_child(tech_timer)
 	await get_tree().process_frame
 
 	# Step 8: 升级系统（双向依赖 spawner）
@@ -884,6 +900,13 @@ func _on_unit_died(unit: CharacterBody2D) -> void:
 			child.notify_kill()
 	# 被动技能触发：单位死亡
 	var died_alliance: int = unit.get("alliance_id") if "alliance_id" in unit else -1
+	# 科技点：消灭敌方单位 / 己方单位死亡
+	if tech_point_manager:
+		var TPD := preload("res://scripts/tech/tech_point_data.gd")
+		if unit.is_in_group("enemy_units"):
+			tech_point_manager.add_points(TPD.BASE_POINTS.get("kill_unit", 1), TPD.CATEGORY_KILL_ENEMY_UNIT)
+		elif unit.is_in_group("player_units"):
+			tech_point_manager.add_points(TPD.BASE_POINTS.get("own_unit_died", 2), TPD.CATEGORY_OWN_UNIT_DIED)
 	PassiveSkillManager.emit_trigger(
 		preload("res://scripts/commander/passive_triggers.gd").UNIT_DIED,
 		{"unit": unit, "alliance_id": died_alliance}
@@ -1547,6 +1570,25 @@ func _rally_units_in_view(pos: Vector2) -> void:
 		if is_instance_valid(u) and not u.is_dead() and view_rect.has_point(u.global_position):
 			u.attack_move_to(pos)
 
+
+# === 科技点系统回调 ===
+
+func _on_tech_level_unlocked(level: int) -> void:
+	print("[Tech] 科技等级解锁: Tier ", level)
+	if ui_module and ui_module.has_method("update_tech_level"):
+		ui_module.update_tech_level(level)
+
+
+func _on_tech_passive_timer() -> void:
+	if tech_point_manager:
+		var TPD := preload("res://scripts/tech/tech_point_data.gd")
+		tech_point_manager.add_points(TPD.BASE_POINTS.get("passive_60s", 10), TPD.CATEGORY_PASSIVE)
+
+
+func _on_tech_points_changed(points: int) -> void:
+	print("[DEBUG] _on_tech_points_changed points=", points, " ui=", ui_module)
+	if ui_module and ui_module.has_method("update_tech_points"):
+		ui_module.update_tech_points(points)
 
 func spawn_unit_near(type: int, pos: Vector2, team: int) -> CharacterBody2D:
 	var unit = spawner_module.spawn_unit_near(type, pos, team)

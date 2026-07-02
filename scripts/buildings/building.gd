@@ -89,6 +89,7 @@ var _production_circle: Node2D = null
 
 signal died(building)
 signal damaged(amount, attacker)
+signal construction_finished(building)
 
 @onready var static_body: StaticBody2D = $StaticBody2D
 @onready var collision_shape: CollisionShape2D = $StaticBody2D/CollisionShape2D
@@ -559,6 +560,10 @@ func _spawn_produced_unit() -> void:
 		ai.name = "EnemyAI"
 		ai.set_script(load("res://scripts/units/enemy_ai.gd"))
 		unit.add_child(ai)
+	# 通知科技点系统：生产单位（双方造兵都给）
+	if main_scene and main_scene.get("tech_point_manager"):
+		var TPD := preload("res://scripts/tech/tech_point_data.gd")
+		main_scene.tech_point_manager.add_points(TPD.BASE_POINTS.get("produce_unit", 5), TPD.CATEGORY_PRODUCE_UNIT)
 
 func _produce_gold() -> void:
 	var main_node := get_tree().current_scene
@@ -763,3 +768,4 @@ func _finish_construction() -> void:
 	if build_bar:
 		build_bar.queue_free()
 		build_bar = null
+	construction_finished.emit(self)
