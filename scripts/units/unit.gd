@@ -27,6 +27,10 @@ var slot_id: int = 0
 var faction_color: int = 1
 ## 所属据点指挥官 uid 列表（多个=重叠区被多指挥官共管；为空=野生单位）
 var commander_ids: Array[StringName] = []
+## 当前指令的来源指挥官 uid（用于重叠区指令锁定，避免抖动）
+var order_source_uid: StringName = &""
+## 最近一次被据点指挥官下令的时间戳（msec），配合 3 秒锁定窗口
+var active_order_timestamp: int = -10000
 @export var sprite_lift: float = 20.0:
 	set(v): sprite_lift = v; _refresh_editor()
 @export var shadow_width: int = 28:

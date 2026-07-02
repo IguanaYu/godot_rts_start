@@ -264,6 +264,16 @@ func alert_from_ally() -> void:
 	_try_release()
 
 
+## 强制释放全部驻军（供据点指挥官 release_garrison 法术调用）
+## 一次性把当前 garrison 全部推入 _release_queue，由 _process_release_queue 逐个生成
+func force_release_all() -> void:
+	if _disabled or garrison.is_empty():
+		return
+	while not garrison.is_empty():
+		_release_queue.append(garrison.pop_front())
+	_release_interval_timer = 0.0  # 立即开始释放第一个
+
+
 func get_garrison_count() -> int:
 	return garrison.size() + _release_queue.size()
 
