@@ -231,6 +231,13 @@ func _setup_stats() -> void:
 	# 应用指挥官变体 tint（WHITE = 不变）
 	if body_sprite and stats_data.tint != Color.WHITE:
 		body_sprite.modulate = stats_data.tint
+	# 应用全局战斗节奏倍率（FAST/SLOW；DEFAULT 跳过）
+	# 由 main.gd 在 _enter_tree 中根据 map_config.balance_scheme 设置 BalanceScheme.current
+	if not Engine.is_editor_hint() and BalanceScheme.current != BalanceScheme.Scheme.DEFAULT:
+		var _bal_mod := BalanceScheme.get_modifiers()
+		stat_set.add_modifier("balance", StatSetClass.MAX_HP, 0.0, _bal_mod.hp)
+		stat_set.add_modifier("balance", StatSetClass.ATTACK_DAMAGE, 0.0, _bal_mod.dmg)
+		stat_set.add_modifier("balance", StatSetClass.ATTACK_COOLDOWN, 0.0, _bal_mod.cd)
 	# 应用变体修饰器（通过 add_modifier 改实际属性）
 	if variant_hp_bonus != 0:
 		stat_set.add_modifier("variant", StatSetClass.MAX_HP, float(variant_hp_bonus))
@@ -242,7 +249,7 @@ func _setup_stats() -> void:
 		sprite_scale_x *= variant_scale
 		sprite_scale_y *= variant_scale
 	# 同步 HP（修饰器可能改了 max_hp）
-	if (variant_hp_bonus != 0) and health and not Engine.is_editor_hint():
+	if (variant_hp_bonus != 0 or BalanceScheme.current != BalanceScheme.Scheme.DEFAULT) and health and not Engine.is_editor_hint():
 		health.setup(stat_set.get_int(StatSetClass.MAX_HP), hp_bar, team)
 	# 光环字段
 	aura_range = stats_data.aura_range

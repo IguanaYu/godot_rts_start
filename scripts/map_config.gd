@@ -63,3 +63,8 @@ extends Resource
 @export var star_time_2: float = 300.0  # 2星时限
 @export var star_deaths_3: int = 0  # 3星死亡上限
 @export var star_deaths_2: int = 3  # 2星死亡上限
+
+## 战斗节奏方案：0=DEFAULT / 1=FAST (TTK~4s) / 2=SLOW (TTK~15s)
+## 对应 BalanceScheme.Scheme 枚举。由 main.gd 在 _enter_tree 读取并写入 BalanceScheme.current，
+## unit.gd 的 _setup_stats 末尾通过 stat_set.add_modifier 应用乘性修饰器。
+@export var balance_scheme: int = 0
