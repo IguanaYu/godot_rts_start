@@ -1,0 +1,180 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" uid="uid://e5by4tc82spk" path="res://scenes/units/archer.tscn" id="archer"]
+[ext_resource type="PackedScene" uid="uid://dhyxequcxurbh" path="res://scenes/buildings/barracks.tscn" id="barracks"]
+[ext_resource type="PackedScene" uid="uid://8rfekrdqs7gf" path="res://scenes/buildings/castle.tscn" id="castle"]
+[ext_resource type="Script" uid="uid://cg2igjmusi0dq" path="res://scripts/main.gd" id="main_script"]
+[ext_resource type="Resource" path="res://resources/map_test_outpost_config.tres" id="map_test_config"]
+[ext_resource type="PackedScene" uid="uid://mmgbo1ded4ro" path="res://scenes/units/soldier.tscn" id="soldier"]
+[ext_resource type="PackedScene" uid="uid://tower0001" path="res://scenes/buildings/tower.tscn" id="tower"]
+[ext_resource type="Script" uid="uid://jhcf43ds1dy6" path="res://scripts/victory/victory_destroy_base.gd" id="victory_destroy_base"]
+[ext_resource type="PackedScene" uid="uid://wall00001" path="res://scenes/buildings/wall.tscn" id="wall"]
+[ext_resource type="Script" path="res://scripts/outpost/outpost_commander.gd" id="outpost_cmdr_script"]
+[ext_resource type="Script" path="res://scripts/outpost/outpost_commander_config.gd" id="outpost_cfg_script"]
+
+[sub_resource type="NavigationPolygon" id="NavPoly_1"]
+vertices = PackedVector2Array(-500, -500, 1500, -500, 1500, 1200, -500, 1200)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
+
+[sub_resource type="Resource" id="OutpostConfig_test"]
+script = ExtResource("outpost_cfg_script")
+commander_uid = &"test_outpost_alpha"
+alliance_id = 1
+territory_radius = 350.0
+mana_max = 100.0
+gold_max = 500
+gold_regen = 5.0
+strategy_max = 4
+strategy_regen = 0.05
+enabled_spells = Array[StringName]([&"inspire", &"call_to_arms", &"release_garrison", &"heal", &"shield"])
+enabled_strategies = Array[StringName]([&"attack", &"coordinate", &"defend", &"expand"])
+aggression = 0.7
+defensiveness = 0.5
+expansionist = 0.4
+forced_strategy = &""
+spell_overrides = {}
+strategy_overrides = {}
+
+[node name="MapTestOutpost" type="Node2D" unique_id=281844726]
+script = ExtResource("main_script")
+map_config = ExtResource("map_test_config")
+
+[node name="Ground" type="ColorRect" parent="." unique_id=820275618]
+offset_left = -537.0
+offset_top = -468.0
+offset_right = 1463.0
+offset_bottom = 1232.0
+color = Color(0.35, 0.55, 0.25, 1)
+
+[node name="NavigationRegion2D" type="NavigationRegion2D" parent="." unique_id=829099249]
+navigation_polygon = SubResource("NavPoly_1")
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1012491844]
+
+[node name="PlayerUnits" type="Node2D" parent="." unique_id=2109903171]
+
+[node name="PlayerSoldier1" parent="PlayerUnits" unique_id=785634715 instance=ExtResource("soldier")]
+position = Vector2(200, 200)
+
+[node name="PlayerSoldier2" parent="PlayerUnits" unique_id=41736956 instance=ExtResource("soldier")]
+position = Vector2(200, 280)
+
+[node name="PlayerSoldier3" parent="PlayerUnits" unique_id=593865126 instance=ExtResource("soldier")]
+position = Vector2(200, 360)
+
+[node name="PlayerArcher1" parent="PlayerUnits" unique_id=936148417 instance=ExtResource("archer")]
+position = Vector2(150, 240)
+
+[node name="PlayerArcher2" parent="PlayerUnits" unique_id=1818807738 instance=ExtResource("archer")]
+position = Vector2(150, 320)
+
+[node name="EnemyUnits" type="Node2D" parent="." unique_id=1704146297]
+
+[node name="EnemySoldier1" parent="EnemyUnits" unique_id=164626856 instance=ExtResource("soldier")]
+position = Vector2(900, 200)
+team = 1
+
+[node name="EnemySoldier2" parent="EnemyUnits" unique_id=1667145151 instance=ExtResource("soldier")]
+position = Vector2(891, 321)
+team = 1
+
+[node name="EnemySoldier3" parent="EnemyUnits" unique_id=2034998767 instance=ExtResource("soldier")]
+position = Vector2(887, 391)
+team = 1
+
+[node name="EnemyArcher1" parent="EnemyUnits" unique_id=838110303 instance=ExtResource("archer")]
+position = Vector2(1059, 279)
+team = 1
+
+[node name="EnemyArcher2" parent="EnemyUnits" unique_id=41793350 instance=ExtResource("archer")]
+position = Vector2(958, 396)
+team = 1
+
+[node name="EnemyArcher3" parent="EnemyUnits" unique_id=113123254 instance=ExtResource("archer")]
+position = Vector2(1038, 176)
+team = 1
+
+[node name="EnemyArcher4" parent="EnemyUnits" unique_id=813065396 instance=ExtResource("archer")]
+position = Vector2(1085, 356)
+team = 1
+
+[node name="EnemySoldierBoss" parent="EnemyUnits" unique_id=745006089 instance=ExtResource("soldier")]
+position = Vector2(643, 252)
+team = 1
+variant_hp_bonus = 200
+variant_atk_bonus = 8
+variant_speed_mult = 0.75
+variant_scale = 1.5
+
+[node name="Buildings" type="Node2D" parent="." unique_id=1134354485]
+
+[node name="PlayerCastle" parent="Buildings" unique_id=1327529415 instance=ExtResource("castle")]
+position = Vector2(160, 224)
+
+[node name="PlayerBarracks" parent="Buildings" unique_id=1152826496 instance=ExtResource("barracks")]
+position = Vector2(256, 0)
+
+[node name="EnemyCastle" parent="Buildings" unique_id=1484216927 instance=ExtResource("castle")]
+position = Vector2(864, 224)
+team = 1
+
+[node name="EnemyBarracks" parent="Buildings" unique_id=428834541 instance=ExtResource("barracks")]
+position = Vector2(960, 512)
+team = 1
+
+[node name="EnemyTower" parent="Buildings" unique_id=198907701 instance=ExtResource("tower")]
+position = Vector2(864, 32)
+team = 1
+
+[node name="EnemyWall1" parent="Buildings" unique_id=570648438 instance=ExtResource("wall")]
+position = Vector2(544, 160)
+team = 1
+
+[node name="EnemyWall2" parent="Buildings" unique_id=565125089 instance=ExtResource("wall")]
+position = Vector2(736, 416)
+team = 1
+
+[node name="EnemyTower2" parent="Buildings" unique_id=13175459 instance=ExtResource("tower")]
+position = Vector2(608, 416)
+team = 1
+
+[node name="EnemyTower3" parent="Buildings" unique_id=564080853 instance=ExtResource("tower")]
+position = Vector2(544, 96)
+team = 1
+
+[node name="SelectionBox" type="ColorRect" parent="." unique_id=1984857966]
+visible = false
+mouse_filter = 2
+color = Color(0.4, 0.7, 1, 0.25)
+
+[node name="PreviewRect" type="ColorRect" parent="." unique_id=352550106]
+visible = false
+mouse_filter = 2
+color = Color(0, 1, 0, 0.3)
+
+[node name="ResultLabel" type="Label" parent="." unique_id=1523080687]
+offset_left = 350.0
+offset_top = 300.0
+offset_right = 650.0
+offset_bottom = 400.0
+theme_override_font_sizes/font_size = 48
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AttackMoveIndicator" type="Label" parent="." unique_id=905192013]
+visible = false
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 200.0
+offset_bottom = 40.0
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+theme_override_font_sizes/font_size = 20
+text = "Attack Move (Click)"
+
+[node name="VictoryDestroyBase" type="Node" parent="." unique_id=552484933]
+script = ExtResource("victory_destroy_base")
+
+[node name="OutpostCommander1" type="Node2D" parent="."]
+position = Vector2(864, 224)
+script = ExtResource("outpost_cmdr_script")
+config = SubResource("OutpostConfig_test")

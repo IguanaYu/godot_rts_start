@@ -254,6 +254,8 @@ TEST_T12_NAME,T12: Territory Score,T12: 领土积分,T12: 領土スコア
 TEST_T12_DESC,"Reach 100 territory score by capturing control points.","通过占领据点获得100领土积分。","拠点を占領して領土スコア100に達せよ。"
 TEST_T13_NAME,T13: Endless,T13: 无尽模式,T13: エンドレス
 TEST_T13_DESC,"Survive as long as possible. Game ends when your castle falls.","尽可能长时间存活。城堡被毁时游戏结束。","できるだけ長く生き残れ。城が落ちたら終了。"
+TEST_OUTPOST_NAME,Outpost Test,据点指挥官测试,アウトポスト指揮官テスト
+TEST_OUTPOST_DESC,"Outpost commander system test — derived from map 2 (Basic Attack).","据点指挥官系统测试关卡 — 复制自第二关(基础进攻)。","アウトポスト指揮官システムのテストステージ — マップ2(基本攻撃)から複製。"
 TAB_CAMPAIGN,Campaign,战役,キャンペーン
 TAB_TEST_LEVELS,Test Levels,测试关卡,テストステージ
 UI_PATH_LINES,Path Lines,寻路路径线,パス表示
@@ -362,3 +364,4 @@ PASSIVE_ECONOMY_BOOST,Economy Boost,经济加成,経済ブースト
 PASSIVE_ECONOMY_BOOST_DESC,Buildings generate extra gold over time.,建筑持续产出额外金币。,建物が時間経過で追加ゴールドを産出する。
 PASSIVE_COMBAT_AURA_BUFF,Combat Aura,战斗光环,戦闘オーラ
 PASSIVE_COMBAT_AURA_BUFF_DESC,New units near friendly buildings gain temporary attack bonus.,新单位在友方建筑光环内获得临时攻击加成。,新しいユニットが味方建物のオーラ内で一時的な攻撃ボーナスを得る。
+UI_TECH_LEVEL,Tech Lv.%d,科技 Lv.%d,技術 Lv.%d

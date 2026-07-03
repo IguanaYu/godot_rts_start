@@ -187,6 +187,7 @@ var test_levels := [
 	{"name_key": "TEST_T11_NAME", "desc_key": "TEST_T11_DESC", "scene": "res://scenes/maps/test_multi_stage.tscn"},
 	{"name_key": "TEST_T12_NAME", "desc_key": "TEST_T12_DESC", "scene": "res://scenes/maps/test_territory_score.tscn"},
 	{"name_key": "TEST_T13_NAME", "desc_key": "TEST_T13_DESC", "scene": "res://scenes/maps/test_endless.tscn"},
+	{"name_key": "TEST_OUTPOST_NAME", "desc_key": "TEST_OUTPOST_DESC", "scene": "res://scenes/maps/map_test_outpost.tscn"},
 ]
 
 # === 模式切换 ===
