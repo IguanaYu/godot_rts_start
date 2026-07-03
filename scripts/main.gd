@@ -150,6 +150,8 @@ func _run_init_steps() -> void:
 	add_child(building_placer)
 	building_placer.initialize(map_bounds, NAV_BOUNDS, nav_region, buildings_node, preview_rect, ui_module)
 	spawner_module.place_building_callback = building_placer.place_building
+	spawner_module.snap_to_grid_callback = building_placer.snap_to_grid
+	spawner_module.is_grid_free_callback = building_placer.is_grid_free
 	await get_tree().process_frame
 
 	# Step 5.5: 据点指挥官调度器（依赖 spawner；早于 spawn_from_config 实例化，便于 spawn 时即时 tag）
@@ -244,6 +246,8 @@ func _run_init_steps() -> void:
 	if has_preplaced:
 		building_placer.register_preplaced_buildings(buildings_node)
 		_init_preplaced_units()
+		# 给预放置敌方建筑/单位补打 commander_ids（与 spawn_from_config 路径对齐）
+		spawner_module.tag_all_existing_for_commanders()
 	else:
 		spawner_module.spawn_from_config(map_config)
 		# 兜底：spawn 完成后给所有现存敌方建筑/单位补打 commander_ids

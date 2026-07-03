@@ -9,6 +9,25 @@ const SkillEffectsRef := preload("res://scripts/commander_skill/skill_effects.gd
 
 
 # ============================================================
+# 静态分发：用 StringName 调用对应法术（绕过 .call() 不能调 static 的限制）
+# ============================================================
+static func dispatch(spell_id: StringName, main_node: Node2D, spawner_module: Node, target_pos: Vector2, config: Dictionary) -> void:
+	match spell_id:
+		&"heal":
+			heal(main_node, spawner_module, target_pos, config)
+		&"inspire":
+			inspire(main_node, spawner_module, target_pos, config)
+		&"call_to_arms":
+			call_to_arms(main_node, spawner_module, target_pos, config)
+		&"release_garrison":
+			release_garrison(main_node, spawner_module, target_pos, config)
+		&"shield":
+			shield(main_node, spawner_module, target_pos, config)
+		_:
+			push_warning("[OutpostSpellEffects] unknown spell: %s" % String(spell_id))
+
+
+# ============================================================
 # heal — 治疗圈内友方单位（敌方阵营）
 # ============================================================
 static func heal(main_node: Node2D, _spawner_module: Node, target_pos: Vector2, config: Dictionary) -> void:

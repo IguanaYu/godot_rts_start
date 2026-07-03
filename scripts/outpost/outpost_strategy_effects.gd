@@ -10,6 +10,25 @@ extends RefCounted
 
 const BuildingScript := preload("res://scripts/buildings/building.gd")
 const D := preload("res://scripts/systems/game_data.gd")
+const FactionClass := preload("res://scripts/faction.gd")
+
+
+# ============================================================
+# 静态分发：用 StringName 调用对应策略（绕过 .call() 不能调 static 的限制）
+# ============================================================
+static func dispatch(strategy_id: StringName, cmdr: Node, manager: Node, config: Dictionary) -> bool:
+	match strategy_id:
+		&"attack":
+			return attack(cmdr, manager, config)
+		&"coordinate":
+			return coordinate(cmdr, manager, config)
+		&"defend":
+			return defend(cmdr, manager, config)
+		&"expand":
+			return expand(cmdr, manager, config)
+		_:
+			push_warning("[OutpostStrategyEffects] unknown strategy: %s" % String(strategy_id))
+			return false
 
 
 # ============================================================
@@ -188,7 +207,7 @@ static func _place_building(cmdr: Node, building_type: int, gpos: Vector2i) -> N
 	if cb.is_null():
 		return null
 	# team=ENEMY=1, owner=-1, color=RED, slot=0
-	var building = cb.call(building_type, BuildingScript.Team.ENEMY, gpos, -1, 2, 0)
+	var building = cb.call(building_type, BuildingScript.Team.ENEMY, gpos, -1, FactionClass.ColorId.RED, 0)
 	if building != null and is_instance_valid(building):
 		building.net_id = spawner._next_net_id
 		spawner._next_net_id += 1

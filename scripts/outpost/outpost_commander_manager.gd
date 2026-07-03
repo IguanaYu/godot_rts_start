@@ -3,6 +3,7 @@ extends Node
 ## 实例化位置：main.gd Step 5.5（spawner 之后），以便 spawner 创建单位/建筑时立即调 tag_entity
 
 var _commanders: Array = []  # OutpostCommander 实例列表
+var _retag_accumulator: float = 0.0
 
 
 func _ready() -> void:
@@ -18,10 +19,7 @@ func _auto_scan() -> void:
 		if child not in _commanders:
 			_commanders.append(child)
 	# 给所有现存的 enemy_buildings/enemy_units 补打 tag（spawner 已先于 Manager 实例化的情况）
-	for b in get_tree().get_nodes_in_group("enemy_buildings"):
-		tag_entity(b)
-	for u in get_tree().get_nodes_in_group("enemy_units"):
-		tag_entity(u)
+	_retag_all_entities()
 
 
 func register_commander(cmdr) -> void:
@@ -40,9 +38,21 @@ func unregister_commander(cmdr) -> void:
 
 
 func _process(delta: float) -> void:
+	# 周期性补 tag 新生成的单位（建筑产兵 / 驻军释放 / wave_manager 等都不会主动调 tag_entity）
+	_retag_accumulator += delta
+	if _retag_accumulator >= 2.0:
+		_retag_accumulator = 0.0
+		_retag_all_entities()
 	for cmdr in _commanders:
 		if is_instance_valid(cmdr):
 			cmdr.tick(delta)
+
+
+func _retag_all_entities() -> void:
+	for b in get_tree().get_nodes_in_group("enemy_buildings"):
+		tag_entity(b)
+	for u in get_tree().get_nodes_in_group("enemy_units"):
+		tag_entity(u)
 
 
 # ============================================================

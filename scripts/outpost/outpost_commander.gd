@@ -52,21 +52,13 @@ func _ready() -> void:
 		mana = config.mana_max
 		gold = config.gold_max
 		strategy_points = float(config.strategy_max)
-	_register_to_manager()
+	# 注册由 OutpostCommanderManager._ready 的 _auto_scan 完成
+	# 此处不再自注册（避免 get_tree() 在节点释放后返回 null 导致段错误）
 
 
 func _register_to_manager() -> void:
-	var main_node := get_tree().current_scene
-	if main_node == null:
-		call_deferred("_register_to_manager")
-		return
-	var manager = main_node.get_node_or_null("OutpostCommanderManager")
-	if manager == null:
-		call_deferred("_register_to_manager")
-		return
-	if manager.has_method("register_commander"):
-		manager.register_commander(self)
-		_is_registered = true
+	# 兼容旧调用：manager 自扫描已覆盖
+	pass
 
 
 # ============================================================
@@ -238,11 +230,11 @@ func _pick_and_cast_spell(threat: int, attacked: int, buildings: Array, units: A
 		pass
 	# 优先级：shield > call_to_arms > heal > inspire > release_garrison
 	if attacked > 0 and &"shield" in config.enabled_spells:
-		var target := _weakest_attacked_building(buildings)
+		var target: Node = _weakest_attacked_building(buildings)
 		if target != null and _try_cast_spell(&"shield", {"target_building": target}):
 			return &"shield"
 	if threat >= 8 and &"call_to_arms" in config.enabled_spells:
-		var center := _weakest_attacked_building(buildings)
+		var center: Node = _weakest_attacked_building(buildings)
 		var pos: Vector2 = center.global_position if center != null else global_position
 		if _try_cast_spell(&"call_to_arms", {"center": pos}):
 			return &"call_to_arms"
@@ -291,7 +283,7 @@ func _try_cast_spell(spell_id: StringName, extra_config: Dictionary) -> bool:
 	cfg.erase("_target_pos")
 	var main_node := get_tree().current_scene
 	var spawner = main_node.get("spawner_module") if "spawner_module" in main_node else null
-	SpellEffectsRef.call(spell_id, main_node, spawner, target_pos, cfg)
+	SpellEffectsRef.dispatch(spell_id, main_node, spawner, target_pos, cfg)
 	print("[OutpostCommander:%s] cast spell %s (cost=%.0f)" % [_uid_str(), String(spell_id), cost])
 	return true
 
@@ -373,7 +365,7 @@ func _try_execute_strategy(strategy_id: StringName, force: bool) -> bool:
 	}
 	var main_node := get_tree().current_scene
 	var manager = main_node.get_node_or_null("OutpostCommanderManager")
-	var ok: bool = StrategyEffectsRef.call(strategy_id, self, manager, strat_config)
+	var ok: bool = StrategyEffectsRef.dispatch(strategy_id, self, manager, strat_config)
 	if ok:
 		current_strategy = strategy_id
 		print("[OutpostCommander:%s] execute strategy %s (sp=%d gold=%d)" %

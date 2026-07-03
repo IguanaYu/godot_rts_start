@@ -683,7 +683,7 @@ func take_damage(amount: int, attacker = null) -> void:
 		return
 	# 反特化：attacker 对建筑有额外伤害倍率
 	var final_amount := amount
-	var atk_stats = attacker.stats_data if attacker is Unit else null
+	var atk_stats = attacker.stats_data if (is_instance_valid(attacker) and attacker is Unit) else null
 	if atk_stats and atk_stats.bonus_vs_building_multiplier > 1.0:
 		final_amount = int(final_amount * atk_stats.bonus_vs_building_multiplier)
 	health.take_damage(final_amount)
