@@ -184,15 +184,17 @@ func _setup_stats() -> void:
 
 
 func _apply_commander_building_stats(fallback_max_hp: int) -> void:
+	# 建筑 HP 倍率（SLOW=3.0 / 其他=1.0）。所有 health.setup 路径都应用。
+	var bal_hp_mult := BalanceScheme.get_building_hp_mult()
 	if Engine.is_editor_hint():
 		# 编辑器模式：CommanderContext 未就绪，用 fallback 硬编码值
 		if health and fallback_max_hp > 0:
-			health.setup(fallback_max_hp, hp_bar, team)
+			health.setup(int(fallback_max_hp * bal_hp_mult), hp_bar, team)
 		return
 	var sid: StringName = CommanderContext.get_default_building_stats_id(int(building_type), alliance_id)
 	if sid == &"" or not BuildingStatsRegistry.has_id(sid):
 		if health and fallback_max_hp > 0:
-			health.setup(fallback_max_hp, hp_bar, team)
+			health.setup(int(fallback_max_hp * bal_hp_mult), hp_bar, team)
 		return
 	var stats = BuildingStatsRegistry.get_by_id(sid)
 	building_stats = stats
@@ -211,7 +213,7 @@ func _apply_commander_building_stats(fallback_max_hp: int) -> void:
 	aura_type = stats.aura_type
 	aura_value = stats.aura_value
 	if health:
-		health.setup(max_hp, hp_bar, team)
+		health.setup(int(max_hp * bal_hp_mult), hp_bar, team)
 	# 应用指挥官变体 tint（WHITE = 不变）
 	if body_sprite and stats.tint != Color.WHITE:
 		body_sprite.modulate = stats.tint

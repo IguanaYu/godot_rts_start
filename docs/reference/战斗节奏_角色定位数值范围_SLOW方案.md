@@ -191,23 +191,78 @@ base_HP_no_armor = 214.3 / 1.3 = 164.8
 
 ---
 
-## 5. 与其他系统的联动
+## 5. 建筑 HP 与 siege 节奏
 
-### 5.1 升级系统（UpgradeMgr）
+建筑 base HP 硬编码在 [building.gd:142 _setup_stats](../../scripts/buildings/building.gd#L142)，按 `BuildingType` 分配。SLOW 方案下额外应用 **2.0x 倍率**（通过 `BalanceScheme.get_building_hp_mult()`，在 `_apply_commander_building_stats` 的 3 个 `health.setup()` 路径都乘进去）。
+
+### 5.1 各建筑实际 HP
+
+| 建筑 | base HP | SLOW 实际 (×2.0) | grid | 备注 |
+|------|---------|-----------------|------|------|
+| Wall（墙） | 300 | **600** | 1×1 | 阻挡 + 吸伤害 |
+| Tower（箭塔） | 150 | **300** | 1×1 | 远程防御 |
+| Castle（城堡） | 500 | **1000** | 3×3 | 主基地，光环 +10% 防御 |
+| Barracks（兵营） | 250 | **500** | 2×2 | 产 soldier，光环 +15% 近战 |
+| Monastery（修道院） | 400 | **800** | 2×2 | 产 monk，光环 +2 regen |
+| Archery（靶场） | 200 | **400** | 2×2 | 产 archer，光环 +25 range |
+
+### 5.2 Siege 时间估算（5 个 SLOW soldier 集火，DPS 合计 ≈ 53.5）
+
+| 建筑 | 实际 HP | 5 soldier 集火 | 3 soldier 集火 | 1 soldier 独斗 |
+|------|---------|---------------|---------------|---------------|
+| Wall | 600 | 11s | 19s | 56s |
+| Tower | 300 | 6s | 9s | 28s |
+| Archery | 400 | 7s | 12s | 37s |
+| Barracks | 500 | 9s | 16s | 47s |
+| Monastery | 800 | 15s | 25s | 75s |
+| Castle | 1000 | **19s** | 31s | 93s |
+
+### 5.3 推荐拉锯战时长（按战斗规模）
+
+| 攻方规模 | 推荐 castle siege 时长 | 设计意图 |
+|---------|----------------------|---------|
+| 3-5 单位（小股骚扰） | 25-40s | 防守方有时间赶回救 |
+| 8-12 单位（主力推进） | 15-25s | 拉锯但不会僵持 |
+| 15+ 单位（决战） | 8-15s | 多线集火秒掉 |
+
+SLOW 当前的 castle × 5 soldier = 19s 落在中间区间，符合"主力推进拉锯"目标。
+
+### 5.4 设计新建筑时的建议
+
+| 字段 | 推荐范围 | 说明 |
+|------|---------|------|
+| base max_hp | 200-600 | < 200 太脆（一波单兵秒掉），> 600 太冗长 |
+| grid_size | 1×1 / 2×2 / 3×3 | 决定占地和受击面积 |
+| aura_range | 100-250 | 防御光环覆盖范围 |
+| aura_value | 0.1-0.3 (百分比值) 或 1-3 (固定值) | 不要叠加超过 0.5（玩家难感知减伤） |
+| production_cooldown | 20-40s | 短于此会刷兵太快，长于此玩家忘掉 |
+
+### 5.5 反模式（设计时避开）
+
+- **超厚墙体无覆盖**：Wall HP=600 但没建筑在后面 → 玩家绕过即可，浪费数值
+- **箭塔太脆**：Tower HP < 200 → 一波小队冲掉，没威慑力
+- **Castle 难以接近**：周围全是 Wall + Tower → 攻方进不去，变成消极僵持
+- **光环叠加过量**：多个 buildings 光环堆 +50% 防御 → 守方无敌
+
+---
+
+## 6. 与其他系统的联动
+
+### 6.1 升级系统（UpgradeMgr）
 - `upgrade_hp_per_level` / `upgrade_damage_per_level` 是在 **SLOW 倍率之后** 应用的（通过 `add_modifier` 顺序）
 - 因此升级收益不受 SLOW 影响，玩家依然能感受到"升级 = 变强"
 
-### 5.2 cost / supply（game_data.gd COSTS）
+### 6.2 cost / supply（game_data.gd COSTS）
 - 当前 COSTS 是硬编码的，不随 scheme 变化
 - 设计新单位时：性价比 = DPS × HP / cost，建议保持在 0.8-1.2x soldier 范围
 
-### 5.3 bonus_vs_unit_types（克制）
+### 6.3 bonus_vs_unit_types（克制）
 - 克制倍率 (`bonus_vs_multiplier`) 在 damage 计算时直接相乘
 - 推荐 1.5x（强克制）或 0.75x（被克制），即 2x 强弱差
 
 ---
 
-## 6. 添加新单位的 checklist
+## 7. 添加新单位的 checklist
 
 - [ ] 确定定位（参考第 2 节）
 - [ ] 选 base_HP / base_DMG / base_CD，使应用 SLOW 后自打 TTK 落在第 4.1 节推荐范围
