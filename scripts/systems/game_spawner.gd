@@ -5,6 +5,7 @@ const D := preload("res://scripts/systems/game_data.gd")
 const UnitScript := preload("res://scripts/units/unit.gd")
 const BuildingScript := preload("res://scripts/buildings/building.gd")
 const StatSetClass := preload("res://scripts/stats/stat_set.gd")
+const EnemyAIScript := preload("res://scripts/units/enemy_ai.gd")
 
 var _main_node: Node2D
 var _player_units_node: Node2D
@@ -97,7 +98,8 @@ func spawn_from_config(map_config: Resource) -> void:
 # 玩家方一律 alliance=0, owner=-1, color=BLUE；slot 0=player_units, slot 1=player2_units
 func _spawn_legacy_from_config(map_config: Resource) -> void:
 	for spawn in map_config.player_units:
-		var unit := create_unit(spawn.type, 0, spawn.pos, &"", -1, Faction.ColorId.BLUE, 0)
+		var stats_id: StringName = spawn.get("stats_id", &"")
+		var unit := create_unit(spawn.type, 0, spawn.pos, stats_id, -1, Faction.ColorId.BLUE, 0)
 		unit.net_id = _next_net_id
 		_next_net_id += 1
 		LockstepSync.register_unit(unit)
@@ -458,6 +460,7 @@ func _spawn_enemy_unit_immediate(type: int, pos: Vector2, wave_attack: bool, wav
 	ai.set_script(load("res://scripts/units/enemy_ai.gd"))
 	unit.add_child(ai)
 	if wave_attack and wave_target != Vector2.ZERO:
+		ai.set("behavior_mode", EnemyAIScript.BehaviorMode.AGGRESSIVE)
 		ai.call_deferred("start_wave_attack", wave_target)
 
 func spawn_unit_near(type: int, pos: Vector2, team: int) -> CharacterBody2D:

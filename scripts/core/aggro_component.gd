@@ -160,6 +160,27 @@ func remove(target) -> void:
 		_locked_target = null
 
 
+# ============== 调试支持 ==============
+
+## 返回当前威胁值表的只读快照（供调试 HUD 用，避免外部直接读私有变量）
+## 结构: {"locked_target": Unit|null, "lock_expire_msec": float, "entries": [{"target", "value", "last_seen_msec"}]}
+func debug_snapshot() -> Dictionary:
+	var entries: Array = []
+	for target in _table.keys():
+		var entry: Dictionary = _table[target]
+		entries.append({
+			"target": target,
+			"value": float(entry["value"]),
+			"last_seen_msec": float(entry["last_seen"]),
+		})
+	entries.sort_custom(func(a, b): return a["value"] > b["value"])
+	return {
+		"locked_target": _locked_target,
+		"lock_expire_msec": _lock_expire_msec,
+		"entries": entries,
+	}
+
+
 # ============== 内部工具 ==============
 
 func _purge_invalid() -> void:

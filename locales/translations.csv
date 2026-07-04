@@ -256,6 +256,8 @@ TEST_T13_NAME,T13: Endless,T13: 无尽模式,T13: エンドレス
 TEST_T13_DESC,"Survive as long as possible. Game ends when your castle falls.","尽可能长时间存活。城堡被毁时游戏结束。","できるだけ長く生き残れ。城が落ちたら終了。"
 TEST_OUTPOST_NAME,Outpost Test,据点指挥官测试,アウトポスト指揮官テスト
 TEST_OUTPOST_DESC,"Outpost commander system test — derived from map 2 (Basic Attack).","据点指挥官系统测试关卡 — 复制自第二关(基础进攻)。","アウトポスト指揮官システムのテストステージ — マップ2(基本攻撃)から複製。"
+TEST_AGGRO_NAME,Aggro Test,仇恨系统测试,エンジングテスト
+TEST_AGGRO_DESC,"Aggro system test — threat table, leash, RETURN_HOME, taunt. F1 toggles debug HUD.","仇恨系统测试 — 威胁值表/脱战回家/嘲讽。F1 切换调试 HUD。","エンジンシステムテスト — 脅威テーブル/帰還/挑発。F1 でデバッグ HUD 切り替え。"
 TAB_CAMPAIGN,Campaign,战役,キャンペーン
 TAB_TEST_LEVELS,Test Levels,测试关卡,テストステージ
 UI_PATH_LINES,Path Lines,寻路路径线,パス表示

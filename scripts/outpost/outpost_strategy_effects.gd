@@ -11,6 +11,7 @@ extends RefCounted
 const BuildingScript := preload("res://scripts/buildings/building.gd")
 const D := preload("res://scripts/systems/game_data.gd")
 const FactionClass := preload("res://scripts/faction.gd")
+const EnemyAIScript := preload("res://scripts/units/enemy_ai.gd")
 
 
 # ============================================================
@@ -48,6 +49,9 @@ static func attack(cmdr: Node, _manager: Node, config: Dictionary) -> bool:
 		if not _try_issue_unit_order(unit, cmdr, "attack"):
 			continue
 		if unit.has_method("attack_move_to"):
+			var ai = unit.get_node_or_null("EnemyAI")
+			if ai:
+				ai.set("behavior_mode", EnemyAIScript.BehaviorMode.AGGRESSIVE)
 			unit.attack_move_to(target_pos)
 			locked_count += 1
 	if locked_count > 0 and cmdr.has_method("_emit_strategy_signal"):
@@ -84,6 +88,9 @@ static func coordinate(cmdr: Node, manager: Node, _config: Dictionary) -> bool:
 		if not _try_issue_unit_order(unit, cmdr, "coordinate"):
 			continue
 		if unit.has_method("attack_move_to"):
+			var ai = unit.get_node_or_null("EnemyAI")
+			if ai:
+				ai.set("behavior_mode", EnemyAIScript.BehaviorMode.AGGRESSIVE)
 			unit.attack_move_to(rally_pos)
 			moved += 1
 	if moved > 0:
