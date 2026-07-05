@@ -456,7 +456,7 @@ def main():
 
     result = "\n".join(output)
 
-    output_path = "e:/godot/rts/godot_rts_start/docs/reference/魔兽争霸3数值逆向工程分析.md"
+    output_path = "e:/godot/rts/godot_rts_start/docs/reference/research/魔兽争霸3数值逆向工程分析.md"
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(result)
     print(f"[OK] WC3 分析已写入: {output_path}")

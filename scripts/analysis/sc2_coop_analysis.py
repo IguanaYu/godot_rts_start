@@ -340,7 +340,7 @@ def main():
     result = "\n".join(output)
 
     # 写入文件
-    output_path = "e:/godot/rts/godot_rts_start/docs/reference/星际争霸2合作模式数值分析.md"
+    output_path = "e:/godot/rts/godot_rts_start/docs/reference/research/星际争霸2合作模式数值分析.md"
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(result)
     print(f"[OK] 合作模式分析已写入: {output_path}")

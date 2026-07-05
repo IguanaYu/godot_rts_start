@@ -1,6 +1,6 @@
 # RTS 战斗节奏设计 — 从 10 秒 TTK 反推数值
 
-> 基于 [星际2vs魔兽3对比分析](星际2vs魔兽3_RTS数值设计对比分析.md) 的设计定位
+> 基于 [星际2vs魔兽3对比分析](../research/星际2vs魔兽3_RTS数值设计对比分析.md) 的设计定位
 > 应用目标 TTK 反推法，给出可落地的数值方案
 > 计算脚本：[rts_ttk_design_calculator.py](../scripts/analysis/rts_ttk_design_calculator.py)
 
