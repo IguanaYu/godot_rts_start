@@ -8,6 +8,7 @@ var selected_units: Array = []
 var is_selecting: bool = false
 var selection_start: Vector2 = Vector2.ZERO
 var attack_move_mode: bool = false
+var patrol_mode: bool = false
 
 # 双击标记（由 main.gd 传入）
 var _pending_double_click: bool = false
@@ -250,18 +251,29 @@ func deselect_all() -> void:
 
 func set_attack_move_mode(value: bool) -> void:
 	attack_move_mode = value
+	if value and patrol_mode:
+		set_patrol_mode(false)
+
+
+func set_patrol_mode(value: bool) -> void:
+	patrol_mode = value
+	if not value:
+		_patrol_first_point = null
+	elif attack_move_mode:
+		attack_move_mode = false
 
 
 ## 巡逻指令
+## 返回 true 表示巡逻已下发（第二次点击或 shift+点击），false 表示还在等第二次点击
 var _patrol_first_point: Variant = null
 
-func do_patrol(click_pos: Vector2, shift_held: bool = false) -> void:
+func do_patrol(click_pos: Vector2, shift_held: bool = false) -> bool:
 	if selected_units.is_empty():
-		return
+		return true  # 没选中单位 → 退出 patrol 模式
 	if not shift_held and _patrol_first_point == null:
 		# 第一次点击：记住起点
 		_patrol_first_point = click_pos
-		return
+		return false
 	# 第二次点击或Shift+点击：设置巡逻路线
 	var points: Array = []
 	if _patrol_first_point != null:
@@ -270,6 +282,7 @@ func do_patrol(click_pos: Vector2, shift_held: bool = false) -> void:
 	points.append(click_pos)
 	for unit in selected_units:
 		unit.command_patrol(points)
+	return true
 	_spawner_module.spawn_click_effect(D.AttackClickEffectScene, click_pos)
 
 ## Tab子组循环

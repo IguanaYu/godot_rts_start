@@ -574,6 +574,8 @@ func _physics_process(delta: float) -> void:
 			_attack_move_process(delta)
 		UnitState.ATTACK:
 			_attack_process(delta)
+		UnitState.PATROL:
+			_patrol_process(delta)
 
 	# 减速效果
 	if _slow_timer > 0.0:
@@ -665,6 +667,8 @@ func _attack_process(delta: float) -> void:
 		_is_attacking = false
 		if hold_position_mode:
 			state = UnitState.HOLD_POSITION
+		elif not patrol_points.is_empty():
+			state = UnitState.PATROL
 		elif attack_move_target != Vector2.ZERO:
 			nav_agent.target_position = attack_move_target
 			state = UnitState.ATTACK_MOVE
@@ -1257,6 +1261,7 @@ func command_patrol(points: Array) -> void:
 	patrol_index = 0
 	attack_target = null
 	attack_command_source = CommandSource.NONE
+	attack_move_target = Vector2.ZERO
 	hold_position_mode = false
 	if not patrol_points.is_empty():
 		nav_agent.target_position = patrol_points[0]

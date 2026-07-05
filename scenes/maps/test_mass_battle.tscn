@@ -1,0 +1,106 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" uid="uid://cg2igjmusi0dq" path="res://scripts/main.gd" id="main_script"]
+[ext_resource type="Resource" path="res://resources/test_mass_battle_config.tres" id="map_config"]
+[ext_resource type="PackedScene" uid="uid://8rfekrdqs7gf" path="res://scenes/buildings/castle.tscn" id="castle"]
+[ext_resource type="PackedScene" uid="uid://mmgbo1ded4ro" path="res://scenes/units/soldier.tscn" id="soldier"]
+[ext_resource type="PackedScene" uid="uid://e5by4tc82spk" path="res://scenes/units/archer.tscn" id="archer"]
+[ext_resource type="PackedScene" uid="uid://bxlancer01" path="res://scenes/units/lancer.tscn" id="lancer"]
+[ext_resource type="Script" path="res://scripts/systems/stress_test_spawner.gd" id="stress_spawner"]
+
+[sub_resource type="NavigationPolygon" id="NavPoly_1"]
+vertices = PackedVector2Array(-700, -400, 700, -400, 700, 400, -700, 400)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
+
+[node name="TestMassBattle" type="Node2D"]
+script = ExtResource("main_script")
+map_config = ExtResource("map_config")
+
+[node name="Ground" type="ColorRect" parent="."]
+offset_left = -700.0
+offset_top = -400.0
+offset_right = 700.0
+offset_bottom = 400.0
+color = Color(0.35, 0.55, 0.25, 1)
+
+[node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
+navigation_polygon = SubResource("NavPoly_1")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(0, 0)
+zoom = Vector2(0.7, 0.7)
+
+[node name="PlayerUnits" type="Node2D" parent="."]
+
+[node name="EnemyUnits" type="Node2D" parent="."]
+
+[node name="Buildings" type="Node2D" parent="."]
+
+[node name="PlayerCastle" parent="Buildings" instance=ExtResource("castle")]
+position = Vector2(-650, 0)
+
+[node name="EnemyCastle" parent="Buildings" instance=ExtResource("castle")]
+position = Vector2(650, 0)
+team = 1
+alliance_id = 1
+faction_color = 3
+
+[node name="SelectionBox" type="ColorRect" parent="."]
+visible = false
+mouse_filter = 2
+color = Color(0.4, 0.7, 1, 0.25)
+
+[node name="PreviewRect" type="ColorRect" parent="."]
+visible = false
+mouse_filter = 2
+color = Color(0, 1, 0, 0.3)
+
+[node name="ResultLabel" type="Label" parent="."]
+offset_left = -100.0
+offset_top = -50.0
+offset_right = 100.0
+offset_bottom = 50.0
+theme_override_font_sizes/font_size = 48
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BattleInfoLabel" type="Label" parent="."]
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 800.0
+offset_bottom = 80.0
+theme_override_colors/font_color = Color(0.4, 0.7, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "Mass Battle 30v30 — soldier/archer/lancer 混合，自动 attack-move 到中点"
+
+[node name="AttackMoveIndicator" type="Label" parent="."]
+visible = false
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 200.0
+offset_bottom = 40.0
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+theme_override_font_sizes/font_size = 20
+text = "Attack Move (Click)"
+
+[node name="PlayerSpawner" type="Node" parent="."]
+script = ExtResource("stress_spawner")
+team = 0
+rows = 5
+cols = 6
+spacing = 30.0
+origin = Vector2(-450, -75)
+unit_scenes = Array[PackedScene]([ExtResource("soldier"), ExtResource("archer"), ExtResource("lancer")])
+auto_attack_move = true
+attack_move_target = Vector2(0, 0)
+
+[node name="EnemySpawner" type="Node" parent="."]
+script = ExtResource("stress_spawner")
+team = 1
+rows = 5
+cols = 6
+spacing = 30.0
+origin = Vector2(300, -75)
+unit_scenes = Array[PackedScene]([ExtResource("soldier"), ExtResource("archer"), ExtResource("lancer")])
+auto_attack_move = true
+attack_move_target = Vector2(0, 0)

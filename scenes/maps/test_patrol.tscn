@@ -1,0 +1,110 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" uid="uid://cg2igjmusi0dq" path="res://scripts/main.gd" id="main_script"]
+[ext_resource type="Resource" path="res://resources/test_patrol_config.tres" id="map_config"]
+[ext_resource type="PackedScene" uid="uid://8rfekrdqs7gf" path="res://scenes/buildings/castle.tscn" id="castle"]
+[ext_resource type="PackedScene" uid="uid://mmgbo1ded4ro" path="res://scenes/units/soldier.tscn" id="soldier"]
+[ext_resource type="Script" path="res://scripts/systems/stress_test_spawner.gd" id="stress_spawner"]
+
+[sub_resource type="NavigationPolygon" id="NavPoly_1"]
+vertices = PackedVector2Array(-500, -300, 500, -300, 500, 300, -500, 300)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
+
+[node name="TestPatrol" type="Node2D"]
+script = ExtResource("main_script")
+map_config = ExtResource("map_config")
+
+[node name="Ground" type="ColorRect" parent="."]
+offset_left = -500.0
+offset_top = -300.0
+offset_right = 500.0
+offset_bottom = 300.0
+color = Color(0.35, 0.55, 0.25, 1)
+
+[node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
+navigation_polygon = SubResource("NavPoly_1")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(-200, 0)
+zoom = Vector2(0.8, 0.8)
+
+[node name="PlayerUnits" type="Node2D" parent="."]
+
+[node name="EnemyUnits" type="Node2D" parent="."]
+
+[node name="Buildings" type="Node2D" parent="."]
+
+[node name="PlayerCastle" parent="Buildings" instance=ExtResource("castle")]
+position = Vector2(-480, 0)
+
+[node name="EnemyCastle" parent="Buildings" instance=ExtResource("castle")]
+position = Vector2(480, 0)
+team = 1
+alliance_id = 1
+faction_color = 3
+
+[node name="SelectionBox" type="ColorRect" parent="."]
+visible = false
+mouse_filter = 2
+color = Color(0.4, 0.7, 1, 0.25)
+
+[node name="PreviewRect" type="ColorRect" parent="."]
+visible = false
+mouse_filter = 2
+color = Color(0, 1, 0, 0.3)
+
+[node name="ResultLabel" type="Label" parent="."]
+offset_left = -100.0
+offset_top = -50.0
+offset_right = 100.0
+offset_bottom = 50.0
+theme_override_font_sizes/font_size = 48
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BattleInfoLabel" type="Label" parent="."]
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 800.0
+offset_bottom = 100.0
+theme_override_colors/font_color = Color(0.4, 0.7, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "巡逻测试：框选蓝方单位 → 按 P → 左键点起点 → 左键点终点 → 单位在两点间巡逻
+敌方红方 2 个 soldier，分别在 (0,-150) 和 (300,150) 附近自动巡逻（半径 150）"
+
+[node name="AttackMoveIndicator" type="Label" parent="."]
+visible = false
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 200.0
+offset_bottom = 40.0
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+theme_override_font_sizes/font_size = 20
+text = "Attack Move (Click)"
+
+[node name="PlayerSpawner" type="Node" parent="."]
+script = ExtResource("stress_spawner")
+team = 0
+rows = 1
+cols = 2
+spacing = 50.0
+origin = Vector2(-425, -25)
+unit_scenes = Array[PackedScene]([ExtResource("soldier")])
+
+[node name="EnemySpawner1" type="Node" parent="."]
+script = ExtResource("stress_spawner")
+team = 1
+rows = 1
+cols = 1
+spacing = 35.0
+origin = Vector2(0, -150)
+unit_scenes = Array[PackedScene]([ExtResource("soldier")])
+
+[node name="EnemySpawner2" type="Node" parent="."]
+script = ExtResource("stress_spawner")
+team = 1
+rows = 1
+cols = 1
+spacing = 35.0
+origin = Vector2(300, 150)
+unit_scenes = Array[PackedScene]([ExtResource("soldier")])

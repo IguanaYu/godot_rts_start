@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="MapConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/map_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+map_name = "Test: Patrol"
+map_bounds = Rect2(-500, -300, 1000, 600)
+nav_bounds = Array[Vector2]([Vector2(-500, -300), Vector2(500, -300), Vector2(500, 300), Vector2(-500, 300)])
+initial_gold = 0
+camera_start = Vector2(-200, 0)
+
+player_units = Array[Dictionary]([])
+
+player_buildings = Array[Dictionary]([])
+
+enemy_units = Array[Dictionary]([])
+
+enemy_buildings = Array[Dictionary]([])
+
+environment = {"trees": 0, "rocks": 0, "bushes": 0, "sheep": 0}
+
+available_items = Array[int]([])
+
+terrain_theme = 0
+border_width = 1
+map_description = "巡逻测试：2 玩家 soldier（左）vs 2 敌方 soldier（不同巡逻中心）。按 P 进入巡逻模式，左键点击两次设巡逻起点终点。"
+
+star_time_3 = 180.0
+star_time_2 = 300.0
+star_deaths_3 = 0
+star_deaths_2 = 3

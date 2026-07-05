@@ -1,10 +1,10 @@
 @tool
 extends Node
 ## 压力测试用 spawner：在 _ready 时批量生成单位方阵。
-## 挂在场景里的 Node 节点上，参数化配置方阵尺寸/间距/起始位置/阵营。
+## 挂在场景里的 Node 节点上，参数化配置方阵尺寸/间距/起始位置/阵营/兵种混合/开战指令。
 ## 自己处理 team / faction_color / group / EnemyAI / died 信号，不依赖 main.gd 的 _init_preplaced_units。
 
-const UnitScene := preload("res://scenes/units/soldier.tscn")
+const SoldierScene := preload("res://scenes/units/soldier.tscn")
 const EnemyAIScript := preload("res://scripts/units/enemy_ai.gd")
 const FactionClass := preload("res://scripts/faction.gd")
 
@@ -13,6 +13,11 @@ const FactionClass := preload("res://scripts/faction.gd")
 @export var cols: int = 20
 @export var spacing: float = 35.0
 @export var origin: Vector2 = Vector2.ZERO  # 方阵左上角世界坐标
+## 兵种混合（按顺序循环分配）。为空 → fallback 到纯 soldier
+@export var unit_scenes: Array[PackedScene] = []
+## spawn 完是否给所有单位下 attack-move 到该点
+@export var auto_attack_move: bool = false
+@export var attack_move_target: Vector2 = Vector2.ZERO
 
 
 func _ready() -> void:
@@ -33,9 +38,17 @@ func _ready() -> void:
 	var group_name := "player_units" if team == 0 else "enemy_units"
 	var alliance: int = 0 if team == 0 else 1
 
+	# 兵种 fallback：未指定 → 纯 soldier
+	var scenes: Array[PackedScene] = unit_scenes.duplicate()
+	if scenes.is_empty():
+		scenes.append(SoldierScene)
+
+	var total := rows * cols
 	for row in range(rows):
 		for col in range(cols):
-			var unit := UnitScene.instantiate()
+			var idx := row * cols + col
+			var scene: PackedScene = scenes[idx % scenes.size()]
+			var unit := scene.instantiate()
 			unit.team = team
 			unit.alliance_id = alliance
 			unit.faction_color = faction_color
@@ -49,5 +62,8 @@ func _ready() -> void:
 				unit.add_child(ai)
 			if root.has_method("_on_unit_died"):
 				unit.connect("died", Callable(root, "_on_unit_died"))
+			if auto_attack_move:
+				unit.attack_move_to(attack_move_target)
 
-	print("[StressSpawner] team=%d spawned=%d" % [team, rows * cols])
+	print("[StressSpawner] team=%d spawned=%d attack_move=%s target=%s" %
+		[team, total, str(auto_attack_move), str(attack_move_target)])

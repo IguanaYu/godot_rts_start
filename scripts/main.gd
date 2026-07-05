@@ -983,7 +983,14 @@ func _process(delta: float) -> void:
 		_distress_rescue_check_timer = 0.0
 		_check_distress_rescue()
 	combat_ctrl.update_selection(get_global_mouse_position(), selection_box)
-	attack_move_indicator.visible = combat_ctrl.attack_move_mode
+	if combat_ctrl.patrol_mode:
+		if combat_ctrl._patrol_first_point == null:
+			attack_move_indicator.text = "Patrol: click first point"
+		else:
+			attack_move_indicator.text = "Patrol: click second point"
+	elif combat_ctrl.attack_move_mode:
+		attack_move_indicator.text = tr("UI_ATTACK_MOVE")
+	attack_move_indicator.visible = combat_ctrl.attack_move_mode or combat_ctrl.patrol_mode
 	building_placer.update_preview()
 	if building_placer.show_grid and building_placer.grid_overlay:
 		building_placer.grid_overlay.visible = building_placer.show_grid
@@ -1111,6 +1118,12 @@ func _input(event: InputEvent) -> void:
 						combat_ctrl.do_attack_move(get_global_mouse_position())
 						combat_ctrl.set_attack_move_mode(false)
 						cursor_manager.set_attack(false)
+					elif combat_ctrl.patrol_mode:
+						var shift_held := Input.is_key_pressed(KEY_SHIFT)
+						var done: bool = combat_ctrl.do_patrol(get_global_mouse_position(), shift_held)
+						if done:
+							combat_ctrl.set_patrol_mode(false)
+							cursor_manager.set_attack(false)
 					elif input_mode.is_commander_skill_cast() and commander_skill_manager.is_casting():
 						commander_skill_manager.confirm_cast(get_global_mouse_position())
 						input_mode.cancel_mode()
@@ -1191,6 +1204,11 @@ func _input(event: InputEvent) -> void:
 				combat_ctrl.stop_selected()
 			KEY_H:
 				combat_ctrl.hold_position_selected()
+			KEY_P:
+				if not combat_ctrl.is_empty():
+					combat_ctrl.set_patrol_mode(true)
+					combat_ctrl.set_attack_move_mode(false)
+					cursor_manager.set_attack(true)
 			KEY_Z, KEY_X, KEY_C, KEY_V:
 				const SLOT_KEYS := [KEY_Z, KEY_X, KEY_C, KEY_V]
 				var slot_index: int = SLOT_KEYS.find(key)
