@@ -525,6 +525,9 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	minimap_wrapper.add_child(minimap)
 	minimap.initialize(_main_node, _main_node.camera_module, _main_node.map_bounds)
 
+	# 连接 ping 信号到小地图
+	AllyCommander.attack_order_issued.connect(_on_attack_ping.bind(minimap))
+	AllyCommander.defend_order_issued.connect(_on_defend_ping.bind(minimap))
 
 	# 将小地图区域注册为相机豁免区域
 	var mm_vp := _main_node.get_viewport().get_visible_rect().size
@@ -584,6 +587,21 @@ func _process(delta: float) -> void:
 	if _info_refresh_timer >= 0.33:
 		_info_refresh_timer = 0.0
 		_update_info_panel()
+
+
+
+
+func _on_attack_ping(world_pos: Vector2, minimap: Control) -> void:
+	if not is_instance_valid(minimap):
+		return
+	minimap.send_ping(world_pos, Color(1.0, 0.4, 0.3), MinimapMarkerData.Shape.CROSS, 1.5)
+
+
+func _on_defend_ping(world_pos: Vector2, minimap: Control) -> void:
+	if not is_instance_valid(minimap):
+		return
+	minimap.send_ping(world_pos, Color(0.4, 0.8, 1.0), MinimapMarkerData.Shape.CROSS, 1.5)
+
 
 
 func _on_speed_button_pressed() -> void:
