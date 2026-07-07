@@ -21,7 +21,7 @@ var _color: Color = Color.WHITE
 var _label_text: String = ""
 var _icon_kind: String = ""
 var _banner: Label
-var _banner_at_target: bool = false  # shield: banner 显示在 target_pos（被盾的建筑）
+var _banner_at_caster: bool = false  # shield 等：banner 显示在 target_pos（caster/building 位置，非指挥官上方）
 
 const TIER_DURATION := {"high": 3.5, "mid": 3.0, "low": 2.5}
 const TIER_RING_COUNT := {"high": 3, "mid": 2, "low": 2}
@@ -31,7 +31,7 @@ const EFFECT_INFO := {
 	&"coordinate":       {color = Color(1.00, 0.55, 0.16), label = "集结！",   icon = "rings"},
 	&"defend":           {color = Color(0.30, 0.55, 1.00), label = "巩固防御", icon = "flash"},
 	&"expand":           {color = Color(0.30, 1.00, 0.55), label = "扩张！",   icon = "ripple"},
-	&"shield":           {color = Color(0.00, 0.85, 0.95), label = "护盾",    icon = "hexagon", banner_at_target = true},
+	&"shield":           {color = Color(0.00, 0.85, 0.95), label = "护盾",    icon = "hexagon", banner_at_caster = true},
 	&"heal":             {color = Color(0.15, 0.95, 0.35), label = "治疗",    icon = "cross"},
 	&"inspire":          {color = Color(1.00, 0.82, 0.29), label = "鼓舞",    icon = "ripple"},
 	&"call_to_arms":     {color = Color(1.00, 0.40, 0.30), label = "紧急动员！", icon = "flag"},
@@ -50,7 +50,7 @@ func _ready() -> void:
 	_color = info.get("color", Color.WHITE)
 	_label_text = info.get("label", String(effect_id))
 	_icon_kind = info.get("icon", "")
-	_banner_at_target = info.get("banner_at_target", false)
+	_banner_at_caster = info.get("banner_at_caster", false)
 
 	_banner = Label.new()
 	_banner.text = _label_text
@@ -120,9 +120,9 @@ func _draw_banner_background(alpha: float) -> void:
 	var w: float = BANNER_W
 	var h: float = BANNER_H
 	# 默认 banner 在指挥官上方（圆心上方 radius*0.5）
-	# shield 等 banner_at_target 事件：banner 显示在 target_pos（局部坐标 = target_pos - global_position）
+	# shield 等 banner_at_caster 事件：banner 显示在 target_pos（caster/building 局部坐标 = target_pos - global_position）
 	var banner_center_local: Vector2 = Vector2(0, -radius * 0.5)
-	if _banner_at_target and target_pos != Vector2.ZERO:
+	if _banner_at_caster and target_pos != Vector2.ZERO:
 		banner_center_local = target_pos - global_position
 	var rect := Rect2(banner_center_local.x - w / 2.0, banner_center_local.y - h / 2.0, w, h)
 	# 阴影

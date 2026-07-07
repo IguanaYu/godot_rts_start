@@ -1033,6 +1033,14 @@ func _get_base_position() -> Vector2:
 func _jump_to_base() -> void:
 	camera_module.jump_to_base(_get_base_position())
 
+
+func toggle_outpost_status_panels() -> void:
+	# F4：切换敌方指挥官状态 panel（mana/sp/gold/cooldowns）显隐
+	# 开启后 panel 显示在领地圈中心，仅当相机看得到该领地时才渲染（viewport culling）
+	var mgr = get_node_or_null("OutpostCommanderManager")
+	if mgr != null and mgr.has_method("toggle_status_panels"):
+		mgr.toggle_status_panels()
+
 func _check_victory() -> void:
 	if _game_result_saved:
 		return
@@ -1235,6 +1243,8 @@ func _input(event: InputEvent) -> void:
 			KEY_F2:
 				combat_ctrl.select_all_army()
 				ui_module.show_army_selected_feedback(combat_ctrl.selected_units.size())
+			KEY_F4:
+				toggle_outpost_status_panels()
 			KEY_TAB:
 				combat_ctrl.cycle_subgroup(not event.shift_pressed)
 			KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0:

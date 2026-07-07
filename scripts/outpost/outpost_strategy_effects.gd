@@ -12,6 +12,7 @@ const BuildingScript := preload("res://scripts/buildings/building.gd")
 const D := preload("res://scripts/systems/game_data.gd")
 const FactionClass := preload("res://scripts/faction.gd")
 const EnemyAIScript := preload("res://scripts/units/enemy_ai.gd")
+const BuildingGhostScript := preload("res://scripts/outpost/outpost_building_ghost.gd")
 
 
 # ============================================================
@@ -101,39 +102,99 @@ static func coordinate(cmdr: Node, manager: Node, _config: Dictionary) -> bool:
 
 
 # ============================================================
-# defend — 巩固防御：在圈内空闲位置放箭塔（默认）或牧场
+# defend — 巩固防御：在圈内空闲位置放箭塔（默认）或牧场（带 2s 建造 telegraph）
 # ============================================================
 static func defend(cmdr: Node, _manager: Node, config: Dictionary) -> bool:
 	var building_type: int = config.get("building_type", BuildingScript.BuildingType.TOWER)  # 默认箭塔
 	var count: int = config.get("count", 1)
+	var telegraph_sec: float = float(config.get("telegraph_sec", 2.0))
 	var placed: int = 0
 	for i in range(count):
 		var gpos: Vector2i = _find_free_grid_near(cmdr, building_type)
 		if gpos == Vector2i.MIN:
 			break
-		var building = _place_building(cmdr, building_type, gpos)
-		if building != null:
-			placed += 1
-	print("[OutpostStrategy:defend] %s 放置 %d 个建筑(type=%d)" %
-		[_cmdr_uid(cmdr), placed, building_type])
+		_place_building_with_telegraph(cmdr, building_type, gpos, telegraph_sec, Color(0.30, 0.55, 1.00))
+		placed += 1
+	print("[OutpostStrategy:defend] %s 排期 %d 个建筑(type=%d, %.1fs telegraph)" %
+		[_cmdr_uid(cmdr), placed, building_type, telegraph_sec])
 	return placed > 0
 
 
 # ============================================================
-# expand — 缓慢扩张：在圈内放兵营（自动屯兵）
+# expand — 缓慢扩张：在圈内放兵营（自动屯兵，带 2s 建造 telegraph）
 # ============================================================
 static func expand(cmdr: Node, _manager: Node, config: Dictionary) -> bool:
 	var count: int = config.get("count", 1)
+	var telegraph_sec: float = float(config.get("telegraph_sec", 2.0))
 	var placed: int = 0
 	for i in range(count):
 		var gpos: Vector2i = _find_free_grid_near(cmdr, BuildingScript.BuildingType.BARRACKS)
 		if gpos == Vector2i.MIN:
 			break
-		var building = _place_building(cmdr, BuildingScript.BuildingType.BARRACKS, gpos)
-		if building != null:
-			placed += 1
-	print("[OutpostStrategy:expand] %s 放置 %d 个兵营" % [_cmdr_uid(cmdr), placed])
+		_place_building_with_telegraph(cmdr, BuildingScript.BuildingType.BARRACKS, gpos, telegraph_sec, Color(0.30, 1.00, 0.55))
+		placed += 1
+	print("[OutpostStrategy:expand] %s 排期 %d 个兵营(%.1fs telegraph)" %
+		[_cmdr_uid(cmdr), placed, telegraph_sec])
 	return placed > 0
+
+
+# ============================================================
+# 带建造 telegraph 的建筑放置（defend/expand 用）
+# 阶段 1（duration 秒）：在 grid 位置画 ghost（虚线轮廓 + 进度条），不可选中
+# 阶段 2：调 _place_building 实际生成建筑
+# ============================================================
+static func _place_building_with_telegraph(cmdr: Node, building_type: int, gpos: Vector2i, telegraph_sec: float, ghost_color: Color) -> void:
+	var main_node := cmdr.get_tree().current_scene
+	if main_node == null:
+		# fallback：直接放置
+		_place_building(cmdr, building_type, gpos)
+		return
+	# grid 像素坐标 → 世界坐标
+	var spawner = main_node.get("spawner_module") if "spawner_module" in main_node else null
+	if spawner == null:
+		_place_building(cmdr, building_type, gpos)
+		return
+	var snap_cb: Callable = spawner.snap_to_grid_callback
+	if snap_cb.is_null():
+		_place_building(cmdr, building_type, gpos)
+		return
+	# snap_to_grid_callback 接收 Vector2 返回 Vector2i；我们需要反向：grid → world
+	# 用 spawner.grid_to_world 如果存在；否则用 GRID_SIZE 推算
+	var world_pos: Vector2 = _grid_to_world(spawner, gpos, building_type)
+	# spawn ghost
+	var ghost := Node2D.new()
+	ghost.set_script(BuildingGhostScript)
+	ghost.world_pos = world_pos
+	ghost.grid_size_px = _grid_size_pixels(building_type)
+	ghost.duration = telegraph_sec
+	ghost.color = ghost_color
+	main_node.add_child(ghost)
+	# 延迟 duration 秒后实际放置建筑
+	var tree: SceneTree = cmdr.get_tree()
+	var timer: SceneTreeTimer = tree.create_timer(telegraph_sec)
+	var captured_cmdr = cmdr
+	var captured_type = building_type
+	var captured_gpos = gpos
+	timer.timeout.connect(func():
+		if is_instance_valid(captured_cmdr):
+			_place_building(captured_cmdr, captured_type, captured_gpos)
+	)
+
+
+## 取建筑的占地像素尺寸
+static func _grid_size_pixels(building_type: int) -> Vector2:
+	var cells: Vector2i = D.get_building_grid_size(building_type)
+	return Vector2(float(cells.x) * D.GRID_SIZE, float(cells.y) * D.GRID_SIZE)
+
+
+## 把 grid 坐标转世界坐标（spawner 没暴露 grid_to_world 时用 snap 反算）
+static func _grid_to_world(spawner: Node, gpos: Vector2i, _building_type: int) -> Vector2:
+	if spawner.has_method("grid_to_world"):
+		return spawner.grid_to_world(gpos)
+	# 兜底：直接 grid * GRID_SIZE
+	var gx: float = float(gpos.x) * D.GRID_SIZE
+	var gy: float = float(gpos.y) * D.GRID_SIZE
+	return Vector2(gx, gy)
 
 
 # ============================================================

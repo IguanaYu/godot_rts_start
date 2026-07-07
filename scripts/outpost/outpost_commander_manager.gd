@@ -4,6 +4,7 @@ extends Node
 
 var _commanders: Array = []  # OutpostCommander 实例列表
 var _retag_accumulator: float = 0.0
+var _panels_visible: bool = false  # F4 切换：默认隐藏所有指挥官状态 panel
 
 
 func _ready() -> void:
@@ -20,6 +21,8 @@ func _auto_scan() -> void:
 			_commanders.append(child)
 	# 给所有现存的 enemy_buildings/enemy_units 补打 tag（spawner 已先于 Manager 实例化的情况）
 	_retag_all_entities()
+	# 应用当前 _panels_visible 状态到所有新发现的 panel
+	_refresh_panel_layout()
 
 
 func register_commander(cmdr) -> void:
@@ -31,10 +34,12 @@ func register_commander(cmdr) -> void:
 		_tag_if_inside(cmdr, b)
 	for u in get_tree().get_nodes_in_group("enemy_units"):
 		_tag_if_inside(cmdr, u)
+	_refresh_panel_layout()
 
 
 func unregister_commander(cmdr) -> void:
 	_commanders.erase(cmdr)
+	_refresh_panel_layout()
 
 
 func _process(delta: float) -> void:
@@ -91,3 +96,29 @@ func get_commander_by_uid(uid: StringName) -> Node:
 		if is_instance_valid(cmdr) and cmdr.has_method("get_uid") and cmdr.get_uid() == uid:
 			return cmdr
 	return null
+
+
+# ============================================================
+# 状态 panel 显隐切换（F4 调用）
+# ============================================================
+## 切换所有指挥官状态 panel 的显隐。开启时 panels 贴近相机中心垂直堆叠
+func toggle_status_panels() -> void:
+	_panels_visible = not _panels_visible
+	_refresh_panel_layout()
+
+
+func is_panels_visible() -> bool:
+	return _panels_visible
+
+
+## 按当前 _panels_visible 状态刷新所有 panel（设置 _user_enabled）
+## 在 commander 注册/注销时也调用，保证新指挥官立即跟随当前显隐状态
+func _refresh_panel_layout() -> void:
+	for cmdr in _commanders:
+		if not is_instance_valid(cmdr):
+			continue
+		var panel: Node2D = cmdr.get_status_panel() if cmdr.has_method("get_status_panel") else null
+		if panel == null or not is_instance_valid(panel):
+			continue
+		if panel.has_method("set_user_enabled"):
+			panel.set_user_enabled(_panels_visible)

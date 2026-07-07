@@ -31,11 +31,17 @@ static func dispatch(spell_id: StringName, main_node: Node2D, spawner_module: No
 
 
 # ============================================================
-# heal — 治疗圈内友方单位（敌方阵营）
+# heal — 治疗caster_unit 附近的友方单位（敌方阵营）
+# caster_unit 作为"医疗兵"：aura 跟随该单位移动，治疗 aura 范围内的友方
 # ============================================================
 static func heal(main_node: Node2D, _spawner_module: Node, target_pos: Vector2, config: Dictionary) -> void:
 	var radius: float = config.get("radius", 100.0)
 	var heal_amount: int = config.get("heal_amount", 50)
+	# 优先用 caster_unit 位置（aura 跟随医疗兵）；fallback target_pos
+	var caster_unit: Node = config.get("caster_unit", null)
+	var center: Vector2 = target_pos
+	if caster_unit != null and is_instance_valid(caster_unit):
+		center = caster_unit.global_position
 
 	var healed_count := 0
 	for unit in main_node.get_tree().get_nodes_in_group("enemy_units"):
@@ -45,17 +51,18 @@ static func heal(main_node: Node2D, _spawner_module: Node, target_pos: Vector2, 
 			continue
 		if unit.health == null or unit.health.is_dead():
 			continue
-		if unit.global_position.distance_to(target_pos) <= radius:
+		if unit.global_position.distance_to(center) <= radius:
 			unit.heal(heal_amount)
 			healed_count += 1
 
-	_show_area_indicator(main_node, target_pos, radius, Color(0.1, 0.9, 0.3, 0.4))
+	_show_area_indicator(main_node, center, radius, Color(0.1, 0.9, 0.3, 0.4))
 	if _spawner_module != null and _spawner_module.has_method("show_floating_text") and healed_count > 0:
-		_spawner_module.show_floating_text("+%d" % heal_amount, Color(0.1, 0.9, 0.3), target_pos, FLOAT_TEXT_MULT)
+_spawner_module.show_floating_text_spawner_module.show_floating_text("+%d" % heal_amount, Color(0.1, 0.9, 0.3), center, FLOAT_TEXT_MULT)
 
 
 # ============================================================
-# inspire — 鼓舞：群体加攻击 buff（以单位为圆心）
+# inspire — 鼓舞：以 caster_unit（队长）为圆心，给周围友方加攻击 buff
+# caster_unit 作为"队长"：aura 跟随该单位移动
 # 注：当前 buff 系统只注册了 attack/defense/attack_melee/range_bonus，
 #     暂用 "attack"（加攻击力）作为鼓舞效果。后续可扩展 attack_speed/move_speed。
 # ============================================================
@@ -64,6 +71,11 @@ static func inspire(main_node: Node2D, _spawner_module: Node, target_pos: Vector
 	var attack_bonus: float = config.get("attack_speed_bonus", 0.5)  # 复用字段名，实际作为 attack 加成
 	var duration_sec: float = config.get("duration", 8.0)
 	var duration_msec: int = int(duration_sec * 1000)
+	# 优先用 caster_unit 位置（aura 跟随队长）；fallback target_pos
+	var caster_unit: Node = config.get("caster_unit", null)
+	var center: Vector2 = target_pos
+	if caster_unit != null and is_instance_valid(caster_unit):
+		center = caster_unit.global_position
 
 	var buffed_count := 0
 	for unit in main_node.get_tree().get_nodes_in_group("enemy_units"):
@@ -73,68 +85,57 @@ static func inspire(main_node: Node2D, _spawner_module: Node, target_pos: Vector
 			continue
 		if unit.health == null or unit.health.is_dead():
 			continue
-		if unit.global_position.distance_to(target_pos) <= radius:
+		if unit.global_position.distance_to(center) <= radius:
 			if unit.has_method("apply_buff_duration"):
 				unit.apply_buff_duration("attack", attack_bonus, duration_msec)
 				buffed_count += 1
 
-	_show_area_indicator(main_node, target_pos, radius, Color(1.0, 0.85, 0.2, 0.4))
+	_show_area_indicator(main_node, center, radius, Color(1.0, 0.85, 0.2, 0.4))
 	if _spawner_module != null and _spawner_module.has_method("show_floating_text") and buffed_count > 0:
-		_spawner_module.show_floating_text("Inspire", Color(1.0, 0.85, 0.2), target_pos, FLOAT_TEXT_MULT)
+_spawner_module.show_floating_text_spawner_module.show_floating_text("Inspire", Color(1.0, 0.85, 0.2), center, FLOAT_TEXT_MULT)
 
 
 # ============================================================
-# call_to_arms — 紧急从兵营类建筑瞬时生产一波单位
+# call_to_arms — 从指定 caster_building（兵营）瞬时生产 N 个单位
+# 单一来源更清晰：单位从该兵营涌出，banner 在该兵营上方
 # ============================================================
 static func call_to_arms(main_node: Node2D, _spawner_module: Node, _target_pos: Vector2, config: Dictionary) -> void:
-	var search_radius: float = config.get("search_radius", 400.0)
-	var center: Vector2 = config.get("center", _target_pos)
-	var forced_count_per_building: int = config.get("count_per_building", 1)
-
+	var caster_building: Node = config.get("caster_building", null)
+	var forced_count: int = int(config.get("count_per_building", 1))
+	if caster_building == null or not is_instance_valid(caster_building):
+		return
+	if caster_building.is_dead():
+		return
+	var center: Vector2 = caster_building.global_position
 	var triggered: int = 0
-	for building in main_node.get_tree().get_nodes_in_group("enemy_buildings"):
-		if not is_instance_valid(building):
-			continue
-		if building.is_dead():
-			continue
-		# 仅兵营类（BARRACKS=3, ARCHERY=5, MONASTERY=4, CASTLE=2）
-		var btype: int = building.building_type
-		if btype != 2 and btype != 3 and btype != 4 and btype != 5:
-			continue
-		if building.global_position.distance_to(center) > search_radius:
-			continue
-		# 强制生产 N 次（绕过冷却）
-		for i in range(forced_count_per_building):
-			if building.has_method("_spawn_produced_unit"):
-				building._spawn_produced_unit()
-				triggered += 1
+	# 从指定兵营强制生产 N 次（绕过冷却）
+	for i in range(forced_count):
+		if caster_building.has_method("_spawn_produced_unit"):
+			caster_building._spawn_produced_unit()
+			triggered += 1
 
 	if _spawner_module != null and _spawner_module.has_method("show_floating_text") and triggered > 0:
 		_spawner_module.show_floating_text("Call to Arms! (+%d)" % triggered, Color(1.0, 0.5, 0.3), center, FLOAT_TEXT_MULT)
 
 
 # ============================================================
-# release_garrison — 强制释放兵营屯兵
-# 依赖 building_garrison.force_release_all()（P4 同步新增）
+# release_garrison — 强制释放指定 caster_building（兵营）的屯兵
+# 单一来源：驻军从该兵营涌出，banner 在该兵营上方
+# 依赖 building_garrison.force_release_all()
 # ============================================================
 static func release_garrison(main_node: Node2D, _spawner_module: Node, _target_pos: Vector2, config: Dictionary) -> void:
-	var search_radius: float = config.get("search_radius", 400.0)
-	var center: Vector2 = config.get("center", _target_pos)
-
-	var released: int = 0
-	for building in main_node.get_tree().get_nodes_in_group("enemy_buildings"):
-		if not is_instance_valid(building):
-			continue
-		if building.is_dead():
-			continue
-		if building.global_position.distance_to(center) > search_radius:
-			continue
-		var garrison = building.get_node_or_null("Garrison")
-		if garrison == null or not garrison.has_method("force_release_all"):
-			continue
-		var before: int = garrison.get_garrison_count() if garrison.has_method("get_garrison_count") else 0
-		garrison.force_release_all()
-		released += before
+	var caster_building: Node = config.get("caster_building", null)
+	if caster_building == null or not is_instance_valid(caster_building):
+		return
+	if caster_building.is_dead():
+		return
+	var center: Vector2 = caster_building.global_position
+	var garrison = caster_building.get_node_or_null("Garrison")
+	if garrison == null or not garrison.has_method("force_release_all"):
+		return
+	var before: int = garrison.get_garrison_count() if garrison.has_method("get_garrison_count") else 0
+	garrison.force_release_all()
+	var released: int = before
 
 	if _spawner_module != null and _spawner_module.has_method("show_floating_text") and released > 0:
 		_spawner_module.show_floating_text("Release! (%d)" % released, Color(0.9, 0.6, 0.2), center, FLOAT_TEXT_MULT)

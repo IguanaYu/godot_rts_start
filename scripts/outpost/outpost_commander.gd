@@ -12,6 +12,8 @@ const SpellEffectsRef := preload("res://scripts/outpost/outpost_spell_effects.gd
 const StrategyEffectsRef := preload("res://scripts/outpost/outpost_strategy_effects.gd")
 const TelegraphOverlayScript := preload("res://scripts/outpost/outpost_telegraph_overlay.gd")
 const StatusMarkerScript := preload("res://scripts/outpost/outpost_status_marker.gd")
+const CasterBoostRef := preload("res://scripts/effects/caster_boost.gd")
+const OutpostStatusPanelScript := preload("res://scripts/ui/outpost_status_panel.gd")
 
 # 法术默认参数（可被 config.spell_overrides 覆盖）
 const DEFAULT_SPELL_PARAMS := {
@@ -45,6 +47,7 @@ var _tick_accumulator: float = 0.0
 var _is_registered: bool = false
 var _last_strategy_eval_msec: int = -10000
 var _attack_status_marker: Node2D = null  # attack/coordinate 状态期间持续显示的圈内红描边
+var _status_panel: Node2D = null  # OutpostStatusPanel 弱引用（用于显隐切换）
 
 
 func _ready() -> void:
@@ -55,8 +58,28 @@ func _ready() -> void:
 		mana = config.mana_max
 		gold = config.gold_max
 		strategy_points = float(config.strategy_max)
+	# 状态 panel：作为 scene root 子节点（不能用 self 子节点，因为 self.visible=false）
+	_spawn_status_panel()
 	# 注册由 OutpostCommanderManager._ready 的 _auto_scan 完成
 	# 此处不再自注册（避免 get_tree() 在节点释放后返回 null 导致段错误）
+
+
+func _spawn_status_panel() -> void:
+	var main_node := get_tree().current_scene
+	if main_node == null:
+		return
+	var panel := Node2D.new()
+	panel.set_script(OutpostStatusPanelScript)
+	panel.commander = self
+	panel.visible = false  # 默认隐藏，按 F4 切换显示
+	# 用 call_deferred 避免 "Parent node is busy setting up children" 错误
+	# （commander._ready 期间 main_node 自身还在 setup children）
+	main_node.add_child.call_deferred(panel)
+	_status_panel = panel
+
+
+func get_status_panel() -> Node2D:
+	return _status_panel
 
 
 func _register_to_manager() -> void:
@@ -228,31 +251,141 @@ func _has_full_garrison() -> bool:
 # 法术决策 + 执行
 # ============================================================
 ## 按优先级检查法术，第一个能放的就放。返回触发的 spell_id（无则为 &""）
+## 每个法术必须能找到"可见的 caster"（单位或兵营），效果从 caster 发起、跟随 caster
 func _pick_and_cast_spell(threat: int, attacked: int, buildings: Array, units: Array, mana_full: bool) -> StringName:
-	if not (&"shield" in config.enabled_spells) and attacked > 0:
-		pass
 	# 优先级：shield > call_to_arms > heal > inspire > release_garrison
 	if attacked > 0 and &"shield" in config.enabled_spells:
 		var target: Node = _weakest_attacked_building(buildings)
 		if target != null and _try_cast_spell(&"shield", {"target_building": target, "_target_pos": target.global_position}):
 			return &"shield"
 	if threat >= 8 and &"call_to_arms" in config.enabled_spells:
-		var center: Node = _weakest_attacked_building(buildings)
-		var pos: Vector2 = center.global_position if center != null else global_position
-		if _try_cast_spell(&"call_to_arms", {"center": pos}):
+		var barracks: Node = _pick_call_to_arms_barracks(buildings)
+		if barracks != null and _try_cast_spell(&"call_to_arms", {"caster_building": barracks, "_target_pos": barracks.global_position}):
 			return &"call_to_arms"
 	if _has_wounded_units(units, 0.5) and &"heal" in config.enabled_spells:
-		var pos := _densest_wounded_center(units, 0.5)
-		if _try_cast_spell(&"heal", {"_target_pos": pos}):
+		var caster_unit: Node = _pick_heal_caster(units)
+		if caster_unit != null and _try_cast_spell(&"heal", {"caster_unit": caster_unit, "_target_pos": caster_unit.global_position}):
 			return &"heal"
 	if current_strategy == &"attack" and mana_full and &"inspire" in config.enabled_spells:
-		var pos := global_position  # 简化：以指挥官为中心（圈内的友军聚集点）
-		if _try_cast_spell(&"inspire", {"_target_pos": pos}):
+		var caster_unit: Node = _pick_inspire_caster(units)
+		if caster_unit != null and _try_cast_spell(&"inspire", {"caster_unit": caster_unit, "_target_pos": caster_unit.global_position}):
 			return &"inspire"
 	if _has_full_garrison() and &"release_garrison" in config.enabled_spells:
-		if _try_cast_spell(&"release_garrison", {"center": global_position}):
+		var barracks: Node = _pick_release_barracks(buildings)
+		if barracks != null and _try_cast_spell(&"release_garrison", {"caster_building": barracks, "_target_pos": barracks.global_position}):
 			return &"release_garrison"
 	return &""
+
+
+# ============================================================
+# Caster 选择（让法术"显得是从某个具体单位/建筑释放"）
+# ============================================================
+## heal 的 caster：HP 比例最低（最重伤）但还活着的友方单位（"医疗兵"语义）
+func _pick_heal_caster(units: Array) -> Node:
+	var best = null
+	var best_ratio: float = 1.1
+	for u in units:
+		if not is_instance_valid(u) or not (u is CharacterBody2D):
+			continue
+		if u.health == null or u.health.is_dead():
+			continue
+		var ratio: float = float(u.health.hp) / float(u.health.max_hp) if u.health.max_hp > 0 else 1.0
+		# 仅考虑已受伤的（< 70%），避免满血小兵被选成医疗兵
+		if ratio > 0.7:
+			continue
+		if ratio < best_ratio:
+			best_ratio = ratio
+			best = u
+	return best
+
+
+## inspire 的 caster：HP 比例最高的友方单位（"队长/精英"语义，最能扛的）
+func _pick_inspire_caster(units: Array) -> Node:
+	var best = null
+	var best_ratio: float = -1.0
+	for u in units:
+		if not is_instance_valid(u) or not (u is CharacterBody2D):
+			continue
+		if u.health == null or u.health.is_dead():
+			continue
+		var ratio: float = float(u.health.hp) / float(u.health.max_hp) if u.health.max_hp > 0 else 0.0
+		if ratio > best_ratio:
+			best_ratio = ratio
+			best = u
+	return best
+
+
+## call_to_arms 的 caster：圈内最靠近威胁（玩家单位/建筑）的兵营
+func _pick_call_to_arms_barracks(buildings: Array) -> Node:
+	var target_pos: Vector2 = _find_nearest_player_position()
+	if target_pos == Vector2.ZERO:
+		return null
+	var best = null
+	var best_dist: float = 1e12
+	for b in buildings:
+		if not _is_barracks_like(b):
+			continue
+		var d: float = b.global_position.distance_to(target_pos)
+		if d < best_dist:
+			best_dist = d
+			best = b
+	return best
+
+
+## release_garrison 的 caster：驻军最多的兵营
+func _pick_release_barracks(buildings: Array) -> Node:
+	var best = null
+	var best_count: int = -1
+	for b in buildings:
+		if not _is_barracks_like(b):
+			continue
+		var garrison = b.get_node_or_null("Garrison")
+		if garrison == null or not garrison.has_method("get_garrison_count"):
+			continue
+		var count: int = garrison.get_garrison_count()
+		if count > best_count:
+			best_count = count
+			best = b
+	# 至少 1 个驻军才有意义
+	if best_count <= 0:
+		return null
+	return best
+
+
+## 兵营类（BARRACKS=3, ARCHERY=5, MONASTERY=4, CASTLE=2）
+func _is_barracks_like(b) -> bool:
+	if not is_instance_valid(b):
+		return false
+	if "building_type" not in b:
+		return false
+	var btype: int = b.building_type
+	return btype == 2 or btype == 3 or btype == 4 or btype == 5
+
+
+## 找最近玩家单位/建筑位置（用于 call_to_arms 选兵营）
+func _find_nearest_player_position() -> Vector2:
+	var center: Vector2 = global_position
+	var best = null
+	var best_dist: float = 1e12
+	for u in get_tree().get_nodes_in_group("player_units"):
+		if not is_instance_valid(u) or not (u is CharacterBody2D):
+			continue
+		var d: float = u.global_position.distance_to(center)
+		if d < best_dist:
+			best = u
+			best_dist = d
+	if best != null:
+		return best.global_position
+	for b in get_tree().get_nodes_in_group("player_buildings"):
+		if not is_instance_valid(b):
+			continue
+		var d: float = b.global_position.distance_to(center)
+		if d < best_dist:
+			best = b
+			best_dist = d
+	if best != null:
+		return best.global_position
+	return Vector2.ZERO
 
 
 func _weakest_attacked_building(buildings: Array):
@@ -406,7 +539,7 @@ const STRATEGY_FLASH_COLOR := {
 func _spawn_vfx_for_spell(spell_id: StringName, target_pos: Vector2, cfg: Dictionary) -> void:
 	var tier: String = SPELL_TIER.get(spell_id, "low")
 	_spawn_telegraph(spell_id, target_pos, tier)
-	# 持续 status marker
+	# 持续 status marker + CasterBoost（仅单位 caster 放大）
 	if SPELL_STATUS_DURATION.has(spell_id):
 		var marker := Node2D.new()
 		marker.set_script(StatusMarkerScript)
@@ -421,10 +554,32 @@ func _spawn_vfx_for_spell(spell_id: StringName, target_pos: Vector2, cfg: Dictio
 				else:
 					return  # 没有有效 target，不 spawn marker
 			&"inspire":
-				marker.center = target_pos
+				# aura 跟随 caster_unit（队长），让玩家看清是这只小兵在鼓舞周围
+				var caster_unit = cfg.get("caster_unit", null)
+				if caster_unit != null and is_instance_valid(caster_unit):
+					marker.target = caster_unit
+					_boost_caster(caster_unit, SPELL_STATUS_DURATION[spell_id])
+				else:
+					marker.center = target_pos
 			&"heal":
-				marker.center = target_pos
+				# aura 跟随 caster_unit（医疗兵），让玩家看清是这只小兵在治疗周围
+				var caster_unit = cfg.get("caster_unit", null)
+				if caster_unit != null and is_instance_valid(caster_unit):
+					marker.target = caster_unit
+					_boost_caster(caster_unit, SPELL_STATUS_DURATION[spell_id])
+				else:
+					marker.center = target_pos
 		get_tree().current_scene.add_child(marker)
+
+
+## 给 caster 单位应用"放大效果"，让玩家清楚是这只小兵在释放技能
+func _boost_caster(caster_unit: Node, duration: float) -> void:
+	if caster_unit == null or not is_instance_valid(caster_unit):
+		return
+	var sprite = caster_unit.get_node_or_null("BodySprite")
+	if sprite == null:
+		return
+	CasterBoostRef.play(sprite, 1.3, duration)
 
 
 func _spawn_vfx_for_strategy(strategy_id: StringName, attack_target: Vector2) -> void:
