@@ -121,6 +121,7 @@ func _run_init_steps() -> void:
 	LoadRouter.report_init_progress(0.30)
 	ui_module = Node.new()
 	ui_module.set_script(load("res://scripts/systems/game_ui.gd"))
+	ui_module.name = "GameUI"
 	add_child(ui_module)
 	ui_module.initialize(self, map_config, gold)
 	ui_module.place_mode_requested.connect(_on_place_mode_requested)

@@ -517,6 +517,7 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 
 	var minimap := Control.new()
 	minimap.set_script(preload("res://scripts/ui/minimap_panel.gd"))
+	minimap.name = "MinimapPanel"
 	minimap.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	minimap.offset_left = 7
 	minimap.offset_top = 7

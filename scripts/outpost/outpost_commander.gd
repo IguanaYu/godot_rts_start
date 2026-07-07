@@ -10,6 +10,8 @@ extends Node2D
 const OutpostCommanderConfigClass := preload("res://scripts/outpost/outpost_commander_config.gd")
 const SpellEffectsRef := preload("res://scripts/outpost/outpost_spell_effects.gd")
 const StrategyEffectsRef := preload("res://scripts/outpost/outpost_strategy_effects.gd")
+const TelegraphOverlayScript := preload("res://scripts/outpost/outpost_telegraph_overlay.gd")
+const StatusMarkerScript := preload("res://scripts/outpost/outpost_status_marker.gd")
 
 # 法术默认参数（可被 config.spell_overrides 覆盖）
 const DEFAULT_SPELL_PARAMS := {
@@ -42,6 +44,7 @@ var spell_cooldowns: Dictionary = {}  # {StringName spell_id: float remaining_se
 var _tick_accumulator: float = 0.0
 var _is_registered: bool = false
 var _last_strategy_eval_msec: int = -10000
+var _attack_status_marker: Node2D = null  # attack/coordinate 状态期间持续显示的圈内红描边
 
 
 func _ready() -> void:
@@ -231,7 +234,7 @@ func _pick_and_cast_spell(threat: int, attacked: int, buildings: Array, units: A
 	# 优先级：shield > call_to_arms > heal > inspire > release_garrison
 	if attacked > 0 and &"shield" in config.enabled_spells:
 		var target: Node = _weakest_attacked_building(buildings)
-		if target != null and _try_cast_spell(&"shield", {"target_building": target}):
+		if target != null and _try_cast_spell(&"shield", {"target_building": target, "_target_pos": target.global_position}):
 			return &"shield"
 	if threat >= 8 and &"call_to_arms" in config.enabled_spells:
 		var center: Node = _weakest_attacked_building(buildings)
@@ -284,6 +287,7 @@ func _try_cast_spell(spell_id: StringName, extra_config: Dictionary) -> bool:
 	var main_node := get_tree().current_scene
 	var spawner = main_node.get("spawner_module") if "spawner_module" in main_node else null
 	SpellEffectsRef.dispatch(spell_id, main_node, spawner, target_pos, cfg)
+	_spawn_vfx_for_spell(spell_id, target_pos, cfg)
 	print("[OutpostCommander:%s] cast spell %s (cost=%.0f)" % [_uid_str(), String(spell_id), cost])
 	return true
 
@@ -368,9 +372,111 @@ func _try_execute_strategy(strategy_id: StringName, force: bool) -> bool:
 	var ok: bool = StrategyEffectsRef.dispatch(strategy_id, self, manager, strat_config)
 	if ok:
 		current_strategy = strategy_id
+		_spawn_vfx_for_strategy(strategy_id, attack_target)
+		_pulse_minimap(strategy_id)
 		print("[OutpostCommander:%s] execute strategy %s (sp=%d gold=%d)" %
 			[_uid_str(), String(strategy_id), sp_cost, gold_cost])
 	return ok
+
+
+# ============================================================
+# VFX 反馈（Telegraph + Status Marker）
+# ============================================================
+const SPELL_TIER := {
+	&"shield": "mid", &"heal": "low", &"inspire": "low",
+	&"call_to_arms": "low", &"release_garrison": "low",
+}
+const SPELL_STATUS_DURATION := {
+	# 仅这些 spell 需要持续 status marker（buff 跟随期间）
+	# heal 是瞬时治疗，用短 marker（3s）；inspire/shield 跟随 buff 时长
+	&"shield": 12.0, &"inspire": 8.0, &"heal": 3.0,
+}
+const STRATEGY_TIER := {
+	&"attack": "high", &"coordinate": "high",
+	&"defend": "mid", &"expand": "mid",
+}
+const STRATEGY_FLASH_COLOR := {
+	&"attack": Color(1.0, 0.25, 0.25),
+	&"coordinate": Color(1.0, 0.55, 0.16),
+	&"defend": Color(0.25, 0.5, 1.0),
+	&"expand": Color(0.25, 1.0, 0.5),
+}
+
+
+func _spawn_vfx_for_spell(spell_id: StringName, target_pos: Vector2, cfg: Dictionary) -> void:
+	var tier: String = SPELL_TIER.get(spell_id, "low")
+	_spawn_telegraph(spell_id, target_pos, tier)
+	# 持续 status marker
+	if SPELL_STATUS_DURATION.has(spell_id):
+		var marker := Node2D.new()
+		marker.set_script(StatusMarkerScript)
+		marker.effect_id = spell_id
+		marker.duration_sec = SPELL_STATUS_DURATION[spell_id]
+		match spell_id:
+			&"shield":
+				# 跟随被盾的建筑
+				var target_bld = cfg.get("target_building", null)
+				if target_bld != null and is_instance_valid(target_bld):
+					marker.target = target_bld
+				else:
+					return  # 没有有效 target，不 spawn marker
+			&"inspire":
+				marker.center = target_pos
+			&"heal":
+				marker.center = target_pos
+		get_tree().current_scene.add_child(marker)
+
+
+func _spawn_vfx_for_strategy(strategy_id: StringName, attack_target: Vector2) -> void:
+	var tier: String = STRATEGY_TIER.get(strategy_id, "mid")
+	_spawn_telegraph(strategy_id, attack_target, tier)
+	# 策略切换：先清旧 attack 状态 marker
+	_clear_attack_status_marker()
+	# attack/coordinate 状态下，圈内画红色淡描边 marker（持续直到策略切换）
+	if strategy_id == &"attack" or strategy_id == &"coordinate":
+		var marker := Node2D.new()
+		marker.set_script(StatusMarkerScript)
+		marker.effect_id = &"attack"
+		marker.center = global_position
+		marker.duration_sec = 0.0  # 持续到外部 free
+		marker.set_visual_radius(config.territory_radius if config != null else 350.0)
+		get_tree().current_scene.add_child(marker)
+		_attack_status_marker = marker
+
+
+func _spawn_telegraph(effect_id: StringName, target_pos: Vector2, tier: String) -> void:
+	var overlay := Node2D.new()
+	overlay.set_script(TelegraphOverlayScript)
+	overlay.center = global_position
+	overlay.radius = config.territory_radius if config != null else 350.0
+	overlay.effect_id = effect_id
+	overlay.target_pos = target_pos
+	overlay.tier = tier
+	get_tree().current_scene.add_child(overlay)
+
+
+func _pulse_minimap(strategy_id: StringName) -> void:
+	var main_node := get_tree().current_scene
+	if main_node == null:
+		return
+	# MinimapPanel 嵌套在 GameUI/.../minimap_wrapper 下，用 find_children 稳健查找
+	var game_ui = main_node.get_node_or_null("GameUI")
+	if game_ui == null:
+		return
+	var matches: Array = game_ui.find_children("MinimapPanel", "", true, false)
+	if matches.is_empty():
+		return
+	var minimap = matches[0]
+	if not minimap.has_method("flash_at"):
+		return
+	var color: Color = STRATEGY_FLASH_COLOR.get(strategy_id, Color(1.0, 0.5, 0.3))
+	minimap.flash_at(global_position, color, 2.0 if strategy_id == &"attack" or strategy_id == &"coordinate" else 1.5)
+
+
+func _clear_attack_status_marker() -> void:
+	if _attack_status_marker != null and is_instance_valid(_attack_status_marker):
+		_attack_status_marker.queue_free()
+	_attack_status_marker = null
 
 
 func _find_player_attack_target() -> Vector2:
@@ -390,6 +496,7 @@ func _find_player_attack_target() -> Vector2:
 
 
 func _despawn() -> void:
+	_clear_attack_status_marker()
 	var main_node := get_tree().current_scene
 	if main_node != null:
 		var manager = main_node.get_node_or_null("OutpostCommanderManager")
