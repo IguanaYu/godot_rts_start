@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="MapConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/map_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+map_name = "Test: Grand Tactic Releaser"
+map_bounds = Rect2(-900, -500, 1800, 1000)
+nav_bounds = Array[Vector2]([Vector2(-900, -500), Vector2(900, -500), Vector2(900, 500), Vector2(-900, 500)])
+initial_gold = 5000
+camera_start = Vector2(0, 0)
+
+player_units = Array[Dictionary]([])
+
+player_buildings = Array[Dictionary]([])
+
+enemy_units = Array[Dictionary]([])
+
+enemy_buildings = Array[Dictionary]([])
+
+environment = {"trees": 0, "rocks": 0, "bushes": 0, "sheep": 0}
+
+available_items = Array[int]([])
+
+terrain_theme = 0
+border_width = 1
+map_description = "大战术释放者测试：1 个释放者 + 5 个玩家兵。验证引导 30s/不攻击/可击杀。"
+
+star_time_3 = 180.0
+star_time_2 = 300.0
+star_deaths_3 = 0
+star_deaths_2 = 3
+
+balance_scheme = 2

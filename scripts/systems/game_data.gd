@@ -307,6 +307,7 @@ const ENEMY_VARIANT_SCENES := {
 	&"necromancer": "res://scenes/units/necromancer.tscn",
 	&"skeleton": "res://scenes/units/skeleton.tscn",
 	&"enchanter": "res://scenes/units/enchanter.tscn",
+	&"grand_tactic_releaser": "res://scenes/units/grand_tactic_releaser.tscn",
 }
 
 # --- PlaceMode → BuildingType 映射 ---

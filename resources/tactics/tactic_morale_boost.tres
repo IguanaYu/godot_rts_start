@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="GrandTacticResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/tactics/grand_tactic_resource.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+tactic_name = "鼓舞士气"
+tactic_id = 2
+channel_time = 30.0
+effect_interval = 0.0
+aura_type = "attack"
+aura_value = 0.3
+aura_range = 300.0

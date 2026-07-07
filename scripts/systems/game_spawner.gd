@@ -508,6 +508,25 @@ func spawn_summon(type: int, stats_id: StringName, pos: Vector2, team: int) -> C
 		unit.add_child(ai)
 	return unit
 
+# --- 大战术释放者生成 ---
+func spawn_grand_tactic_releaser(pos: Vector2, tactic_resource: Resource = null) -> CharacterBody2D:
+	var unit := create_unit(UnitScript.UnitType.SOLDIER, UnitScript.Team.ENEMY, pos, &"grand_tactic_releaser")
+	unit.net_id = _next_net_id
+	_next_net_id += 1
+	LockstepSync.register_unit(unit)
+	_enemy_units_node.add_child(unit)
+	spawn_spawn_effect(pos, UnitScript.Team.ENEMY, unit)
+	unit.add_to_group("enemy_units")
+
+	var ai := Node2D.new()
+	ai.name = "GrandTacticReleaserAI"
+	ai.set_script(preload("res://scripts/units/grand_tactic_releaser_ai.gd"))
+	if tactic_resource != null:
+		ai.set("tactic", tactic_resource)
+	unit.add_child(ai)
+	return unit
+
+
 # --- 难度乘数 ---
 
 func _apply_difficulty_modifiers(unit: CharacterBody2D) -> void:
@@ -587,11 +606,11 @@ func spawn_dust_effect(pos: Vector2) -> void:
 	_main_node.get_tree().current_scene.add_child(effect)
 	effect.global_position = pos
 
-func show_floating_text(text: String, color: Color, world_pos: Vector2) -> void:
+func show_floating_text(text: String, color: Color, world_pos: Vector2, duration_mult: float = 1.0) -> void:
 	var ft := Node2D.new()
 	ft.set_script(load("res://scripts/effects/floating_text.gd"))
 	_main_node.add_child(ft)
-	ft.setup(text, color, world_pos)
+	ft.setup(text, color, world_pos, duration_mult)
 
 # --- 情绪系统节点 ---
 

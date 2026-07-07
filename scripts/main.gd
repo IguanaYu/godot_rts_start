@@ -268,6 +268,7 @@ func _run_init_steps() -> void:
 	_setup_ambush_triggers()
 	_setup_adaptive_reinforcement()
 	_setup_boss_ai()
+	_setup_grand_tactic_releasers()
 	_setup_wave_manager()
 	if map_config != null:
 		camera.position = map_config.camera_start
@@ -582,6 +583,12 @@ func _setup_boss_ai() -> void:
 	for boss in boss_ais:
 		if boss.has_method("set_game_controller"):
 			boss.set_game_controller(self)
+
+func _setup_grand_tactic_releasers() -> void:
+	var releasers := get_tree().get_nodes_in_group("grand_tactic_releaser")
+	for r in releasers:
+		if r.has_method("set_game_controller"):
+			r.set_game_controller(self)
 
 func _setup_wave_manager() -> void:
 	for child in get_children():

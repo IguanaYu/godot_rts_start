@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="GrandTacticResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/tactics/grand_tactic_resource.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+tactic_name = "持续召唤"
+tactic_id = 0
+channel_time = 30.0
+effect_interval = 5.0
+effect_count = 3
+effect_unit_type = 0
+effect_stats_id = &""

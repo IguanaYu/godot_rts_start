@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="GrandTacticResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/tactics/grand_tactic_resource.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+tactic_name = "结束时召唤"
+tactic_id = 3
+channel_time = 30.0
+effect_interval = 0.0
+final_summon_groups = Array[Dictionary]( [{"type": 0, "count": 8}, {"type": 1, "count": 4}] )

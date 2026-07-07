@@ -1,0 +1,17 @@
+[gd_scene format=3 uid=""]
+
+[ext_resource type="PackedScene" uid="uid://mmgbo1ded4ro" path="res://scenes/units/soldier.tscn" id="base"]
+[ext_resource type="Resource" path="res://resources/stats/grand_tactic_releaser_stats.tres" id="releaser_stats"]
+[ext_resource type="Script" path="res://scripts/units/grand_tactic_releaser_ai.gd" id="releaser_ai"]
+
+[node name="GrandTacticReleaser" instance=ExtResource("base")]
+stats_data = ExtResource("releaser_stats")
+sprite_scale_x = 1.2
+sprite_scale_y = 1.2
+sprite_offset_y = 18.0
+team = 1
+alliance_id = 1
+faction_color = 3
+
+[node name="GrandTacticReleaserAI" type="Node" parent="."]
+script = ExtResource("releaser_ai")

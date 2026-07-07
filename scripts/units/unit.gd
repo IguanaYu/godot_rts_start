@@ -157,6 +157,8 @@ var _frames_idle: int = 6
 var _frames_run: int = 6
 var _frames_attack: int = 6
 var _is_attacking: bool = false
+## 禁止攻击（大战术释放者用，不自动反击、不扫描敌人）
+var attack_disabled: bool = false
 var _lateral_dir: Vector2 = Vector2.ZERO
 var _lateral_timer: float = 0.0
 var _blocked_timer: float = 0.0
@@ -657,6 +659,9 @@ func _skill_ai_tick(delta: float) -> void:
 
 
 func _attack_process(delta: float) -> void:
+	# 不攻击的单位跳过
+	if attack_disabled:
+		return
 	# Monk不攻击，站着不动
 	if unit_type == UnitType.MONK:
 		return
@@ -731,6 +736,8 @@ func _attack_process(delta: float) -> void:
 			attack_timer = stat_set.get_value(StatSetClass.ATTACK_COOLDOWN)
 
 func _attack_move_process(delta: float) -> void:
+	if attack_disabled:
+		return
 	# Phase 2：Monk 治疗由技能组件处理，不再特殊分支
 	if _should_scan_this_frame():
 		_cached_scan_enemy = _find_closest_enemy_in_range(attack_move_scan_range)
@@ -806,6 +813,8 @@ func _patrol_process(delta: float) -> void:
 		velocity = global_position.direction_to(next_pos) * stat_set.get_value(StatSetClass.MOVE_SPEED)
 
 func _guard_process(delta: float) -> void:
+	if attack_disabled:
+		return
 	# Phase 2：Monk 治疗由技能组件处理，不再特殊分支
 	if _should_scan_this_frame():
 		_cached_scan_enemy = _find_closest_enemy_in_range(attack_move_scan_range)
@@ -818,6 +827,8 @@ func _guard_process(delta: float) -> void:
 		hold_position_mode = false
 
 func _hold_position_process(delta: float) -> void:
+	if attack_disabled:
+		return
 	if _should_scan_this_frame():
 		_cached_scan_enemy = _find_closest_enemy_in_range(get_effective_attack_range())
 	var closest = _cached_scan_enemy if _is_target_alive(_cached_scan_enemy) else null
@@ -1177,6 +1188,8 @@ func take_damage(amount: int, attacker = null) -> void:
 		die()
 
 func _player_retaliate(attacker) -> void:
+	if attack_disabled:
+		return
 	# 已经在攻击有效目标时不切换
 	if state == UnitState.ATTACK and attack_target != null and not attack_target.is_dead():
 		return
@@ -1338,6 +1351,15 @@ func stop() -> void:
 	velocity = Vector2.ZERO
 	nav_agent.target_position = global_position
 	state = UnitState.GUARD
+
+func set_attack_disabled(disabled: bool) -> void:
+	attack_disabled = disabled
+	if disabled:
+		# 立即放弃当前攻击状态
+		_is_attacking = false
+		attack_target = null
+		attack_command_source = CommandSource.NONE
+
 
 func hold_position() -> void:
 	_reset_movement_state()
@@ -1794,6 +1816,8 @@ func _aura_process(delta: float) -> void:
 		return
 	_aura_scan_timer = 0.0
 	var neighbors = UnitGrid.query_neighbors(global_position, aura_range)
+	var buffed_count: int = 0
+	var buffed_names: Array = []
 	for u in neighbors:
 		if not is_instance_valid(u) or u.is_dead() or u.team != team:
 			continue
@@ -1805,14 +1829,24 @@ func _aura_process(delta: float) -> void:
 					u.health.heal(int(aura_value * 0.5))
 			"attack":
 				u.apply_buff("attack", aura_value)
+				buffed_count += 1
+				buffed_names.append("%s(t=%d)" % [u.name, u.team])
 			"defense":
 				u.apply_buff("defense", aura_value)
+				buffed_count += 1
+				buffed_names.append("%s(t=%d)" % [u.name, u.team])
 			"range_bonus":
 				u.apply_buff("range_bonus", aura_value)
+				buffed_count += 1
+				buffed_names.append("%s(t=%d)" % [u.name, u.team])
 			"shield":
 				# 护盾叠加（不超过 aura_value 上限）
 				if u._shield_hp < int(aura_value):
 					u._shield_hp = int(aura_value)
+	# Debug：释放者 aura 每次成功 buff 时打印一次（仅 grand_tactic_releaser 组，避免污染常规单位日志）
+	if buffed_count > 0 and is_in_group("grand_tactic_releaser"):
+		print("[GrandTactic] %s aura=%s buff %d 友军: %s" %
+			[name, aura_type, buffed_count, ", ".join(buffed_names)])
 
 func get_effective_attack_range() -> float:
 	return stat_set.get_value(StatSetClass.ATTACK_RANGE)

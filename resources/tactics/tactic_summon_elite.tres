@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="GrandTacticResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/tactics/grand_tactic_resource.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+tactic_name = "召唤精英+联动死亡"
+tactic_id = 1
+channel_time = 30.0
+effect_interval = 10.0
+effect_count = 0
+elite_count = 1
+elite_stats_ids = [&"boss_soldier"]
+linked_death = true
