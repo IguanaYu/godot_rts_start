@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="MapConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/map_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+map_name = "Test: Outpost Smoke"
+map_bounds = Rect2(-700, -400, 1400, 800)
+nav_bounds = Array[Vector2]([Vector2(-700, -400), Vector2(700, -400), Vector2(700, 400), Vector2(-700, 400)])
+initial_gold = 0
+camera_start = Vector2(0, 0)
+
+player_units = Array[Dictionary]([])
+
+player_buildings = Array[Dictionary]([])
+
+enemy_units = Array[Dictionary]([])
+
+enemy_buildings = Array[Dictionary]([])
+
+environment = {"trees": 0, "rocks": 0, "bushes": 0, "sheep": 0}
+
+available_items = Array[int]([])
+
+terrain_theme = 0
+border_width = 1
+map_description = "据点指挥官烟雾测试：1 个默认性格指挥官 + 3 个圈内建筑 + 玩家 6 单位 attack-move。验证 Manager 注册、tick 频率、资源 regen。"
+
+star_time_3 = 180.0
+star_time_2 = 300.0
+star_deaths_3 = 0
+star_deaths_2 = 3

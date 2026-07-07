@@ -1,0 +1,139 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" uid="uid://cg2igjmusi0dq" path="res://scripts/main.gd" id="main_script"]
+[ext_resource type="Resource" path="res://resources/test_outpost_smoke_config.tres" id="map_config"]
+[ext_resource type="PackedScene" uid="uid://8rfekrdqs7gf" path="res://scenes/buildings/castle.tscn" id="castle"]
+[ext_resource type="PackedScene" uid="uid://dhyxequcxurbh" path="res://scenes/buildings/barracks.tscn" id="barracks"]
+[ext_resource type="PackedScene" uid="uid://tower0001" path="res://scenes/buildings/tower.tscn" id="tower"]
+[ext_resource type="PackedScene" uid="uid://mmgbo1ded4ro" path="res://scenes/units/soldier.tscn" id="soldier"]
+[ext_resource type="Script" path="res://scripts/systems/stress_test_spawner.gd" id="stress_spawner"]
+[ext_resource type="Script" path="res://scripts/outpost/outpost_commander.gd" id="outpost_cmdr_script"]
+[ext_resource type="Script" path="res://scripts/outpost/outpost_commander_config.gd" id="outpost_cfg_script"]
+
+[sub_resource type="NavigationPolygon" id="NavPoly_1"]
+vertices = PackedVector2Array(-700, -400, 700, -400, 700, 400, -700, 400)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
+
+[sub_resource type="Resource" id="OutpostConfig_smoke"]
+script = ExtResource("outpost_cfg_script")
+commander_uid = &"test_smoke"
+alliance_id = 1
+territory_radius = 350.0
+mana_max = 100.0
+gold_max = 500
+gold_regen = 5.0
+strategy_max = 4
+strategy_regen = 0.05
+enabled_spells = Array[StringName]([&"inspire", &"call_to_arms", &"release_garrison", &"heal", &"shield"])
+enabled_strategies = Array[StringName]([&"attack", &"coordinate", &"defend", &"expand"])
+aggression = 0.5
+defensiveness = 0.5
+expansionist = 0.5
+forced_strategy = &""
+spell_overrides = {}
+strategy_overrides = {}
+
+[node name="TestOutpostSmoke" type="Node2D"]
+script = ExtResource("main_script")
+map_config = ExtResource("map_config")
+
+[node name="Ground" type="ColorRect" parent="."]
+offset_left = -700.0
+offset_top = -400.0
+offset_right = 700.0
+offset_bottom = 400.0
+color = Color(0.35, 0.55, 0.25, 1)
+
+[node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
+navigation_polygon = SubResource("NavPoly_1")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(0, 0)
+zoom = Vector2(0.7, 0.7)
+
+[node name="PlayerUnits" type="Node2D" parent="."]
+
+[node name="EnemyUnits" type="Node2D" parent="."]
+
+[node name="Buildings" type="Node2D" parent="."]
+
+[node name="PlayerCastle" parent="Buildings" instance=ExtResource("castle")]
+position = Vector2(-650, 300)
+
+[node name="EnemyCastle" parent="Buildings" instance=ExtResource("castle")]
+position = Vector2(650, -300)
+team = 1
+alliance_id = 1
+faction_color = 3
+
+[node name="EnemyTower1" parent="Buildings" instance=ExtResource("tower")]
+position = Vector2(-100, 0)
+team = 1
+alliance_id = 1
+faction_color = 3
+
+[node name="EnemyTower2" parent="Buildings" instance=ExtResource("tower")]
+position = Vector2(100, 0)
+team = 1
+alliance_id = 1
+faction_color = 3
+
+[node name="EnemyBarracks" parent="Buildings" instance=ExtResource("barracks")]
+position = Vector2(0, 100)
+team = 1
+alliance_id = 1
+faction_color = 3
+
+[node name="SelectionBox" type="ColorRect" parent="."]
+visible = false
+mouse_filter = 2
+color = Color(0.4, 0.7, 1, 0.25)
+
+[node name="PreviewRect" type="ColorRect" parent="."]
+visible = false
+mouse_filter = 2
+color = Color(0, 1, 0, 0.3)
+
+[node name="ResultLabel" type="Label" parent="."]
+offset_left = -100.0
+offset_top = -50.0
+offset_right = 100.0
+offset_bottom = 50.0
+theme_override_font_sizes/font_size = 48
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BattleInfoLabel" type="Label" parent="."]
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 900.0
+offset_bottom = 80.0
+theme_override_colors/font_color = Color(0.4, 0.7, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "Outpost 烟雾测试 — 1 个默认性格指挥官(圈中心 0,0 r=350) + 3 圈内建筑 + 玩家 6 单位 attack-move 圈内。看 tick 日志和资源增长。"
+
+[node name="AttackMoveIndicator" type="Label" parent="."]
+visible = false
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 200.0
+offset_bottom = 40.0
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+theme_override_font_sizes/font_size = 20
+text = "Attack Move (Click)"
+
+[node name="PlayerSpawner" type="Node" parent="."]
+script = ExtResource("stress_spawner")
+team = 0
+rows = 2
+cols = 3
+spacing = 30.0
+origin = Vector2(-300, -30)
+unit_scenes = Array[PackedScene]([ExtResource("soldier")])
+auto_attack_move = true
+attack_move_target = Vector2(0, 0)
+
+[node name="OutpostCommanderSmoke" type="Node2D" parent="."]
+position = Vector2(0, 0)
+script = ExtResource("outpost_cmdr_script")
+config = SubResource("OutpostConfig_smoke")
