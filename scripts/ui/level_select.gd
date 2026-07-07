@@ -195,6 +195,10 @@ var mini_levels := [
 	{"name_key": "MINI_ASSAULT_NAME", "desc_key": "MINI_ASSAULT_DESC", "scene": "res://scenes/maps/mini_captain_assault.tscn"},
 	{"name_key": "MINI_ALLY_NAME", "desc_key": "MINI_ALLY_DESC", "scene": "res://scenes/maps/mini_captain_ally.tscn"},
 	{"name_key": "MINI_SURVIVAL_NAME", "desc_key": "MINI_SURVIVAL_DESC", "scene": "res://scenes/maps/mini_captain_survival.tscn"},
+	{"name_key": "TEST_MINI_COMBAT_NAME", "desc_key": "TEST_MINI_COMBAT_DESC", "scene": "res://scenes/maps/test_mini_combat.tscn"},
+	{"name_key": "TEST_MINI_SUMMON_NAME", "desc_key": "TEST_MINI_SUMMON_DESC", "scene": "res://scenes/maps/test_mini_summon.tscn"},
+	{"name_key": "TEST_MINI_RANGED_NAME", "desc_key": "TEST_MINI_RANGED_DESC", "scene": "res://scenes/maps/test_mini_ranged.tscn"},
+	{"name_key": "TEST_MINI_SURVIVAL_NAME", "desc_key": "TEST_MINI_SURVIVAL_DESC", "scene": "res://scenes/maps/test_mini_survival.tscn"},
 ]
 
 # === 模式切换 ===
