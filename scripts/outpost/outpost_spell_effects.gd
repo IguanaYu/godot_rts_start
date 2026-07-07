@@ -7,6 +7,9 @@ const UnitScript := preload("res://scripts/units/unit.gd")
 const BuildingScript := preload("res://scripts/buildings/building.gd")
 const SkillEffectsRef := preload("res://scripts/commander_skill/skill_effects.gd")
 
+# 据点指挥官法术飘字停留时间倍率（约 8s，便于玩家观察）
+const FLOAT_TEXT_MULT := 2.5
+
 
 # ============================================================
 # 静态分发：用 StringName 调用对应法术（绕过 .call() 不能调 static 的限制）
@@ -48,7 +51,7 @@ static func heal(main_node: Node2D, _spawner_module: Node, target_pos: Vector2, 
 
 	_show_area_indicator(main_node, target_pos, radius, Color(0.1, 0.9, 0.3, 0.4))
 	if _spawner_module != null and _spawner_module.has_method("show_floating_text") and healed_count > 0:
-		_spawner_module.show_floating_text("+%d" % heal_amount, Color(0.1, 0.9, 0.3), target_pos)
+		_spawner_module.show_floating_text("+%d" % heal_amount, Color(0.1, 0.9, 0.3), target_pos, FLOAT_TEXT_MULT)
 
 
 # ============================================================
@@ -77,7 +80,7 @@ static func inspire(main_node: Node2D, _spawner_module: Node, target_pos: Vector
 
 	_show_area_indicator(main_node, target_pos, radius, Color(1.0, 0.85, 0.2, 0.4))
 	if _spawner_module != null and _spawner_module.has_method("show_floating_text") and buffed_count > 0:
-		_spawner_module.show_floating_text("Inspire", Color(1.0, 0.85, 0.2), target_pos)
+		_spawner_module.show_floating_text("Inspire", Color(1.0, 0.85, 0.2), target_pos, FLOAT_TEXT_MULT)
 
 
 # ============================================================
@@ -107,7 +110,7 @@ static func call_to_arms(main_node: Node2D, _spawner_module: Node, _target_pos: 
 				triggered += 1
 
 	if _spawner_module != null and _spawner_module.has_method("show_floating_text") and triggered > 0:
-		_spawner_module.show_floating_text("Call to Arms! (+%d)" % triggered, Color(1.0, 0.5, 0.3), center)
+		_spawner_module.show_floating_text("Call to Arms! (+%d)" % triggered, Color(1.0, 0.5, 0.3), center, FLOAT_TEXT_MULT)
 
 
 # ============================================================
@@ -134,7 +137,7 @@ static func release_garrison(main_node: Node2D, _spawner_module: Node, _target_p
 		released += before
 
 	if _spawner_module != null and _spawner_module.has_method("show_floating_text") and released > 0:
-		_spawner_module.show_floating_text("Release! (%d)" % released, Color(0.9, 0.6, 0.2), center)
+		_spawner_module.show_floating_text("Release! (%d)" % released, Color(0.9, 0.6, 0.2), center, FLOAT_TEXT_MULT)
 
 
 # ============================================================
@@ -169,7 +172,7 @@ static func shield(main_node: Node2D, _spawner_module: Node, _target_pos: Vector
 	)
 
 	if _spawner_module != null and _spawner_module.has_method("show_floating_text"):
-		_spawner_module.show_floating_text("Shield +%d%%" % int(max_hp_bonus * 100), Color(0.4, 0.7, 1.0), target_building.global_position)
+		_spawner_module.show_floating_text("Shield +%d%%" % int(max_hp_bonus * 100), Color(0.4, 0.7, 1.0), target_building.global_position, FLOAT_TEXT_MULT)
 
 
 # ============================================================
