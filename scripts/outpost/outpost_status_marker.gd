@@ -24,7 +24,12 @@ const EFFECT_INFO := {
 	&"shield":   {color = Color(0.40, 0.70, 1.00), radius = 38.0},
 	&"inspire":  {color = Color(1.00, 0.82, 0.29), radius = 50.0},
 	&"heal":     {color = Color(0.10, 0.90, 0.30), radius = 60.0},
-	&"attack":   {color = Color(1.00, 0.25, 0.25), radius = 0.0},  # attack 用 commander.config.territory_radius
+	&"attack":   {color = Color(1.00, 0.25, 0.25), radius = 0.0},
+	&"burn":     {color = Color(1.00, 0.55, 0.00), radius = 42.0},
+	&"poison":   {color = Color(0.50, 0.00, 0.80), radius = 42.0},
+	&"rage":     {color = Color(1.00, 0.15, 0.00), radius = 45.0},
+	&"slow":     {color = Color(0.40, 0.70, 1.00), radius = 45.0},
+	&"telegraph_aoe": {color = Color(1.00, 0.20, 0.20), radius = 50.0},
 }
 
 const WARN_TAIL_RATIO := 0.25  # 最后 25% 时间进入闪烁警示（buff 即将结束）
@@ -91,6 +96,14 @@ func _draw() -> void:
 			if _radius > 0.0:
 				draw_arc(Vector2.ZERO, _radius, 0, TAU, 64,
 					Color(_color.r, _color.g, _color.b, alpha * 0.6), 2.0)
+		_:
+			# 默认：通用地面贴花（外圈描边 + 内圈 + 淡填充）
+			draw_arc(Vector2.ZERO, _radius, 0, TAU, 48,
+				Color(_color.r, _color.g, _color.b, alpha * 0.7), 3.0)
+			draw_arc(Vector2.ZERO, _radius * 0.7, 0, TAU, 48,
+				Color(_color.r, _color.g, _color.b, alpha * 0.4), 1.5)
+			draw_circle(Vector2.ZERO, _radius,
+				Color(_color.r, _color.g, _color.b, alpha * 0.10))
 
 
 func _draw_hexagon(size: float, color: Color) -> void:
