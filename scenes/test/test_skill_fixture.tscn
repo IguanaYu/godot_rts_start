@@ -1,0 +1,14 @@
+[gd_scene load_steps=2 format=3 uid="uid://btestfixture001"]
+
+[ext_resource type="Script" path="res://scripts/test/mock_spawner.gd" id="1"]
+
+[node name="TestFixture" type="Node2D"]
+
+[node name="PlayerUnits" type="Node2D" parent="."]
+
+[node name="EnemyUnits" type="Node2D" parent="."]
+
+[node name="Buildings" type="Node2D" parent="."]
+
+[node name="MockSpawner" type="Node" parent="."]
+script = ExtResource("1")
