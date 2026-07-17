@@ -48,9 +48,9 @@ const HeroControllerScript := preload("res://scripts/mini_captain/hero_controlle
 const PopulationManagerScript := preload("res://scripts/mini_captain/population_manager.gd")
 const SummonLifecycleScript := preload("res://scripts/mini_captain/summon_lifecycle.gd")
 const TestSummonSkillScript := preload("res://scripts/mini_captain/test_summon_skill.gd")
-var hero_controller: HeroController
-var population_manager: PopulationManager
-var summon_lifecycle: SummonLifecycle
+var hero_controller  # HeroController, duck typing
+var population_manager  # PopulationManager, duck typing
+var summon_lifecycle  # SummonLifecycle, duck typing
 var is_mini_captain: bool = false
 
 # 全局玩家集结点

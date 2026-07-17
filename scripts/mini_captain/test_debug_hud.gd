@@ -1,4 +1,3 @@
-class_name TestDebugHud
 extends CanvasLayer
 
 ## Mini Captain 调试信息叠加层。
@@ -38,7 +37,7 @@ func _find_components() -> void:
 	if "population_manager" in _main:
 		_pop_mgr = _main.population_manager
 	for child in _main.get_children():
-		if child is TestSummonSkill:
+		if child.get_script() == preload("res://scripts/mini_captain/test_summon_skill.gd"):
 			_test_skill = child
 		var s = child.get_script()
 		if s != null and "WaveManager" in str(s):

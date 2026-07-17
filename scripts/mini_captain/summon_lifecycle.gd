@@ -1,17 +1,16 @@
-class_name SummonLifecycle
 extends Node
 
 ## 封装召唤兵完整生命周期:人口检查 + 生成 + 计时死亡 + 人口释放。
 ## 复用 game_spawner.spawn_summon() 生成;玩家方召唤物不加 AI,靠 Unit GUARD 自动战斗。
 
 var spawner  # game_spawner 引用
-var pop_manager: PopulationManager
+var pop_manager  # PopulationManager, duck typing
 
-func initialize(spawner_module, pop_mgr: PopulationManager) -> void:
+func initialize(spawner_module, pop_mgr) -> void:
 	spawner = spawner_module
 	pop_manager = pop_mgr
 
-func summon(stats_id: StringName, pos: Vector2, team: int, lifetime: float) -> Unit:
+func summon(stats_id: StringName, pos: Vector2, team: int, lifetime: float):
 	# 1. 人口检查
 	if not pop_manager.can_summon(1):
 		return null

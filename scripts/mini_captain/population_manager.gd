@@ -1,4 +1,3 @@
-class_name PopulationManager
 extends Node
 
 ## 召唤兵人口系统。初始 8,满人口禁召,可通过 upgrade_cap 提升。
