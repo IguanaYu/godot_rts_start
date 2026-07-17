@@ -60,6 +60,9 @@ var _trigger_initialized: bool = false
 
 var game_controller: Node2D = null
 
+var _progress_label: Label = null
+var _debug_timer: float = 0.0
+
 signal captured(team: int)
 signal lost(previous_team: int)
 signal zone_triggered()
@@ -93,6 +96,21 @@ func _setup_capture_visual() -> void:
 	ring.z_index = 5
 	add_child(ring)
 
+	# 进度标签（占领时显示百分比）
+	_progress_label = Label.new()
+	_progress_label.name = "ProgressLabel"
+	_progress_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_progress_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_progress_label.theme_override_font_sizes/font_size = 22
+	_progress_label.theme_override_colors/font_color = Color(1, 1, 0.4)
+	_progress_label.theme_override_colors/font_outline_color = Color(0, 0, 0)
+	_progress_label.theme_override_constants/outline_size = 4
+	_progress_label.size = Vector2(120, 30)
+	_progress_label.position = Vector2(-60, -capture_radius - 35)
+	_progress_label.z_index = 10
+	_progress_label.visible = false
+	add_child(_progress_label)
+
 func set_game_controller(gc: Node2D) -> void:
 	game_controller = gc
 
@@ -105,10 +123,14 @@ func disable() -> void:
 func activate() -> void:
 	is_active = true
 	visible = true
+	if _progress_label:
+		_progress_label.visible = true
 
 func deactivate() -> void:
 	is_active = false
 	visible = false
+	if _progress_label:
+		_progress_label.visible = false
 
 func _get_detection_pos() -> Vector2:
 	var det_node := get_node_or_null(detection_area)
@@ -189,6 +211,14 @@ func _process_capture(delta: float) -> void:
 				if u.global_position.distance_to(global_position) <= capture_radius:
 					enemy_count += 1
 
+	# --- 调试日志（每0.5秒）---
+	_debug_timer += delta
+	if _debug_timer >= 0.5:
+		_debug_timer = 0.0
+		var total_pu := get_tree().get_nodes_in_group("player_units").size()
+		print("[CapturePoint:%s] player_total=%d  in_range=%d  enemy=%d  progress=%.1f/100  capt_by=%d" % [
+			name, total_pu, player_count, enemy_count, capture_progress, captured_by])
+
 	var dominant_team := -1
 	if player_count > enemy_count:
 		dominant_team = UnitScript.Team.PLAYER
@@ -204,7 +234,13 @@ func _process_capture(delta: float) -> void:
 		capture_progress = clamp(capture_progress, 0.0, 100.0)
 		capturing_team = dominant_team
 
+		# 更新进度标签
+		if _progress_label:
+			_progress_label.text = "%d%%" % int(capture_progress)
+			_progress_label.visible = true
+
 		if capture_progress >= 100.0 and captured_by != capturing_team:
+			print("[CapturePoint:%s] CAPTURED by team %d!" % [name, capturing_team])
 			var was_previously_captured := captured_by != -1
 			var previous_team := captured_by
 			captured_by = capturing_team
@@ -218,6 +254,9 @@ func _process_capture(delta: float) -> void:
 				visible = false
 			captured.emit(captured_by)
 			_grant_reward()
+	else:
+		if _progress_label:
+			_progress_label.text = "%d%%" % int(capture_progress)
 	else:
 		if captured_by == -1:
 			capture_progress = max(0.0, capture_progress - capture_speed * delta * 0.5)
