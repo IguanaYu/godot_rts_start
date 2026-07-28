@@ -51,8 +51,8 @@ LEVEL_1_NAME,Map 1: Blitz,关卡1: 闪电战,マップ1: 電撃戦
 LEVEL_1_DESC,"No base, no gold — just 5 soldiers and archers. Capture 3 strongpoints in sequence to earn gold and reinforcements. Each point heals your squad. Lose all units and it's over.","没有基地、没有金币，只有3个士兵和2个弓箭手。依次占领3个据点获取金币和增援，每占领一处全军恢复半数生命。全军覆没即为失败。","基地も金貨もない、ただ5人の兵士とアーチャーだけ。3つの拠点を順次占領して金貨と増援を獲得せよ。各拠点占領時に全軍が半分回復。全滅すれば敗北。"
 LEVEL_2_NAME,Map 2: Basic Attack,关卡2: 基础进攻,マップ2: 基本攻撃
 LEVEL_2_DESC,Starting with a castle and 10000 gold. Train all unit types and build freely. Destroy the enemy castle to win — but protect yours!,"城堡开局，10000金币起步，可建造全部兵种和建筑。摧毁敌方城堡即可获胜，别忘了守住自己的城堡！","城と10000金貨でスタート。全兵種を訓練し自由に建設可能。敵の城を破壊すれば勝利だが、自城の防衛も忘れるな！"
-LEVEL_3_NAME,Map 3: Tower Defense,关卡3: 塔防,マップ3: タワーディフェンス
-LEVEL_3_DESC,"6000 gold, 3 waves incoming! Wave 1: 5 enemies. Wave 2: 9 enemies with lancers. Wave 3: 14 enemies. Build walls and towers, train soldiers and archers to survive.","6000金币，3波敌袭！第1波5人，第2波9人含枪兵，第3波14人大军压境。善用城墙和箭塔，训练士兵与弓箭手守住阵地。","金貨6000、3波の敵襲が来る！第1波は5体、第2波は9体でランサー登場、第3波は14体の大軍。城壁と矢塔を築き、兵士とアーチャーを訓練して持ちこたえろ。"
+LEVEL_3_NAME,Map 3: Storm Front,关卡3: 风暴前线,マップ3: ストームフロント
+LEVEL_3_DESC,"6000 gold, survive 4 waves! Capture 3 points to weaken the final wave. Use walls, towers, and commander skills to hold the line.","6000金币，抵御4波敌袭！占领3个据点削弱最终波。善用城墙、箭塔和指挥官技能守住阵地。","金貨6000、4波の敵を耐えよ！3つの拠点を占領して最終波を弱体化させよ。城壁・矢塔・指揮官スキルを駆使して持ちこたえろ。"
 LEVEL_4_NAME,Map 4: Three Sharpshooters,关卡4: 神射三杰,マップ4: 三人の射撃手
 LEVEL_4_DESC,"Escort 3 elite archers through ambush zones. Don't let any VIP die! Reach the destination to win.","护送3名精英弓箭手穿越伏击区。不能让任何VIP阵亡！到达终点即获胜。","3人のエリートアーチャーを伏撃地帯から脱出させよ。VIPを全員生存させ目的地に到達せよ。"
 REWARD_GOLD,+%d,+%d,+%d
@@ -265,21 +265,21 @@ UI_SHOW_COLLISIONS,Show Collisions,碰撞区域,コリジョン表示
 LEVEL_5_NAME,Map 5: Skill Awakening,关卡5: 技能觉醒,マップ5: スキル覚醒
 LEVEL_5_DESC,Learn to use Orbital Strike and Shield Wall commander skills. Survive 3 waves of enemies.,学习使用轨道轰炸和护盾墙指挥官技能。抵御3波敌军进攻。,軌道爆撃とシールドウォールの指揮官スキルを学べ。3波の敵を耐えろ。
 LEVEL_6_NAME,Map 6: Resource Drain,关卡6: 资源枯竭,マップ6: 資源枯渇
-LEVEL_6_DESC,Limited gold. Capture enemy points to gain reinforcements and resources.,金币有限。占领敌方据点获取增援和资源。,金貨は限られている。敵の拠点を占領して増援と資源を得よ。
+LEVEL_6_DESC,"1500 gold, no units, no buildings — only walls and towers. Capture 5 resource points to snowball, then destroy all enemy buildings.","1500金币，无兵无建筑，只能造城墙和箭塔。占领5个资源点滚雪球，摧毁所有敌方建筑即可获胜。","金貨1500、兵も建物もなく城壁と矢塔のみ。5つの資源点を占領して雪だるま式に強化し、敵の建物を全て破壊せよ。"
 LEVEL_7_NAME,Map 7: Tomb Defense,关卡7: 古墓防御,マップ7: 古墓防衛
 LEVEL_7_DESC,Defend against 4 waves. Capture ancient tombs for rewards but enemies grow stronger.,抵御4波敌军。占领古墓获取奖励但敌军会变强。,4波の防衛戦。古墓を占領して報酬を得るが敵は強くなる。
 LEVEL_8_NAME,Map 8: Tug of War,关卡8: 拉锯战,マップ8: 一進一退
-LEVEL_8_DESC,Classic RTS battle. Both sides have bases. Destroy the enemy castle to win.,经典RTS对战。双方都有基地。摧毁敌方城堡即可获胜。,クラシックRTS対戦。双方に基地あり。敵の城を破壊して勝利せよ。
+LEVEL_8_DESC,"6000 gold. Garrisoned enemy base with wave reinforcements. Wear down the garrison first; save Shield Wall for the final push.","6000金币，敌方基地有驻军并持续增援波次。先消耗驻军再推主城，护盾墙留给决战。","金貨6000、敵基地には駐屯軍と波状増援がある。駐屯軍を削ってから主城を攻めよ。シールドウォールは決戦まで温存せよ。"
 LEVEL_9_NAME,Map 9: Siege from All Sides,关卡9: 四方围攻,マップ9: 四方包囲
 LEVEL_9_DESC,Enemies attack from 4 directions with elite units mixed in. Survive all 5 waves!,敌人从四面八方进攻，混有精英单位。存活全部5波！,敵が四方から攻める。エリート混じりの5波を耐え抜け！
 LEVEL_10_NAME,Map 10: Timed Assault,关卡10: 限时清除,マップ10: 時限攻略
-LEVEL_10_DESC,Destroy 3 enemy bases before time runs out. Each base destroyed extends the timer.,在时间耗尽前摧毁3个敌方据点。每摧毁一个据点延长倒计时。,時間切れ前に敵拠点を3つ破壊せよ。拠点破壊で時間延長。
+LEVEL_10_DESC,"Destroy 3 enemy strongholds before time runs out. Each stronghold destroyed grants +90 seconds.","在时间耗尽前摧毁3个敌方据点。每摧毁一个据点延长90秒倒计时。","時間切れ前に敵拠点を3つ破壊せよ。各拠点破壊で+90秒延長。"
 LEVEL_11_NAME,Map 11: Endless Reinforcements,关卡11: 源源不绝,マップ11: 源源不絶
 LEVEL_11_DESC,Fewer units means faster and larger reinforcements. Push through a fortified enemy base.,部队越少援军越多越快。突破敌方多层防御基地。,ユニットが少ないほど増援が早く多い。敵の多重防御基地を突破せよ。
 LEVEL_12_NAME,Map 12: Steady Advance,关卡12: 步步推进,マップ12: 着実な進撃
 LEVEL_12_DESC,Advance through 3 enemy strongholds. Build forward bases as you push forward.,依次攻克3个敌方据点。推进时建立前线基地。,3つの敵拠点を順次攻略せよ。前進しながら前線基地を築け。
 LEVEL_13_NAME,Map 13: Intercept the Courier,关卡13: 截杀密使,マップ13: 密使を討て
-LEVEL_13_DESC,Kill 3 enemy VIP couriers while defending your base from attacks.,击杀3个敌方VIP密使，同时防守基地抵御进攻。,3人の敵VIP密使を討ちつつ基地を防衛せよ。
+LEVEL_13_DESC,"5000 gold, starting with a small squad. Mass your army, then destroy the enemy castle to win.","5000金币，少量起手兵。爆兵攻城，摧毁敌方城堡即可获胜。","金貨5000、少数の初期部隊でスタート。軍を拡充し、敵の城を破壊して勝利せよ。"
 LEVEL_14_NAME,Map 14: Temple Guard,关卡14: 圣殿守护,マップ14: 聖殿守護
 LEVEL_14_DESC,Protect 3 elite units with monks. No base no buildings — pure micro management.,用僧侣保护3个精英单位。无基地无建筑——纯微操关卡。,モンクで3体のエリートを守れ。基地も建物もない純粋なマイクロ操作。
 LEVEL_15_NAME,Map 15: Point Assault,关卡15: 据点攻防,マップ15: 拠点攻防
@@ -305,7 +305,7 @@ OBJ_SURVIVE_WAVES,Survive all waves,存活全部波次,全波を生き延びろ
 LEVEL_17_NAME,Map 17: First Alliance,关卡17: 初次并肩,マップ17: 初の同盟
 LEVEL_17_DESC,Fight alongside AI allies! Capture points to trigger reinforcements.,与AI队友并肩作战！占领据点触发增援。,AI味方と共に戦え！拠点を占領して増援を呼べ。
 LEVEL_18_NAME,Map 18: Two Fronts,关卡18: 两线作战,マップ18: 二正面作戦
-LEVEL_18_DESC,Defend two fronts with AI allies. Hold the line for 120s then counterattack!,AI队友分守南北两线。坚守120秒后发起反攻！,AI味方が南北を守る。120秒耐え、反撃せよ！
+LEVEL_18_DESC,"AI allies hold the north and south fronts. Decide where to reinforce, stabilize the line, then counterattack!","AI队友分守南北两线。决定支援哪一线，稳住防线后发起反攻！","AI味方が南北を守る。どちらを支援するか決め、戦線を安定させた後に反撃せよ！"
 LEVEL_19_NAME,Map 19: Steel Torrent,关卡19: 钢铁洪流,マップ19: 鋼鉄の猛攻
 LEVEL_19_DESC,A massive allied assault. Capture strategic points for continuous reinforcements.,大规模联合作战。占领战略点触发持续增援，兵力滚雪球。,大規模連合作戦。戦略拠点を占領し継続的増援を得て、兵力を雪だるま式に増やせ。
 LEVEL_20_NAME,Map 20: Breakthrough,关卡20: 破局之战,マップ20: 突破戦
