@@ -35,3 +35,12 @@ func has_id(id: StringName) -> bool:
 
 func get_all_ids() -> Array:
 	return _registry.keys()
+
+
+## 按 building_type 查询（T1: building_placer.get_current_cost 用）
+func get_by_type(bt: int) -> Resource:
+	for id in _registry:
+		var stats = _registry[id]
+		if stats.building_type == bt:
+			return stats
+	return null

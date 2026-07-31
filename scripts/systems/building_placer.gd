@@ -12,6 +12,11 @@ var show_grid: bool = false
 var grid_overlay = null
 var occupied_cells: Dictionary = {}
 
+# T1 D5/D3: 建造范围显示开关（main_menu settings 控制）+ 圆形可建区半径
+var show_build_range: bool = false
+const BUILD_RADIUS := 6 * 64  # 384 px = 6 格
+var _build_range_overlay: Line2D = null
+
 var _map_bounds: Rect2
 var _nav_bounds: Array
 var _nav_region: NavigationRegion2D
@@ -87,6 +92,50 @@ func is_grid_free(gpos: Vector2i, size: Vector2i) -> bool:
 	return true
 
 
+## T1: 动态造价 —— 农场每多造一个加价 cost_increment
+func get_current_cost(mode: int) -> int:
+	var base: int = D.COSTS.get(mode, 0)
+	var bt: int = D.PLACE_MODE_TO_BUILDING.get(mode, -1)
+	if bt < 0:
+		return base
+	var stats = BuildingStatsRegistry.get_by_type(bt)
+	if stats == null or stats.cost_increment <= 0:
+		return base
+	var count := 0
+	for b in get_tree().get_nodes_in_group("player_buildings"):
+		if b.get("building_type") == bt:
+			count += 1
+	return base + count * stats.cost_increment
+
+
+## T1 D3: 中心点法 —— 距离主基地 <= BUILD_RADIUS 才可建造
+func is_in_buildable_area(world_pos: Vector2) -> bool:
+	var main_node := get_parent()  # main.gd
+	if main_node == null or main_node.get("player_castle") == null:
+		return true  # 没主基地时不阻拦（避免卡死）
+	return world_pos.distance_to(main_node.player_castle.global_position) <= BUILD_RADIUS
+
+
+## T1 D5: 懒加载建造范围圆环（Line2D 64 点近似圆）
+func _ensure_build_range_overlay() -> void:
+	if _build_range_overlay != null:
+		return
+	var overlay := Line2D.new()
+	overlay.name = "BuildRangeOverlay"
+	overlay.width = 2.0
+	overlay.default_color = Color(0, 1, 0, 0.6)
+	overlay.z_index = 1
+	overlay.visible = false
+	var pts := PackedVector2Array()
+	var steps := 64
+	for i in range(steps + 1):
+		var angle := TAU * float(i) / float(steps)
+		pts.append(Vector2(cos(angle), sin(angle)) * BUILD_RADIUS)
+	overlay.points = pts
+	get_parent().add_child(overlay)
+	_build_range_overlay = overlay
+
+
 func place_building(type: int, team: int, gpos: Vector2i, owner_id: int = -1, faction_color: int = -1, slot_id: int = 0) -> Node2D:
 	var scene_path: String = D.BUILDING_SCENES.get(type, "res://scenes/buildings/building.tscn")
 	var building: Node2D = load(scene_path).instantiate()
@@ -137,16 +186,38 @@ func update_preview() -> void:
 	var world_pos: Vector2 = grid_to_world(gpos)
 	if gsize.x > 1 or gsize.y > 1:
 		world_pos += Vector2((gsize.x - 1) * D.GRID_SIZE / 2.0, (gsize.y - 1) * D.GRID_SIZE / 2.0)
-	var can_place: bool = is_grid_free(gpos, gsize)
+	var can_place: bool = is_grid_free(gpos, gsize) and is_in_buildable_area(world_pos)
 	_preview_rect.visible = true
 	_preview_rect.position = world_pos - Vector2(gsize.x * D.GRID_SIZE / 2.0, gsize.y * D.GRID_SIZE / 2.0)
 	_preview_rect.size = Vector2(gsize.x * D.GRID_SIZE, gsize.y * D.GRID_SIZE)
 	_preview_rect.color = Color(0, 1, 0, 0.3) if can_place else Color(1, 0, 0, 0.3)
-	_ui_module.set_place_mode_text(tr("PLACE_BUILDING") % [tr(D.MODE_NAMES.get(place_mode, "ENTITY_BUILDING")), D.COSTS.get(place_mode, 0)])
+	_ui_module.set_place_mode_text(tr("PLACE_BUILDING") % [tr(D.MODE_NAMES.get(place_mode, "ENTITY_BUILDING")), get_current_cost(place_mode)])
+	# T1 D5: 显示建造范围圆环
+	_update_build_range_overlay()
+
+
+func _update_build_range_overlay() -> void:
+	if not show_build_range:
+		if _build_range_overlay != null:
+			_build_range_overlay.visible = false
+		return
+	if D.is_unit_mode(place_mode) or place_mode == D.PlaceMode.NONE:
+		if _build_range_overlay != null:
+			_build_range_overlay.visible = false
+		return
+	_ensure_build_range_overlay()
+	var main_node := get_parent()
+	if main_node and main_node.get("player_castle") != null:
+		_build_range_overlay.position = main_node.player_castle.global_position
+		_build_range_overlay.visible = true
+	else:
+		_build_range_overlay.visible = false
 
 
 func cancel_place_mode() -> void:
 	place_mode = D.PlaceMode.NONE
+	if _build_range_overlay != null:
+		_build_range_overlay.visible = false
 
 
 func register_preplaced_buildings(buildings_node: Node2D) -> void:

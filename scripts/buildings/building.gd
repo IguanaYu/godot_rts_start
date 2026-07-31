@@ -1,7 +1,7 @@
 @tool
 extends Node2D
 
-enum BuildingType { WALL, TOWER, CASTLE, BARRACKS, MONASTERY, ARCHERY }
+enum BuildingType { WALL, TOWER, CASTLE, BARRACKS, MONASTERY, ARCHERY, FARM }
 enum Team { PLAYER, ENEMY }
 
 const UnitScript := preload("res://scripts/units/unit.gd")
@@ -128,10 +128,11 @@ func _on_production_tick() -> void:
 	production_timer += TickManager.TICK_TIME
 	if production_timer >= production_cooldown:
 		production_timer = 0.0
-		if building_type == BuildingType.CASTLE:
+		# T1: CASTLE 与 FARM 都自动产金（读 stats.gold_production_amount）
+		if building_type == BuildingType.CASTLE or building_type == BuildingType.FARM:
 			_produce_gold()
-		else:
-			_spawn_produced_unit()
+		# T1 D2: 移除自动产兵（BARRACKS/MONASTERY/ARCHERY 改由玩家手动下单）
+		# 原 else: _spawn_produced_unit() 已移除
 
 func _snap_position_to_grid() -> void:
 	var offset := Vector2((grid_size.x - 1) * 32.0, (grid_size.y - 1) * 32.0)
@@ -288,6 +289,9 @@ func _building_tex_path(color_dir_str: String) -> String:
 			return "res://assets/buildings/%s_monastery/Monastery.png" % color_dir_str
 		BuildingType.ARCHERY:
 			return "res://assets/buildings/%s_archery/Archery.png" % color_dir_str
+		BuildingType.FARM:
+			# T1: 暂复用 house 贴图（无独立美术资源）
+			return "res://assets/buildings/%s_house/House1.png" % color_dir_str
 	return ""
 
 func _rebuild_shadow() -> void:
@@ -351,6 +355,14 @@ func _is_position_clear(pos: Vector2, unit_radius: float) -> bool:
 			continue
 		var rect: Rect2 = b.get_rect().grow(unit_radius)
 		if rect.has_point(pos):
+			return false
+	# T1: 也检查其他单位，避免 spawn 重叠被物理引擎弹进建筑
+	var min_unit_dist := unit_radius * 2.5
+	for u in get_tree().get_nodes_in_group("player_units"):
+		if is_instance_valid(u) and u.global_position.distance_to(pos) < min_unit_dist:
+			return false
+	for u in get_tree().get_nodes_in_group("enemy_units"):
+		if is_instance_valid(u) and u.global_position.distance_to(pos) < min_unit_dist:
 			return false
 	return true
 
@@ -486,10 +498,11 @@ func _production_process(delta: float) -> void:
 		_production_circle.update_progress(production_timer / production_cooldown)
 	if production_timer >= production_cooldown:
 		production_timer = 0.0
-		if building_type == BuildingType.CASTLE:
+		# T1: CASTLE 与 FARM 都自动产金（读 stats.gold_production_amount）
+		if building_type == BuildingType.CASTLE or building_type == BuildingType.FARM:
 			_produce_gold()
-		else:
-			_spawn_produced_unit()
+		# T1 D2: 移除自动产兵（BARRACKS/MONASTERY/ARCHERY 改由玩家手动下单）
+		# 原 else: _spawn_produced_unit() 已移除
 
 func _spawn_produced_unit() -> void:
 	# 取当前轮转变体的 stats_id（按 alliance_id 查 CommanderContext）
@@ -570,14 +583,18 @@ func _spawn_produced_unit() -> void:
 		main_scene.tech_point_manager.add_points(TPD.BASE_POINTS.get("produce_unit", 5), TPD.CATEGORY_PRODUCE_UNIT)
 
 func _produce_gold() -> void:
+	# T1: 产金量读 building_stats.gold_production_amount（>0 时），否则兜底 30
+	var amount: int = 30
+	if building_stats and building_stats.gold_production_amount > 0:
+		amount = building_stats.gold_production_amount
 	var main_node := get_tree().current_scene
 	if main_node and main_node.has_method("add_gold"):
-		main_node.add_gold(30)
+		main_node.add_gold(amount)
 		# 金币漂浮数字
 		var ft := Node2D.new()
 		ft.set_script(load("res://scripts/effects/floating_text.gd"))
 		get_tree().current_scene.add_child(ft)
-		ft.setup("+30", Color(1.0, 0.85, 0.0), global_position + Vector2(0, -40))
+		ft.setup("+" + str(amount), Color(1.0, 0.85, 0.0), global_position + Vector2(0, -40))
 
 # ============================================================
 # 光环系统
@@ -658,6 +675,11 @@ func _update_neighbor_walls() -> void:
 func _create_production_circle() -> void:
 	if production_cooldown <= 0.0:
 		return
+	# T1 D2: BARRACKS/MONASTERY/ARCHERY 不再自动产兵，不显示生产圆圈
+	# （CASTLE/FARM 产金仍显示；TOWER 无生产；WALL 无生产）
+	match building_type:
+		BuildingType.BARRACKS, BuildingType.MONASTERY, BuildingType.ARCHERY:
+			return
 	# 确定颜色
 	var fill_color := Color.WHITE
 	match building_type:
@@ -772,4 +794,25 @@ func _finish_construction() -> void:
 	if build_bar:
 		build_bar.queue_free()
 		build_bar = null
+	# T1 D14: 建造完成反还单位（如 BARRACKS 反 2 个 soldier）
+	_spawn_completion_refund_units()
 	construction_finished.emit(self)
+
+
+# T1 D14: 建造完成时反还单位（building.gd 自调 spawn，职责清晰）
+func _spawn_completion_refund_units() -> void:
+	if building_stats == null or building_stats.completion_refund_unit == &"":
+		return
+	if building_stats.completion_refund_unit_count <= 0:
+		return
+	var main_node := get_tree().current_scene
+	if main_node == null or not main_node.get("spawner_module"):
+		return
+	# T1 阶段反还单位固定为 SOLDIER 类型（completion_refund_unit=&"soldier"）
+	# TODO: 后续扩展时建 STATS_ID_TO_UNIT_TYPE 映射替代硬编码
+	var unit_type: int = UnitScript.UnitType.SOLDIER
+	var stats_id: StringName = building_stats.completion_refund_unit
+	for i in range(building_stats.completion_refund_unit_count):
+		# D15: 用 _find_valid_spawn_position 找空位，避免重叠/卡建筑/弹地图外
+		var spawn_pos := _find_valid_spawn_position(16.0)
+		main_node.spawner_module.place_player_unit(unit_type, spawn_pos, stats_id)

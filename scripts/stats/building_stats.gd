@@ -32,3 +32,10 @@ extends Resource
 # --- 视觉 ---
 @export var tint: Color = Color.WHITE
 @export var sprite_scale: float = 1.0
+
+# --- T1 经济底层新增 ---
+@export var cost_increment: int = 0                  # 每多造一个的加价（FARM=150 → 100/250/400/550/700）
+@export var gold_production_amount: int = 0           # 产金量（>0 时 _produce_gold 读这个；CASTLE=50, FARM=20）
+@export var completion_refund: int = 0                # 建造完成反还金币（保留字段，T1 暂未用）
+@export var completion_refund_unit: StringName = &""  # 建造完成反还单位 id（BARRACKS=&"soldier"）
+@export var completion_refund_unit_count: int = 0     # 反还单位数量（BARRACKS=2）

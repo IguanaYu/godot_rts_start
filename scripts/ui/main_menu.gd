@@ -28,6 +28,7 @@ var _start_label: Label
 var _settings_label: Label
 var _quit_label: Label
 var _switch_save_label: Label
+var _t1_label: Label  # T1 经济底层测试入口
 
 # 键盘导航
 var _focus_index: int = 0
@@ -169,7 +170,11 @@ func _create_buttons() -> void:
 	_settings_label = _make_menu_button(tr("UI_SETTINGS"), np_btn_blue, np_btn_blue_prs, Vector2(0, 60), _on_settings_pressed)
 	vbox.add_child(_settings_label.get_parent())
 
-	# 5. Quit - 蓝色按钮
+	# 5. T1 Economy Test - 蓝色按钮（开发测试入口）
+	_t1_label = _make_menu_button(tr("UI_T1_TEST"), np_btn_blue, np_btn_blue_prs, Vector2(0, 60), _on_t1_test_pressed)
+	vbox.add_child(_t1_label.get_parent())
+
+	# 6. Quit - 蓝色按钮
 	_quit_label = _make_menu_button(tr("UI_QUIT_GAME"), np_btn_blue, np_btn_blue_prs, Vector2(0, 60), _on_quit_pressed)
 	vbox.add_child(_quit_label.get_parent())
 
@@ -184,6 +189,7 @@ func _create_buttons() -> void:
 		[_switch_save_label.get_parent(), np_btn_blue, np_btn_blue_prs],
 		[mp_label.get_parent(), np_btn_blue, np_btn_blue_prs],
 		[_settings_label.get_parent(), np_btn_blue, np_btn_blue_prs],
+		[_t1_label.get_parent(), np_btn_blue, np_btn_blue_prs],
 		[_quit_label.get_parent(), np_btn_blue, np_btn_blue_prs],
 	]
 	for info in btn_infos:
@@ -223,7 +229,8 @@ func _call_focused_button() -> void:
 		1: _on_switch_save_pressed()
 		2: _on_multiplayer_pressed()
 		3: _on_settings_pressed()
-		4: _on_quit_pressed()
+		4: _on_t1_test_pressed()
+		5: _on_quit_pressed()
 
 
 func _make_menu_button(text: String, np: Dictionary, np_prs: Dictionary, min_size: Vector2, callback: Callable) -> Label:
@@ -323,6 +330,17 @@ func _on_settings_pressed() -> void:
 
 func _on_quit_pressed() -> void:
 	get_tree().quit()
+
+
+# === T1 经济底层测试入口 ===
+# 路径：主菜单 → 直达 map_scene（绕过 level_select / commander_select）
+# temp_flag 在 main.gd._ready 里被读取，强制 loadout = [FARM,TOWER,BARRACKS,SOLDIER,ARCHER] + 指挥官 = test_all
+func _on_t1_test_pressed() -> void:
+	SaveManager.set_temp_flag("skip_loadout_screen", true)
+	SaveManager.set_temp_flag("force_commander", &"test_all")
+	CommanderChoice.select_commander(&"test_all")  # 双保险
+	CommanderChoice.set_pending_level("res://scenes/maps/map_t1_economy_test.tscn", "t1_test")
+	LoadRouter.request_load("res://scenes/maps/map_t1_economy_test.tscn", false)
 
 
 func _on_multiplayer_pressed() -> void:
@@ -538,6 +556,20 @@ func _show_settings_overlay() -> void:
 	col_row.add_child(col_toggle)
 	vbox.add_child(col_row)
 
+	# T1 D5: 显示建造范围（主基地 6 格圆环）
+	var build_row := HBoxContainer.new()
+	build_row.add_theme_constant_override("separation", 8)
+	var build_label := Label.new()
+	build_label.text = tr("UI_SHOW_BUILD_RANGE")
+	build_label.add_theme_font_size_override("font_size", 14)
+	build_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
+	build_row.add_child(build_label)
+	var build_toggle := CheckButton.new()
+	build_toggle.button_pressed = config.get_value("game", "show_build_range", false)
+	build_toggle.toggled.connect(_on_settings_build_range_toggled)
+	build_row.add_child(build_toggle)
+	vbox.add_child(build_row)
+
 	var spacer4 := Control.new()
 	spacer4.custom_minimum_size = Vector2(0, 8)
 	vbox.add_child(spacer4)
@@ -685,6 +717,12 @@ func _on_settings_path_lines_toggled(pressed: bool) -> void:
 func _on_settings_collisions_toggled(pressed: bool) -> void:
 	get_tree().debug_collisions_hint = pressed
 	_save_setting("game", "show_collisions", pressed)
+
+
+func _on_settings_build_range_toggled(pressed: bool) -> void:
+	# T1 D5: 仅持久化（building_placer 是 main.gd 子节点，不是 autoload）
+	# main.gd._ready 读 settings.cfg 后写入 building_placer.show_build_range
+	_save_setting("game", "show_build_range", pressed)
 
 
 func _on_settings_master_volume_changed(value: float) -> void:

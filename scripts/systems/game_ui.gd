@@ -849,7 +849,8 @@ func _show_tooltip() -> void:
 		return
 	var mode: int = tooltip_target_mode
 	var mode_name: String = tr(D.MODE_NAMES.get(mode, "?"))
-	var cost: int = D.COSTS.get(mode, 0)
+	# T1: 动态造价（农场递增）—— 通过 building_placer.get_current_cost 取
+	var cost: int = _main_node.building_placer.get_current_cost(mode) if _main_node.get("building_placer") else D.COSTS.get(mode, 0)
 	var hotkey: Key = D.MODE_HOTKEYS.get(mode, KEY_0)
 	var hotkey_index: int = (hotkey - KEY_1 + 1) if hotkey != KEY_0 else 0
 	var type_str: String = tr("TAB_UNITS") if D.is_unit_mode(mode) else tr("TAB_BUILDINGS")
@@ -1062,7 +1063,10 @@ func update_tech_points(points: int) -> void:
 func _update_button_affordability(current_gold: int) -> void:
 	for mode in ui_buttons:
 		var btn_wrapper: Control = ui_buttons[mode]
+		# T1: 动态造价（农场递增）
 		var cost: int = D.COSTS.get(mode, 0)
+		if _main_node.get("building_placer"):
+			cost = _main_node.building_placer.get_current_cost(mode)
 		var can_afford: bool = current_gold >= cost
 		btn_wrapper.modulate.a = 1.0 if can_afford else 0.5
 		var btn: Button = btn_wrapper.get_child(btn_wrapper.get_child_count() - 1)

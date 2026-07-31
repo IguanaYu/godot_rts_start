@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="MapConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/map_config.gd" id="1_cfg12"]
+
+[resource]
+script = ExtResource("1_cfg12")
+map_name = "T1 Economy Test"
+map_bounds = Rect2(0, 0, 1500, 1000)
+nav_bounds = Array[Vector2]([Vector2(0, 0), Vector2(1500, 0), Vector2(1500, 1000), Vector2(0, 1000)])
+initial_gold = 400
+camera_start = Vector2(300, 500)
+
+player_units = Array[Dictionary]( [
+	{"type": 0, "pos": Vector2(150, 450)},
+	{"type": 0, "pos": Vector2(150, 550)}
+] )
+
+player_buildings = Array[Dictionary]( [
+	{"type": 2, "grid_pos": Vector2i(3, 8)}
+] )
+
+ai_allies = Array[Dictionary]( [] )
+
+enemy_units = Array[Dictionary]( [
+	{"type": 0, "pos": Vector2(1100, 400)},
+	{"type": 0, "pos": Vector2(1100, 500)},
+	{"type": 0, "pos": Vector2(1100, 600)},
+	{"type": 1, "pos": Vector2(1150, 500)}
+] )
+
+enemy_buildings = Array[Dictionary]( [
+	{"type": 2, "grid_pos": Vector2i(20, 8)}
+] )
+
+environment = {"trees": 8, "rocks": 5, "bushes": 6, "sheep": 0}
+
+available_items = Array[int]( [] )
+
+terrain_theme = 0
+border_width = 1
+map_description = "T1 Economy Test: Farm gold + Barracks refund + 6-grid buildable area"
+balance_scheme = 2

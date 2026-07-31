@@ -44,6 +44,9 @@ var upgrade_panel: Node
 var tech_point_manager: Node = null
 var _available_skills: Array = []
 
+# T1 D10: 玩家主基地缓存（用于建造范围判定 is_in_buildable_area）
+var player_castle: Node = null
+
 # 全局玩家集结点
 var global_rally_point: Vector2 = Vector2.ZERO
 var has_global_rally: bool = false
@@ -150,6 +153,10 @@ func _run_init_steps() -> void:
 	building_placer.set_script(load("res://scripts/systems/building_placer.gd"))
 	add_child(building_placer)
 	building_placer.initialize(map_bounds, NAV_BOUNDS, nav_region, buildings_node, preview_rect, ui_module)
+	# T1 D5: 同步"显示建造范围"设置（building_placer 是 main 子节点，Step 2 时还未创建）
+	var _cfg := ConfigFile.new()
+	if _cfg.load("user://settings.cfg") == OK:
+		building_placer.show_build_range = _cfg.get_value("game", "show_build_range", false)
 	spawner_module.place_building_callback = building_placer.place_building
 	spawner_module.snap_to_grid_callback = building_placer.snap_to_grid
 	spawner_module.is_grid_free_callback = building_placer.is_grid_free
@@ -184,7 +191,10 @@ func _run_init_steps() -> void:
 	const CSD := preload("res://scripts/commander_skill/commander_skill_data.gd")
 	# 注入玩家指挥官 profile（决定可用单位/建筑变体 + 面板技能 + 起始金币）
 	var selected_id: StringName = CommanderChoice.player_selected_id
-	if selected_id == &"" or not CommanderRegistry.has_profile(selected_id):
+	# T1: temp_flag 强制指挥官（test_all：全单位/建筑变体可见，无 economy_boost）
+	if SaveManager.has_temp_flag("force_commander"):
+		selected_id = SaveManager.get_temp_flag("force_commander")
+	elif selected_id == &"" or not CommanderRegistry.has_profile(selected_id):
 		selected_id = &"balanced"
 	var commander_profile = CommanderRegistry.get_profile(selected_id)
 	CommanderContext.set_player_profile(commander_profile)
@@ -279,6 +289,10 @@ func _run_init_steps() -> void:
 		AllyDistressSignal.distress_cleared.connect(_on_ally_distress_cleared)
 	# 应用战前被动（玩家选的 3 个 UpgradeId，在所有单位生成之后应用）
 	_apply_pre_battle_passives()
+	# T1 D10: 缓存玩家主基地（建造范围判定的圆心）
+	_cache_player_castle()
+	# T1: 清理 temp_flag（本局已消费，避免影响下一局）
+	SaveManager.clear_temp_flags()
 	await get_tree().process_frame
 
 	# Step 10: 完成
@@ -1254,7 +1268,7 @@ func _input(event: InputEvent) -> void:
 
 func _do_place(click_pos: Vector2) -> void:
 	var place_mode: int = building_placer.get_place_mode()
-	var cost: int = D.COSTS.get(place_mode, 0)
+	var cost: int = building_placer.get_current_cost(place_mode)  # T1: 动态造价（农场递增）
 	if gold < cost:
 		return
 
@@ -1269,8 +1283,17 @@ func _do_place(click_pos: Vector2) -> void:
 
 	var placed := false
 	if D.is_unit_mode(place_mode):
+		# T1 D2: 单位不再直接刷到点击位置，改为找最近兵营在兵营旁 spawn
+		# PR-1 最小化：无队列 UI，立即 spawn（队列上限/槽位显示推 PR-2）
+		var unit_type: int = D.PLACE_MODE_TO_UNIT[place_mode]
 		var stats_id: StringName = D.PLACE_MODE_TO_STATS_ID.get(place_mode, &"")
-		spawner_module.place_player_unit(D.PLACE_MODE_TO_UNIT[place_mode], click_pos, stats_id)
+		var barracks := _find_nearest_barracks(click_pos)
+		if barracks == null:
+			spawner_module.show_floating_text(tr("NO_BARRACKS"), Color(1, 0.3, 0.3), click_pos)
+			return
+		# 用兵营自己的 _find_valid_spawn_position 找空位，避免重叠/卡建筑/弹地图外
+		var spawn_pos: Vector2 = barracks._find_valid_spawn_position(16.0)
+		spawner_module.place_player_unit(unit_type, spawn_pos, stats_id)
 		placed = true
 	elif D.is_building_mode(place_mode):
 		var bt: int = D.PLACE_MODE_TO_BUILDING[place_mode]
@@ -1433,6 +1456,12 @@ static func save_player_loadout(modes: Array) -> bool:
 # 完全以玩家战前选择为准，关卡 available_items 不再做交集限制。
 # 玩家未选或选不满时，用默认编制补足。
 func _resolve_loadout() -> Array:
+	# T1: temp_flag 强制编制（绕过玩家 save 的 loadout，避免 FARM 被 DEFAULT_PLAYER_LOADOUT 覆盖）
+	if SaveManager.has_temp_flag("skip_loadout_screen"):
+		return [
+			D.PlaceMode.FARM, D.PlaceMode.TOWER, D.PlaceMode.BARRACKS,
+			D.PlaceMode.SOLDIER, D.PlaceMode.ARCHER,
+		]
 	var player_picked: Array = load_player_loadout()
 	var result: Array = []
 	for mode in player_picked:
@@ -1459,6 +1488,33 @@ func _apply_loadout_filter() -> void:
 		for mode in resolved:
 			typed.append(int(mode))
 		map_config.available_items = typed
+
+
+# T1 D10: 缓存玩家主基地（建造范围圆心；找不到则置 null，is_in_buildable_area 会返回 true 不阻拦）
+func _cache_player_castle() -> void:
+	player_castle = null
+	for b in get_tree().get_nodes_in_group("player_buildings"):
+		if b.get("building_type") == BuildingScript.BuildingType.CASTLE:
+			player_castle = b
+			return
+
+
+# T1 D2: 找最近的已建成玩家兵营（单位面板点击的 spawn 锚点）
+func _find_nearest_barracks(pos: Vector2) -> Node:
+	var nearest = null
+	var nearest_dist := INF
+	for b in get_tree().get_nodes_in_group("player_buildings"):
+		if b.get("building_type") != BuildingScript.BuildingType.BARRACKS:
+			continue
+		if b.has_method("is_dead") and b.is_dead():
+			continue
+		if b.get("is_constructed") == false:
+			continue
+		var d := pos.distance_to(b.global_position)
+		if d < nearest_dist:
+			nearest_dist = d
+			nearest = b
+	return nearest
 
 
 # ============================================================

@@ -287,3 +287,21 @@ func set_last_selected_commander(cmd_id: String) -> void:
 	var data := load_slot(_current_slot)
 	data["last_selected_commander"] = cmd_id
 	save_current_data(data)
+
+
+# === 临时标志系统（T1 测试入口用，会话级不持久化）===
+# 用途：主菜单「T1 测试」按钮设置 skip_loadout_screen / force_commander，
+# main.gd 启动时读取并覆盖 loadout / 指挥官，用完 clear_temp_flags() 清理。
+var _temp_flags: Dictionary = {}
+
+func set_temp_flag(key: String, value) -> void:
+	_temp_flags[key] = value
+
+func get_temp_flag(key: String, default: Variant = null) -> Variant:
+	return _temp_flags.get(key, default)
+
+func has_temp_flag(key: String) -> bool:
+	return _temp_flags.has(key)
+
+func clear_temp_flags() -> void:
+	_temp_flags.clear()

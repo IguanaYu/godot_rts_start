@@ -333,6 +333,10 @@ func place_player_unit(unit_type: int, click_pos: Vector2, stats_id: StringName 
 	LockstepSync.register_unit(unit)
 	_player_units_node.add_child(unit)
 	unit.add_to_group("player_units")
+	# T1: spawn 后如果仍在建筑内，触发逃生（与 building._spawn_produced_unit 行为对齐）
+	if unit.has_method("_start_escape") and unit.has_method("_is_inside_any_building"):
+		if unit._is_inside_any_building():
+			unit._start_escape()
 	if _upgrade_manager:
 		_upgrade_manager.apply_all_stat_upgrades_to_unit(unit)
 	spawn_spawn_effect(click_pos, UnitScript.Team.PLAYER, unit)

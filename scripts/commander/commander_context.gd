@@ -85,4 +85,5 @@ func _fallback_basic_building_id(building_type: int) -> StringName:
 		3: return &"barracks"
 		4: return &"monastery"
 		5: return &"archery"
+		6: return &"farm"  # T1 农场
 	return &""
