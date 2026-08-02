@@ -39,3 +39,8 @@ extends Resource
 @export var completion_refund: int = 0                # 建造完成反还金币（保留字段，T1 暂未用）
 @export var completion_refund_unit: StringName = &""  # 建造完成反还单位 id（BARRACKS=&"soldier"）
 @export var completion_refund_unit_count: int = 0     # 反还单位数量（BARRACKS=2）
+
+# --- T1 PR-2 操作端补做 ---
+@export var max_farms: int = 5                        # FARM 全局上限（仅 FARM 用，其他建筑忽略）
+@export var production_queue_max: int = 5             # BARRACKS 出兵队列上限
+@export var requires_farm: bool = false               # 建造前置：必须先有农场（仅 BARRACKS=true）

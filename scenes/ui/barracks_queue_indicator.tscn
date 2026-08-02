@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://cqqueueindic1"]
+
+[ext_resource type="Script" path="res://scripts/ui/barracks_queue_indicator.gd" id="1_bqi"]
+
+[node name="BarracksQueueIndicator" type="Control"]
+offset_right = 88.0
+offset_bottom = 16.0
+mouse_filter = 2
+script = ExtResource("1_bqi")

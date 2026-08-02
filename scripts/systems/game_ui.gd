@@ -727,6 +727,24 @@ func _add_icon_button(mode: int, container: HBoxContainer, slot_key: Key) -> voi
 	btn.mouse_exited.connect(_on_icon_unhover)
 	wrapper.add_child(btn)
 
+	# T1 PR-2: SC2 风格右下角造价数字（够=白，不够=红，其他=灰），由 _update_button_affordability 实时改色
+	var cost_label := Label.new()
+	cost_label.name = "CostLabel"
+	cost_label.text = str(cost)
+	cost_label.add_theme_font_size_override("font_size", 14)
+	cost_label.add_theme_color_override("font_color", Color.WHITE)
+	cost_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.9))
+	cost_label.add_theme_constant_override("shadow_offset_x", 1)
+	cost_label.add_theme_constant_override("shadow_offset_y", 1)
+	cost_label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	cost_label.offset_left = -28
+	cost_label.offset_right = -4
+	cost_label.offset_top = -18
+	cost_label.offset_bottom = -2
+	cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	cost_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wrapper.add_child(cost_label)
+
 	container.add_child(wrapper)
 	ui_buttons[mode] = wrapper
 
@@ -834,6 +852,14 @@ func _create_tooltip() -> void:
 
 
 func _on_icon_hover(mode: int) -> void:
+	# T1 PR-2: 灰显按钮（disabled）不弹 tooltip 也不触发动效，避免误导
+	var btn_wrapper: Control = ui_buttons.get(mode, null)
+	if btn_wrapper != null:
+		for c in btn_wrapper.get_children():
+			if c is Button:
+				if c.disabled:
+					return
+				break
 	tooltip_target_mode = mode
 	tooltip_timer.start()
 
@@ -1063,15 +1089,32 @@ func update_tech_points(points: int) -> void:
 func _update_button_affordability(current_gold: int) -> void:
 	for mode in ui_buttons:
 		var btn_wrapper: Control = ui_buttons[mode]
-		# T1: 动态造价（农场递增）
-		var cost: int = D.COSTS.get(mode, 0)
+		# T1 PR-2: 改用统一 check_build_block（金币/上限/前置），按 reason 决定颜色
+		# 注：建造栏按钮无位置概念，不传 click_pos → OUT_OF_RANGE 不会在此触发
+		var reason: int = BuildingPlacer.BuildBlockReason.OK
 		if _main_node.get("building_placer"):
-			cost = _main_node.building_placer.get_current_cost(mode)
-		var can_afford: bool = current_gold >= cost
-		btn_wrapper.modulate.a = 1.0 if can_afford else 0.5
-		var btn: Button = btn_wrapper.get_child(btn_wrapper.get_child_count() - 1)
-		if btn is Button:
-			btn.disabled = not can_afford
+			reason = _main_node.building_placer.check_build_block(mode)
+		var ok: bool = reason == BuildingPlacer.BuildBlockReason.OK
+		btn_wrapper.modulate.a = 1.0 if ok else 0.5
+		# T1 PR-2: 实时刷新右下角造价数字（农场递增时数字会变）
+		var cost_now: int = D.COSTS.get(mode, 0)
+		if _main_node.get("building_placer"):
+			cost_now = _main_node.building_placer.get_current_cost(mode)
+		var cl: Label = btn_wrapper.get_node_or_null("CostLabel")
+		if cl:
+			cl.text = str(cost_now)
+			var col := Color.WHITE
+			if not ok:
+				col = Color(1.0, 0.3, 0.3) if reason == BuildingPlacer.BuildBlockReason.NO_GOLD else Color(0.6, 0.6, 0.6)
+			cl.add_theme_color_override("font_color", col)
+		# btn 是 wrapper 里的 Button 节点（鼠标响应层，可能不在最末位）
+		var btn: Button = null
+		for c in btn_wrapper.get_children():
+			if c is Button:
+				btn = c
+				break
+		if btn != null:
+			btn.disabled = not ok
 
 
 func update_wave_countdown(wave_number: int, remaining: float, total: int) -> void:

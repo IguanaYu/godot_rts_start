@@ -1269,7 +1269,12 @@ func _input(event: InputEvent) -> void:
 func _do_place(click_pos: Vector2) -> void:
 	var place_mode: int = building_placer.get_place_mode()
 	var cost: int = building_placer.get_current_cost(place_mode)  # T1: 动态造价（农场递增）
-	if gold < cost:
+	# T1 PR-2: 统一阻挡检查（金币/上限/前置/范围），按 reason 显示 floating_text
+	var reason: int = building_placer.check_build_block(place_mode, click_pos)
+	if reason != BuildingPlacer.BuildBlockReason.OK:
+		var key := BuildingPlacer.reason_to_translation_key(reason)
+		if key != &"":
+			show_floating_text(tr(key), Color(1, 0.3, 0.3), click_pos)
 		return
 
 	if RelayManager.is_online:
@@ -1283,17 +1288,18 @@ func _do_place(click_pos: Vector2) -> void:
 
 	var placed := false
 	if D.is_unit_mode(place_mode):
-		# T1 D2: 单位不再直接刷到点击位置，改为找最近兵营在兵营旁 spawn
-		# PR-1 最小化：无队列 UI，立即 spawn（队列上限/槽位显示推 PR-2）
-		var unit_type: int = D.PLACE_MODE_TO_UNIT[place_mode]
+		# T1 PR-2: 单位入兵营队列，由 _production_process 在 cooldown 后 spawn
 		var stats_id: StringName = D.PLACE_MODE_TO_STATS_ID.get(place_mode, &"")
 		var barracks := _find_nearest_barracks(click_pos)
 		if barracks == null:
-			spawner_module.show_floating_text(tr("NO_BARRACKS"), Color(1, 0.3, 0.3), click_pos)
+			show_floating_text(tr("NO_BARRACKS"), Color(1, 0.3, 0.3), click_pos)
 			return
-		# 用兵营自己的 _find_valid_spawn_position 找空位，避免重叠/卡建筑/弹地图外
-		var spawn_pos: Vector2 = barracks._find_valid_spawn_position(16.0)
-		spawner_module.place_player_unit(unit_type, spawn_pos, stats_id)
+		if not barracks.queue_has_space():
+			show_floating_text(tr("QUEUE_FULL"), Color(1, 0.3, 0.3), barracks.global_position)
+			return
+		if not barracks.queue_unit(stats_id):
+			show_floating_text(tr("QUEUE_FULL"), Color(1, 0.3, 0.3), barracks.global_position)
+			return
 		placed = true
 	elif D.is_building_mode(place_mode):
 		var bt: int = D.PLACE_MODE_TO_BUILDING[place_mode]

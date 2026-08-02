@@ -71,6 +71,11 @@ var production_cooldown: float = 0.0
 var production_unit_type: int = -1  # UnitType 枚举值，-1 = 不生产
 @export var disable_production: bool = false
 
+# T1 PR-2: 兵营出兵队列（BARRACKS 专用）
+var production_queue: Array[StringName] = []
+var queue_max: int = 5  # _apply_commander_building_stats 时从 stats.production_queue_max 覆盖
+signal queue_changed(building)
+
 # 指挥官变体：当前建筑对应的 BuildingStats 资源（运行时由 _apply_commander_building_stats 设置）
 var building_stats = null
 # 产兵轮转索引：变体建筑在多个 stats_id 间轮转生产
@@ -212,6 +217,8 @@ func _apply_commander_building_stats(fallback_max_hp: int) -> void:
 		attack_range = stats.attack_range
 	if stats.attack_cooldown > 0.0:
 		attack_cooldown = stats.attack_cooldown
+	# T1 PR-2: 兵营队列上限从 stats 读
+	queue_max = stats.production_queue_max if stats.production_queue_max > 0 else 5
 	aura_range = stats.aura_range
 	aura_type = stats.aura_type
 	aura_value = stats.aura_value
@@ -259,6 +266,9 @@ func _setup_visuals() -> void:
 	var lift: float = sprite_height_final * sprite_lift_ratio
 	hp_bar.offset_top += lift + sprite_offset_y
 	hp_bar.offset_bottom += lift + sprite_offset_y
+	# T1 PR-2: 兵营头顶挂队列 UI（仅玩家兵营）
+	if building_type == BuildingType.BARRACKS and team == Team.PLAYER:
+		_create_queue_indicator(pixel_size)
 
 func _setup_texture() -> void:
 	var color_dir := Faction.color_dir(faction_color)
@@ -274,6 +284,21 @@ func _setup_texture() -> void:
 			var tex := load(fb_path)
 			if tex and body_sprite:
 				body_sprite.texture = tex
+
+# T1 PR-2: 兵营头顶队列 UI（BarracksQueueIndicator）
+const BarracksQueueIndicatorScene := preload("res://scenes/ui/barracks_queue_indicator.tscn")
+const INDICATOR_HEAD_OFFSET: float = 30.0
+func _create_queue_indicator(pixel_size: Vector2) -> void:
+	var indicator = BarracksQueueIndicatorScene.instantiate()
+	add_child(indicator)
+	# indicator.size 在 _ready 后已设；用绝对 position 把"左上角"放到目标点
+	# 目标：x 居中 building 中心（左移 ind_w/2），y 在 building 顶边上方 30+ind_h
+	var ind_size: Vector2 = indicator.size
+	if ind_size.x <= 0.0:
+		ind_size = Vector2(88.0, 16.0)  # 与 indicator._ready 中的 size 一致
+	indicator.position = Vector2(-ind_size.x / 2.0, -pixel_size.y / 2.0 - INDICATOR_HEAD_OFFSET - ind_size.y)
+	indicator.setup(self)
+
 
 func _building_tex_path(color_dir_str: String) -> String:
 	match building_type:
@@ -492,6 +517,20 @@ func _production_process(delta: float) -> void:
 		if _production_circle:
 			_production_circle.update_progress(production_timer / production_cooldown)
 		return
+	# T1 PR-2: BARRACKS 走队列 —— 队列空时归零 timer，不推进
+	if building_type == BuildingType.BARRACKS:
+		if production_queue.is_empty():
+			production_timer = 0.0
+			if _production_circle:
+				_production_circle.update_progress(0.0)
+			return
+		production_timer += delta
+		if _production_circle:
+			_production_circle.update_progress(production_timer / production_cooldown)
+		if production_timer >= production_cooldown:
+			production_timer = 0.0
+			_spawn_next_unit()
+		return
 	production_timer += delta
 	# 更新圆圈进度
 	if _production_circle:
@@ -504,6 +543,43 @@ func _production_process(delta: float) -> void:
 		# T1 D2: 移除自动产兵（BARRACKS/MONASTERY/ARCHERY 改由玩家手动下单）
 		# 原 else: _spawn_produced_unit() 已移除
 
+
+# ============================================================
+# T1 PR-2: 兵营出兵队列 API
+# ============================================================
+
+func queue_has_space() -> bool:
+	return production_queue.size() < queue_max
+
+
+## 入队一个单位 stats_id。成功返回 true；队列满返回 false。
+func queue_unit(stats_id: StringName) -> bool:
+	if not queue_has_space():
+		return false
+	production_queue.append(stats_id)
+	queue_changed.emit(self)
+	return true
+
+
+## 当前队列首位完成 → spawn 并 pop。被 _production_process 调用。
+func _spawn_next_unit() -> void:
+	if production_queue.is_empty():
+		return
+	var stats_id: StringName = production_queue.pop_front()
+	queue_changed.emit(self)
+	_spawn_unit_by_stats_id(stats_id)
+
+
+## 队列状态快照（供 UI 查询）
+func get_queue_state() -> Dictionary:
+	var cur: StringName = production_queue[0] if not production_queue.is_empty() else &""
+	return {
+		"queue": production_queue.duplicate(),
+		"remaining": max(0.0, production_cooldown - production_timer),
+		"total": production_cooldown,
+		"current": cur,
+	}
+
 func _spawn_produced_unit() -> void:
 	# 取当前轮转变体的 stats_id（按 alliance_id 查 CommanderContext）
 	var stats_id: StringName = &""
@@ -511,6 +587,14 @@ func _spawn_produced_unit() -> void:
 	if variant_ids.size() > 0:
 		stats_id = variant_ids[_production_variant_index % variant_ids.size()]
 		_production_variant_index = (_production_variant_index + 1) % variant_ids.size()
+	# T1 PR-2: 变体 id 为空时 fallback 到 building_stats.completion_refund_unit（BARRACKS=&"soldier"）
+	if stats_id == &"" and building_stats and building_stats.completion_refund_unit != &"":
+		stats_id = building_stats.completion_refund_unit
+	_spawn_unit_by_stats_id(stats_id)
+
+
+# T1 PR-2: 实际 spawn 主体（被 _spawn_produced_unit / _spawn_next_unit 共用）
+func _spawn_unit_by_stats_id(stats_id: StringName) -> void:
 	# 取 unit_type（按建筑类型派生，BARRACKS→SOLDIER, MONASTERY→MONK, ARCHERY→ARCHER）
 	var unit_type: int = production_unit_type
 	if unit_type < 0:
@@ -675,10 +759,10 @@ func _update_neighbor_walls() -> void:
 func _create_production_circle() -> void:
 	if production_cooldown <= 0.0:
 		return
-	# T1 D2: BARRACKS/MONASTERY/ARCHERY 不再自动产兵，不显示生产圆圈
-	# （CASTLE/FARM 产金仍显示；TOWER 无生产；WALL 无生产）
+	# T1 PR-2: BARRACKS 重新启用生产圆圈（队列首单位进度，与 CASTLE/FARM 同款）
+	# MONASTERY/ARCHERY 仍不显示（PR-1 起不再自动产兵，且未提供玩家入队接口）
 	match building_type:
-		BuildingType.BARRACKS, BuildingType.MONASTERY, BuildingType.ARCHERY:
+		BuildingType.MONASTERY, BuildingType.ARCHERY:
 			return
 	# 确定颜色
 	var fill_color := Color.WHITE

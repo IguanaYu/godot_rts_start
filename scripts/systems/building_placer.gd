@@ -1,3 +1,4 @@
+class_name BuildingPlacer
 extends Node
 ## 建筑放置系统：网格管理、建筑放置/移除、导航重建、放置预览
 
@@ -6,6 +7,9 @@ signal building_died(building)
 
 const D := preload("res://scripts/systems/game_data.gd")
 const BuildingScript := preload("res://scripts/buildings/building.gd")
+
+# T1 PR-2: 建造阻挡原因（按 reason 决定 UI 灰显策略与 floating_text 文案）
+enum BuildBlockReason { OK, NO_GOLD, FARM_LIMIT, NEED_FARM, OUT_OF_RANGE, QUEUE_FULL }
 
 var place_mode: int = D.PlaceMode.NONE
 var show_grid: bool = false
@@ -114,6 +118,61 @@ func is_in_buildable_area(world_pos: Vector2) -> bool:
 	if main_node == null or main_node.get("player_castle") == null:
 		return true  # 没主基地时不阻拦（避免卡死）
 	return world_pos.distance_to(main_node.player_castle.global_position) <= BUILD_RADIUS
+
+
+# ============================================================
+# T1 PR-2: 建造阻挡检查（统一接口，供 UI 灰显 + floating_text 双反馈使用）
+# ============================================================
+
+## 检查当前是否可建造/生产。click_pos=ZERO 表示无位置概念（建造栏按钮态）。
+func check_build_block(mode: int, click_pos: Vector2 = Vector2.ZERO) -> BuildBlockReason:
+	var main_node := get_parent()
+	var gold: int = int(main_node.get("gold")) if main_node and main_node.get("gold") != null else 0
+	var cost := get_current_cost(mode)
+	if gold < cost:
+		return BuildBlockReason.NO_GOLD
+	var bt: int = D.PLACE_MODE_TO_BUILDING.get(mode, -1)
+	if bt == BuildingScript.BuildingType.FARM and _count_built(BuildingScript.BuildingType.FARM) >= _max_farms():
+		return BuildBlockReason.FARM_LIMIT
+	if bt == BuildingScript.BuildingType.BARRACKS and not _has_farm():
+		return BuildBlockReason.NEED_FARM
+	if click_pos != Vector2.ZERO and not is_in_buildable_area(click_pos):
+		return BuildBlockReason.OUT_OF_RANGE
+	return BuildBlockReason.OK
+
+
+## reason → 翻译 key（floating_text 显示用）。OK 返回空字符串。
+static func reason_to_translation_key(r: int) -> StringName:
+	match r:
+		BuildBlockReason.NO_GOLD:      return &"NO_GOLD"
+		BuildBlockReason.FARM_LIMIT:   return &"FARM_LIMIT"
+		BuildBlockReason.NEED_FARM:    return &"NEED_FARM"
+		BuildBlockReason.OUT_OF_RANGE: return &"OUT_OF_RANGE"
+		BuildBlockReason.QUEUE_FULL:   return &"QUEUE_FULL"
+	return &""
+
+
+## 已建造的某类型建筑数量（仅计 is_constructed=true 的玩家建筑）
+func _count_built(type: int) -> int:
+	var n := 0
+	for b in get_tree().get_nodes_in_group("player_buildings"):
+		if b.get("building_type") != type:
+			continue
+		if b.has_method("is_dead") and b.is_dead():
+			continue
+		if b.get("is_constructed") == false:
+			continue
+		n += 1
+	return n
+
+
+func _max_farms() -> int:
+	var s = BuildingStatsRegistry.get_by_type(BuildingScript.BuildingType.FARM)
+	return s.max_farms if s != null else 5
+
+
+func _has_farm() -> bool:
+	return _count_built(BuildingScript.BuildingType.FARM) > 0
 
 
 ## T1 D5: 懒加载建造范围圆环（Line2D 64 点近似圆）
