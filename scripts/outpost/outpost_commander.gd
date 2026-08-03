@@ -5,7 +5,10 @@ extends Node2D
 ## - 编辑器：画领地圆圈（实线红 + 中心标记 + 半径标尺），所见即所得
 ## - 运行时：visible = false，由 OutpostCommanderManager 周期 tick 触发决策
 ##
-## 失败条件：圈内所有敌方建筑被摧毁 → queue_free（指挥官本身不可选中、不可攻击）
+## 失败条件：圈内所有敌方建筑 + 单位被摧毁 → emit outpost_captured，节点保留用于光圈消失判定
+
+# PR-4：据点被玩家占领信号（参数 team=0 玩家方；目前仅玩家能占领）
+signal outpost_captured(team: int)
 
 const OutpostCommanderConfigClass := preload("res://scripts/outpost/outpost_commander_config.gd")
 const SpellEffectsRef := preload("res://scripts/outpost/outpost_spell_effects.gd")
@@ -48,6 +51,8 @@ var _is_registered: bool = false
 var _last_strategy_eval_msec: int = -10000
 var _attack_status_marker: Node2D = null  # attack/coordinate 状态期间持续显示的圈内红描边
 var _status_panel: Node2D = null  # OutpostStatusPanel 弱引用（用于显隐切换）
+# PR-4：占领状态（圈内清空后置 true，节点不再 _despawn，保留用于光圈消失判定）
+var _is_captured: bool = false
 
 
 func _ready() -> void:
@@ -114,6 +119,8 @@ func tick(delta: float) -> void:
 		return
 	if config == null:
 		return
+	if _is_captured:
+		return  # PR-4：已占领，停止决策（节点保留用于光圈消失判定）
 	_regen_resources(delta)
 	_tick_accumulator += delta
 	if _tick_accumulator < 1.0:
@@ -136,15 +143,28 @@ func _regen_resources(delta: float) -> void:
 		spell_cooldowns.erase(spell_id)
 
 
-# 完整决策树：失败检测 → forced 策略 → 法术优先级 → 策略决策（5s 节流）
+# 完整决策树：占领检测 → 失败检测 → forced 策略 → 法术优先级 → 策略决策（5s 节流）
 func _on_decision_tick() -> void:
 	var buildings := _get_managed_buildings()
 	var units := _get_managed_units()
 
-	# 失败检测：圈内无敌方建筑 → 据点消灭
+	# PR-4 占领检测：圈内敌方建筑 + 单位都清空 → emit outpost_captured，节点保留
+	if buildings.is_empty() and units.is_empty():
+		if not _is_captured:
+			_is_captured = true
+			print("[OutpostCommander:%s] 圈内无敌方实体, 据点被玩家占领" % _uid_str())
+			outpost_captured.emit(0)  # 0 = 玩家方 alliance_id
+			_clear_attack_status_marker()
+			var main_node := get_tree().current_scene
+			if main_node != null:
+				var manager = main_node.get_node_or_null("OutpostCommanderManager")
+				if manager != null and manager.has_method("unregister_commander"):
+					manager.unregister_commander(self)
+		return  # 节点保留，不 _despawn
+
+	# 失败检测（原逻辑保留兼容）：仅 buildings 空但 units 还在时，等 units 也清空
 	if buildings.is_empty():
-		print("[OutpostCommander:%s] 圈内无敌方建筑, 据点消灭" % _uid_str())
-		_despawn()
+		# 圈内无敌方建筑但有敌方单位 → 继续等待 units 也清空（PR-4 不再 queue_free）
 		return
 
 	# 强制策略：跳过决策树，直接执行（不消耗资源，仅下达命令）

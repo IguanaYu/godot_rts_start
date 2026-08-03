@@ -28,6 +28,12 @@ var _buildings_node: Node2D
 var _preview_rect: ColorRect
 var _ui_module: Node
 
+# PR-4：据点光圈多源可建区
+# _captured_outpost_rings：占领后但未造特殊建筑的光圈（仅 ALTAR_ARCHER 可造）
+# _activated_outpost_rings：已造特殊建筑的光圈（拓展区，可造任意建筑）
+var _captured_outpost_rings: Array = []  # [{position: Vector2, radius: float}]
+var _activated_outpost_rings: Array = []
+
 
 func initialize(map_bounds: Rect2, nav_bounds: Array, nav_region: NavigationRegion2D,
 		buildings_node: Node2D, preview_rect: ColorRect, ui_module: Node) -> void:
@@ -112,12 +118,42 @@ func get_current_cost(mode: int) -> int:
 	return base + count * stats.cost_increment
 
 
-## T1 D3: 中心点法 —— 距离主基地 <= BUILD_RADIUS 才可建造
-func is_in_buildable_area(world_pos: Vector2) -> bool:
+## T1 D3 + PR-4: 多源可建区判定
+## 源 1：主基地圆（PR-1）
+## 源 2：已激活据点光圈（造了特殊建筑 → 拓展区，可造任意建筑）
+## 源 3：占领中据点光圈（仅 ALTAR_ARCHER 可造）
+func is_in_buildable_area(world_pos: Vector2, place_mode: int = -1) -> bool:
+	# 源 1：主基地圆
 	var main_node := get_parent()  # main.gd
 	if main_node == null or main_node.get("player_castle") == null:
 		return true  # 没主基地时不阻拦（避免卡死）
-	return world_pos.distance_to(main_node.player_castle.global_position) <= BUILD_RADIUS
+	if world_pos.distance_to(main_node.player_castle.global_position) <= BUILD_RADIUS:
+		return true
+	# 源 2：已激活据点光圈（拓展区）
+	for ring in _activated_outpost_rings:
+		if world_pos.distance_to(ring.position) <= ring.radius:
+			return true
+	# 源 3：占领中据点光圈（仅 ALTAR_ARCHER 可造）
+	if place_mode == D.PlaceMode.ALTAR_ARCHER:
+		for ring in _captured_outpost_rings:
+			if world_pos.distance_to(ring.position) <= ring.radius:
+				return true
+	return false
+
+
+## PR-4：占领后由 main.gd 调用，添加 captured ring
+func add_captured_outpost_ring(position: Vector2, radius: float) -> void:
+	_captured_outpost_rings.append({"position": position, "radius": radius})
+
+
+## PR-4：祭坛建造完成时由 main.gd 调用，把 captured ring 升级为 activated（拓展区）
+func promote_captured_to_activated(position: Vector2) -> void:
+	for i in range(_captured_outpost_rings.size()):
+		var ring = _captured_outpost_rings[i]
+		if position.distance_to(ring.position) <= ring.radius:
+			_captured_outpost_rings.remove_at(i)
+			_activated_outpost_rings.append(ring)
+			return
 
 
 # ============================================================
@@ -136,7 +172,7 @@ func check_build_block(mode: int, click_pos: Vector2 = Vector2.ZERO) -> BuildBlo
 		return BuildBlockReason.FARM_LIMIT
 	if bt == BuildingScript.BuildingType.BARRACKS and not _has_farm():
 		return BuildBlockReason.NEED_FARM
-	if click_pos != Vector2.ZERO and not is_in_buildable_area(click_pos):
+	if click_pos != Vector2.ZERO and not is_in_buildable_area(click_pos, mode):
 		return BuildBlockReason.OUT_OF_RANGE
 	return BuildBlockReason.OK
 
@@ -244,7 +280,7 @@ func update_preview() -> void:
 	var world_pos: Vector2 = grid_to_world(gpos)
 	if gsize.x > 1 or gsize.y > 1:
 		world_pos += Vector2((gsize.x - 1) * D.GRID_SIZE / 2.0, (gsize.y - 1) * D.GRID_SIZE / 2.0)
-	var can_place: bool = is_grid_free(gpos, gsize) and is_in_buildable_area(world_pos)
+	var can_place: bool = is_grid_free(gpos, gsize) and is_in_buildable_area(world_pos, place_mode)
 	_preview_rect.visible = true
 	_preview_rect.position = world_pos - Vector2(gsize.x * D.GRID_SIZE / 2.0, gsize.y * D.GRID_SIZE / 2.0)
 	_preview_rect.size = Vector2(gsize.x * D.GRID_SIZE, gsize.y * D.GRID_SIZE)
@@ -324,6 +360,10 @@ func _on_building_construction_finished(building: Node2D) -> void:
 		var pts: int = TPD.get_build_points(bt)
 		if pts > 0:
 			main_node.tech_point_manager.add_points(pts, TPD.CATEGORY_BUILD_CONSTRUCTION)
+	# PR-4：祭坛建造完成 → 把据点 captured ring 升级为 activated（拓展区可造任意建筑）
+	var bt2 = building.get("building_type")
+	if bt2 == D.BuildingScript.BuildingType.ALTAR_ARCHER:
+		promote_captured_to_activated(building.global_position)
 
 
 func _rebuild_navigation() -> void:

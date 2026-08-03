@@ -65,6 +65,10 @@ extends Resource
 @export var cone_range: float = 0.0        # 锥形攻击范围，0=无锥形
 @export var cone_angle: float = 0.0        # 锥形角度（度），如 90=前方90度扇形
 
+# --- PR-4 分裂攻击（同时射 N 支箭到不同目标）---
+@export var split_count: int = 1           # 分裂箭数量，1=不分裂
+@export var split_range: float = 120.0     # 分裂索敌范围
+
 # --- 隐身 ---
 @export var stealth_on_idle: bool = false   # 非战斗时自动隐身（半透明+不被索敌）
 @export var stealth_reveal_duration: float = 2.0  # 攻击/受击后显形秒数

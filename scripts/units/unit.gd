@@ -1005,6 +1005,10 @@ func _perform_attack() -> void:
 		_reveal_stealth_temporarily()
 		var damage = stat_set.get_int(StatSetClass.ATTACK_DAMAGE)
 		var pd = stats_data.projectile_data if stats_data else null
+		# PR-4 分裂攻击：同时射 N 支箭到不同目标（优先级最高，覆盖 cone/chain）
+		if stats_data and stats_data.split_count > 1:
+			_do_split_attack(damage)
+			return
 		# 锥形攻击：对前方扇形范围内所有敌人造成伤害
 		if stats_data and stats_data.cone_range > 0.0:
 			_do_cone_attack(damage)
@@ -1027,6 +1031,39 @@ func _perform_attack() -> void:
 				if comp.can_activate():
 					comp.activate(attack_target)
 					break
+
+## PR-4 分裂攻击：找 N 个最近敌人，对每个射独立箭（每支满伤）
+func _do_split_attack(damage: int) -> void:
+	var count: int = stats_data.split_count
+	var scan_range: float = stats_data.split_range
+	var targets: Array = _find_n_closest_enemies_in_range(count, scan_range)
+	if targets.is_empty():
+		# fallback：范围内无敌人时单目标攻击
+		if attack_target and is_instance_valid(attack_target):
+			_spawn_arrow(attack_target, damage)
+		return
+	for target in targets:
+		_spawn_arrow(target, damage)
+
+
+## PR-4：找范围内 N 个最近敌人单位（参考 _do_cone_attack 的过滤模式，仅打 Unit）
+func _find_n_closest_enemies_in_range(count: int, scan_range: float) -> Array:
+	var candidates: Array = []
+	for u in UnitGrid.query_neighbors(global_position, scan_range):
+		if not is_instance_valid(u) or u.is_dead():
+			continue
+		if u.team == team:
+			continue
+		if not (u is Unit):
+			continue
+		if u.has_method("is_stealthed") and u.is_stealthed():
+			continue
+		candidates.append(u)
+	# 按距离排序，取前 count 个
+	candidates.sort_custom(func(a, b):
+		return global_position.distance_to(a.global_position) < global_position.distance_to(b.global_position))
+	return candidates.slice(0, count)
+
 
 ## 连锁闪电：主目标受伤后弹射到附近 N 个敌人
 func _do_chain_attack(damage: int) -> void:

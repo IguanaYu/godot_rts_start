@@ -1,7 +1,7 @@
 @tool
 extends Node2D
 
-enum BuildingType { WALL, TOWER, CASTLE, BARRACKS, MONASTERY, ARCHERY, FARM }
+enum BuildingType { WALL, TOWER, CASTLE, BARRACKS, MONASTERY, ARCHERY, FARM, ALTAR_ARCHER }
 enum Team { PLAYER, ENEMY }
 
 const UnitScript := preload("res://scripts/units/unit.gd")
@@ -187,6 +187,10 @@ func _setup_stats() -> void:
 			aura_range = 150.0
 			aura_type = "range_bonus"
 			aura_value = 25.0
+		BuildingType.ALTAR_ARCHER:
+			# PR-4 据点占领后可造的高级祭坛；建筑 stats 由 BuildingStatsRegistry 提供
+			max_hp = 200
+			grid_size = Vector2i(2, 2)
 	# 指挥官变体覆盖（运行时按 owner_id 查 CommanderProfile.building_variants）
 	_apply_commander_building_stats(max_hp)
 

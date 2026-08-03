@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="BuildingStats" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/stats/building_stats.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"altar_archer"
+building_type = 7
+category = "normal"
+parent_id = &""
+max_hp = 200
+grid_size = Vector2i(2, 2)
+cost_override = 350
+build_time = 5.0
+attack_damage = 0.0
+attack_range = 0.0
+attack_cooldown = 1.5
+production_cooldown = 0.0
+production_variant_ids = Array[StringName]([])
+is_gold_producer = false
+aura_range = 0.0
+aura_type = ""
+aura_value = 0.0
+tint = Color(1, 1, 1, 1)
+sprite_scale = 1.0
+cost_increment = 0
+gold_production_amount = 0
+completion_refund = 0
+completion_refund_unit = &"outpost_archer"
+completion_refund_unit_count = 1
+max_farms = 5
+production_queue_max = 5
+requires_farm = false

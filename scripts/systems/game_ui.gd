@@ -39,6 +39,7 @@ var active_tab: int = 0  # 0=单位, 1=建筑, 2=信息
 var tab_buttons: Array[Button] = []
 var unit_container: HBoxContainer
 var building_container: HBoxContainer
+var outpost_container: HBoxContainer  # PR-4 据点建筑容器
 var unit_modes_ordered: Array = []      # 玩家选中的单位，按显示顺序
 var building_modes_ordered: Array = []  # 玩家选中的建筑，按显示顺序
 
@@ -300,6 +301,17 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	tab_row.add_child(info_tab)
 	tab_buttons.append(info_tab)
 
+	# PR-4 据点标签（占领前隐藏）
+	var outpost_tab := Button.new()
+	outpost_tab.text = "TAB_OUTPOST"
+	outpost_tab.custom_minimum_size = Vector2(100, 28)
+	outpost_tab.toggle_mode = true
+	outpost_tab.pressed.connect(func(): _switch_tab(3))
+	BF4.add_hover_anim_button(outpost_tab)
+	outpost_tab.visible = false  # 默认隐藏，占领后 show_outpost_category() 显示
+	tab_row.add_child(outpost_tab)
+	tab_buttons.append(outpost_tab)
+
 	# --- 信息面板容器 (Info tab) ---
 	info_container = HBoxContainer.new()
 	info_container.add_theme_constant_override("separation", 24)
@@ -401,11 +413,21 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	building_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content.add_child(building_container)
 
+	# --- PR-4 据点建筑容器（占领前隐藏）---
+	outpost_container = HBoxContainer.new()
+	outpost_container.add_theme_constant_override("separation", 10)
+	outpost_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	outpost_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	outpost_container.visible = false
+	content.add_child(outpost_container)
+
 	# --- 生成按钮（按槽位分配 1,2,3... 连续键）---
 	for i in range(unit_modes.size()):
 		_add_icon_button(unit_modes[i], unit_container, KEY_1 + i)
 	for i in range(building_modes.size()):
 		_add_icon_button(building_modes[i], building_container, KEY_1 + i)
+	# PR-4：据点分类的 ALTAR_ARCHER 按钮（占领后才能切到此 tab）
+	_add_icon_button(D.PlaceMode.ALTAR_ARCHER, outpost_container, KEY_1)
 
 	# 默认显示单位页
 	_switch_tab(0)
@@ -614,6 +636,13 @@ func get_minimap() -> Node:
 	return _ui_canvas.find_child("MinimapPanel", true, false)
 
 
+## PR-4：据点占领后调用，显示据点分类 tab 按钮
+func show_outpost_category() -> void:
+	# tab_buttons 顺序: [0]unit [1]building [2]info [3]outpost
+	if tab_buttons.size() > 3:
+		tab_buttons[3].visible = true
+
+
 
 
 func _on_attack_ping(world_pos: Vector2, minimap: Control) -> void:
@@ -784,6 +813,8 @@ func _switch_tab(tab_index: int) -> void:
 		info_container.visible = (tab_index == 2)
 		if tab_index == 2:
 			_update_info_panel()
+	if outpost_container:
+		outpost_container.visible = (tab_index == 3)
 	for i in range(tab_buttons.size()):
 		tab_buttons[i].button_pressed = (i == tab_index)
 	# 活动标签页按钮脉冲动画

@@ -15,7 +15,9 @@ enum PlaceMode { NONE, WALL, TOWER, CASTLE, BARRACKS, SOLDIER, ARCHER, MONASTERY
 	HAMMERER,
 	STORMCALLER, SALAMANDER, SHADOWBLADE, BLINKER, WARDEN, STONEGUARD, VENOMBLADE, INQUISITOR, NECROMANCER, ENCHANTER,
 		# --- T1 新增建筑（值接末尾，零回归）---
-		FARM }
+		FARM,
+		# --- PR-4 据点建筑（占领后解锁）---
+		ALTAR_ARCHER }
 
 # --- 费用 ---
 const COSTS := {
@@ -57,6 +59,7 @@ const COSTS := {
 	PlaceMode.NECROMANCER: 160,
 	PlaceMode.ENCHANTER: 150,
 	PlaceMode.FARM: 100,
+	PlaceMode.ALTAR_ARCHER: 350,
 }
 
 # --- 显示名称（翻译键，使用时需 tr()） ---
@@ -99,6 +102,7 @@ const MODE_NAMES := {
 	PlaceMode.NECROMANCER: "ENTITY_NECROMANCER",
 	PlaceMode.ENCHANTER: "ENTITY_ENCHANTER",
 	PlaceMode.FARM: "ENTITY_FARM",
+	PlaceMode.ALTAR_ARCHER: "ENTITY_ALTAR_ARCHER",
 }
 
 # --- 默认全部物品 ---
@@ -262,6 +266,7 @@ const BUILDING_SCENES := {
 	BuildingScript.BuildingType.MONASTERY: "res://scenes/buildings/monastery.tscn",
 	BuildingScript.BuildingType.ARCHERY: "res://scenes/buildings/archery_building.tscn",
 	BuildingScript.BuildingType.FARM: "res://scenes/buildings/farm.tscn",
+	BuildingScript.BuildingType.ALTAR_ARCHER: "res://scenes/buildings/altar_archer.tscn",
 }
 
 # --- 建筑网格尺寸 ---
@@ -286,6 +291,7 @@ const UNIT_SCENES := {
 # --- 变体单位场景（按 stats id 查找，优先于 UNIT_SCENES） ---
 const ENEMY_VARIANT_SCENES := {
 	&"elite_archer": "res://scenes/units/elite_archer.tscn",
+	&"outpost_archer": "res://scenes/units/elite_archer.tscn",
 	&"shieldbearer": "res://scenes/units/shieldbearer.tscn",
 	&"berserker": "res://scenes/units/berserker.tscn",
 	&"crossbowman": "res://scenes/units/crossbowman.tscn",
@@ -326,6 +332,7 @@ const PLACE_MODE_TO_BUILDING := {
 	PlaceMode.MONASTERY: BuildingScript.BuildingType.MONASTERY,
 	PlaceMode.ARCHERY_RANGE: BuildingScript.BuildingType.ARCHERY,
 	PlaceMode.FARM: BuildingScript.BuildingType.FARM,
+	PlaceMode.ALTAR_ARCHER: BuildingScript.BuildingType.ALTAR_ARCHER,
 }
 
 # --- PlaceMode → UnitType 映射 ---

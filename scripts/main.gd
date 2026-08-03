@@ -286,6 +286,7 @@ func _run_init_steps() -> void:
 	_setup_boss_ai()
 	_setup_grand_tactic_releasers()
 	_setup_wave_manager()
+	_setup_outpost_capture_signals()
 	if map_config != null:
 		camera.position = map_config.camera_start
 	# 连接 AI 队友求救信号
@@ -624,6 +625,31 @@ func _setup_wave_manager() -> void:
 			child.wave_warning_triggered.connect(_on_wave_warning_triggered)
 			child.start_waves()
 			break
+
+# PR-4：连接所有 OutpostCommander 的占领信号
+func _setup_outpost_capture_signals() -> void:
+	for cmdr in find_children("*", "OutpostCommander", true, false):
+		if cmdr.has_signal("outpost_captured") and not cmdr.outpost_captured.is_connected(_on_outpost_captured):
+			cmdr.outpost_captured.connect(_on_outpost_captured.bind(cmdr))
+
+# PR-4：据点被玩家占领 → 实例化绿色光圈 + 通知 building_placer 加 captured ring + 通知 ui_module 显示据点分类
+func _on_outpost_captured(team: int, cmdr: Node) -> void:
+	if team != 0:
+		return  # 仅玩家方占领触发
+	var ring_scene := preload("res://scenes/effects/outpost_capture_ring.tscn")
+	var ring: Node2D = ring_scene.instantiate()
+	add_child(ring)
+	ring.global_position = cmdr.global_position
+	var radius: float = 200.0
+	if cmdr.config != null:
+		radius = cmdr.config.territory_radius
+	ring.setup(radius)
+	# 通知 building_placer 加 captured ring（仅 ALTAR_ARCHER 可造）
+	if building_placer and building_placer.has_method("add_captured_outpost_ring"):
+		building_placer.add_captured_outpost_ring(cmdr.global_position, radius)
+	# 通知 UI 显示据点建筑分类
+	if ui_module and ui_module.has_method("show_outpost_category"):
+		ui_module.show_outpost_category()
 
 func _on_wave_started(_wave_number: int) -> void:
 	_wave_clear_notified = false

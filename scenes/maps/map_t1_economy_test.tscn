@@ -3,10 +3,31 @@
 [ext_resource type="Script" uid="uid://cg2igjmusi0dq" path="res://scripts/main.gd" id="main_script"]
 [ext_resource type="Resource" path="res://resources/map_t1_economy_test_config.tres" id="t1_config"]
 [ext_resource type="Script" path="res://scripts/systems_game/wave_manager.gd" id="wave_manager"]
+[ext_resource type="Script" path="res://scripts/outpost/outpost_commander.gd" id="outpost_cmdr_script"]
+[ext_resource type="Script" path="res://scripts/outpost/outpost_commander_config.gd" id="outpost_cfg_script"]
 
 [sub_resource type="NavigationPolygon" id="NavPoly_T1"]
-vertices = PackedVector2Array(0, 0, 1500, 0, 1500, 1000, 0, 1000)
+vertices = PackedVector2Array(0, 0, 3000, 0, 3000, 1800, 0, 1800)
 polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
+
+[sub_resource type="Resource" id="OutpostConfig_SH1"]
+script = ExtResource("outpost_cfg_script")
+commander_uid = &"sh1_outpost"
+alliance_id = 1
+territory_radius = 200.0
+mana_max = 100.0
+gold_max = 500
+gold_regen = 5.0
+strategy_max = 4
+strategy_regen = 0.05
+enabled_spells = Array[StringName]([])
+enabled_strategies = Array[StringName]([])
+aggression = 0.4
+defensiveness = 0.7
+expansionist = 0.5
+forced_strategy = &""
+spell_overrides = {}
+strategy_overrides = {}
 
 [node name="MapT1EconomyTest" type="Node2D"]
 script = ExtResource("main_script")
@@ -15,8 +36,8 @@ map_config = ExtResource("t1_config")
 [node name="Ground" type="ColorRect" parent="."]
 offset_left = 0.0
 offset_top = 0.0
-offset_right = 1500.0
-offset_bottom = 1000.0
+offset_right = 3000.0
+offset_bottom = 1800.0
 color = Color(0.35, 0.55, 0.25, 1)
 
 [node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
@@ -62,3 +83,8 @@ text = "Attack Move (Click)"
 [node name="WaveManager" type="Node" parent="."]
 script = ExtResource("wave_manager")
 clear_then_next = false
+
+[node name="OutpostCommanderSH1" type="Node2D" parent="."]
+position = Vector2(1500, 1000)
+script = ExtResource("outpost_cmdr_script")
+config = SubResource("OutpostConfig_SH1")

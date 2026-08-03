@@ -376,3 +376,6 @@ PASSIVE_ECONOMY_BOOST_DESC,Buildings generate extra gold over time.,建筑持续
 PASSIVE_COMBAT_AURA_BUFF,Combat Aura,战斗光环,戦闘オーラ
 PASSIVE_COMBAT_AURA_BUFF_DESC,New units near friendly buildings gain temporary attack bonus.,新单位在友方建筑光环内获得临时攻击加成。,新しいユニットが味方建物のオーラ内で一時的な攻撃ボーナスを得る。
 UI_TECH_LEVEL,Tech Lv.%d,科技 Lv.%d,技術 Lv.%d
+
+TEST_SPLIT_NAME,Split Attack Test,分裂攻击测试,スプリット攻撃テスト
+TEST_SPLIT_DESC,"1 outpost archer (split=3) vs 3 enemy soldiers. Verify simultaneous 3-arrow attack.","1 个高级弓箭手（分裂=3）vs 3 个敌方步兵。验证同时射 3 支箭。","1 体の上位アーチャー（分裂=3）vs 3 体の敵歩兵。同時 3 本矢攻撃を検証。"

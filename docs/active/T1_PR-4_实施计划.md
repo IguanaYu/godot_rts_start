@@ -2,9 +2,9 @@
 
 ## Context
 
-T1 阶段进入 SH1 据点占领机制——核心战略决策点。PR-1/2/3 完成后，玩家已能在 T1 测试关卡跑通"经济运营 → 防骚扰"循环，但**地图中心的 SH1 据点只是装饰**（4 个守军 + 1 箭塔，打完就结束），没有任何战略收益。
+T1 阶段进入 SH1 据点占领机制——核心战略决策点。PR-1/2/3 完成后，玩家已能在 T1 测试关卡跑通"经济运营 → 防骚扰"循环，但**当前测试地图完全没有 SH1**（PR-3 实施时跳过了据点基础设施）。
 
-PR-4 的目标：把 SH1 从"纯战斗目标"升级为"战略决策点"——玩家推下来后能选 1 个特殊建筑作为长期收益。所有玩法决策已在 [T1_实施计划.md](T1_实施计划.md) §5.PR-4 敲定（Q4-1~Q4-10），本计划是它的可执行展开。
+PR-4 的目标：① 补完 SH1 基础设施 ② 把 SH1 从"纯战斗目标"升级为"战略决策点"——玩家推下来后能选 1 个特殊建筑作为长期收益。所有玩法决策已在 [T1_实施计划.md](T1_实施计划.md) §5.PR-4 敲定（Q4-1~Q4-10），本计划是它的可执行展开。
 
 **当前 OutpostCommander 状态**（调研发现）：
 - 文件：[outpost_commander.gd](scripts/outpost/outpost_commander.gd)
@@ -15,6 +15,7 @@ PR-4 的目标：把 SH1 从"纯战斗目标"升级为"战略决策点"——玩
 - **可复用**：领土范围检测逻辑（contains_entity）+ 配置字段（territory_radius / aggression 等）
 
 **主要工作**：
+0. 补完 SH1 基础设施到测试地图（守军 + 箭塔 + OutpostCommander 节点）
 1. 给 OutpostCommander 加 `outpost_captured` 信号 + 占领检测
 2. 独立管理"光圈状态机"（不污染 OutpostCommander 敌方逻辑）
 3. 新建 ALTAR_ARCHER 建筑类型 + 高级弓箭手单位
@@ -23,8 +24,19 @@ PR-4 的目标：把 SH1 从"纯战斗目标"升级为"战略决策点"——玩
 
 **主要偏离**：
 1. OutpostCommander **不改归属**（保持敌方专属），用独立的 `outpost_capture_state.gd` 管理"已占领"状态
-2. PR-1 的 `is_in_buildable_area` 当前只看主基地圆，PR-4 需要扩展为多源
+2. PR-1 的 `is_in_buildable_area` 当前只看主基地圆，PR-4 需要扩展为多源（含 place_mode 参数）
 3. unit.gd 已有 cone_attack / chain_attack 多目标分支，**split_attack 走相同模式**
+
+---
+
+## 0. 实施前已敲定的 4 项调整（用户决策）
+
+| # | 项 | 决策 |
+|---|---|---|
+| 调整 1 | SH1 基础设施补完 | 照路线图 §3.5 加：1 箭塔 grid(14,7) + 3 步 (720,470/720,530/780,500) + 1 弓 (750,460) + OutpostCommander 节点 |
+| 调整 2 | 骚扰路径穿 SH1 | 不动。敌人同阵营 alliance_id=1，ATTACK_MOVE 的 _is_valid_enemy 过滤同阵营，路径穿 SH1 不会自相残杀 |
+| 调整 3 | Wave 3 (5:30) timing | 保留 5:30，PR-4 出来实测后如果难度过高再调 |
+| 调整 4 | split 优先级 | `if stats_data.split_count > 1: _do_split_attack; elif cone; elif chain; else 单目标` |
 
 ---
 
@@ -71,7 +83,7 @@ PR-4 的目标：把 SH1 从"纯战斗目标"升级为"战略决策点"——玩
 | 3 | [game_data.gd](scripts/systems/game_data.gd) | enum PlaceMode 加 `ALTAR_ARCHER`（值 = 39，接 FARM=38 后）；COSTS 加 `PlaceMode.ALTAR_ARCHER: 350`；MODE_NAMES 加 `PlaceMode.ALTAR_ARCHER: "ENTITY_ALTAR_ARCHER"`；BUILDING_SCENES 加 `BuildingType.ALTAR_ARCHER: "res://scenes/buildings/altar_archer.tscn"`；ALL_ITEMS 暂不加（仅据点分类可见）|
 | 4 | [unit.gd](scripts/units/unit.gd) | `_perform_attack()`（[行 1001-1014](scripts/units/unit.gd#L1001-L1014)）投射物分支前加 split 检查：`if stats_data.split_count > 1: _do_split_attack(damage); return`；新增 `_do_split_attack(damage)`：找 N 个最近敌人 + 对每个 `_spawn_arrow(target, damage)`；新增 `_find_n_closest_enemies_in_range(count, range)` 工具函数 |
 | 5 | [unit_stats.gd](scripts/stats/unit_stats.gd) | 加 `@export var split_count: int = 1` + `@export var split_range: float = 120.0` |
-| 6 | [building_placer.gd](scripts/systems/building_placer.gd) | `is_in_buildable_area(pos, place_mode)` 扩展为多源：① 主基地圆（PR-1）OR ② 已激活据点光圈（造了特殊建筑）OR ③ 占领中据点光圈（仅 ALTAR_ARCHER 可造）；新增 `_captured_outpost_rings: Array` + `_activated_outpost_rings: Array` 状态 |
+| 6 | [building_placer.gd](scripts/systems/building_placer.gd) | `is_in_buildable_area(pos, place_mode)` 扩展为多源：① 主基地圆（PR-1）OR ② 已激活据点光圈（造了特殊建筑）OR ③ 占领中据点光圈（仅 ALTAR_ARCHER 可造）；新增 `_captured_outpost_rings: Array` + `_activated_outpost_rings: Array` 状态。**调用点同步改签名**：[行 139 check_build_block](scripts/systems/building_placer.gd#L139) + [行 247 update_preview](scripts/systems/building_placer.gd#L247) |
 | 7 | [main.gd](scripts/main.gd) | `_setup_outpost_commanders()` 后 connect `outpost_captured` → 调 `_on_outpost_captured(team, commander_pos, commander_radius)`：实例化 outpost_capture_ring + 通知 building_placer 加 ring + 通知 game_ui 显示据点分类 |
 | 8 | [game_ui.gd](scripts/systems/game_ui.gd) | 建造栏顶部加"据点"分类按钮（占领前隐藏）；新增 `_refresh_outpost_category(visible: bool)`；候选 C 卡片（350 金，"生成 1 个高级弓箭手（分裂攻击）"）；点击卡片 → `place_mode_requested.emit(PlaceMode.ALTAR_ARCHER)` |
 
@@ -84,11 +96,12 @@ PR-4 的目标：把 SH1 从"纯战斗目标"升级为"战略决策点"——玩
 | 11 | `resources/stats/units/elite_archer_stats.tres` | 复制 archer_stats.tres 改：id=&"elite_archer"; max_hp=150; attack_damage=18; attack_range=60; split_count=3; split_range=120; sprite_scale=1.3 |
 | 12 | `scenes/effects/outpost_capture_ring.tscn` **(新建)** | 根节点 OutpostCaptureRing（Node2D + _draw Line2D 圆环）；半径默认 200；颜色绿色（复用 building_placer 的 `Color(0, 1, 0, 0.6)`）；可挂 AnimationPlayer 做呼吸效果（可选）|
 
-### 场景层（1 个修改）
+### 场景层（2 个修改）
 
 | # | 文件 | 改动 |
 |---|---|---|
 | 13 | [map_t1_economy_test.tscn](scenes/maps/map_t1_economy_test.tscn) | SH1 区域加 OutpostCommander 节点（alliance_id=1, territory_radius=200, aggression=0.4, defensiveness=0.7, enabled_spells=[], enabled_strategies=[]）|
+| 13a | [map_t1_economy_test_config.tres](resources/map_t1_economy_test_config.tres) | **补 SH1 守军 + 箭塔**（路线图 §3.5）：箭塔 grid(14,7) + 3 步 (720,470/720,530/780,500) + 1 弓 (750,460)。保留现有 (1100,500) 4 个守军作为敌方城堡守卫 |
 
 ### 文案层（1 个）
 
@@ -122,13 +135,19 @@ if buildings_in_territory.is_empty() and units_in_territory.is_empty():
 ### B. 分裂攻击（unit.gd 扩展）
 
 ```gdscript
-# _perform_attack() 在投射物分支前
+# _perform_attack() 攻击模式分发：split > cone > chain > 单目标
 func _perform_attack():
-    # ... 现有逻辑
+    # ... 现有准备逻辑
+    # 调整 4：split 最优先（PR-4 决策）
     if stats_data.split_count > 1:
         _do_split_attack(damage)
         return
-    # 现有投射物 / cone / chain 分支...
+    if cone_attack_enabled:        # 原 1010
+        _do_cone_attack(damage)
+    elif chain_attack_enabled:     # 原 1014
+        _do_chain_attack(damage)
+    else:                          # 原 1017
+        _spawn_arrow(attack_target, damage)
 
 func _do_split_attack(damage: float) -> void:
     var targets := _find_n_closest_enemies_in_range(
@@ -283,13 +302,14 @@ func _draw():
 
 ## 七、实施顺序建议
 
+0. **Step 0 SH1 基础设施补完**（用户调整 1）：在 .tres 加 SH1 守军 + 箭塔；在 .tscn 加 OutpostCommander 节点。**先验证：进入 T1 测试关卡，SH1 中心有守军，骚扰路径穿过不交战**
 1. **Step 1 数据层**：unit_stats.gd 加 split_count/split_range + building.gd ALTAR_ARCHER 枚举 + game_data.gd PlaceMode/COSTS 等
 2. **Step 2 资源层**：新建 altar_archer_stats.tres / elite_archer_stats.tres / altar_archer.tscn
 3. **Step 3 占领检测**：outpost_commander.gd 加 outpost_captured 信号 + 检测逻辑
 4. **Step 4 光圈视觉**：outpost_capture_ring.tscn + main.gd 信号连接
-5. **Step 5 多源可建区**：building_placer.gd 扩展 + main.gd ring 状态管理
+5. **Step 5 多源可建区**：building_placer.gd 扩展 + 调用点改签名 + main.gd ring 状态管理
 6. **Step 6 据点建筑栏 UI**：game_ui.gd 据点分类按钮 + 候选 C 卡片
-7. **Step 7 分裂攻击**：unit.gd _do_split_attack + _find_n_closest_enemies_in_range
-8. **Step 8 验证**：按第四节验收清单逐项测
+7. **Step 7 分裂攻击**：unit.gd _do_split_attack + _find_n_closest_enemies_in_range（split 优先级最高）
+8. **Step 8 验证**：按第四节验收清单逐项测；**额外测 Wave 3 (5:30) 跟 SH1 推进 timing 是否合理，不合理再调**
 
 预计工时：6-8 小时。

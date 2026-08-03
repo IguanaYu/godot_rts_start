@@ -5,53 +5,58 @@
 [resource]
 script = ExtResource("1_cfg12")
 map_name = "T1 Economy Test"
-map_bounds = Rect2(0, 0, 1500, 1000)
-nav_bounds = Array[Vector2]([Vector2(0, 0), Vector2(1500, 0), Vector2(1500, 1000), Vector2(0, 1000)])
+map_bounds = Rect2(0, 0, 3000, 1800)
+nav_bounds = Array[Vector2]([Vector2(0, 0), Vector2(3000, 0), Vector2(3000, 1800), Vector2(0, 1800)])
 initial_gold = 400
-camera_start = Vector2(300, 500)
+camera_start = Vector2(300, 1248)
 
 player_units = Array[Dictionary]( [
-	{"type": 0, "pos": Vector2(150, 450)},
-	{"type": 0, "pos": Vector2(150, 550)}
+	{"type": 0, "pos": Vector2(150, 1154)},
+	{"type": 0, "pos": Vector2(150, 1254)}
 ] )
 
 player_buildings = Array[Dictionary]( [
-	{"type": 2, "grid_pos": Vector2i(3, 8)}
+	{"type": 2, "grid_pos": Vector2i(3, 18)}
 ] )
 
 ai_allies = Array[Dictionary]( [] )
 
 enemy_units = Array[Dictionary]( [
-	{"type": 0, "pos": Vector2(1100, 400)},
-	{"type": 0, "pos": Vector2(1100, 500)},
-	{"type": 0, "pos": Vector2(1100, 600)},
-	{"type": 1, "pos": Vector2(1150, 500)}
+	{"type": 0, "pos": Vector2(2572, 1104)},
+	{"type": 0, "pos": Vector2(2572, 1204)},
+	{"type": 0, "pos": Vector2(2572, 1304)},
+	{"type": 1, "pos": Vector2(2622, 1204)},
+	{"type": 0, "pos": Vector2(1470, 970)},
+	{"type": 0, "pos": Vector2(1470, 1030)},
+	{"type": 0, "pos": Vector2(1530, 1000)},
+	{"type": 1, "pos": Vector2(1500, 960)}
 ] )
 
 enemy_buildings = Array[Dictionary]( [
-	{"type": 2, "grid_pos": Vector2i(20, 8)}
+	{"type": 2, "grid_pos": Vector2i(43, 18)},
+	{"type": 1, "grid_pos": Vector2i(25, 15)}
 ] )
 
-environment = {"trees": 8, "rocks": 5, "bushes": 6, "sheep": 0}
+environment = {"trees": 16, "rocks": 10, "bushes": 12, "sheep": 0}
 
 waves = Array[Dictionary]( [
 	{
 		"warning_time": 90.0,
 		"spawn_time": 120.0,
-		"spawn_pos": Vector2(1300, 500),
+		"spawn_pos": Vector2(2784, 1248),
 		"spawn_pattern": "circle",
 		"spawn_radius": 80.0,
-		"wave_target": Vector2(200, 500),
+		"wave_target": Vector2(224, 1248),
 		"show_warning_marker": true,
 		"groups": [{"type": 5, "count": 3, "stats_id": &"soldier"}]
 	},
 	{
 		"warning_time": 210.0,
 		"spawn_time": 240.0,
-		"spawn_pos": Vector2(1300, 500),
+		"spawn_pos": Vector2(2784, 1248),
 		"spawn_pattern": "circle",
 		"spawn_radius": 80.0,
-		"wave_target": Vector2(200, 500),
+		"wave_target": Vector2(224, 1248),
 		"show_warning_marker": true,
 		"groups": [
 			{"type": 5, "count": 4, "stats_id": &"soldier"},
@@ -61,10 +66,10 @@ waves = Array[Dictionary]( [
 	{
 		"warning_time": 330.0,
 		"spawn_time": 360.0,
-		"spawn_pos": Vector2(1300, 500),
+		"spawn_pos": Vector2(2784, 1248),
 		"spawn_pattern": "circle",
 		"spawn_radius": 100.0,
-		"wave_target": Vector2(200, 500),
+		"wave_target": Vector2(224, 1248),
 		"show_warning_marker": true,
 		"groups": [
 			{"type": 5, "count": 6, "stats_id": &"soldier"},
@@ -75,10 +80,10 @@ waves = Array[Dictionary]( [
 	{
 		"warning_time": 450.0,
 		"spawn_time": 480.0,
-		"spawn_pos": Vector2(1300, 500),
+		"spawn_pos": Vector2(2784, 1248),
 		"spawn_pattern": "circle",
 		"spawn_radius": 120.0,
-		"wave_target": Vector2(200, 500),
+		"wave_target": Vector2(224, 1248),
 		"show_warning_marker": true,
 		"groups": [
 			{"type": 5, "count": 8, "stats_id": &"soldier"},

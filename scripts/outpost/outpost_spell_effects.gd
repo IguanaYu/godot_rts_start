@@ -57,7 +57,7 @@ static func heal(main_node: Node2D, _spawner_module: Node, target_pos: Vector2, 
 
 	_show_area_indicator(main_node, center, radius, Color(0.1, 0.9, 0.3, 0.4))
 	if _spawner_module != null and _spawner_module.has_method("show_floating_text") and healed_count > 0:
-_spawner_module.show_floating_text_spawner_module.show_floating_text("+%d" % heal_amount, Color(0.1, 0.9, 0.3), center, FLOAT_TEXT_MULT)
+		_spawner_module.show_floating_text("+%d" % heal_amount, Color(0.1, 0.9, 0.3), center, FLOAT_TEXT_MULT)
 
 
 # ============================================================
@@ -92,7 +92,7 @@ static func inspire(main_node: Node2D, _spawner_module: Node, target_pos: Vector
 
 	_show_area_indicator(main_node, center, radius, Color(1.0, 0.85, 0.2, 0.4))
 	if _spawner_module != null and _spawner_module.has_method("show_floating_text") and buffed_count > 0:
-_spawner_module.show_floating_text_spawner_module.show_floating_text("Inspire", Color(1.0, 0.85, 0.2), center, FLOAT_TEXT_MULT)
+		_spawner_module.show_floating_text("Inspire", Color(1.0, 0.85, 0.2), center, FLOAT_TEXT_MULT)
 
 
 # ============================================================

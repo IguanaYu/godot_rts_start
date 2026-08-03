@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/effects/outpost_capture_ring.gd" id="outpost_ring"]
+
+[node name="OutpostCaptureRing" type="Node2D"]
+script = ExtResource("outpost_ring")
