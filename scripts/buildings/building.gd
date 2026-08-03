@@ -408,17 +408,28 @@ func _find_valid_spawn_position(unit_radius: float = 16.0) -> Vector2:
 	]
 	for offset in candidates:
 		var pos: Vector2 = global_position + offset
-		if _is_position_clear(pos, unit_radius):
+		if _is_position_clear(pos, unit_radius) and _in_map_bounds(pos):
 			return pos
 	# 扩大搜索：环形扫描
 	for dist in [64.0, 128.0, 192.0, 256.0]:
 		for i in range(8):
 			var angle: float = i * PI / 4.0
 			var pos: Vector2 = global_position + Vector2(cos(angle), sin(angle)) * dist
-			if _is_position_clear(pos, unit_radius):
+			if _is_position_clear(pos, unit_radius) and _in_map_bounds(pos):
 				return pos
-	# 兜底：底部中央
-	return global_position + Vector2(0, half_h + clearance)
+	# 兜底：建筑中心（至少保证在地图内）
+	return global_position
+
+
+## 检查 pos 是否在 main.map_bounds 内（带 margin 边距避免贴边）
+## main 没有 map_bounds 字段时不阻拦（兼容编辑器/单测）
+func _in_map_bounds(pos: Vector2, margin: float = 16.0) -> bool:
+	var main_node := get_parent()
+	if main_node == null or "map_bounds" not in main_node:
+		return true
+	var b: Rect2 = main_node.map_bounds
+	return pos.x > b.position.x + margin and pos.x < b.end.x - margin \
+		and pos.y > b.position.y + margin and pos.y < b.end.y - margin
 
 func _process(delta: float) -> void:
 	if Engine.is_editor_hint():

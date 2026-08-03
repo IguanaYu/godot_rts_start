@@ -79,6 +79,12 @@ var _initialized: bool = false  # _run_init_steps 跑完前 _process/_input 直�
 var _distress_markers: Array[Node2D] = []
 var _distress_rescue_check_timer: float = 0.0
 
+# 统一游戏时间（吃 Engine.time_scale 加速）；波次/能量/HUD 都从这里取
+var _game_time: float = 0.0
+
+func get_game_time() -> float:
+	return _game_time
+
 func _enter_tree() -> void:
 	# map_config 由 PackedScene 实例化时已注入（早于 _enter_tree）。
 	# 子节点（包括 PlayerUnits 下的预设单位）的 _ready 会在根节点 _ready 之前触发，
@@ -609,14 +615,32 @@ func _setup_wave_manager() -> void:
 		if child is WaveManager:
 			child.set_game_controller(self)
 			child.set_difficulty(_diff_preset)
+			# PR-3：从 map_config 注入 waves（数据驱动；为空则保留场景级 @export）
+			if map_config != null and map_config.waves.size() > 0:
+				child.waves = map_config.waves
 			child.wave_started.connect(_on_wave_started)
 			child.countdown_updated.connect(_on_countdown_updated)
 			child.all_waves_completed.connect(_on_all_waves_completed)
+			child.wave_warning_triggered.connect(_on_wave_warning_triggered)
 			child.start_waves()
 			break
 
 func _on_wave_started(_wave_number: int) -> void:
 	_wave_clear_notified = false
+
+func _on_wave_warning_triggered(wave_number: int, spawn_pos: Vector2) -> void:
+	# PR-3：在 spawn_pos 实例化红色脉冲 warning_marker，30s 后自毁
+	var marker_scene := preload("res://scenes/effects/warning_marker.tscn")
+	var marker := marker_scene.instantiate()
+	add_child(marker)
+	marker.global_position = spawn_pos
+	var lifetime: float = 30.0  # warning_time → spawn_time 固定 30s
+	marker.setup(wave_number, lifetime)
+	# PR-3 修复：小地图右下角红点脉冲（复用 minimap.flash_at）
+	if ui_module and ui_module.has_method("get_minimap"):
+		var minimap = ui_module.get_minimap()
+		if minimap != null and minimap.has_method("flash_at"):
+			minimap.flash_at(spawn_pos, Color(1.0, 0.2, 0.2), lifetime)
 
 func _on_countdown_updated(wave_number: int, remaining: float, total: int) -> void:
 	ui_module.update_wave_countdown(wave_number, remaining, total)
@@ -996,6 +1020,8 @@ var _perf_log_timer: float = 0.0
 func _process(delta: float) -> void:
 	if not _initialized:
 		return
+	# 统一游戏时间累积（吃加速）
+	_game_time += delta * Engine.time_scale
 	camera_module.process_camera(delta / Engine.time_scale)
 	_check_victory()
 	_check_wave_cleared()
@@ -1317,8 +1343,8 @@ func _do_place(click_pos: Vector2) -> void:
 func spawn_enemy_wave(units: Array, wave_attack: bool = false, wave_target: Vector2 = Vector2.ZERO) -> void:
 	spawner_module.spawn_enemy_wave(units, wave_attack, wave_target)
 
-func spawn_enemy_wave_v2(groups: Array, spawn_center: Vector2, wave_attack: bool, wave_target: Vector2, formation: String = "column", spacing: float = 50.0) -> void:
-	spawner_module.spawn_enemy_wave_v2(groups, spawn_center, wave_attack, wave_target, formation, spacing)
+func spawn_enemy_wave_v2(groups: Array, spawn_center: Vector2, wave_attack: bool, wave_target: Vector2, formation: String = "column", spacing: float = 50.0, radius: float = 80.0) -> void:
+	spawner_module.spawn_enemy_wave_v2(groups, spawn_center, wave_attack, wave_target, formation, spacing, radius)
 
 func spawn_enemy_unit(type: int, pos: Vector2, wave_attack: bool = false, wave_target: Vector2 = Vector2.ZERO) -> void:
 	spawner_module.spawn_enemy_unit(type, wave_attack, wave_target)

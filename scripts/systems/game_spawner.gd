@@ -366,7 +366,8 @@ static func _expand_groups(groups: Array) -> Array:
 	return result
 
 ## 根据阵型计算每个单位的出生坐标
-static func _calc_formation_positions(center: Vector2, count: int, formation: String, spacing: float) -> Array:
+## radius 仅 circle 模式读取；line/grid/column 忽略 radius
+static func _calc_formation_positions(center: Vector2, count: int, formation: String, spacing: float, radius: float = 80.0) -> Array:
 	var positions: Array = []
 	match formation:
 		"line":
@@ -385,6 +386,10 @@ static func _calc_formation_positions(center: Vector2, count: int, formation: St
 					var y: float = center.y + (r - (rows - 1) / 2.0) * spacing
 					positions.append(Vector2(x, y))
 					idx += 1
+		"circle":
+			for i in count:
+				var angle: float = TAU * i / count
+				positions.append(center + Vector2(cos(angle), sin(angle)) * radius)
 		_:  # "column" 默认：纵列左右交错
 			for i in count:
 				var row := i / 2
@@ -421,10 +426,11 @@ func spawn_enemy_wave(units: Array, wave_attack: bool = false, wave_target: Vect
 		})
 
 ## 新接口：groups 编组 + spawn_center，自动计算阵型位置
-func spawn_enemy_wave_v2(groups: Array, spawn_center: Vector2, wave_attack: bool, wave_target: Vector2, formation: String = "column", spacing: float = 50.0) -> void:
+## radius 仅 circle 模式生效；其他阵型忽略
+func spawn_enemy_wave_v2(groups: Array, spawn_center: Vector2, wave_attack: bool, wave_target: Vector2, formation: String = "column", spacing: float = 50.0, radius: float = 80.0) -> void:
 	var scaled_groups := _scale_group_counts(groups)
 	var expanded: Array = _expand_groups(scaled_groups)
-	var positions: Array = _calc_formation_positions(spawn_center, expanded.size(), formation, spacing)
+	var positions: Array = _calc_formation_positions(spawn_center, expanded.size(), formation, spacing, radius)
 	for i in expanded.size():
 		_spawn_queue.append({
 			"type": expanded[i].type, "pos": positions[i],

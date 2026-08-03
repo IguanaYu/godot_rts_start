@@ -38,6 +38,18 @@ extends Resource
 # 敌方随玩家数动态增强：每多 1 个玩家，敌方单位数 ×mult，并可选追加 extra_groups 波次
 @export var enemy_scaling: Dictionary = {"per_player_unit_mult": 1.0, "per_player_extra_groups": []}
 
+# PR-3：动态骚扰波次（数据驱动，由 main.gd 注入到场景级 WaveManager 节点）
+# 每条 wave 字典字段：
+#   warning_time: float (绝对游戏秒；触发 wave_warning_triggered)
+#   spawn_time:   float (绝对游戏秒；触发 spawn)
+#   spawn_pos:    Vector2 (敌方城堡周围 circle 圆心)
+#   spawn_pattern: String ("circle" / "line" / "grid" / "column")
+#   spawn_radius: float (circle 模式半径)
+#   wave_target:  Vector2 (attack-move 目标)
+#   show_warning_marker: bool
+#   groups: Array[{type: int, count: int, stats_id: StringName}]
+@export var waves: Array[Dictionary] = []
+
 # Environment counts
 @export var environment: Dictionary = {"trees": 15, "rocks": 10, "bushes": 12, "sheep": 5}
 

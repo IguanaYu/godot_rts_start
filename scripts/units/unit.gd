@@ -264,6 +264,11 @@ func _setup_stats() -> void:
 	mana = max_mana
 	# Phase 2：技能组件初始化
 	_setup_skills()
+	# PR-3：精英兵专属视觉特效（脚下金色光环）
+	if not Engine.is_editor_hint() and stats_data.id == &"elite_vanguard":
+		var aura := Node2D.new()
+		aura.set_script(preload("res://scripts/effects/elite_aura.gd"))
+		add_child(aura)
 
 func _setup_editor_visuals() -> void:
 	_setup_texture()

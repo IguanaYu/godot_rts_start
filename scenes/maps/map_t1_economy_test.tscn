@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://cg2igjmusi0dq" path="res://scripts/main.gd" id="main_script"]
 [ext_resource type="Resource" path="res://resources/map_t1_economy_test_config.tres" id="t1_config"]
+[ext_resource type="Script" path="res://scripts/systems_game/wave_manager.gd" id="wave_manager"]
 
 [sub_resource type="NavigationPolygon" id="NavPoly_T1"]
 vertices = PackedVector2Array(0, 0, 1500, 0, 1500, 1000, 0, 1000)
@@ -57,3 +58,7 @@ offset_bottom = 40.0
 theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
 theme_override_font_sizes/font_size = 20
 text = "Attack Move (Click)"
+
+[node name="WaveManager" type="Node" parent="."]
+script = ExtResource("wave_manager")
+clear_then_next = false

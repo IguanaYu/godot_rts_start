@@ -34,6 +34,60 @@ enemy_buildings = Array[Dictionary]( [
 
 environment = {"trees": 8, "rocks": 5, "bushes": 6, "sheep": 0}
 
+waves = Array[Dictionary]( [
+	{
+		"warning_time": 90.0,
+		"spawn_time": 120.0,
+		"spawn_pos": Vector2(1300, 500),
+		"spawn_pattern": "circle",
+		"spawn_radius": 80.0,
+		"wave_target": Vector2(200, 500),
+		"show_warning_marker": true,
+		"groups": [{"type": 5, "count": 3, "stats_id": &"soldier"}]
+	},
+	{
+		"warning_time": 210.0,
+		"spawn_time": 240.0,
+		"spawn_pos": Vector2(1300, 500),
+		"spawn_pattern": "circle",
+		"spawn_radius": 80.0,
+		"wave_target": Vector2(200, 500),
+		"show_warning_marker": true,
+		"groups": [
+			{"type": 5, "count": 4, "stats_id": &"soldier"},
+			{"type": 6, "count": 1, "stats_id": &"archer"}
+		]
+	},
+	{
+		"warning_time": 330.0,
+		"spawn_time": 360.0,
+		"spawn_pos": Vector2(1300, 500),
+		"spawn_pattern": "circle",
+		"spawn_radius": 100.0,
+		"wave_target": Vector2(200, 500),
+		"show_warning_marker": true,
+		"groups": [
+			{"type": 5, "count": 6, "stats_id": &"soldier"},
+			{"type": 6, "count": 2, "stats_id": &"archer"},
+			{"type": 5, "count": 1, "stats_id": &"elite_vanguard"}
+		]
+	},
+	{
+		"warning_time": 450.0,
+		"spawn_time": 480.0,
+		"spawn_pos": Vector2(1300, 500),
+		"spawn_pattern": "circle",
+		"spawn_radius": 120.0,
+		"wave_target": Vector2(200, 500),
+		"show_warning_marker": true,
+		"groups": [
+			{"type": 5, "count": 8, "stats_id": &"soldier"},
+			{"type": 6, "count": 3, "stats_id": &"archer"},
+			{"type": 5, "count": 2, "stats_id": &"elite_vanguard"}
+		]
+	}
+] )
+
 available_items = Array[int]( [] )
 
 terrain_theme = 0

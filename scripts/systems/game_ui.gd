@@ -453,6 +453,17 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	_tech_label.text = "Tech: 0"
 	res_vbox.add_child(_tech_label)
 
+	# PR-3：统一游戏时间 HUD（受加速影响，与波次时间对齐）
+	_time_label = Label.new()
+	_time_label.name = "GameTimeLabel"
+	_time_label.add_theme_font_size_override("font_size", 14)
+	_time_label.add_theme_color_override("font_color", Color(0.95, 0.95, 0.95))
+	_time_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	_time_label.add_theme_constant_override("shadow_offset_x", 1)
+	_time_label.add_theme_constant_override("shadow_offset_y", 1)
+	_time_label.text = "Time: 0:00"
+	res_vbox.add_child(_time_label)
+
 
 	# 升级币按钮
 	var upgrade_wrapper := Control.new()
@@ -583,11 +594,24 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 func _process(delta: float) -> void:
 	if _fps_label and _fps_label.visible:
 		_fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
+	# PR-3：统一游戏时间 HUD（每帧更新，跟 main._game_time 同步走加速）
+	if _time_label and _main_node and _main_node.has_method("get_game_time"):
+		var t: float = _main_node.get_game_time()
+		var m := int(t) / 60
+		var s := int(t) % 60
+		_time_label.text = "Time: %d:%02d" % [m, s]
 	# 信息面板定期刷新
 	_info_refresh_timer += delta
 	if _info_refresh_timer >= 0.33:
 		_info_refresh_timer = 0.0
 		_update_info_panel()
+
+
+## PR-3：暴露 MinimapPanel 引用给 main.gd（wave_warning_triggered 时打红点）
+func get_minimap() -> Node:
+	if _ui_canvas == null:
+		return null
+	return _ui_canvas.find_child("MinimapPanel", true, false)
 
 
 
@@ -1073,6 +1097,7 @@ func update_upgrade_tokens(tokens: Dictionary) -> void:
 
 var _tech_label: Label = null
 var _tech_level: int = 1
+var _time_label: Label = null
 
 func update_tech_level(level: int) -> void:
 	_tech_level = level

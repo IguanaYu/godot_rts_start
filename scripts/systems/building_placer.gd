@@ -152,15 +152,14 @@ static func reason_to_translation_key(r: int) -> StringName:
 	return &""
 
 
-## 已建造的某类型建筑数量（仅计 is_constructed=true 的玩家建筑）
+## 已建造的某类型建筑数量（建造中 + 已完成，玩家建筑）
+## 注意：建造中的也算入，避免快速连点绕过农场上限
 func _count_built(type: int) -> int:
 	var n := 0
 	for b in get_tree().get_nodes_in_group("player_buildings"):
 		if b.get("building_type") != type:
 			continue
 		if b.has_method("is_dead") and b.is_dead():
-			continue
-		if b.get("is_constructed") == false:
 			continue
 		n += 1
 	return n
