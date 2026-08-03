@@ -730,8 +730,7 @@ func _handle_number_key(key: int, event: InputEventKey) -> void:
 		var idx: int = key - KEY_1
 		if idx >= 0 and idx < ui_module.unit_modes_ordered.size():
 			var mode: int = ui_module.unit_modes_ordered[idx]
-			ui_module.switch_tab_for_mode(mode)
-			_on_place_mode_requested(mode)
+			_quick_produce_unit(mode)  # B1: 快捷键直接造，不进入放置模式
 		return
 
 	if input_mode.is_building_placement():
@@ -1318,6 +1317,32 @@ func _input(event: InputEvent) -> void:
 
 # --- 放置 ---
 
+# B1: 快捷键直接造兵（不进入放置模式）
+# 复用 check_build_block + _find_best_barracks + queue_unit，错误提示显示在鼠标位置
+func _quick_produce_unit(mode: int) -> void:
+	var click_pos: Vector2 = get_global_mouse_position()
+	var reason: int = building_placer.check_build_block(mode, click_pos)
+	if reason != BuildingPlacer.BuildBlockReason.OK:
+		var key := BuildingPlacer.reason_to_translation_key(reason)
+		if key != &"":
+			show_floating_text(tr(key), Color(1, 0.3, 0.3), click_pos)
+		return
+	var stats_id: StringName = D.PLACE_MODE_TO_STATS_ID.get(mode, &"")
+	var barracks := _find_best_barracks(click_pos)
+	if barracks == null:
+		show_floating_text(tr("NO_BARRACKS"), Color(1, 0.3, 0.3), click_pos)
+		return
+	if not barracks.queue_has_space():
+		show_floating_text(tr("QUEUE_FULL"), Color(1, 0.3, 0.3), barracks.global_position)
+		return
+	if not barracks.queue_unit(stats_id):
+		show_floating_text(tr("QUEUE_FULL"), Color(1, 0.3, 0.3), barracks.global_position)
+		return
+	var cost: int = building_placer.get_current_cost(mode)
+	gold -= cost
+	ui_module.update_gold_display(gold)
+
+
 func _do_place(click_pos: Vector2) -> void:
 	var place_mode: int = building_placer.get_place_mode()
 	var cost: int = building_placer.get_current_cost(place_mode)  # T1: 动态造价（农场递增）
@@ -1342,7 +1367,7 @@ func _do_place(click_pos: Vector2) -> void:
 	if D.is_unit_mode(place_mode):
 		# T1 PR-2: 单位入兵营队列，由 _production_process 在 cooldown 后 spawn
 		var stats_id: StringName = D.PLACE_MODE_TO_STATS_ID.get(place_mode, &"")
-		var barracks := _find_nearest_barracks(click_pos)
+		var barracks := _find_best_barracks(click_pos)  # B2: 智能选择（队列优先 + 800码虚拟+3）
 		if barracks == null:
 			show_floating_text(tr("NO_BARRACKS"), Color(1, 0.3, 0.3), click_pos)
 			return
@@ -1573,6 +1598,46 @@ func _find_nearest_barracks(pos: Vector2) -> Node:
 			nearest_dist = d
 			nearest = b
 	return nearest
+
+
+# B2: 智能选择兵营（队列短优先 + 800码外虚拟+3）
+# 标杆位置 = rally point 优先，fallback 玩家城堡
+func _find_best_barracks(click_pos: Vector2) -> Node:
+	var candidates: Array = []
+	for b in get_tree().get_nodes_in_group("player_buildings"):
+		if b.get("building_type") != BuildingScript.BuildingType.BARRACKS:
+			continue
+		if b.has_method("is_dead") and b.is_dead():
+			continue
+		if b.get("is_constructed") == false:
+			continue
+		if not b.queue_has_space():
+			continue
+		candidates.append(b)
+	if candidates.is_empty():
+		return null
+	# 标杆位置：rally point 优先，fallback 玩家城堡，再 fallback click_pos
+	var benchmark: Vector2
+	if has_global_rally:
+		benchmark = global_rally_point
+	elif player_castle != null:
+		benchmark = player_castle.global_position
+	else:
+		benchmark = click_pos
+	# 计算每个兵营的有效队列长度 + 距离鼠标
+	var scored: Array = []
+	for b in candidates:
+		var actual_queue: int = b.production_queue.size()
+		var dist_to_benchmark: float = b.global_position.distance_to(benchmark)
+		var effective_queue: int = actual_queue + (3 if dist_to_benchmark > 800.0 else 0)
+		var dist_to_click: float = b.global_position.distance_to(click_pos)
+		scored.append({"b": b, "eq": effective_queue, "dc": dist_to_click})
+	# 排序：effective_queue 升序 -> distance_to_click 升序
+	scored.sort_custom(func(a, b):
+		if a.eq != b.eq:
+			return a.eq < b.eq
+		return a.dc < b.dc)
+	return scored[0]["b"]
 
 
 # ============================================================

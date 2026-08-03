@@ -172,7 +172,8 @@ func check_build_block(mode: int, click_pos: Vector2 = Vector2.ZERO) -> BuildBlo
 		return BuildBlockReason.FARM_LIMIT
 	if bt == BuildingScript.BuildingType.BARRACKS and not _has_farm():
 		return BuildBlockReason.NEED_FARM
-	if click_pos != Vector2.ZERO and not is_in_buildable_area(click_pos, mode):
+	# 建造范围检查：仅建筑模式（单位从兵营 spawn，不受建造范围限制）
+	if click_pos != Vector2.ZERO and not D.is_unit_mode(mode) and not is_in_buildable_area(click_pos, mode):
 		return BuildBlockReason.OUT_OF_RANGE
 	return BuildBlockReason.OK
 
