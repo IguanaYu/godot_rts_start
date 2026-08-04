@@ -1433,6 +1433,12 @@ func _on_collisions_toggled(pressed: bool) -> void:
 	_save_setting("game", "show_collisions", pressed)
 
 
+func _on_build_range_toggled(pressed: bool) -> void:
+	if _main_node.get("building_placer"):
+		_main_node.building_placer.show_build_range = pressed
+	_save_setting("game", "show_build_range", pressed)
+
+
 func _on_resolution_selected(index: int) -> void:
 	var new_size := RESOLUTION_PRESETS[index]
 	if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_WINDOWED:
@@ -1684,6 +1690,20 @@ func _open_settings_page() -> void:
 	col_toggle.toggled.connect(_on_collisions_toggled)
 	col_row.add_child(col_toggle)
 	vbox.add_child(col_row)
+
+	# T1 D5: 显示建造范围（主基地 6 格圆环）
+	var build_row := HBoxContainer.new()
+	build_row.add_theme_constant_override("separation", 8)
+	var build_label := Label.new()
+	build_label.text = "UI_SHOW_BUILD_RANGE"
+	build_label.add_theme_font_size_override("font_size", 14)
+	build_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
+	build_row.add_child(build_label)
+	var build_toggle := CheckButton.new()
+	build_toggle.button_pressed = config.get_value("game", "show_build_range", false)
+	build_toggle.toggled.connect(_on_build_range_toggled)
+	build_row.add_child(build_toggle)
+	vbox.add_child(build_row)
 
 	# 鼠标灵敏度
 	var sens_val: float = config.get_value("gameplay", "camera_sensitivity", 1.0)
