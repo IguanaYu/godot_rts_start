@@ -9,7 +9,7 @@ const D := preload("res://scripts/systems/game_data.gd")
 const BuildingScript := preload("res://scripts/buildings/building.gd")
 
 # T1 PR-2: 建造阻挡原因（按 reason 决定 UI 灰显策略与 floating_text 文案）
-enum BuildBlockReason { OK, NO_GOLD, FARM_LIMIT, NEED_FARM, OUT_OF_RANGE, QUEUE_FULL }
+enum BuildBlockReason { OK, NO_GOLD, FARM_LIMIT, NEED_FARM, OUT_OF_RANGE, QUEUE_FULL, ERA_LOCKED }
 
 var place_mode: int = D.PlaceMode.NONE
 var show_grid: bool = false
@@ -163,6 +163,11 @@ func promote_captured_to_activated(position: Vector2) -> void:
 ## 检查当前是否可建造/生产。click_pos=ZERO 表示无位置概念（建造栏按钮态）。
 func check_build_block(mode: int, click_pos: Vector2 = Vector2.ZERO) -> BuildBlockReason:
 	var main_node := get_parent()
+	# T2 PR-1: 时代锁定检查（最高优先级，未解锁时直接拦截）
+	if main_node and main_node.get("unlocked_items") != null:
+		var unlocked: Array = main_node.get("unlocked_items")
+		if int(mode) not in unlocked:
+			return BuildBlockReason.ERA_LOCKED
 	var gold: int = int(main_node.get("gold")) if main_node and main_node.get("gold") != null else 0
 	var cost := get_current_cost(mode)
 	if gold < cost:
@@ -186,6 +191,7 @@ static func reason_to_translation_key(r: int) -> StringName:
 		BuildBlockReason.NEED_FARM:    return &"NEED_FARM"
 		BuildBlockReason.OUT_OF_RANGE: return &"OUT_OF_RANGE"
 		BuildBlockReason.QUEUE_FULL:   return &"QUEUE_FULL"
+		BuildBlockReason.ERA_LOCKED:   return &"ERA_LOCKED"
 	return &""
 
 

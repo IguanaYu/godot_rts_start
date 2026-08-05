@@ -271,7 +271,8 @@ func _setup_visuals() -> void:
 	hp_bar.offset_top += lift + sprite_offset_y
 	hp_bar.offset_bottom += lift + sprite_offset_y
 	# T1 PR-2: 兵营头顶挂队列 UI（仅玩家兵营）
-	if building_type == BuildingType.BARRACKS and team == Team.PLAYER:
+	# T2 PR-1: 靶场也走队列，加入列表
+	if (building_type == BuildingType.BARRACKS or building_type == BuildingType.ARCHERY) and team == Team.PLAYER:
 		_create_queue_indicator(pixel_size)
 
 func _setup_texture() -> void:
@@ -533,7 +534,8 @@ func _production_process(delta: float) -> void:
 			_production_circle.update_progress(production_timer / production_cooldown)
 		return
 	# T1 PR-2: BARRACKS 走队列 —— 队列空时归零 timer，不推进
-	if building_type == BuildingType.BARRACKS:
+	# T2 PR-1: 扩展到 ARCHERY/MONASTERY（之前埋的 bug——只 BARRACKS 走队列，靶场入队后无人处理）
+	if building_type == BuildingType.BARRACKS or building_type == BuildingType.ARCHERY or building_type == BuildingType.MONASTERY:
 		if production_queue.is_empty():
 			production_timer = 0.0
 			if _production_circle:
@@ -775,9 +777,9 @@ func _create_production_circle() -> void:
 	if production_cooldown <= 0.0:
 		return
 	# T1 PR-2: BARRACKS 重新启用生产圆圈（队列首单位进度，与 CASTLE/FARM 同款）
-	# MONASTERY/ARCHERY 仍不显示（PR-1 起不再自动产兵，且未提供玩家入队接口）
+	# T2 PR-1: ARCHERY 现在也走队列，加入显示列表；MONASTERY 仍不显示（未提供玩家入队接口）
 	match building_type:
-		BuildingType.MONASTERY, BuildingType.ARCHERY:
+		BuildingType.MONASTERY:
 			return
 	# 确定颜色
 	var fill_color := Color.WHITE
@@ -895,23 +897,42 @@ func _finish_construction() -> void:
 		build_bar = null
 	# T1 D14: 建造完成反还单位（如 BARRACKS 反 2 个 soldier）
 	_spawn_completion_refund_units()
+	# T2 PR-1: 建造完成反还金币（如 FARM 反 100 金）
+	_refund_gold_on_completion()
 	construction_finished.emit(self)
 
 
 # T1 D14: 建造完成时反还单位（building.gd 自调 spawn，职责清晰）
 func _spawn_completion_refund_units() -> void:
-	if building_stats == null or building_stats.completion_refund_unit == &"":
+	if building_stats == null:
+		return
+	if building_stats.completion_refund_unit == &"":
 		return
 	if building_stats.completion_refund_unit_count <= 0:
 		return
 	var main_node := get_tree().current_scene
 	if main_node == null or not main_node.get("spawner_module"):
 		return
-	# T1 阶段反还单位固定为 SOLDIER 类型（completion_refund_unit=&"soldier"）
-	# TODO: 后续扩展时建 STATS_ID_TO_UNIT_TYPE 映射替代硬编码
-	var unit_type: int = UnitScript.UnitType.SOLDIER
+	# T2 PR-1: 用 STATS_ID_TO_UNIT_TYPE 映射替代硬编码
 	var stats_id: StringName = building_stats.completion_refund_unit
+	var unit_type: int = D.STATS_ID_TO_UNIT_TYPE.get(stats_id, UnitScript.UnitType.SOLDIER)
 	for i in range(building_stats.completion_refund_unit_count):
 		# D15: 用 _find_valid_spawn_position 找空位，避免重叠/卡建筑/弹地图外
 		var spawn_pos := _find_valid_spawn_position(16.0)
 		main_node.spawner_module.place_player_unit(unit_type, spawn_pos, stats_id)
+
+
+# T2 PR-1: 建造完成时反还金币（如 FARM 反 100 金）
+func _refund_gold_on_completion() -> void:
+	if building_stats == null or building_stats.completion_refund <= 0:
+		return
+	var main_node := get_tree().current_scene
+	if main_node == null or not main_node.has_method("add_gold"):
+		return
+	var amount: int = building_stats.completion_refund
+	main_node.add_gold(amount)
+	# 金币飘字（复用 _produce_gold 的飘字模式）
+	var ft := Node2D.new()
+	ft.set_script(load("res://scripts/effects/floating_text.gd"))
+	main_node.add_child(ft)
+	ft.setup("+" + str(amount), Color(1.0, 0.85, 0.0), global_position + Vector2(0, -40))

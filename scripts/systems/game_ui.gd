@@ -1151,6 +1151,8 @@ func _update_button_affordability(current_gold: int) -> void:
 		if _main_node.get("building_placer"):
 			reason = _main_node.building_placer.check_build_block(mode)
 		var ok: bool = reason == BuildingPlacer.BuildBlockReason.OK
+		# T2 PR-1: ERA_LOCKED 单独分支（视觉灰显但按钮不 disable，让点击能触发"需要 T2 时代"飘字）
+		var era_locked: bool = reason == BuildingPlacer.BuildBlockReason.ERA_LOCKED
 		btn_wrapper.modulate.a = 1.0 if ok else 0.5
 		# T1 PR-2: 实时刷新右下角造价数字（农场递增时数字会变）
 		var cost_now: int = D.COSTS.get(mode, 0)
@@ -1161,7 +1163,12 @@ func _update_button_affordability(current_gold: int) -> void:
 			cl.text = str(cost_now)
 			var col := Color.WHITE
 			if not ok:
-				col = Color(1.0, 0.3, 0.3) if reason == BuildingPlacer.BuildBlockReason.NO_GOLD else Color(0.6, 0.6, 0.6)
+				if era_locked:
+					col = Color(0.6, 0.4, 0.8)  # 紫灰：时代锁定
+				elif reason == BuildingPlacer.BuildBlockReason.NO_GOLD:
+					col = Color(1.0, 0.3, 0.3)
+				else:
+					col = Color(0.6, 0.6, 0.6)
 			cl.add_theme_color_override("font_color", col)
 		# btn 是 wrapper 里的 Button 节点（鼠标响应层，可能不在最末位）
 		var btn: Button = null
@@ -1170,7 +1177,8 @@ func _update_button_affordability(current_gold: int) -> void:
 				btn = c
 				break
 		if btn != null:
-			btn.disabled = not ok
+			# T2 PR-1: 时代锁定时不 disable（让点击能触发拦截飘字），其他 reason 正常 disable
+			btn.disabled = not ok and not era_locked
 
 
 func update_wave_countdown(wave_number: int, remaining: float, total: int) -> void:

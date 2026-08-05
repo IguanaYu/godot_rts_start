@@ -24,7 +24,7 @@ const COSTS := {
 	PlaceMode.WALL: 50,
 	PlaceMode.TOWER: 150,
 	PlaceMode.SOLDIER: 50,
-	PlaceMode.ARCHER: 120,
+	PlaceMode.ARCHER: 100,
 	PlaceMode.CASTLE: 500,
 	PlaceMode.BARRACKS: 300,
 	PlaceMode.MONASTERY: 350,
@@ -60,6 +60,12 @@ const COSTS := {
 	PlaceMode.ENCHANTER: 150,
 	PlaceMode.FARM: 100,
 	PlaceMode.ALTAR_ARCHER: 350,
+}
+
+# T2 PR-1: stats_id → UnitType 映射，给 completion_refund_unit 用（替换 building.gd 硬编码）
+const STATS_ID_TO_UNIT_TYPE := {
+	&"soldier": UnitScript.UnitType.SOLDIER,
+	&"archer": UnitScript.UnitType.ARCHER,
 }
 
 # --- 显示名称（翻译键，使用时需 tr()） ---
@@ -368,6 +374,14 @@ const PLACE_MODE_TO_UNIT := {
 	PlaceMode.INQUISITOR: UnitScript.UnitType.ARCHER,
 	PlaceMode.NECROMANCER: UnitScript.UnitType.ARCHER,
 	PlaceMode.ENCHANTER: UnitScript.UnitType.SOLDIER,
+}
+
+# T2 PR-1: 单位 → 生产建筑类型（_find_best_barracks 用，默认回退 BARRACKS）
+const UNIT_TO_PRODUCER_TYPE := {
+	PlaceMode.SOLDIER: BuildingScript.BuildingType.BARRACKS,
+	PlaceMode.LANCER: BuildingScript.BuildingType.BARRACKS,
+	PlaceMode.ARCHER: BuildingScript.BuildingType.ARCHERY,
+	PlaceMode.MONK_UNIT: BuildingScript.BuildingType.MONASTERY,
 }
 
 # --- PlaceMode → stats_id 映射（变体单位） ---

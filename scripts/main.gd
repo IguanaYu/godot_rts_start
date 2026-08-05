@@ -82,6 +82,15 @@ var _distress_rescue_check_timer: float = 0.0
 # 统一游戏时间（吃 Engine.time_scale 加速）；波次/能量/HUD 都从这里取
 var _game_time: float = 0.0
 
+# T2 PR-1: 时代升级状态机（player_age=当前时代，1=T1；unlocked_items=已解锁的 PlaceMode 列表）
+var player_age: int = 1
+var unlocked_items: Array[int] = []
+var age_upgrade_timer: float = 0.0
+var age_upgrade_target: int = 0  # 0=未在升级中；2=正在升 T2
+var _last_upgrade_tick: int = -1  # 上次飘字进度秒数，防重复
+const AGE_UPGRADE_COST := {2: 500}
+const AGE_UPGRADE_TIME := {2: 15.0}
+
 func get_game_time() -> float:
 	return _game_time
 
@@ -119,6 +128,7 @@ func _run_init_steps() -> void:
 	LoadRouter.report_init_progress(0.20)
 	_load_from_config()
 	_apply_loadout_filter()  # 玩家战前编制 ∩ 关卡允许 = 实际可用
+	_init_unlocked_items()  # T2 PR-1: 初始化时代锁定列表（剔除 ARCHERY_RANGE + ARCHER）
 	_load_damage_number_setting()
 	_load_display_settings()
 	_load_brightness()
@@ -388,6 +398,9 @@ func _on_game_ended(result: String) -> void:
 	if _game_result_saved:
 		return
 	_game_result_saved = true
+	# T2 PR-1: 游戏结束时清理时代升级悬空状态
+	age_upgrade_target = 0
+	age_upgrade_timer = 0.0
 	if RelayManager.is_online:
 		_show_mp_result(result)
 		return
@@ -675,8 +688,28 @@ func _on_all_waves_completed() -> void:
 	ui_module.hide_wave_countdown()
 
 func _on_place_mode_requested(mode: int) -> void:
+	# T2 PR-1: 时代锁定拦截（按钮未 disable 时点击会触发此处）
+	if int(mode) not in unlocked_items:
+		_show_era_locked_hint(mode)
+		return
 	building_placer.enter_place_mode(mode)
 	combat_ctrl.set_attack_move_mode(false)
+
+
+# T2 PR-1: 时代锁定提示（在城堡头顶飘字"需要升级到 T2 时代"）
+func _show_era_locked_hint(mode: int) -> void:
+	var msg := tr("ERA_LOCKED_HINT")
+	if msg == "" or msg == "ERA_LOCKED_HINT":
+		msg = "需要升级到 T2 时代"
+	var pos := _castle_head_pos()
+	show_floating_text(msg, Color(1.0, 0.6, 0.6), pos)
+
+
+# T2 PR-1: 城堡头顶位置（飘字用），兜底屏幕中心
+func _castle_head_pos() -> Vector2:
+	if player_castle != null and is_instance_valid(player_castle):
+		return player_castle.global_position + Vector2(0, -60)
+	return Vector2(960, 540)
 
 
 func _on_selection_changed(units: Array) -> void:
@@ -1084,6 +1117,15 @@ func _process(delta: float) -> void:
 		var e_units := get_tree().get_nodes_in_group("enemy_units").size()
 		print("[PERF] fps=%d proc=%.1fms phys=%.1fms nodes=%d res=%d draw_calls=%d units=P%d/E%d" %
 			[fps, proc_ms, phys_ms, nodes, resources, draw_calls, p_units, e_units])
+	# T2 PR-1: 时代升级倒计时
+	if age_upgrade_target > 0:
+		age_upgrade_timer -= delta
+		var cur_tick: int = int(age_upgrade_timer)
+		if cur_tick != _last_upgrade_tick and cur_tick > 0 and cur_tick % 3 == 0:
+			show_floating_text("T%d 升级中: %ds" % [age_upgrade_target, cur_tick], Color(1.0, 0.85, 0.0), _castle_head_pos())
+			_last_upgrade_tick = cur_tick
+		if age_upgrade_timer <= 0:
+			_on_age_upgrade_complete()
 
 func _get_base_position() -> Vector2:
 	var buildings := get_tree().get_nodes_in_group("player_buildings")
@@ -1105,6 +1147,60 @@ func toggle_outpost_status_panels() -> void:
 	var mgr = get_node_or_null("OutpostCommanderManager")
 	if mgr != null and mgr.has_method("toggle_status_panels"):
 		mgr.toggle_status_panels()
+
+# T2 PR-1: 开始时代升级（金币不足/已在升级中则 return）
+func _start_age_upgrade() -> void:
+	if age_upgrade_target > 0:
+		return  # 已在升级中，由 _input 走取消分支
+	var target: int = player_age + 1
+	if target not in AGE_UPGRADE_COST:
+		return
+	var cost: int = AGE_UPGRADE_COST[target]
+	if gold < cost:
+		show_floating_text("金币不足（需要 %d）" % cost, Color(1.0, 0.4, 0.4), _castle_head_pos())
+		return
+	gold -= cost
+	ui_module.update_gold_display(gold)
+	age_upgrade_target = target
+	age_upgrade_timer = AGE_UPGRADE_TIME[target]
+	_last_upgrade_tick = -1
+	show_floating_text("开始升级到 T%d（%ds）" % [target, int(age_upgrade_timer)], Color(0.4, 1.0, 0.4), _castle_head_pos())
+
+
+# T2 PR-1: 取消时代升级（全额退款）
+func _cancel_age_upgrade() -> void:
+	if age_upgrade_target == 0:
+		return
+	var cost: int = AGE_UPGRADE_COST[age_upgrade_target]
+	gold += cost
+	ui_module.update_gold_display(gold)
+	age_upgrade_target = 0
+	age_upgrade_timer = 0.0
+	show_floating_text("升级已取消，退回 %d 金" % cost, Color(1.0, 0.85, 0.0), _castle_head_pos())
+
+
+# T2 PR-1: 时代升级完成（解锁 T2 内容 + 刷新建造栏）
+func _on_age_upgrade_complete() -> void:
+	var completed: int = age_upgrade_target
+	player_age = completed
+	age_upgrade_target = 0
+	age_upgrade_timer = 0.0
+	_unlock_age_items(completed)
+	show_floating_text("升级到 T%d 完成！" % completed, Color(0.4, 1.0, 0.4), _castle_head_pos())
+
+
+# T2 PR-1: 解锁对应时代的 PlaceMode（追加到 unlocked_items）+ 触发建造栏灰显刷新
+func _unlock_age_items(age: int) -> void:
+	var to_unlock: Array[int] = []
+	if age >= 2:
+		to_unlock = [D.PlaceMode.ARCHERY_RANGE, D.PlaceMode.ARCHER]
+	for mode in to_unlock:
+		var m: int = int(mode)
+		if m not in unlocked_items:
+			unlocked_items.append(m)
+	# 触发 _update_button_affordability 重新计算（按钮从紫灰变白）
+	ui_module.update_gold_display(gold)
+
 
 func _check_victory() -> void:
 	if _game_result_saved:
@@ -1283,6 +1379,12 @@ func _input(event: InputEvent) -> void:
 				cursor_manager.set_attack(input_mode.is_rally_placement())
 			KEY_S:
 				combat_ctrl.stop_selected()
+			KEY_U:
+				# T2 PR-1: 时代升级触发/取消（升级中按 U = 取消，全额退款）
+				if age_upgrade_target > 0:
+					_cancel_age_upgrade()
+				else:
+					_start_age_upgrade()
 			KEY_H:
 				combat_ctrl.hold_position_selected()
 			KEY_P:
@@ -1328,7 +1430,8 @@ func _quick_produce_unit(mode: int) -> void:
 			show_floating_text(tr(key), Color(1, 0.3, 0.3), click_pos)
 		return
 	var stats_id: StringName = D.PLACE_MODE_TO_STATS_ID.get(mode, &"")
-	var barracks := _find_best_barracks(click_pos)
+	var producer_type: int = D.UNIT_TO_PRODUCER_TYPE.get(mode, BuildingScript.BuildingType.BARRACKS)
+	var barracks := _find_best_barracks(click_pos, producer_type)
 	if barracks == null:
 		show_floating_text(tr("NO_BARRACKS"), Color(1, 0.3, 0.3), click_pos)
 		return
@@ -1367,7 +1470,8 @@ func _do_place(click_pos: Vector2) -> void:
 	if D.is_unit_mode(place_mode):
 		# T1 PR-2: 单位入兵营队列，由 _production_process 在 cooldown 后 spawn
 		var stats_id: StringName = D.PLACE_MODE_TO_STATS_ID.get(place_mode, &"")
-		var barracks := _find_best_barracks(click_pos)  # B2: 智能选择（队列优先 + 800码虚拟+3）
+		var producer_type: int = D.UNIT_TO_PRODUCER_TYPE.get(place_mode, BuildingScript.BuildingType.BARRACKS)
+		var barracks := _find_best_barracks(click_pos, producer_type)  # B2: 智能选择（队列优先 + 800码虚拟+3）
 		if barracks == null:
 			show_floating_text(tr("NO_BARRACKS"), Color(1, 0.3, 0.3), click_pos)
 			return
@@ -1544,6 +1648,8 @@ func _resolve_loadout() -> Array:
 		return [
 			D.PlaceMode.FARM, D.PlaceMode.TOWER, D.PlaceMode.BARRACKS,
 			D.PlaceMode.SOLDIER, D.PlaceMode.ARCHER,
+			# T2 PR-1: 加入靶场，让玩家在 T1 就能看到锁定按钮（紫灰），升级后亮起
+			D.PlaceMode.ARCHERY_RANGE,
 		]
 	var player_picked: Array = load_player_loadout()
 	var result: Array = []
@@ -1571,6 +1677,19 @@ func _apply_loadout_filter() -> void:
 		for mode in resolved:
 			typed.append(int(mode))
 		map_config.available_items = typed
+
+
+# T2 PR-1: 初始化 unlocked_items（T1 阶段：available_items 去掉 ARCHERY_RANGE + ARCHER）
+# 注意：时代升级时 _unlock_age_items() 会往里追加 T2 内容
+func _init_unlocked_items() -> void:
+	unlocked_items.clear()
+	var source: Array = D.ALL_ITEMS
+	if map_config != null and not map_config.available_items.is_empty():
+		source = map_config.available_items
+	for mode in source:
+		var m: int = int(mode)
+		if m != D.PlaceMode.ARCHERY_RANGE and m != D.PlaceMode.ARCHER:
+			unlocked_items.append(m)
 
 
 # T1 D10: 缓存玩家主基地（建造范围圆心；找不到则置 null，is_in_buildable_area 会返回 true 不阻拦）
@@ -1602,10 +1721,10 @@ func _find_nearest_barracks(pos: Vector2) -> Node:
 
 # B2: 智能选择兵营（队列短优先 + 800码外虚拟+3）
 # 标杆位置 = rally point 优先，fallback 玩家城堡
-func _find_best_barracks(click_pos: Vector2) -> Node:
+func _find_best_barracks(click_pos: Vector2, building_type: int = BuildingScript.BuildingType.BARRACKS) -> Node:
 	var candidates: Array = []
 	for b in get_tree().get_nodes_in_group("player_buildings"):
-		if b.get("building_type") != BuildingScript.BuildingType.BARRACKS:
+		if b.get("building_type") != building_type:
 			continue
 		if b.has_method("is_dead") and b.is_dead():
 			continue
