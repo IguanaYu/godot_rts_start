@@ -34,8 +34,11 @@ var _speed_button: Button
 var _speed_label: Label
 var _speed_wrapper: Control
 
+# T2 PR-3: 底部横排 UI 条
+var _bottom_bar: Control
+
 # 标签页
-var active_tab: int = 0  # 0=单位, 1=建筑, 2=信息
+var active_tab: int = 0  # T2 PR-3: 0=单位, 1=建筑, 2=据点（已移除 INFO tab）
 var tab_buttons: Array[Button] = []
 var unit_container: HBoxContainer
 var building_container: HBoxContainer
@@ -43,18 +46,8 @@ var outpost_container: HBoxContainer  # PR-4 据点建筑容器
 var unit_modes_ordered: Array = []      # 玩家选中的单位，按显示顺序
 var building_modes_ordered: Array = []  # 玩家选中的建筑，按显示顺序
 
-# 信息面板 (Info tab)
-var info_container: HBoxContainer
-var _info_count_label: Label
-var _info_hp_bar_bg: ColorRect
-var _info_hp_bar_fill: ColorRect
-var _info_hp_label: Label
-var _info_atk_label: Label
-var _info_spd_label: Label
-var _info_type_container: HBoxContainer
 var _tracked_units: Array = []
 var _tracked_building = null
-var _info_refresh_timer: float = 0.0
 
 # Tooltip
 var tooltip_panel: PanelContainer
@@ -212,6 +205,17 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	_main_node.add_child(canvas)
 	_ui_canvas = canvas
 
+	# T2 PR-3: 底部横排 UI 条（QW + 详情 + 小地图）
+	var bottom_bar := preload("res://scripts/ui/bottom_ui_bar.gd").new()
+	bottom_bar.name = "BottomUIBar"
+	bottom_bar.initialize(_main_node)
+	canvas.add_child(bottom_bar)
+	_bottom_bar = bottom_bar
+
+	# T2 PR-3: 给详情区段加 WoodTable 底板（小地图自带底板，不需要另加）
+	var detail_bg := _make_ninepatch(np_wood_table)
+	bottom_bar.add_detail_background(detail_bg)
+
 	# --- 获取并按固定顺序排序可用物品 ---
 	var available_items: Array = []
 	if map_config != null and not map_config.available_items.is_empty():
@@ -245,7 +249,8 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	panel_wrapper.offset_top = -140.0
 	panel_wrapper.offset_bottom = -8.0
 	panel_wrapper.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	canvas.add_child(panel_wrapper)
+	# T2 PR-3: 嵌入底部 UI 条左段
+	_bottom_bar.embed_qw_panel(panel_wrapper)
 
 	# WoodTable 九宫格底板
 	panel_bg = _make_ninepatch(np_wood_table)
@@ -291,113 +296,16 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	tab_row.add_child(build_tab)
 	tab_buttons.append(build_tab)
 
-	# 信息标签
-	var info_tab := Button.new()
-	info_tab.text = "TAB_INFO"
-	info_tab.custom_minimum_size = Vector2(100, 28)
-	info_tab.toggle_mode = true
-	info_tab.pressed.connect(func(): _switch_tab(2))
-	BF4.add_hover_anim_button(info_tab)
-	tab_row.add_child(info_tab)
-	tab_buttons.append(info_tab)
-
 	# PR-4 据点标签（占领前隐藏）
 	var outpost_tab := Button.new()
 	outpost_tab.text = "TAB_OUTPOST"
 	outpost_tab.custom_minimum_size = Vector2(100, 28)
 	outpost_tab.toggle_mode = true
-	outpost_tab.pressed.connect(func(): _switch_tab(3))
+	outpost_tab.pressed.connect(func(): _switch_tab(2))
 	BF4.add_hover_anim_button(outpost_tab)
 	outpost_tab.visible = false  # 默认隐藏，占领后 show_outpost_category() 显示
 	tab_row.add_child(outpost_tab)
 	tab_buttons.append(outpost_tab)
-
-	# --- 信息面板容器 (Info tab) ---
-	info_container = HBoxContainer.new()
-	info_container.add_theme_constant_override("separation", 24)
-	info_container.alignment = BoxContainer.ALIGNMENT_CENTER
-	info_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	info_container.visible = false
-	content.add_child(info_container)
-
-	# 左块: 数量 + 总HP条
-	var info_left := HBoxContainer.new()
-	info_left.add_theme_constant_override("separation", 8)
-	info_left.alignment = BoxContainer.ALIGNMENT_CENTER
-	info_left.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	info_container.add_child(info_left)
-
-	_info_count_label = Label.new()
-	_info_count_label.add_theme_font_size_override("font_size", 18)
-	_info_count_label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
-	_info_count_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
-	_info_count_label.add_theme_constant_override("shadow_offset_x", 1)
-	_info_count_label.add_theme_constant_override("shadow_offset_y", 1)
-	_info_count_label.text = ""
-	info_left.add_child(_info_count_label)
-
-	# HP条背景
-	var hp_bar_wrapper := Control.new()
-	hp_bar_wrapper.custom_minimum_size = Vector2(120, 14)
-	hp_bar_wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	info_left.add_child(hp_bar_wrapper)
-	_info_hp_bar_bg = ColorRect.new()
-	_info_hp_bar_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_info_hp_bar_bg.color = Color(0.2, 0.2, 0.2, 0.8)
-	_info_hp_bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hp_bar_wrapper.add_child(_info_hp_bar_bg)
-	_info_hp_bar_fill = ColorRect.new()
-	_info_hp_bar_fill.anchor_left = 0.0
-	_info_hp_bar_fill.anchor_right = 0.0
-	_info_hp_bar_fill.anchor_top = 0.0
-	_info_hp_bar_fill.anchor_bottom = 1.0
-	_info_hp_bar_fill.offset_left = 0.0
-	_info_hp_bar_fill.offset_right = 0.0
-	_info_hp_bar_fill.color = Color(0.2, 0.8, 0.2)
-	_info_hp_bar_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hp_bar_wrapper.add_child(_info_hp_bar_fill)
-
-	_info_hp_label = Label.new()
-	_info_hp_label.add_theme_font_size_override("font_size", 14)
-	_info_hp_label.add_theme_color_override("font_color", Color(0.8, 0.9, 1.0))
-	_info_hp_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
-	_info_hp_label.add_theme_constant_override("shadow_offset_x", 1)
-	_info_hp_label.add_theme_constant_override("shadow_offset_y", 1)
-	_info_hp_label.text = ""
-	info_left.add_child(_info_hp_label)
-
-	# 中块: ATK + SPD
-	var info_mid := HBoxContainer.new()
-	info_mid.add_theme_constant_override("separation", 16)
-	info_mid.alignment = BoxContainer.ALIGNMENT_CENTER
-	info_mid.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	info_container.add_child(info_mid)
-
-	_info_atk_label = Label.new()
-	_info_atk_label.add_theme_font_size_override("font_size", 14)
-	_info_atk_label.add_theme_color_override("font_color", Color(1, 0.6, 0.4))
-	_info_atk_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
-	_info_atk_label.add_theme_constant_override("shadow_offset_x", 1)
-	_info_atk_label.add_theme_constant_override("shadow_offset_y", 1)
-	_info_atk_label.text = ""
-	info_mid.add_child(_info_atk_label)
-
-	_info_spd_label = Label.new()
-	_info_spd_label.add_theme_font_size_override("font_size", 14)
-	_info_spd_label.add_theme_color_override("font_color", Color(0.5, 0.8, 1.0))
-	_info_spd_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
-	_info_spd_label.add_theme_constant_override("shadow_offset_x", 1)
-	_info_spd_label.add_theme_constant_override("shadow_offset_y", 1)
-	_info_spd_label.text = ""
-	info_mid.add_child(_info_spd_label)
-
-	# 右块: 分类型明细
-	_info_type_container = HBoxContainer.new()
-	_info_type_container.add_theme_constant_override("separation", 16)
-	_info_type_container.alignment = BoxContainer.ALIGNMENT_CENTER
-	_info_type_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	info_container.add_child(_info_type_container)
-
 
 	# --- 单位图标容器 ---
 	unit_container = HBoxContainer.new()
@@ -535,15 +443,11 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	_fps_label.visible = _main_node.show_fps
 	res_vbox.add_child(_fps_label)
 
-	# --- 小地图（右下角）---
+	# T2 PR-3: 小地图还原原造型（WoodTable 边框 + 固定尺寸），嵌入底部 UI 条右段
 	var minimap_wrapper := Control.new()
-	minimap_wrapper.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	minimap_wrapper.offset_left = -186
-	minimap_wrapper.offset_top = -186
-	minimap_wrapper.offset_right = -6
-	minimap_wrapper.offset_bottom = -6
-	canvas.add_child(minimap_wrapper)
-
+	minimap_wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 固定尺寸：172×172 内部小地图 + 7px 边距 × 2 = 186×186（CenterContainer 居中需要明确尺寸）
+	minimap_wrapper.custom_minimum_size = Vector2(186, 186)
 	var minimap_bg := _make_ninepatch(np_wood_table)
 	minimap_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	minimap_wrapper.add_child(minimap_bg)
@@ -559,15 +463,17 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	minimap_wrapper.add_child(minimap)
 	minimap.initialize(_main_node, _main_node.camera_module, _main_node.map_bounds)
 
+	_bottom_bar.embed_minimap(minimap_wrapper)
+
 	# 连接 ping 信号到小地图
 	AllyCommander.attack_order_issued.connect(_on_attack_ping.bind(minimap))
 	AllyCommander.defend_order_issued.connect(_on_defend_ping.bind(minimap))
 
-	# 将小地图区域注册为相机豁免区域
-	var mm_vp := _main_node.get_viewport().get_visible_rect().size
+	# T2 PR-3: 相机豁免区改为底部 UI 条
+	var vp := _main_node.get_viewport().get_visible_rect().size
 	if _main_node.camera_module != null:
 		_main_node.camera_module.ui_exclusion_rects.append(
-			Rect2(mm_vp.x - 186, mm_vp.y - 186, 180, 180)
+			Rect2(0, vp.y - 228, vp.x, 228)
 		)
 	# --- 倍速按钮（右上角，独立 canvas 确保不被遮挡）---
 	var speed_canvas := CanvasLayer.new()
@@ -622,11 +528,7 @@ func _process(delta: float) -> void:
 		var m := int(t) / 60
 		var s := int(t) % 60
 		_time_label.text = "Time: %d:%02d" % [m, s]
-	# 信息面板定期刷新
-	_info_refresh_timer += delta
-	if _info_refresh_timer >= 0.33:
-		_info_refresh_timer = 0.0
-		_update_info_panel()
+	# T2 PR-3: 信息面板已迁移到详情面板，不再需要定期刷新
 
 
 ## PR-3：暴露 MinimapPanel 引用给 main.gd（wave_warning_triggered 时打红点）
@@ -638,9 +540,9 @@ func get_minimap() -> Node:
 
 ## PR-4：据点占领后调用，显示据点分类 tab 按钮
 func show_outpost_category() -> void:
-	# tab_buttons 顺序: [0]unit [1]building [2]info [3]outpost
-	if tab_buttons.size() > 3:
-		tab_buttons[3].visible = true
+	# T2 PR-3: tab_buttons 顺序: [0]unit [1]building [2]outpost（已移除 INFO tab）
+	if tab_buttons.size() > 2:
+		tab_buttons[2].visible = true
 
 
 
@@ -809,12 +711,8 @@ func _switch_tab(tab_index: int) -> void:
 	active_tab = tab_index
 	unit_container.visible = (tab_index == 0)
 	building_container.visible = (tab_index == 1)
-	if info_container:
-		info_container.visible = (tab_index == 2)
-		if tab_index == 2:
-			_update_info_panel()
 	if outpost_container:
-		outpost_container.visible = (tab_index == 3)
+		outpost_container.visible = (tab_index == 2)
 	for i in range(tab_buttons.size()):
 		tab_buttons[i].button_pressed = (i == tab_index)
 	# 活动标签页按钮脉冲动画
@@ -917,12 +815,22 @@ func _on_icon_hover(mode: int) -> void:
 				break
 	tooltip_target_mode = mode
 	tooltip_timer.start()
+	# T2 PR-3: hover 时详情面板临时切换
+	if _bottom_bar != null:
+		var dp = _bottom_bar.get_detail_panel()
+		if dp != null:
+			dp.show_temporary_mode(mode)
 
 
 func _on_icon_unhover() -> void:
 	tooltip_timer.stop()
 	tooltip_panel.visible = false
 	tooltip_target_mode = -1
+	# T2 PR-3: 移开恢复
+	if _bottom_bar != null:
+		var dp = _bottom_bar.get_detail_panel()
+		if dp != null:
+			dp.restore_previous()
 
 
 func _show_tooltip() -> void:
@@ -954,21 +862,18 @@ func _show_tooltip() -> void:
 # 更新方法
 # ============================================================
 func update_selection_info(units: Array, building = null) -> void:
-	# 存储追踪数据供 info 面板使用
-	_tracked_units = units.duplicate()
-	_tracked_building = building
-	_info_refresh_timer = 0.0  # 立即刷新
-
-	# 有选中内容时自动切换到 Info 标签页
-	if not units.is_empty() or building != null:
-		if active_tab != 2:
-			_switch_tab(2)
-	else:
-		# 无选中时切回 Units 页
-		if active_tab == 2:
-			_switch_tab(0)
-
-	_update_info_panel()
+	# T2 PR-3: 转发给详情面板
+	if _bottom_bar != null:
+		var dp = _bottom_bar.get_detail_panel()
+		if dp != null:
+			if building != null:
+				dp.show_building(building)
+			elif units.size() == 1:
+				dp.show_unit(units[0])
+			elif units.size() > 1:
+				dp.show_units_multi(units)
+			elif units.is_empty():
+				dp.show_default()
 
 	# 旧的浮动标签（保留兼容）
 	if selection_info_label == null:
@@ -1000,111 +905,12 @@ func update_selection_info(units: Array, building = null) -> void:
 	for name_str in type_counts:
 		parts.append("%s x%d" % [name_str, type_counts[name_str]])
 	selection_info_label.text = " | ".join(parts) + "  (%d)" % units.size()
-	#selection_info_label.visible = true  # 暂时隐藏，后续按需恢复
+
 
 func update_gold_display(current_gold: int) -> void:
 	if gold_label:
 		gold_label.text = tr("UI_GOLD") % current_gold
 	_update_button_affordability(current_gold)
-
-
-func _update_info_panel() -> void:
-	if info_container == null:
-		return
-
-	# 清空右侧类型容器（用 free 立即释放，避免每帧累积导致 layout 越来越慢）
-	for c in _info_type_container.get_children():
-		_info_type_container.remove_child(c)
-		c.free()
-
-	# ---- 建筑选择 ----
-	if _tracked_building != null and is_instance_valid(_tracked_building) and not _tracked_building.is_dead():
-		var b = _tracked_building
-		info_container.visible = true
-		_info_count_label.text = tr("ENTITY_BUILDING")
-		var hp_ratio := float(b.health.hp) / float(b.health.max_hp) if b.health.max_hp > 0 else 0.0
-		_info_hp_bar_fill.color = Color(1.0 - hp_ratio * 0.8, 0.2 + hp_ratio * 0.6, 0.2)
-		_info_hp_bar_fill.size.x = _info_hp_bar_fill.get_parent().size.x * hp_ratio
-		_info_hp_label.text = "%d / %d" % [b.health.hp, b.health.max_hp]
-		_info_atk_label.text = ""
-		_info_spd_label.text = ""
-		return
-
-	# ---- 无选择 ----
-	if _tracked_units.is_empty():
-		info_container.visible = false
-		return
-
-	# ---- 单位选择 ----
-	info_container.visible = true
-	var total_hp := 0
-	var total_max_hp := 0
-	var total_atk := 0
-	var total_spd := 0.0
-	var type_counts := {}
-	var count := 0
-
-	for u in _tracked_units:
-		if not is_instance_valid(u) or u.is_dead():
-			continue
-		count += 1
-		if u.health:
-			total_hp += u.health.hp
-			total_max_hp += u.health.max_hp
-		if u.stat_set:
-			total_atk += u.stat_set.get_int(StatSetClass.ATTACK_DAMAGE)
-			total_spd += u.stat_set.get_value(StatSetClass.MOVE_SPEED)
-		var name_key := ""
-		match u.unit_type:
-			UnitScript.UnitType.SOLDIER: name_key = "ENTITY_SOLDIER"
-			UnitScript.UnitType.ARCHER: name_key = "ENTITY_ARCHER"
-			UnitScript.UnitType.LANCER: name_key = "ENTITY_LANCER"
-			UnitScript.UnitType.MONK: name_key = "ENTITY_MONK"
-		if not name_key.is_empty():
-			var name_str := tr(name_key)
-			type_counts[name_str] = type_counts.get(name_str, 0) + 1
-
-	# 数量
-	_info_count_label.text = "%d" % count
-
-	# HP 条
-	if total_max_hp > 0:
-		var hp_ratio := float(total_hp) / float(total_max_hp)
-		_info_hp_bar_fill.color = Color(1.0 - hp_ratio * 0.8, 0.2 + hp_ratio * 0.6, 0.2)
-		_info_hp_bar_fill.size.x = _info_hp_bar_fill.get_parent().size.x * hp_ratio
-	_info_hp_label.text = "%d / %d" % [total_hp, total_max_hp]
-
-	# ATK / SPD（平均值）— 注意：tr(...) 在翻译缺失时返回字面 key，无 % 占位符，会触发 String formatting error。
-	# 用 if count > 0 + 翻译存在性判断兜底。
-	if count > 0:
-		var atk_key := tr("UI_INFO_ATK")
-		var spd_key := tr("UI_INFO_SPD")
-		if atk_key.find("%") >= 0:
-			_info_atk_label.text = atk_key % int(total_atk / count)
-		else:
-			_info_atk_label.text = "ATK %d" % int(total_atk / count)
-		if spd_key.find("%") >= 0:
-			_info_spd_label.text = spd_key % (total_spd / count)
-		else:
-			_info_spd_label.text = "SPD %.0f" % (total_spd / count)
-	else:
-		_info_atk_label.text = ""
-		_info_spd_label.text = ""
-
-	# 右侧：分类型明细
-	for name_str in type_counts:
-		var lbl := Label.new()
-		lbl.text = "%s x%d" % [name_str, type_counts[name_str]]
-		lbl.add_theme_font_size_override("font_size", 14)
-		lbl.add_theme_color_override("font_color", Color(0.8, 0.9, 1.0))
-		lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
-		lbl.add_theme_constant_override("shadow_offset_x", 1)
-		lbl.add_theme_constant_override("shadow_offset_y", 1)
-		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_info_type_container.add_child(lbl)
-
-	# 清理已死亡的单位引用
-	_tracked_units = _tracked_units.filter(func(u): return is_instance_valid(u) and not u.is_dead())
 
 
 func update_upgrade_tokens(tokens: Dictionary) -> void:
