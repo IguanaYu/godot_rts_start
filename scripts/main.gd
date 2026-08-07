@@ -401,6 +401,9 @@ func _on_game_ended(result: String) -> void:
 	# T2 PR-1: 游戏结束时清理时代升级悬空状态
 	age_upgrade_target = 0
 	age_upgrade_timer = 0.0
+	# T2 PR-3: 隐藏城堡头顶进度条
+	if player_castle != null and is_instance_valid(player_castle):
+		player_castle.set_age_upgrade_progress(0.0)
 	if RelayManager.is_online:
 		_show_mp_result(result)
 		return
@@ -1124,6 +1127,11 @@ func _process(delta: float) -> void:
 		if cur_tick != _last_upgrade_tick and cur_tick > 0 and cur_tick % 3 == 0:
 			show_floating_text("T%d 升级中: %ds" % [age_upgrade_target, cur_tick], Color(1.0, 0.85, 0.0), _castle_head_pos())
 			_last_upgrade_tick = cur_tick
+		# T2 PR-3: 实时更新城堡头顶进度条
+		var total_t: float = AGE_UPGRADE_TIME[age_upgrade_target]
+		var ratio: float = 1.0 - clampf(age_upgrade_timer / total_t, 0.0, 1.0)
+		if player_castle != null and is_instance_valid(player_castle):
+			player_castle.set_age_upgrade_progress(ratio)
 		if age_upgrade_timer <= 0:
 			_on_age_upgrade_complete()
 
@@ -1164,6 +1172,9 @@ func _start_age_upgrade() -> void:
 	age_upgrade_target = target
 	age_upgrade_timer = AGE_UPGRADE_TIME[target]
 	_last_upgrade_tick = -1
+	# T2 PR-3: 显示城堡头顶进度条（0% 起步）
+	if player_castle != null and is_instance_valid(player_castle):
+		player_castle.set_age_upgrade_progress(0.001)
 	show_floating_text("开始升级到 T%d（%ds）" % [target, int(age_upgrade_timer)], Color(0.4, 1.0, 0.4), _castle_head_pos())
 
 
@@ -1176,6 +1187,9 @@ func _cancel_age_upgrade() -> void:
 	ui_module.update_gold_display(gold)
 	age_upgrade_target = 0
 	age_upgrade_timer = 0.0
+	# T2 PR-3: 隐藏城堡头顶进度条
+	if player_castle != null and is_instance_valid(player_castle):
+		player_castle.set_age_upgrade_progress(0.0)
 	show_floating_text("升级已取消，退回 %d 金" % cost, Color(1.0, 0.85, 0.0), _castle_head_pos())
 
 
@@ -1185,6 +1199,9 @@ func _on_age_upgrade_complete() -> void:
 	player_age = completed
 	age_upgrade_target = 0
 	age_upgrade_timer = 0.0
+	# T2 PR-3: 隐藏城堡头顶进度条
+	if player_castle != null and is_instance_valid(player_castle):
+		player_castle.set_age_upgrade_progress(0.0)
 	_unlock_age_items(completed)
 	show_floating_text("升级到 T%d 完成！" % completed, Color(0.4, 1.0, 0.4), _castle_head_pos())
 

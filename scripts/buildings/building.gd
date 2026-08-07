@@ -94,6 +94,9 @@ var _repair_accumulator: float = 0.0
 # 生产圆圈
 var _production_circle: Node2D = null
 
+# T2 PR-3: 时代升级进度条（仅玩家城堡使用，独立于产兵圆圈）
+var _age_upgrade_bar: ProgressBar = null
+
 signal died(building)
 signal damaged(amount, attacker)
 signal construction_finished(building)
@@ -798,6 +801,50 @@ func _create_production_circle() -> void:
 	_production_circle.set_script(load("res://scripts/effects/production_circle.gd"))
 	add_child(_production_circle)
 	_production_circle.setup(fill_color, y_offset)
+	# T2 PR-3: 玩家城堡额外创建时代升级进度条（默认隐藏，升级时由 main.gd 调用 set_age_upgrade_progress）
+	if building_type == BuildingType.CASTLE and team == Team.PLAYER:
+		_create_age_upgrade_bar()
+
+
+# T2 PR-3: 创建时代升级进度条（HP 条上方 28px，避开产兵圆圈 y=-12，金色填充）
+func _create_age_upgrade_bar() -> void:
+	_age_upgrade_bar = ProgressBar.new()
+	_age_upgrade_bar.max_value = 1.0
+	_age_upgrade_bar.value = 0.0
+	_age_upgrade_bar.show_percentage = false
+	_age_upgrade_bar.visible = false
+	_age_upgrade_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 宽度比 HP 条窄 20%，居中
+	var bar_width := (hp_bar.offset_right - hp_bar.offset_left) * 0.8
+	_age_upgrade_bar.offset_left = -bar_width / 2.0
+	_age_upgrade_bar.offset_right = bar_width / 2.0
+	# 位置：HP 条上方 28px（避开产兵圆圈 y=-12，给飘字留空间）
+	_age_upgrade_bar.offset_top = hp_bar.offset_top - 28.0
+	_age_upgrade_bar.offset_bottom = hp_bar.offset_top - 22.0
+	# 暗底 + 金色填充 + 金色细边
+	var bg_style := StyleBoxFlat.new()
+	bg_style.bg_color = Color(0.1, 0.1, 0.15, 0.85)
+	bg_style.set_corner_radius_all(2)
+	bg_style.set_border_width_all(1)
+	bg_style.border_color = Color(1.0, 0.85, 0.0, 0.6)
+	_age_upgrade_bar.add_theme_stylebox_override("background", bg_style)
+	var fill_style := StyleBoxFlat.new()
+	fill_style.bg_color = Color(1.0, 0.85, 0.0)
+	fill_style.set_corner_radius_all(2)
+	_age_upgrade_bar.add_theme_stylebox_override("fill", fill_style)
+	add_child(_age_upgrade_bar)
+
+
+# T2 PR-3: 设置时代升级进度（ratio 0~1，<=0 隐藏，>0 显示并更新；由 main.gd 升级流程调用）
+func set_age_upgrade_progress(ratio: float) -> void:
+	if _age_upgrade_bar == null or not is_instance_valid(_age_upgrade_bar):
+		return
+	var r := clampf(ratio, 0.0, 1.0)
+	if r <= 0.0:
+		_age_upgrade_bar.visible = false
+		return
+	_age_upgrade_bar.visible = true
+	_age_upgrade_bar.value = r
 
 func take_damage(amount: int, attacker = null) -> void:
 	if Engine.is_editor_hint():
