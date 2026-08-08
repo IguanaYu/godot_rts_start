@@ -212,12 +212,12 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	var bottom_bar := preload("res://scripts/ui/bottom_ui_bar.gd").new()
 	bottom_bar.name = "BottomUIBar"
 	bottom_bar.initialize(_main_node)
+	# UI Revamp P1: 统一 WoodTable 背景（覆盖整条底部），替代三段独立底板
+	bottom_bar.set_unified_background(np_wood_table)
 	canvas.add_child(bottom_bar)
 	_bottom_bar = bottom_bar
-
-	# T2 PR-3: 给详情区段加 WoodTable 底板（小地图自带底板，不需要另加）
-	var detail_bg := _make_ninepatch(np_wood_table)
-	bottom_bar.add_detail_background(detail_bg)
+	# panel_bg 引用迁移到统一背景，供 set_build_panel_highlight() 使用
+	panel_bg = bottom_bar.get_unified_background()
 
 	# --- 获取并按固定顺序排序可用物品 ---
 	var available_items: Array = []
@@ -255,10 +255,7 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	# T2 PR-3: 嵌入底部 UI 条左段
 	_bottom_bar.embed_qw_panel(panel_wrapper)
 
-	# WoodTable 九宫格底板
-	panel_bg = _make_ninepatch(np_wood_table)
-	panel_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	panel_wrapper.add_child(panel_bg)
+	# UI Revamp P1: QW 段不再单独加 WoodTable 底板，由 bottom_bar 统一背景提供
 
 	# 内容区域
 	var content := VBoxContainer.new()
@@ -446,14 +443,12 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	_fps_label.visible = _main_node.show_fps
 	res_vbox.add_child(_fps_label)
 
-	# T2 PR-3: 小地图还原原造型（WoodTable 边框 + 固定尺寸），嵌入底部 UI 条右段
+	# T2 PR-3: 小地图还原原造型（固定尺寸 + 内部细描边），嵌入底部 UI 条右段
+	# UI Revamp P1: 移除独立 WoodTable 底板，由 bottom_bar 统一背景提供木质衬底
 	var minimap_wrapper := Control.new()
 	minimap_wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# 固定尺寸：172×172 内部小地图 + 7px 边距 × 2 = 186×186（CenterContainer 居中需要明确尺寸）
 	minimap_wrapper.custom_minimum_size = Vector2(186, 186)
-	var minimap_bg := _make_ninepatch(np_wood_table)
-	minimap_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	minimap_wrapper.add_child(minimap_bg)
 
 	var minimap := Control.new()
 	minimap.set_script(preload("res://scripts/ui/minimap_panel.gd"))
@@ -777,7 +772,7 @@ func show_army_selected_feedback(count: int) -> void:
 	label.offset_bottom = -155.0
 	label.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_font_size_override("font_size", 16)
 	label.add_theme_color_override("font_color", Color(0.3, 0.7, 1.0))
 	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
 	label.add_theme_constant_override("shadow_offset_x", 1)
@@ -1089,7 +1084,7 @@ func _make_styled_button(text: String, min_size: Vector2, callback: Callable) ->
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_font_size_override("font_size", 16)
 	label.add_theme_color_override("font_color", Color(1, 1, 1))
 	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
 	label.add_theme_constant_override("shadow_offset_x", 1)
@@ -1600,7 +1595,7 @@ func _make_section_label(text: String) -> Label:
 	var label := Label.new()
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_font_size_override("font_size", 16)
 	label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
 	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
 	label.add_theme_constant_override("shadow_offset_x", 1)
@@ -1716,7 +1711,7 @@ func _open_keybinds_page() -> void:
 		var key_index: int = (key - KEY_1 + 1) if key != KEY_0 else 0
 		var key_label := Label.new()
 		key_label.text = str(key_index)
-		key_label.add_theme_font_size_override("font_size", 18)
+		key_label.add_theme_font_size_override("font_size", 16)
 		key_label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
 		key_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.4))
 		key_label.add_theme_constant_override("shadow_offset_x", 1)

@@ -115,7 +115,7 @@ func _setup_ui_overlay() -> void:
 
 	var title := Label.new()
 	title.text = "小地图测试场景"
-	title.theme_override_font_sizes/font_size = 18
+	title.theme_override_font_sizes/font_size = 22
 	vbox.add_child(title)
 
 	var sep := HSeparator.new()

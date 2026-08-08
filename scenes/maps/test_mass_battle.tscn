@@ -70,7 +70,7 @@ offset_top = 10.0
 offset_right = 800.0
 offset_bottom = 80.0
 theme_override_colors/font_color = Color(0.4, 0.7, 1, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 22
 text = "Mass Battle 30v30 — soldier/archer/lancer 混合，自动 attack-move 到中点"
 
 [node name="AttackMoveIndicator" type="Label" parent="."]
@@ -80,7 +80,7 @@ offset_top = 10.0
 offset_right = 200.0
 offset_bottom = 40.0
 theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 22
 text = "Attack Move (Click)"
 
 [node name="PlayerSpawner" type="Node" parent="."]

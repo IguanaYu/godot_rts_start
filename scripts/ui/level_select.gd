@@ -649,7 +649,7 @@ func _create_right_panel(parent: HBoxContainer) -> void:
 	# 4) 描述文字
 	right_desc = Label.new()
 	right_desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	right_desc.add_theme_font_size_override("font_size", 18)
+	right_desc.add_theme_font_size_override("font_size", 16)
 	right_desc.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
 	right_desc.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.5))
 	right_desc.add_theme_constant_override("shadow_offset_x", 1)
@@ -800,7 +800,7 @@ func _create_difficulty_selector(parent: VBoxContainer) -> void:
 		var label := Label.new()
 		label.text = tr("DIFFICULTY_LABEL")
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		label.add_theme_font_size_override("font_size", 18)
+		label.add_theme_font_size_override("font_size", 16)
 		label.add_theme_color_override("font_color", Color(1, 0.95, 0.8))
 		label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.5))
 		label.add_theme_constant_override("shadow_offset_x", 1)
@@ -1239,7 +1239,7 @@ func _show_esc_menu() -> void:
 	resume_label.text = tr("ESC_RESUME")
 	resume_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	resume_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	resume_label.add_theme_font_size_override("font_size", 18)
+	resume_label.add_theme_font_size_override("font_size", 16)
 	resume_label.add_theme_color_override("font_color", Color(1, 1, 1))
 	resume_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
 	resume_label.add_theme_constant_override("shadow_offset_x", 1)

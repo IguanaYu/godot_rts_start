@@ -70,7 +70,7 @@ func _create_panel() -> void:
 	var title := Label.new()
 	title.text = "Info"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 13)
+	title.add_theme_font_size_override("font_size", 14)
 	title.add_theme_color_override("font_color", Color(1, 0.85, 0))
 	title.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -97,7 +97,7 @@ func _create_panel() -> void:
 	var wave_section := Label.new()
 	wave_section.text = "WAVES"
 	wave_section.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	wave_section.add_theme_font_size_override("font_size", 11)
+	wave_section.add_theme_font_size_override("font_size", 12)
 	wave_section.add_theme_color_override("font_color", Color(0.33, 0.33, 0.33))
 	_body_container.add_child(wave_section)
 
@@ -114,7 +114,7 @@ func _create_panel() -> void:
 	var obj_section := Label.new()
 	obj_section.text = "OBJECTIVES"
 	obj_section.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	obj_section.add_theme_font_size_override("font_size", 11)
+	obj_section.add_theme_font_size_override("font_size", 12)
 	obj_section.add_theme_color_override("font_color", Color(0.33, 0.33, 0.33))
 	_body_container.add_child(obj_section)
 
@@ -200,7 +200,7 @@ func _update_objectives() -> void:
 		if not progress.is_empty():
 			var progress_label := Label.new()
 			progress_label.text = "  " + progress
-			progress_label.add_theme_font_size_override("font_size", 10)
+			progress_label.add_theme_font_size_override("font_size", 12)
 			progress_label.modulate = Color(0.53, 0.53, 0.53)
 			_obj_container.add_child(progress_label)
 			_objective_labels.append(progress_label)
@@ -276,7 +276,7 @@ func _create_wave_row(wave_number: int) -> HBoxContainer:
 
 	var time_label := Label.new()
 	time_label.text = ""
-	time_label.add_theme_font_size_override("font_size", 11)
+	time_label.add_theme_font_size_override("font_size", 12)
 	time_label.add_theme_color_override("font_color", Color(0.53, 0.53, 0.53))
 	row.add_child(time_label)
 	row.set_meta("time_label", time_label)

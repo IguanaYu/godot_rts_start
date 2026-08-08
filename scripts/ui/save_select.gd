@@ -217,7 +217,7 @@ func _create_slot_card(index: int) -> Control:
 
 	# 名称
 	var name_label := Label.new()
-	name_label.add_theme_font_size_override("font_size", 18)
+	name_label.add_theme_font_size_override("font_size", 16)
 	name_label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
 	name_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.5))
 	name_label.add_theme_constant_override("shadow_offset_x", 1)
@@ -249,7 +249,7 @@ func _create_slot_card(index: int) -> Control:
 
 	# 元数据
 	var meta_label := Label.new()
-	meta_label.add_theme_font_size_override("font_size", 13)
+	meta_label.add_theme_font_size_override("font_size", 14)
 	meta_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.75))
 	meta_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.3))
 	meta_label.add_theme_constant_override("shadow_offset_x", 1)
@@ -655,7 +655,7 @@ func _show_esc_menu() -> void:
 	resume_label.text = tr("ESC_RESUME")
 	resume_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	resume_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	resume_label.add_theme_font_size_override("font_size", 18)
+	resume_label.add_theme_font_size_override("font_size", 16)
 	resume_label.add_theme_color_override("font_color", Color(1, 1, 1))
 	resume_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
 	resume_label.add_theme_constant_override("shadow_offset_x", 1)

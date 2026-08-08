@@ -170,7 +170,7 @@ func _build_ui():
 
 	# Selected map display
 	_selected_map_label = Label.new()
-	_selected_map_label.add_theme_font_size_override("font_size", 18)
+	_selected_map_label.add_theme_font_size_override("font_size", 22)
 	_selected_map_label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
 	_selected_map_label.anchor_left = 0.15
 	_selected_map_label.anchor_right = 0.85

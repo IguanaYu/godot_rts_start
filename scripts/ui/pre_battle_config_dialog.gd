@@ -131,7 +131,7 @@ func _build_ui() -> void:
 
 	_hint_label = Label.new()
 	_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_hint_label.add_theme_font_size_override("font_size", 11)
+	_hint_label.add_theme_font_size_override("font_size", 12)
 	_hint_label.add_theme_color_override("font_color", Color(0.65, 0.65, 0.65))
 	info_row.add_child(_hint_label)
 
@@ -408,7 +408,7 @@ func _create_card_generic(item_id: int, name_text: String, desc_text: String,
 
 	var desc_label := Label.new()
 	desc_label.text = desc_text
-	desc_label.add_theme_font_size_override("font_size", 11)
+	desc_label.add_theme_font_size_override("font_size", 12)
 	desc_label.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
 	text_box.add_child(desc_label)
 
@@ -419,7 +419,7 @@ func _create_card_generic(item_id: int, name_text: String, desc_text: String,
 	badge.custom_minimum_size = Vector2(28, 0)
 	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	badge.add_theme_font_size_override("font_size", 18)
+	badge.add_theme_font_size_override("font_size", 16)
 	badge.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
 	badge.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.7))
 	hbox.add_child(badge)

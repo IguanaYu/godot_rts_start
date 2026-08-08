@@ -215,7 +215,7 @@ func _create_skill_button(skill_id: int, container: HBoxContainer, slot_index: i
 	else:
 		cost_label.text = "$%d" % cost
 		cost_label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
-	cost_label.add_theme_font_size_override("font_size", 10)
+	cost_label.add_theme_font_size_override("font_size", 12)
 	cost_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	cost_label.add_theme_constant_override("shadow_offset_x", 1)
 	cost_label.add_theme_constant_override("shadow_offset_y", 1)
@@ -386,7 +386,7 @@ func _create_tooltip() -> void:
 	_ui_canvas.add_child(tooltip_panel)
 
 	tooltip_label = Label.new()
-	tooltip_label.add_theme_font_size_override("font_size", 13)
+	tooltip_label.add_theme_font_size_override("font_size", 14)
 	tooltip_label.add_theme_color_override("font_color", Color(1, 1, 1))
 	tooltip_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tooltip_panel.add_child(tooltip_label)

@@ -139,7 +139,7 @@ offset_top = 10.0
 offset_right = 900.0
 offset_bottom = 80.0
 theme_override_colors/font_color = Color(0.4, 0.7, 1, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 22
 text = "Outpost 主动出击测试 — 1 攻击型(agg=0.8)指挥官 + 5 圈内单位 + 4 圈内建筑。玩家不主动进攻(无 spawner)。预期 60s+ 后：attack 策略 + inspire 法术。"
 
 [node name="AttackMoveIndicator" type="Label" parent="."]
@@ -149,7 +149,7 @@ offset_top = 10.0
 offset_right = 200.0
 offset_bottom = 40.0
 theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 22
 text = "Attack Move (Click)"
 
 [node name="OutpostCommanderAgg" type="Node2D" parent="."]

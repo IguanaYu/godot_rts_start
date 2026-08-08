@@ -58,7 +58,7 @@ func _ready() -> void:
 	_info_label.name = "InfoLabel"
 	_info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_info_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	_info_label.add_theme_font_size_override("font_size", 13)
+	_info_label.add_theme_font_size_override("font_size", 14)
 	_info_label.add_theme_color_override("font_color", Color.WHITE)
 	_info_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
 	_info_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.95))
