@@ -41,6 +41,7 @@ var commander_skill_manager: Node
 var commander_skill_panel: Node
 var upgrade_manager: Node
 var upgrade_panel: Node
+var unit_upgrade_manager: Node
 var tech_point_manager: Node = null
 var _available_skills: Array = []
 
@@ -255,6 +256,12 @@ func _run_init_steps() -> void:
 	upgrade_manager.initialize(self)
 	upgrade_manager.set_spawner(spawner_module)
 	spawner_module.set_upgrade_manager(upgrade_manager)
+	# T2 PR-4: 兵种全局升级（金币购买）
+	unit_upgrade_manager = Node.new()
+	unit_upgrade_manager.set_script(load("res://scripts/upgrade/unit_upgrade_manager.gd"))
+	add_child(unit_upgrade_manager)
+	unit_upgrade_manager.initialize(self)
+	spawner_module.set_unit_upgrade_manager(unit_upgrade_manager)
 	upgrade_panel = Node.new()
 	upgrade_panel.set_script(load("res://scripts/upgrade/upgrade_panel.gd"))
 	add_child(upgrade_panel)
@@ -1328,6 +1335,9 @@ func _input(event: InputEvent) -> void:
 					elif building_placer.get_place_mode() != D.PlaceMode.NONE:
 						_do_place(get_global_mouse_position())
 					else:
+						# 点击落在 UI 控件上 → 跳过地图选中（修复点面板按钮跳回默认视图）
+						if get_viewport().gui_get_hovered_control() != null:
+							return
 						# 双击检测
 						var now := Time.get_ticks_msec() / 1000.0
 						var click_pos := get_global_mouse_position()
@@ -1438,29 +1448,30 @@ func _input(event: InputEvent) -> void:
 
 # B1: 快捷键直接造兵（不进入放置模式）
 # 复用 check_build_block + _find_best_barracks + queue_unit，错误提示显示在鼠标位置
-func _quick_produce_unit(mode: int) -> void:
+func _quick_produce_unit(mode: int) -> bool:
 	var click_pos: Vector2 = get_global_mouse_position()
 	var reason: int = building_placer.check_build_block(mode, click_pos)
 	if reason != BuildingPlacer.BuildBlockReason.OK:
 		var key := BuildingPlacer.reason_to_translation_key(reason)
 		if key != &"":
 			show_floating_text(tr(key), Color(1, 0.3, 0.3), click_pos)
-		return
+		return false
 	var stats_id: StringName = D.PLACE_MODE_TO_STATS_ID.get(mode, &"")
 	var producer_type: int = D.UNIT_TO_PRODUCER_TYPE.get(mode, BuildingScript.BuildingType.BARRACKS)
 	var barracks := _find_best_barracks(click_pos, producer_type)
 	if barracks == null:
 		show_floating_text(tr("NO_BARRACKS"), Color(1, 0.3, 0.3), click_pos)
-		return
+		return false
 	if not barracks.queue_has_space():
 		show_floating_text(tr("QUEUE_FULL"), Color(1, 0.3, 0.3), barracks.global_position)
-		return
+		return false
 	if not barracks.queue_unit(stats_id):
 		show_floating_text(tr("QUEUE_FULL"), Color(1, 0.3, 0.3), barracks.global_position)
-		return
+		return false
 	var cost: int = building_placer.get_current_cost(mode)
 	gold -= cost
 	ui_module.update_gold_display(gold)
+	return true
 
 
 func _do_place(click_pos: Vector2) -> void:

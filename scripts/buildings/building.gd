@@ -97,6 +97,11 @@ var _production_circle: Node2D = null
 # T2 PR-3: 时代升级进度条（仅玩家城堡使用，独立于产兵圆圈）
 var _age_upgrade_bar: ProgressBar = null
 
+# T2 PR-4: 全局升级 mult（building_stats 是共享 Resource 不能改，用实例裸字段）
+var gold_production_mult: float = 1.0
+var max_hp_mult: float = 1.0
+var _base_max_hp: int = 0
+
 signal died(building)
 signal damaged(amount, attacker)
 signal construction_finished(building)
@@ -204,12 +209,12 @@ func _apply_commander_building_stats(fallback_max_hp: int) -> void:
 	if Engine.is_editor_hint():
 		# 编辑器模式：CommanderContext 未就绪，用 fallback 硬编码值
 		if health and fallback_max_hp > 0:
-			health.setup(int(fallback_max_hp * bal_hp_mult), hp_bar, team)
+			_setup_health(int(fallback_max_hp * bal_hp_mult))
 		return
 	var sid: StringName = CommanderContext.get_default_building_stats_id(int(building_type), alliance_id)
 	if sid == &"" or not BuildingStatsRegistry.has_id(sid):
 		if health and fallback_max_hp > 0:
-			health.setup(int(fallback_max_hp * bal_hp_mult), hp_bar, team)
+			_setup_health(int(fallback_max_hp * bal_hp_mult))
 		return
 	var stats = BuildingStatsRegistry.get_by_id(sid)
 	building_stats = stats
@@ -230,10 +235,32 @@ func _apply_commander_building_stats(fallback_max_hp: int) -> void:
 	aura_type = stats.aura_type
 	aura_value = stats.aura_value
 	if health:
-		health.setup(int(max_hp * bal_hp_mult), hp_bar, team)
+		_setup_health(int(max_hp * bal_hp_mult))
 	# 应用指挥官变体 tint（WHITE = 不变）
 	if body_sprite and stats.tint != Color.WHITE:
 		body_sprite.modulate = stats.tint
+
+func _setup_health(base_max_hp: int) -> void:
+	_base_max_hp = base_max_hp
+	if health:
+		health.setup(int(base_max_hp * max_hp_mult), hp_bar, team)
+
+# T2 PR-4: 全局升级接入（unit_upgrade_manager 调用）
+func apply_gold_mult(mult: float) -> void:
+	gold_production_mult = mult
+
+func apply_max_hp_mult(mult: float) -> void:
+	max_hp_mult = mult
+	if health == null or _base_max_hp <= 0:
+		return
+	var old_max: int = health.max_hp
+	var new_max: int = int(_base_max_hp * max_hp_mult)
+	health.max_hp = new_max
+	if health.hp_bar:
+		health.hp_bar.max_value = new_max
+	var delta: int = new_max - old_max
+	if delta > 0:
+		health.hp = mini(health.hp + delta, new_max)
 
 func _setup_editor_visuals() -> void:
 	_setup_texture()
@@ -691,6 +718,8 @@ func _produce_gold() -> void:
 	var amount: int = 30
 	if building_stats and building_stats.gold_production_amount > 0:
 		amount = building_stats.gold_production_amount
+	# T2 PR-4: 农场科技加成
+	amount = int(amount * gold_production_mult)
 	var main_node := get_tree().current_scene
 	if main_node and main_node.has_method("add_gold"):
 		main_node.add_gold(amount)

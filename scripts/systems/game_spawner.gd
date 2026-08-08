@@ -13,6 +13,7 @@ var _enemy_units_node: Node2D
 var _buildings_node: Node2D
 var _diff_preset: Resource = null  # DifficultyPreset
 var _upgrade_manager: Node = null  # upgrade_manager, duck typing
+var _unit_upgrade_manager: Node = null  # unit_upgrade_manager, duck typing
 var _next_net_id: int = 1
 
 # Callbacks for building placement (grid module functions)
@@ -31,6 +32,16 @@ func set_difficulty(preset: Resource) -> void:
 
 func set_upgrade_manager(mgr: Node) -> void:
 	_upgrade_manager = mgr
+
+func set_unit_upgrade_manager(mgr: Node) -> void:
+	_unit_upgrade_manager = mgr
+
+## 产兵统一入口：应用 token 升级 + 金币全局升级到新单位
+func _apply_global_upgrades(unit) -> void:
+	if _upgrade_manager:
+		_upgrade_manager.apply_all_stat_upgrades_to_unit(unit)
+	if _unit_upgrade_manager:
+		_unit_upgrade_manager.apply_to_new_unit(unit)
 
 # --- 单位创建 ---
 
@@ -191,8 +202,7 @@ func spawn_slot_initial(slot: Dictionary, slot_idx: int, owner_id: int, color: i
 		LockstepSync.register_unit(unit)
 		_player_units_node.add_child(unit)
 		unit.add_to_group("player_units")
-		if _upgrade_manager:
-			_upgrade_manager.apply_all_stat_upgrades_to_unit(unit)
+		_apply_global_upgrades(unit)
 	for spawn in slot.get("buildings", []):
 		var building = place_building_callback.call(spawn.type, BuildingScript.Team.PLAYER, spawn.grid_pos, owner_id, color, slot_idx)
 		building.net_id = _next_net_id
@@ -209,8 +219,7 @@ func spawn_ally_unit_initial(unit_type: int, pos: Vector2, \
 	LockstepSync.register_unit(unit)
 	_player_units_node.add_child(unit)
 	unit.add_to_group("player_units")
-	if _upgrade_manager:
-		_upgrade_manager.apply_all_stat_upgrades_to_unit(unit)
+	_apply_global_upgrades(unit)
 	var ai := Node2D.new()
 	ai.name = "AllyAI"
 	ai.set_script(load("res://scripts/units/ally_ai.gd"))
@@ -236,8 +245,7 @@ func _spawn_ally_wave_unit(unit_type: int, pos: Vector2, target: Vector2) -> voi
 	LockstepSync.register_unit(unit)
 	_player_units_node.add_child(unit)
 	unit.add_to_group("player_units")
-	if _upgrade_manager:
-		_upgrade_manager.apply_all_stat_upgrades_to_unit(unit)
+	_apply_global_upgrades(unit)
 	var ai := Node2D.new()
 	ai.name = "AllyAI"
 	ai.set_script(load("res://scripts/units/ally_ai.gd"))
@@ -337,8 +345,7 @@ func place_player_unit(unit_type: int, click_pos: Vector2, stats_id: StringName 
 	if unit.has_method("_start_escape") and unit.has_method("_is_inside_any_building"):
 		if unit._is_inside_any_building():
 			unit._start_escape()
-	if _upgrade_manager:
-		_upgrade_manager.apply_all_stat_upgrades_to_unit(unit)
+	_apply_global_upgrades(unit)
 	spawn_spawn_effect(click_pos, UnitScript.Team.PLAYER, unit)
 	# 全局集结点：新单位自动前往（移动并攻击）
 	var main_scene := get_tree().current_scene
@@ -482,8 +489,7 @@ func spawn_unit_near(type: int, pos: Vector2, team: int) -> CharacterBody2D:
 	if team == UnitScript.Team.PLAYER:
 		_player_units_node.add_child(unit)
 		unit.add_to_group("player_units")
-		if _upgrade_manager:
-			_upgrade_manager.apply_all_stat_upgrades_to_unit(unit)
+		_apply_global_upgrades(unit)
 		spawn_spawn_effect(pos + offset, team, unit)
 	else:
 		_enemy_units_node.add_child(unit)
@@ -505,8 +511,7 @@ func spawn_summon(type: int, stats_id: StringName, pos: Vector2, team: int) -> C
 	if team == UnitScript.Team.PLAYER:
 		_player_units_node.add_child(unit)
 		unit.add_to_group("player_units")
-		if _upgrade_manager:
-			_upgrade_manager.apply_all_stat_upgrades_to_unit(unit)
+		_apply_global_upgrades(unit)
 		spawn_spawn_effect(pos + offset, team, unit)
 	else:
 		_enemy_units_node.add_child(unit)

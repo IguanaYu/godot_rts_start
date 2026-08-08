@@ -19,8 +19,17 @@ var _title_label: Label
 var _content_vbox: VBoxContainer
 var _tech_vbox: VBoxContainer
 
+# T3 PR: 左右分栏结构
+var _info_column: VBoxContainer
+var _command_card: VBoxContainer
+var _command_scroll: ScrollContainer
+var _age_upgrade_btn: Button = null
+var _produce_btns: Array = []
+
 # 升级进度轮询
 var _age_upgrade_active: bool = false
+# PR-T2-4: 金币变化轮询（刷新升级按钮状态）
+var _last_gold: int = -1
 
 
 func initialize(main_node: Node2D) -> void:
@@ -32,15 +41,24 @@ func initialize(main_node: Node2D) -> void:
 
 func _build_ui() -> void:
 	# 不加背景底板，WoodTable 由底部 UI 条的区段提供
-	var vbox := VBoxContainer.new()
-	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	vbox.offset_left = 10
-	vbox.offset_right = -10
-	vbox.offset_top = 6
-	vbox.offset_bottom = -6
-	vbox.add_theme_constant_override("separation", 6)
-	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(vbox)
+	# T3 PR: 左右分栏 — 左=信息区（只读），右=命令卡（时代/造兵/科技，可滚动）
+	var root_hbox := HBoxContainer.new()
+	root_hbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root_hbox.offset_left = 10
+	root_hbox.offset_right = -6
+	root_hbox.offset_top = 6
+	root_hbox.offset_bottom = -6
+	root_hbox.add_theme_constant_override("separation", 8)
+	root_hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(root_hbox)
+
+	# === 左半：信息区（只读） ===
+	_info_column = VBoxContainer.new()
+	_info_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_info_column.size_flags_stretch_ratio = 1.0
+	_info_column.add_theme_constant_override("separation", 6)
+	_info_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root_hbox.add_child(_info_column)
 
 	# 标题
 	_title_label = Label.new()
@@ -49,24 +67,40 @@ func _build_ui() -> void:
 	_title_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
 	_title_label.add_theme_constant_override("shadow_offset_x", 1)
 	_title_label.add_theme_constant_override("shadow_offset_y", 1)
-	vbox.add_child(_title_label)
+	_info_column.add_child(_title_label)
 
-	vbox.add_child(HSeparator.new())
+	_info_column.add_child(HSeparator.new())
 
 	# 现状区
 	var section_label_1 := _make_section_label("现状")
-	vbox.add_child(section_label_1)
+	_info_column.add_child(section_label_1)
 	_content_vbox = VBoxContainer.new()
 	_content_vbox.add_theme_constant_override("separation", 4)
-	vbox.add_child(_content_vbox)
+	_content_vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_content_vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_info_column.add_child(_content_vbox)
 
-	# 科技区（PR-T2-4 接入，本 PR 占位）
-	vbox.add_child(HSeparator.new())
+	# === 右半：命令卡（时代/造兵/科技升级，单列可滚动） ===
+	_command_card = VBoxContainer.new()
+	_command_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_command_card.size_flags_stretch_ratio = 1.0
+	_command_card.add_theme_constant_override("separation", 4)
+	_command_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root_hbox.add_child(_command_card)
+
 	var section_label_2 := _make_section_label("科技 / 升级")
-	vbox.add_child(section_label_2)
+	_command_card.add_child(section_label_2)
+
+	_command_scroll = ScrollContainer.new()
+	_command_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_command_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_command_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	_command_card.add_child(_command_scroll)
+
 	_tech_vbox = VBoxContainer.new()
 	_tech_vbox.add_theme_constant_override("separation", 4)
-	vbox.add_child(_tech_vbox)
+	_tech_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_command_scroll.add_child(_tech_vbox)
 
 
 func _make_section_label(text: String) -> Label:
@@ -83,6 +117,8 @@ func _clear_content() -> void:
 
 
 func _clear_tech() -> void:
+	_age_upgrade_btn = null
+	_produce_btns.clear()
 	for c in _tech_vbox.get_children():
 		c.queue_free()
 
@@ -137,6 +173,7 @@ func _add_age_upgrade_button() -> void:
 	btn.disabled = _main_node.gold < cost or _main_node.age_upgrade_target > 0
 	btn.pressed.connect(func(): _main_node._start_age_upgrade())
 	_tech_vbox.add_child(btn)
+	_age_upgrade_btn = btn
 
 
 # ============================================================
@@ -182,6 +219,9 @@ func show_building(building) -> void:
 		BuildingScript.BuildingType.WALL:
 			pass  # 只显示 HP
 
+	# PR-T2-4: 全局升级按钮（按建筑类型）
+	_show_unit_upgrade_section(btype, -1)
+
 
 func _building_title(btype: int) -> String:
 	match btype:
@@ -217,8 +257,11 @@ func _add_produce_button(mode: int) -> void:
 	btn.custom_minimum_size = Vector2(0, 32)
 	btn.add_theme_font_size_override("font_size", 13)
 	btn.disabled = _main_node.gold < cost
-	btn.pressed.connect(func(): _main_node._quick_produce_unit(mode))
+	btn.pressed.connect(func():
+		if _main_node._quick_produce_unit(mode):
+			_main_node.show_floating_text(tr("UU_FEEDBACK_QUEUED"), Color(0.4, 1.0, 0.4), _main_node.get_global_mouse_position()))
 	_tech_vbox.add_child(btn)
+	_produce_btns.append({"btn": btn, "cost": cost})
 
 
 # ============================================================
@@ -248,16 +291,8 @@ func show_unit(unit) -> void:
 	_add_info_line("攻击: %d DMG / %.0f 射程 / %.1fs 攻速" % [dmg, rng, cd])
 	_add_info_line("移速: %.0f" % spd)
 
-	# 单兵等级（占位）
-	if unit.has_method("get_upgrade_level"):
-		_add_info_line("单兵等级: %d" % unit.get_upgrade_level())
-
-	# PR-T2-4 全局升级占位
-	var tech_lbl := Label.new()
-	tech_lbl.text = "(T2 全局升级待接入)"
-	tech_lbl.add_theme_font_size_override("font_size", 12)
-	tech_lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
-	_tech_vbox.add_child(tech_lbl)
+	# PR-T2-4: 全局升级按钮（按单位类型）
+	_show_unit_upgrade_section(-1, unit.unit_type)
 
 
 func _unit_title(utype: int) -> String:
@@ -267,6 +302,41 @@ func _unit_title(utype: int) -> String:
 		UnitScript.UnitType.LANCER: return "枪兵"
 		UnitScript.UnitType.MONK: return "僧侣"
 		_: return "单位"
+
+
+# ============================================================
+# PR-T2-4: 全局升级按钮（按目标类型映射）
+# ============================================================
+func _get_upgrades_for_target(building_type: int, unit_type: int) -> Array:
+	var result: Array = []
+	if building_type >= 0:
+		match building_type:
+			BuildingScript.BuildingType.CASTLE:
+				result = ["generic_hp", "generic_dmg", "generic_spd", "castle_hp"]
+			BuildingScript.BuildingType.BARRACKS:
+				result = ["soldier_hp", "generic_hp", "generic_dmg", "generic_spd"]
+			BuildingScript.BuildingType.ARCHERY:
+				result = ["generic_hp", "generic_dmg", "generic_spd"]
+			BuildingScript.BuildingType.FARM:
+				result = ["farm_yield", "generic_hp", "generic_dmg", "generic_spd"]
+		return result
+	match unit_type:
+		UnitScript.UnitType.SOLDIER:
+			result = ["soldier_hp", "generic_hp", "generic_dmg", "generic_spd"]
+		_:
+			result = ["generic_hp", "generic_dmg", "generic_spd"]
+	return result
+
+
+func _show_unit_upgrade_section(building_type: int, unit_type: int) -> void:
+	if _main_node == null or _main_node.unit_upgrade_manager == null:
+		return
+	var mgr = _main_node.unit_upgrade_manager
+	for node_id in _get_upgrades_for_target(building_type, unit_type):
+		var btn := preload("res://scripts/ui/upgrade_button.gd").new()
+		btn.name = "UpgradeButton_" + node_id
+		btn.setup(node_id, mgr, _main_node)
+		_tech_vbox.add_child(btn)
 
 
 # ============================================================
@@ -369,3 +439,24 @@ func _process(_delta: float) -> void:
 			# 升级完成/取消 → 刷新城堡数据
 			if _current_mode == Mode.DEFAULT:
 				show_default()
+
+	# PR-T2-4: 金币变化 → 刷新升级按钮（可买/金币不够状态）
+	if _main_node != null and _main_node.gold != _last_gold:
+		_last_gold = _main_node.gold
+		for c in _tech_vbox.get_children():
+			if c.has_method("refresh"):
+				c.refresh()
+		_refresh_command_buttons()
+
+
+func _refresh_command_buttons() -> void:
+	if _main_node == null:
+		return
+	var gold: int = _main_node.gold
+	if _age_upgrade_btn != null:
+		var next_age = _main_node.player_age + 1
+		if next_age in _main_node.AGE_UPGRADE_COST:
+			var cost: int = _main_node.AGE_UPGRADE_COST[next_age]
+			_age_upgrade_btn.disabled = gold < cost or _main_node.age_upgrade_target > 0
+	for entry in _produce_btns:
+		entry.btn.disabled = gold < entry.cost

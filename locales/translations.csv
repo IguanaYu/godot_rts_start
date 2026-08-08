@@ -376,6 +376,20 @@ PASSIVE_ECONOMY_BOOST_DESC,Buildings generate extra gold over time.,建筑持续
 PASSIVE_COMBAT_AURA_BUFF,Combat Aura,战斗光环,戦闘オーラ
 PASSIVE_COMBAT_AURA_BUFF_DESC,New units near friendly buildings gain temporary attack bonus.,新单位在友方建筑光环内获得临时攻击加成。,新しいユニットが味方建物のオーラ内で一時的な攻撃ボーナスを得る。
 UI_TECH_LEVEL,Tech Lv.%d,科技 Lv.%d,技術 Lv.%d
-
 TEST_SPLIT_NAME,Split Attack Test,分裂攻击测试,スプリット攻撃テスト
 TEST_SPLIT_DESC,"1 outpost archer (split=3) vs 3 enemy soldiers. Verify simultaneous 3-arrow attack.","1 个高级弓箭手（分裂=3）vs 3 个敌方步兵。验证同时射 3 支箭。","1 体の上位アーチャー（分裂=3）vs 3 体の敵歩兵。同時 3 本矢攻撃を検証。"
+UU_NAME_GENERIC_HP,Generic HP,通用生命,汎用HP
+UU_DESC_GENERIC_HP,All units +10% HP,所有单位生命 +10%,全ユニットHP+10%
+UU_NAME_GENERIC_DMG,Generic Attack,通用攻击,汎用攻撃
+UU_DESC_GENERIC_DMG,Combat units +10% attack,战斗单位攻击 +10%,戦闘ユニット攻撃+10%
+UU_NAME_GENERIC_SPD,Generic Speed,通用移速,汎用速度
+UU_DESC_GENERIC_SPD,All units +10% move speed,所有单位移速 +10%,全ユニット移動速度+10%
+UU_NAME_SOLDIER_HP,Soldier HP,步兵生命,兵士HP
+UU_DESC_SOLDIER_HP,Soldiers +10% HP,步兵生命 +10%,兵士HP+10%
+UU_NAME_FARM_YIELD,Farm Yield,农场产量,農場の生産
+UU_DESC_FARM_YIELD,Farms produce +30% gold,农场产量 +30%,農場の生産+30%
+UU_NAME_CASTLE_HP,Castle HP,城堡生命,城のHP
+UU_DESC_CASTLE_HP,All buildings +20% HP,所有建筑生命 +20%,全建物HP+20%
+UU_FEEDBACK_SUCCESS,Upgrade complete!,升级成功,アップグレード成功
+UU_FEEDBACK_FAIL,Upgrade failed,升级失败,アップグレード失敗
+UU_FEEDBACK_QUEUED,Queued for production,已加入生产队列,生産キューに追加
