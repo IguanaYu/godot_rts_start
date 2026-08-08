@@ -13,11 +13,14 @@ var patrol_mode: bool = false
 # 双击标记（由 main.gd 传入）
 var _pending_double_click: bool = false
 
-# 建筑选择（集结点用）
+# 建筑选择（selected_buildings 为选区数组，selected_building 为别名供集结点用）
+var selected_buildings: Array = []
 var selected_building = null
+# PR-T2-5: L9 临时查看建筑（peek），保留单位选中
+var peek_building = null
 
-signal selection_changed(units: Array)
-signal building_selected(building)
+# PR-T2-5: 统一选区状态（units=单位, buildings=建筑, peek_building=临时查看建筑可空）
+signal selection_changed(units: Array, buildings: Array, peek_building)
 
 var _spawner_module: Node
 
@@ -76,13 +79,26 @@ func release_selection(end_pos: Vector2, selection_box: ColorRect, shift_held: b
 			# 尝试选中玩家建筑
 			var clicked_building: Variant = _find_player_building_at(end_pos)
 			if clicked_building != null:
-				select_building(clicked_building)
-				selected_units.clear()
+				if _pending_double_click:
+					# PR-T2-5 L7: 双击建筑 → 选中同屏同类型建筑
+					select_all_buildings_of_type_on_screen(clicked_building)
+				elif not selected_units.is_empty():
+					# PR-T2-5 L9: 有单位选中时点建筑 → peek（保留单位，临时查看建筑）
+					peek_building = clicked_building
+					_emit_selection()
+				else:
+					# L2: 单选建筑
+					select_building(clicked_building)
 				_pending_double_click = false
+				return
+			if peek_building != null:
+				# PR-T2-5 L9b: 点空地退出 peek，恢复单位汇总
+				peek_building = null
+				_pending_double_click = false
+				_emit_selection()
 				return
 			if not shift_held:
 				_deselect_all()
-				select_building(null)
 			_pending_double_click = false
 			return
 
@@ -106,9 +122,10 @@ func release_selection(end_pos: Vector2, selection_box: ColorRect, shift_held: b
 			_deselect_all()
 			clicked_unit.set_selected(true)
 			selected_units.append(clicked_unit)
-			selection_changed.emit(selected_units)
+			_emit_selection()
 	else:
-		# 框选模式
+		# 框选模式（PR-T2-5: 只抓单位；框选单位视为聚焦单位，退出 peek）
+		peek_building = null
 		if not shift_held:
 			_deselect_all()
 		for u in get_tree().get_nodes_in_group("player_units"):
@@ -118,7 +135,7 @@ func release_selection(end_pos: Vector2, selection_box: ColorRect, shift_held: b
 					u.set_selected(true)
 					selected_units.append(u)
 
-		selection_changed.emit(selected_units)
+		_emit_selection()
 
 	_pending_double_click = false
 
@@ -143,6 +160,9 @@ func select_all_of_type_on_screen(reference_unit) -> void:
 				u.set_selected(true)
 				selected_units.append(u)
 
+	# PR-T2-5: 补发选区刷新（原实现不 emit，双击选同类不更新详情面板）
+	_emit_selection()
+
 
 ## Ctrl+Shift+点击：添加所有同类到选择
 func _add_all_of_type_to_selection(reference_unit) -> void:
@@ -163,6 +183,10 @@ func _add_all_of_type_to_selection(reference_unit) -> void:
 				u.set_selected(true)
 				selected_units.append(u)
 
+	# PR-T2-5: 聚焦单位，退出 peek + 补发选区刷新
+	peek_building = null
+	_emit_selection()
+
 
 ## F2：全选军队
 func select_all_army() -> void:
@@ -173,7 +197,7 @@ func select_all_army() -> void:
 			selected_units.append(u)
 			if u.selection_ring and u.selection_ring.has_method("pulse_scale"):
 				u.selection_ring.pulse_scale()
-	selection_changed.emit(selected_units)
+	_emit_selection()
 
 
 func right_click(click_pos: Vector2) -> void:
@@ -310,7 +334,9 @@ func _deselect_all() -> void:
 	for unit in selected_units:
 		unit.set_selected(false)
 	selected_units.clear()
-	selection_changed.emit(selected_units)
+	selected_buildings.clear()
+	peek_building = null
+	_emit_selection()
 
 
 ## 查找点击位置的玩家单位
@@ -337,9 +363,43 @@ func _find_player_building_at(pos: Vector2):
 			return b
 	return null
 
+## PR-T2-5: 统一选区发射（selected_building 别名 = 最后一个选中建筑，供集结点用）
+func _emit_selection() -> void:
+	selected_building = selected_buildings.back() if not selected_buildings.is_empty() else null
+	selection_changed.emit(selected_units, selected_buildings, peek_building)
+
+
+## 对外暴露的选区刷新入口（编队管理器召回后调用）
+func emit_selection() -> void:
+	_emit_selection()
+
+
 func select_building(building) -> void:
-	selected_building = building
-	building_selected.emit(building)
+	selected_buildings = [] if building == null else [building]
+	peek_building = null
+	_emit_selection()
+
+
+## PR-T2-5 L7: 双击建筑 → 选中同屏同类型建筑
+func select_all_buildings_of_type_on_screen(reference_building) -> void:
+	_deselect_all()
+	var ref_type: int = reference_building.building_type
+	var camera := get_viewport().get_camera_2d()
+	if camera == null:
+		_emit_selection()
+		return
+	var screen_rect := camera.get_viewport().get_visible_rect()
+	var cam_center := camera.global_position
+	var zoom_val := camera.zoom.x
+	var half_size := screen_rect.size / (2.0 * zoom_val)
+	var view_rect := Rect2(cam_center - half_size, half_size * 2.0)
+
+	for b in get_tree().get_nodes_in_group("player_buildings"):
+		if b.has_method("is_dead") and not b.is_dead() and b.building_type == ref_type:
+			var bp: Vector2 = b.global_position if b is Node2D else (b.get_rect().position + b.get_rect().size * 0.5)
+			if view_rect.has_point(bp):
+				selected_buildings.append(b)
+	_emit_selection()
 
 func _find_enemy_at(pos: Vector2):
 	for u in get_tree().get_nodes_in_group("enemy_units"):

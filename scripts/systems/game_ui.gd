@@ -37,6 +37,9 @@ var _speed_wrapper: Control
 # T2 PR-3: 底部横排 UI 条
 var _bottom_bar: Control
 
+# PR-T2-5: 时代锁状态记录（检测 锁→解锁 翻转做高亮闪烁）
+var _prev_era_locked: Dictionary = {}
+
 # 标签页
 var active_tab: int = 0  # T2 PR-3: 0=单位, 1=建筑, 2=据点（已移除 INFO tab）
 var tab_buttons: Array[Button] = []
@@ -682,6 +685,17 @@ func _add_icon_button(mode: int, container: HBoxContainer, slot_key: Key) -> voi
 	btn.mouse_exited.connect(_on_icon_unhover)
 	wrapper.add_child(btn)
 
+	# PR-T2-5: 灰色锁图标（时代未解锁时显示，右上角），由 _update_button_affordability 切换显隐
+	var lock_icon := preload("res://scripts/ui/lock_icon.gd").new()
+	lock_icon.name = "LockIcon"
+	lock_icon.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	lock_icon.offset_left = -20
+	lock_icon.offset_right = -2
+	lock_icon.offset_top = 2
+	lock_icon.offset_bottom = 20
+	lock_icon.visible = false
+	wrapper.add_child(lock_icon)
+
 	# T1 PR-2: SC2 风格右下角造价数字（够=白，不够=红，其他=灰），由 _update_button_affordability 实时改色
 	var cost_label := Label.new()
 	cost_label.name = "CostLabel"
@@ -861,29 +875,40 @@ func _show_tooltip() -> void:
 # ============================================================
 # 更新方法
 # ============================================================
-func update_selection_info(units: Array, building = null) -> void:
-	# T2 PR-3: 转发给详情面板
+func update_selection_info(units: Array, buildings: Array = [], peek_building = null) -> void:
+	# T2 PR-3 + PR-T2-5: 转发给详情面板（L1-L9 分派）
 	if _bottom_bar != null:
 		var dp = _bottom_bar.get_detail_panel()
 		if dp != null:
-			if building != null:
-				dp.show_building(building)
+			if peek_building != null:
+				dp.show_building(peek_building, true)  # L9 peek（保留单位选中）
+			elif not units.is_empty() and not buildings.is_empty():
+				# L8 混选防御：只显示单位（最新选中优先，建筑忽略）
+				if units.size() == 1:
+					dp.show_unit(units[0])
+				else:
+					dp.show_units_multi(units)
+			elif not buildings.is_empty():
+				if buildings.size() == 1:
+					dp.show_building(buildings[0])  # L2
+				else:
+					dp.show_buildings_multi(buildings)  # L7
 			elif units.size() == 1:
-				dp.show_unit(units[0])
+				dp.show_unit(units[0])  # L3
 			elif units.size() > 1:
-				dp.show_units_multi(units)
-			elif units.is_empty():
-				dp.show_default()
+				dp.show_units_multi(units)  # L6
+			else:
+				dp.show_default()  # L1
 
 	# 旧的浮动标签（保留兼容）
 	if selection_info_label == null:
 		return
-	if units.is_empty() and building == null:
+	if units.is_empty() and buildings.is_empty() and peek_building == null:
 		selection_info_label.visible = false
 		return
 
-	# 旧标签：只显示单位类型统计（建筑不显示）
-	if building != null:
+	# 旧标签：建筑选中 / peek 时不显示单位统计
+	if not buildings.is_empty() or peek_building != null:
 		selection_info_label.visible = false
 		return
 
@@ -960,6 +985,14 @@ func _update_button_affordability(current_gold: int) -> void:
 		# T2 PR-1: ERA_LOCKED 单独分支（视觉灰显但按钮不 disable，让点击能触发"需要 T2 时代"飘字）
 		var era_locked: bool = reason == BuildingPlacer.BuildBlockReason.ERA_LOCKED
 		btn_wrapper.modulate.a = 1.0 if ok else 0.5
+		# PR-T2-5: 灰色锁图标显隐 + 解锁高亮闪烁（锁→解锁 翻转时）
+		var lock: Control = btn_wrapper.get_node_or_null("LockIcon")
+		if lock:
+			lock.visible = era_locked
+		var was_locked: bool = _prev_era_locked.get(mode, false)
+		if was_locked and not era_locked:
+			_flash_unlock_button(btn_wrapper)
+		_prev_era_locked[mode] = era_locked
 		# T1 PR-2: 实时刷新右下角造价数字（农场递增时数字会变）
 		var cost_now: int = D.COSTS.get(mode, 0)
 		if _main_node.get("building_placer"):
@@ -985,6 +1018,13 @@ func _update_button_affordability(current_gold: int) -> void:
 		if btn != null:
 			# T2 PR-1: 时代锁定时不 disable（让点击能触发拦截飘字），其他 reason 正常 disable
 			btn.disabled = not ok and not era_locked
+
+
+# PR-T2-5: 时代解锁极简反馈——按钮高亮闪烁一下（不弹窗）
+func _flash_unlock_button(wrapper: Control) -> void:
+	wrapper.modulate = Color(1.25, 1.2, 0.7, wrapper.modulate.a)
+	var tween := wrapper.create_tween()
+	tween.tween_property(wrapper, "modulate", Color(1, 1, 1, wrapper.modulate.a), 0.5)
 
 
 func update_wave_countdown(wave_number: int, remaining: float, total: int) -> void:

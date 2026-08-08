@@ -179,10 +179,12 @@ func _add_age_upgrade_button() -> void:
 # ============================================================
 # L2: 点单个建筑
 # ============================================================
-func show_building(building) -> void:
+func show_building(building, is_peek: bool = false) -> void:
 	_current_mode = Mode.BUILDING
 	_permanent_building = building
-	_permanent_units = []
+	# PR-T2-5 L9: peek 时保留单位选中，点空地后 restore 仍能恢复单位汇总
+	if not is_peek:
+		_permanent_units = []
 	_clear_content()
 	_clear_tech()
 
@@ -349,7 +351,7 @@ func show_units_multi(units: Array) -> void:
 	_clear_content()
 	_clear_tech()
 
-	# 过滤无效单位
+	# 过滤无效单位（保留选中顺序）
 	var valid_units: Array = []
 	for u in units:
 		if u != null and is_instance_valid(u) and not u.is_dead():
@@ -359,34 +361,106 @@ func show_units_multi(units: Array) -> void:
 		show_default()
 		return
 
-	var count := valid_units.size()
-	var total_hp := 0
-	var total_max_hp := 0
-	var total_atk := 0
-	var total_spd := 0.0
-	var type_counts := {}
-
-	for u in valid_units:
-		if u.health:
-			total_hp += u.health.hp
-			total_max_hp += u.health.max_hp
-		if u.stat_set:
-			total_atk += u.stat_set.get_int(StatSetClass.ATTACK_DAMAGE)
-			total_spd += u.stat_set.get_value(StatSetClass.MOVE_SPEED)
+	# 按单位类型分组（保序），每类累计 HP/DMG，记录最后一次出现位置（主类型并列取最新选中）
+	var groups: Array = []
+	var group_by_type := {}
+	for i in range(valid_units.size()):
+		var u = valid_units[i]
 		var ut: int = u.unit_type
-		var name_str := _unit_title(ut)
-		type_counts[name_str] = type_counts.get(name_str, 0) + 1
+		if not group_by_type.has(ut):
+			var g := {"utype": ut, "name": _unit_title(ut), "count": 0, "hp": 0, "dmg": 0, "last_idx": i}
+			group_by_type[ut] = g
+			groups.append(g)
+		var g: Dictionary = group_by_type[ut]
+		g["count"] += 1
+		g["last_idx"] = i
+		if u.health:
+			g["hp"] += u.health.hp
+		if u.stat_set:
+			g["dmg"] += u.stat_set.get_int(StatSetClass.ATTACK_DAMAGE)
 
-	_title_label.text = "选中 %d 个单位" % count
+	# 主类型 = 数量最多；并列取最新选中（last_idx 最大）
+	var max_count := 0
+	for g in groups:
+		if g["count"] > max_count:
+			max_count = g["count"]
+	var main: Dictionary = {}
+	for g in groups:
+		if g["count"] == max_count and (main.is_empty() or g["last_idx"] > main["last_idx"]):
+			main = g
 
-	_add_info_line("总血量: %d / %d" % [total_hp, total_max_hp])
-	if count > 0:
-		_add_info_line("平均攻击: %d DMG" % int(total_atk / count))
-		_add_info_line("平均移速: %.0f" % (total_spd / count))
+	_title_label.text = "选中 %d 个单位" % valid_units.size()
 
-	# 类型明细
-	for name_str in type_counts:
-		_add_info_line("  %s x%d" % [name_str, type_counts[name_str]], Color(0.7, 0.85, 1.0))
+	# 每类型块
+	for g in groups:
+		_add_info_line("▸ %s × %d" % [g["name"], g["count"]], Color(0.7, 0.85, 1.0))
+		_add_info_line("  总HP: %d   总DMG: %d" % [g["hp"], g["dmg"]])
+
+	# 科技区按主类型
+	_show_unit_upgrade_section(-1, main["utype"])
+
+
+# ============================================================
+# PR-T2-5 L7: 多选同类建筑 → 汇总
+# ============================================================
+func show_buildings_multi(buildings: Array) -> void:
+	_current_mode = Mode.BUILDING
+	_permanent_building = null
+	_permanent_units = []
+	_clear_content()
+	_clear_tech()
+
+	# 过滤无效建筑
+	var valid: Array = []
+	for b in buildings:
+		if b != null and is_instance_valid(b) and not b.is_dead():
+			valid.append(b)
+
+	if valid.is_empty():
+		show_default()
+		return
+
+	# 按建筑类型分组（保序）
+	var groups: Array = []
+	var group_by_type := {}
+	for b in valid:
+		var bt: int = b.building_type
+		if not group_by_type.has(bt):
+			var g := {"btype": bt, "name": _building_title(bt), "list": []}
+			group_by_type[bt] = g
+			groups.append(g)
+		group_by_type[bt]["list"].append(b)
+
+	# 主类型 = 数量最多
+	var main: Dictionary = groups[0]
+	for g in groups:
+		if g["list"].size() > main["list"].size():
+			main = g
+
+	_title_label.text = "选中 %d 个%s" % [valid.size(), main["name"]]
+
+	# 总血量百分比
+	var sum_hp := 0
+	var sum_max := 0
+	for b in valid:
+		if b.health:
+			sum_hp += b.health.hp
+			sum_max += b.health.max_hp
+	if sum_max > 0:
+		_add_info_line("总血量: %d%%" % int(float(sum_hp) / float(sum_max) * 100.0))
+
+	# 在造进度汇总（产兵建筑）
+	var producing := 0
+	for b in valid:
+		if b.has_method("get_queue_state") and not b.production_queue.is_empty():
+			producing += b.production_queue.size()
+	if producing > 0:
+		_add_info_line("在造: %d 单位" % producing)
+	else:
+		_add_info_line("在造: 无（队列空）")
+
+	# 科技区按主类型（同 L2）
+	_show_unit_upgrade_section(main["btype"], -1)
 
 
 # ============================================================

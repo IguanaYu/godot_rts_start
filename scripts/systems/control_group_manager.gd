@@ -29,6 +29,8 @@ func select_group(index: int, combat_ctrl: Node) -> void:
 		if u.has_method("set_selected"):
 			u.set_selected(true)
 	combat_ctrl.selected_units = units.duplicate()
+	# PR-T2-5: 召回后刷新详情面板
+	combat_ctrl.emit_selection()
 
 
 func add_group_to_selection(index: int, combat_ctrl: Node) -> void:
@@ -40,6 +42,8 @@ func add_group_to_selection(index: int, combat_ctrl: Node) -> void:
 		if not u.get("selected") and u.has_method("set_selected"):
 			u.set_selected(true)
 			combat_ctrl.selected_units.append(u)
+	# PR-T2-5: 追加召回后刷新详情面板
+	combat_ctrl.emit_selection()
 
 
 func center_camera_on_group(index: int, camera_module: Node) -> void:

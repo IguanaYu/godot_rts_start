@@ -89,8 +89,8 @@ var unlocked_items: Array[int] = []
 var age_upgrade_timer: float = 0.0
 var age_upgrade_target: int = 0  # 0=未在升级中；2=正在升 T2
 var _last_upgrade_tick: int = -1  # 上次飘字进度秒数，防重复
-const AGE_UPGRADE_COST := {2: 500}
-const AGE_UPGRADE_TIME := {2: 15.0}
+const AGE_UPGRADE_COST := {2: 500, 3: 1000}
+const AGE_UPGRADE_TIME := {2: 15.0, 3: 30.0}
 
 func get_game_time() -> float:
 	return _game_time
@@ -192,7 +192,6 @@ func _run_init_steps() -> void:
 	add_child(combat_ctrl)
 	combat_ctrl.initialize(spawner_module)
 	combat_ctrl.selection_changed.connect(_on_selection_changed)
-	combat_ctrl.building_selected.connect(_on_building_selected)
 	input_mode = Node.new()
 	input_mode.set_script(load("res://scripts/systems/input_mode_manager.gd"))
 	add_child(input_mode)
@@ -722,12 +721,8 @@ func _castle_head_pos() -> Vector2:
 	return Vector2(960, 540)
 
 
-func _on_selection_changed(units: Array) -> void:
-	ui_module.update_selection_info(units)
-
-
-func _on_building_selected(building) -> void:
-	ui_module.update_selection_info([], building)
+func _on_selection_changed(units: Array, buildings: Array = [], peek_building = null) -> void:
+	ui_module.update_selection_info(units, buildings, peek_building)
 
 
 func _on_input_mode_changed(new_mode: int) -> void:
