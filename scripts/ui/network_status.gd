@@ -117,7 +117,7 @@ func _build_dialog() -> void:
 	_dialog_desc.name = "DialogDesc"
 	_dialog_desc.text = ""
 	_dialog_desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_dialog_desc.add_theme_font_size_override("font_size", 18)
+	_dialog_desc.add_theme_font_size_override("font_size", 16)
 	_dialog_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(_dialog_desc)
 
@@ -158,7 +158,7 @@ func _make_dialog_button(text: String, primary: bool, callback: Callable) -> But
 	var btn := Button.new()
 	btn.text = text
 	btn.custom_minimum_size = Vector2(140, 44)
-	btn.add_theme_font_size_override("font_size", 18)
+	btn.add_theme_font_size_override("font_size", 16)
 	if primary:
 		btn.add_theme_color_override("font_color", COLOR_WARN)
 		btn.add_theme_color_override("font_hover_color", Color(1, 1, 0.6))

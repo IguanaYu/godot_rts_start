@@ -181,7 +181,7 @@ func _create_room_row(room: Dictionary) -> HBoxContainer:
 
 	var name_label := Label.new()
 	name_label.text = room.get("name", "")
-	name_label.add_theme_font_size_override("font_size", 18)
+	name_label.add_theme_font_size_override("font_size", 16)
 	name_label.add_theme_color_override("font_color", Color(1, 1, 1))
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(name_label)

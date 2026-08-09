@@ -457,7 +457,7 @@ func _show_mp_result(result: String):
 	var btn := Button.new()
 	btn.text = "Back to Menu"
 	btn.custom_minimum_size = Vector2(160, 44)
-	btn.add_theme_font_size_override("font_size", 18)
+	btn.add_theme_font_size_override("font_size", 16)
 	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	btn.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	btn.offset_left = -80
@@ -515,7 +515,7 @@ func _show_victory_panel(sm: Node) -> void:
 		var elapsed: float = sm.get_last_session_time()
 		var time_label := Label.new()
 		time_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		time_label.add_theme_font_size_override("font_size", 18)
+		time_label.add_theme_font_size_override("font_size", 22)
 		time_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
 		time_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.5))
 		time_label.add_theme_constant_override("shadow_offset_x", 1)
@@ -527,7 +527,7 @@ func _show_victory_panel(sm: Node) -> void:
 		var total: int = sm.calc_total_score(save_data)
 		var score_label := Label.new()
 		score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		score_label.add_theme_font_size_override("font_size", 18)
+		score_label.add_theme_font_size_override("font_size", 22)
 		score_label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
 		score_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.5))
 		score_label.add_theme_constant_override("shadow_offset_x", 1)
@@ -539,7 +539,7 @@ func _show_victory_panel(sm: Node) -> void:
 	btn.text = tr("SAVE_CONTINUE")
 	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	btn.custom_minimum_size = Vector2(160, 44)
-	btn.add_theme_font_size_override("font_size", 18)
+	btn.add_theme_font_size_override("font_size", 16)
 	btn.add_theme_color_override("font_color", Color(1, 1, 1))
 	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	btn.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/level_select.tscn"))

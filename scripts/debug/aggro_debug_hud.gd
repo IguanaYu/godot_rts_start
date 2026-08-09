@@ -33,7 +33,7 @@ func _build_ui() -> void:
 	_label = Label.new()
 	_label.position = Vector2(10, 80)
 	_label.size = Vector2(700, 600)
-	_label.add_theme_font_size_override("font_size", 13)
+	_label.add_theme_font_size_override("font_size", 14)
 	_label.add_theme_color_override("font_color", Color(1, 1, 1))
 	_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
 	_label.add_theme_constant_override("shadow_offset_x", 1)

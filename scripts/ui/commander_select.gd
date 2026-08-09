@@ -522,7 +522,7 @@ func _create_selectable_card(parent: VBoxContainer, tab_idx: int, item_id: int,
 
 	var desc_label := Label.new()
 	desc_label.text = desc_text
-	desc_label.add_theme_font_size_override("font_size", 11)
+	desc_label.add_theme_font_size_override("font_size", 12)
 	desc_label.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
 	text_box.add_child(desc_label)
 
@@ -533,7 +533,7 @@ func _create_selectable_card(parent: VBoxContainer, tab_idx: int, item_id: int,
 	badge.custom_minimum_size = Vector2(28, 0)
 	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	badge.add_theme_font_size_override("font_size", 18)
+	badge.add_theme_font_size_override("font_size", 16)
 	badge.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
 	badge.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.7))
 	hbox.add_child(badge)

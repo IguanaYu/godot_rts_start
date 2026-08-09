@@ -106,7 +106,7 @@ func _build_ui() -> void:
 func _make_section_label(text: String) -> Label:
 	var lbl := Label.new()
 	lbl.text = "  " + text
-	lbl.add_theme_font_size_override("font_size", 13)
+	lbl.add_theme_font_size_override("font_size", 14)
 	lbl.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
 	return lbl
 
@@ -257,7 +257,7 @@ func _add_produce_button(mode: int) -> void:
 	var btn := Button.new()
 	btn.text = "造 %s（%d 金）" % [name_str, cost]
 	btn.custom_minimum_size = Vector2(0, 32)
-	btn.add_theme_font_size_override("font_size", 13)
+	btn.add_theme_font_size_override("font_size", 14)
 	btn.disabled = _main_node.gold < cost
 	btn.pressed.connect(func():
 		if _main_node._quick_produce_unit(mode):

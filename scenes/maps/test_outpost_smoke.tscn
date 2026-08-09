@@ -109,7 +109,7 @@ offset_top = 10.0
 offset_right = 900.0
 offset_bottom = 80.0
 theme_override_colors/font_color = Color(0.4, 0.7, 1, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 22
 text = "Outpost 烟雾测试 — 1 个默认性格指挥官(圈中心 0,0 r=350) + 3 圈内建筑 + 玩家 6 单位 attack-move 圈内。看 tick 日志和资源增长。"
 
 [node name="AttackMoveIndicator" type="Label" parent="."]
@@ -119,7 +119,7 @@ offset_top = 10.0
 offset_right = 200.0
 offset_bottom = 40.0
 theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 22
 text = "Attack Move (Click)"
 
 [node name="PlayerSpawner" type="Node" parent="."]

@@ -66,7 +66,7 @@ func _build_ui() -> void:
 
 	_name_label = Label.new()
 	_name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_name_label.add_theme_font_size_override("font_size", 13)
+	_name_label.add_theme_font_size_override("font_size", 14)
 	_name_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
 	_name_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
 	_name_label.add_theme_constant_override("shadow_offset_x", 1)
@@ -79,7 +79,7 @@ func _build_ui() -> void:
 	hbox.add_child(_lv_label)
 
 	_cost_label = Label.new()
-	_cost_label.add_theme_font_size_override("font_size", 13)
+	_cost_label.add_theme_font_size_override("font_size", 14)
 	_cost_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.0))
 	hbox.add_child(_cost_label)
 

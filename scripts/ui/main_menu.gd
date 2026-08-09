@@ -590,7 +590,7 @@ func _make_section_label(text: String) -> Label:
 	var label := Label.new()
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_font_size_override("font_size", 16)
 	label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
 	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
 	label.add_theme_constant_override("shadow_offset_x", 1)
@@ -622,7 +622,7 @@ func _make_slider_row(label_text: String, value: float, min_val: float, max_val:
 	var val_label := Label.new()
 	val_label.text = "%.0f%%" % (value * 100.0)
 	val_label.custom_minimum_size = Vector2(45, 0)
-	val_label.add_theme_font_size_override("font_size", 13)
+	val_label.add_theme_font_size_override("font_size", 14)
 	val_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
 	slider.value_changed.connect(func(v: float): val_label.text = "%.0f%%" % (v * 100.0))
 	row.add_child(val_label)
@@ -654,7 +654,7 @@ func _make_styled_button(text: String, min_size: Vector2, callback: Callable) ->
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_font_size_override("font_size", 16)
 	label.add_theme_color_override("font_color", Color(1, 1, 1))
 	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
 	label.add_theme_constant_override("shadow_offset_x", 1)

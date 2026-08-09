@@ -220,7 +220,7 @@ func _create_upgrade_card(upgrade_id: int, tier_color: Color) -> void:
 	desc_label.offset_bottom = -8
 	desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	desc_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	desc_label.add_theme_font_size_override("font_size", 13)
+	desc_label.add_theme_font_size_override("font_size", 14)
 	desc_label.add_theme_color_override("font_color", tier_color)
 	desc_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.5))
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

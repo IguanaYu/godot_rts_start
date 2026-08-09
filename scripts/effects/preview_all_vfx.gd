@@ -135,7 +135,7 @@ func _spawn_row_labels(y_start: float) -> void:
 	for i in range(names.size()):
 		var lbl := Label.new()
 		lbl.text = names[i]
-		lbl.add_theme_font_size_override("font_size", 18)
+		lbl.add_theme_font_size_override("font_size", 16)
 		lbl.add_theme_color_override("font_color", Color(1.0, 0.9, 0.4))
 		lbl.position = Vector2(-30, y_start + i * 160 + 50)
 		add_child(lbl)
