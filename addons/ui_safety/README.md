@@ -14,10 +14,9 @@ CLAUDE.md 单独写规则无效（Anthropic 官方说 "advisory not enforcement"
 |---|---|---|
 | **L1 规则** | CLAUDE.md 加 UI 编辑硬规则 + 项目 ui_specs.md | （文档） |
 | **L2 运行时校验** | 所有 Control 边界可视化、Pick 鼠标下的节点链、列出所有越界/重叠 issue | **F3** Outline / **F4** Pick / **F5** Stats |
+| **L3 截图回归** | 截图 + baseline 像素对比，产出 diff PNG | `godot --no-window --script res://addons/ui_safety/runtime/run_screenshot_cli.gd` |
 | **L4 headless 校验** | CLI 跑 game 后扫一遍 UI 树，把 issue 报告给 Claude Code hook | `godot --headless --script res://addons/ui_safety/runtime/run_bounds_check_cli.gd` |
 | **PostToolUse hook** | Claude 改完 UI 文件自动跑 L4，issue 报告塞回给 Claude 逼它修复 | `.claude/hooks/ui_bounds_check.sh` |
-
-L3 截图回归（screenshot_compare）暂未实现，留作后续扩展。
 
 ## 安装
 
@@ -81,6 +80,49 @@ godot --headless --path <PROJECT> --script res://addons/ui_safety/runtime/run_bo
 
 支持参数：
 - `-- scene foo.tscn`：指定场景（默认 res://scenes/main.tscn）
+
+## L3 截图回归
+
+```bash
+# 首次跑：建 baseline
+godot --no-window --path <PROJECT> --script res://addons/ui_safety/runtime/run_screenshot_cli.gd -- --update-baseline
+
+# 后续跑：对比
+godot --no-window --path <PROJECT> --script res://addons/ui_safety/runtime/run_screenshot_cli.gd
+```
+
+**重要：必须用 `--no-window` 而不是 `--headless`**！headless 模式禁用渲染，截不到图（get_image() 返回 null）。`--no-window` 隐藏窗口但仍渲染。
+
+参数（写在 `--` 之后）：
+- `--update-baseline`：把 current 截图拷成 baseline（首次或主动更新时用）
+- `--ui-only` / `--no-ui-only`：是否隐藏世界空间节点（Node2D/Node3D）再截。默认 **开**，否则单位/建筑/粒子等非确定性内容会让连续两帧跑出 5% diff
+- `--states=init,unit_selected`：指定要截的状态名（逗号分隔）。当前仅实现 "init"，扩展在 `run_screenshot_cli.gd` 的 `_trigger_state` 里加
+
+退出码：
+- 0 = 无回归
+- 1 = 有回归（diff > tolerance）
+- 2 = 加载/截图失败
+
+三目录结构：
+```
+tests/screenshots/
+├── baseline/   首次跑或主动更新时存（入 git）
+├── current/    每次跑都会重写（不入 git）
+└── diff/       有差异时产出（白=一致，红=差异；不入 git）
+```
+
+参数调优（在 [screenshot_compare.gd](addons/ui_safety/runtime/screenshot_compare.gd) 顶部）：
+- `PIXEL_THRESHOLD = 30`：单通道差 ≥30 视为该像素 diff（0-255，防字体抗锯齿抖动）
+- `PERCENT_TOLERANCE = 0.001`：0.1% 像素 diff 算"通过"
+
+**为什么默认 ui-only=true**：游戏世界（单位位置、粒子、动画、镜头）非确定性，连续两次截图会差 4-5%。截图回归的目的是抓 UI 布局变化（按钮偏移、面板 resize），不是抓游戏状态。所以默认隐藏 Node2D/Node3D 根节点。
+
+**baseline 入 git**：开发者首次审核后 commit `tests/screenshots/baseline/`，CI 跑对比。current/diff 不入 git（已在 .gitignore 排除）。
+
+**已验证检测能力**（当前项目）：
+- 稳定基线：连续两帧 0.00% / 0.01% diff（在 0.1% 容差内）
+- 灵敏度：60px UI 偏移 → 0.85% diff（17562 像素），REGRESSED
+- 即：能抓 60px 以上的 UI 改动，不会被字体抗锯齿触发
 
 ## 配套：CLAUDE.md UI 硬规则
 

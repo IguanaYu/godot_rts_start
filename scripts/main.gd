@@ -1244,6 +1244,9 @@ func _fallback_check_victory() -> void:
 		if b.has_method("is_dead") and not b.is_dead() and b.building_type == BuildingScript.BuildingType.CASTLE:
 			enemy_castle_alive = true
 			break
+	# 两边都没 castle = 场景未初始化（main.tscn 启动瞬间 / test 场景），不算胜负
+	if not player_castle_alive and not enemy_castle_alive:
+		return
 	if not enemy_castle_alive:
 		_on_game_ended("victory")
 	elif not player_castle_alive:
