@@ -35,6 +35,7 @@ CommanderRegistry="*res://scripts/commander/commander_registry.gd"
 CommanderContext="*res://scripts/commander/commander_context.gd"
 PassiveSkillManager="*res://scripts/commander/passive_skill_manager.gd"
 CommanderChoice="*res://scripts/commander/commander_choice.gd"
+UIBoundsValidator="*res://addons/ui_safety/runtime/ui_bounds_validator.gd"
 
 [display]
 
@@ -42,6 +43,10 @@ window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/ui_safety/plugin.cfg")
 
 [internationalization]
 
