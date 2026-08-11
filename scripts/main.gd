@@ -166,6 +166,7 @@ func _run_init_steps() -> void:
 	spawner_module.set_script(load("res://scripts/systems/game_spawner.gd"))
 	add_child(spawner_module)
 	spawner_module.initialize(self, player_units_node, enemy_units_node, buildings_node)
+	spawner_module.set_floating_text_layer(ui_module.get_floating_text_layer())
 	spawner_module.set_difficulty(_diff_preset)
 	building_placer = Node.new()
 	building_placer.set_script(load("res://scripts/systems/building_placer.gd"))

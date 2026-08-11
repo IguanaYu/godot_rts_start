@@ -36,6 +36,7 @@ var _speed_wrapper: Control
 
 # T2 PR-3: 底部横排 UI 条
 var _bottom_bar: Control
+var _floating_text_layer: CanvasLayer
 
 # PR-T2-5: 时代锁状态记录（检测 锁→解锁 翻转做高亮闪烁）
 var _prev_era_locked: Dictionary = {}
@@ -70,6 +71,10 @@ var objectives_panel: Node = null
 # 选择信息
 var selection_info_label: Label
 var _pause_overlay: ColorRect  # 用于切换主菜单/设置页
+
+
+func get_floating_text_layer() -> CanvasLayer:
+	return _floating_text_layer
 
 # Key mapping
 var key_to_mode: Dictionary = {}
@@ -207,6 +212,13 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	canvas.layer = 10
 	_main_node.add_child(canvas)
 	_ui_canvas = canvas
+
+	# 跳字专用 CanvasLayer：盖过底部 UI(10) 和倍速按钮(50)，仅次于暂停菜单(100)
+	# 必须挂在 _main_node 下与其它 CanvasLayer 平级，不能挂在 canvas 内（嵌套会失效）
+	_floating_text_layer = CanvasLayer.new()
+	_floating_text_layer.name = "FloatingTextLayer"
+	_floating_text_layer.layer = 15
+	_main_node.add_child(_floating_text_layer)
 
 	# T2 PR-3: 底部横排 UI 条（QW + 详情 + 小地图）
 	var bottom_bar := preload("res://scripts/ui/bottom_ui_bar.gd").new()

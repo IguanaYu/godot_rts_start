@@ -16,6 +16,7 @@ var _upgrade_manager: Node = null  # upgrade_manager, duck typing
 var _unit_upgrade_manager: Node = null  # unit_upgrade_manager, duck typing
 var _t3_upgrade_manager: Node = null  # T3 PR-2: t3_upgrade_manager, duck typing
 var _next_net_id: int = 1
+var _floating_text_layer: CanvasLayer = null  # 跳字专用 CanvasLayer(layer=15)，由 main 注入
 
 # Callbacks for building placement (grid module functions)
 var place_building_callback: Callable
@@ -40,6 +41,10 @@ func set_unit_upgrade_manager(mgr: Node) -> void:
 # T3 PR-2: 设置 T3 升级管理器
 func set_t3_upgrade_manager(mgr: Node) -> void:
 	_t3_upgrade_manager = mgr
+
+# 设置跳字专用 CanvasLayer（由 main.gd 在 ui_module 创建后注入）
+func set_floating_text_layer(layer: CanvasLayer) -> void:
+	_floating_text_layer = layer
 
 ## 产兵统一入口：应用 token 升级 + 金币全局升级到新单位
 func _apply_global_upgrades(unit) -> void:
@@ -646,7 +651,10 @@ func spawn_dust_effect(pos: Vector2) -> void:
 func show_floating_text(text: String, color: Color, world_pos: Vector2, duration_mult: float = 1.0) -> void:
 	var ft := Node2D.new()
 	ft.set_script(load("res://scripts/effects/floating_text.gd"))
-	_main_node.add_child(ft)
+	if _floating_text_layer != null:
+		_floating_text_layer.add_child(ft)
+	else:
+		_main_node.add_child(ft)
 	ft.setup(text, color, world_pos, duration_mult)
 
 # --- 情绪系统节点 ---
