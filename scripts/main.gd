@@ -1445,6 +1445,9 @@ func _input(event: InputEvent) -> void:
 			KEY_F2:
 				combat_ctrl.select_all_army()
 				ui_module.show_army_selected_feedback(combat_ctrl.selected_units.size())
+			KEY_F3:
+				add_gold(1000)
+				show_floating_text("Debug +1000G", Color(1.0, 0.85, 0.0), get_global_mouse_position())
 			KEY_F4:
 				toggle_outpost_status_panels()
 			KEY_TAB:

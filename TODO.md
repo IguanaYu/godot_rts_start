@@ -10,10 +10,6 @@
 
 ### 调研后续
 
-- **[P2] Debug 快捷键 - 测试用加金币** #debug #测试
-  按某个键（如 F1 或 G）给玩家加 1000 金币，方便测试时不用等经济。
-  创建: 2026-08-11
-
 - **[P1] 音效系统 - 收集音效素材** #音效 #资源
   调研已完成，方案落地。现在需要自己去收集合适的音效文件（BGM、UI 反馈、单位语音、技能音效等）。
   关联: [docs/research/audio_06_research_summary.md](docs/research/audio_06_research_summary.md), [docs/research/audio_05_sound_inventory.md](docs/research/audio_05_sound_inventory.md), [docs/research/audio_01_free_resources.md](docs/research/audio_01_free_resources.md)
@@ -79,6 +75,12 @@
 _（暂无）_
 
 ## ✅ 已完成
+
+- [x] **Debug 快捷键 - 测试用加金币** #debug #测试
+  按 **F3** 给玩家 +1000 金币，附带鼠标位置黄色跳字反馈。
+  关联: [scripts/main.gd](scripts/main.gd) (`_input` 的 `KEY_F3` 分支)
+  创建: 2026-08-11
+  完成: 2026-08-11
 
 - [x] **T3 阶段设计 - 接着聊设计** #设计 #t3
   T3 终局与扩展的调研（终局框架 + UI 改造决策清单 + 设计定式调研评估），已拆解成 A/C/E/F/G/H/I 多个模块决策稿。
