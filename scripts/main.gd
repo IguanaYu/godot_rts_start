@@ -1209,10 +1209,20 @@ func _on_age_upgrade_complete() -> void:
 
 
 # T2 PR-1: 解锁对应时代的 PlaceMode（追加到 unlocked_items）+ 触发建造栏灰显刷新
+# T3 PR-1: T2 加 MONASTERY+MONK_UNIT；T3 加 LANCER（沿用 BARRACKS 生产线）
 func _unlock_age_items(age: int) -> void:
 	var to_unlock: Array[int] = []
 	if age >= 2:
-		to_unlock = [D.PlaceMode.ARCHERY_RANGE, D.PlaceMode.ARCHER]
+		# T2 解锁：靶场 + 弓兵 + 修道院 + 僧侣
+		to_unlock = [
+			D.PlaceMode.ARCHERY_RANGE,
+			D.PlaceMode.ARCHER,
+			D.PlaceMode.MONASTERY,
+			D.PlaceMode.MONK_UNIT,
+		]
+	if age >= 3:
+		# T3 解锁：长矛兵（沿用 BARRACKS 生产线，不新建长矛兵营）
+		to_unlock.append(D.PlaceMode.LANCER)
 	for mode in to_unlock:
 		var m: int = int(mode)
 		if m not in unlocked_items:
@@ -1705,16 +1715,26 @@ func _apply_loadout_filter() -> void:
 		map_config.available_items = typed
 
 
-# T2 PR-1: 初始化 unlocked_items（T1 阶段：available_items 去掉 ARCHERY_RANGE + ARCHER）
-# 注意：时代升级时 _unlock_age_items() 会往里追加 T2 内容
+# T3 PR-1: 初始化 unlocked_items（T1 阶段过滤掉所有非 T1 内容）
+# - ARCHERY_RANGE / ARCHER ：T2 解锁
+# - MONASTERY / MONK_UNIT  ：T2 解锁（T3 PR-1 调整）
+# - LANCER                  ：T3 解锁（T3 PR-1 调整）
+# 注意：时代升级时 _unlock_age_items() 会往里追加 T2/T3 内容
 func _init_unlocked_items() -> void:
 	unlocked_items.clear()
 	var source: Array = D.ALL_ITEMS
 	if map_config != null and not map_config.available_items.is_empty():
 		source = map_config.available_items
+	var t1_filtered := {
+		D.PlaceMode.ARCHERY_RANGE: true,
+		D.PlaceMode.ARCHER: true,
+		D.PlaceMode.MONASTERY: true,
+		D.PlaceMode.MONK_UNIT: true,
+		D.PlaceMode.LANCER: true,
+	}
 	for mode in source:
 		var m: int = int(mode)
-		if m != D.PlaceMode.ARCHERY_RANGE and m != D.PlaceMode.ARCHER:
+		if not t1_filtered.has(m):
 			unlocked_items.append(m)
 
 
