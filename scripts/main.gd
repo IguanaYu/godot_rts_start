@@ -776,27 +776,12 @@ func _keycode_to_group_index(keycode: int) -> int:
 
 
 func _handle_number_key(key: int, event: InputEventKey) -> void:
+	# QW 改造：数字键 1-9 永远只用于编队，不再造兵（造兵改用 QWER ASDF）
 	# Ctrl+数字键：分配编队
 	if event.ctrl_pressed:
 		var gi := _keycode_to_group_index(key)
 		if gi >= 0:
 			ctrl_group_mgr.assign_group(gi, combat_ctrl.selected_units)
-		return
-
-	# Q/W模式下：放置单位/建筑（按槽位 1,2,3... 连续绑定）
-	if input_mode.is_unit_production():
-		var idx: int = key - KEY_1
-		if idx >= 0 and idx < ui_module.unit_modes_ordered.size():
-			var mode: int = ui_module.unit_modes_ordered[idx]
-			_quick_produce_unit(mode)  # B1: 快捷键直接造，不进入放置模式
-		return
-
-	if input_mode.is_building_placement():
-		var idx: int = key - KEY_1
-		if idx >= 0 and idx < ui_module.building_modes_ordered.size():
-			var mode: int = ui_module.building_modes_ordered[idx]
-			ui_module.switch_tab_for_mode(mode)
-			_on_place_mode_requested(mode)
 		return
 
 	# 默认模式：编队操作
@@ -816,6 +801,24 @@ func _handle_number_key(key: int, event: InputEventKey) -> void:
 	else:
 		ctrl_group_mgr.select_group(gi, combat_ctrl)
 	_group_tap_times[gi] = now
+
+
+# QW 改造：处理 QWER ASDF 网格键（仅 QW 模式激活时）
+func _handle_grid_key(key: int) -> void:
+	if not ui_module.key_to_mode.has(key):
+		return
+	var mode: int = ui_module.key_to_mode[key]
+	if input_mode.is_unit_production():
+		_quick_produce_unit(mode)
+	elif input_mode.is_building_placement():
+		ui_module.switch_tab_for_mode(mode)
+		_on_place_mode_requested(mode)
+
+
+# QW 改造：Tab 键永远切菜单（单位 → 建筑 → 据点 → 单位），同时自动进入对应 QW 模式
+# cycle_subgroup 子组切换功能取消快捷键
+func _handle_tab_key(shift_pressed: bool) -> void:
+	ui_module.cycle_tab()
 
 
 # --- 多人建造/生产 (由 LockstepSync 回调) ---
@@ -1416,24 +1419,26 @@ func _input(event: InputEvent) -> void:
 				ui_module.decrease_game_speed()
 			KEY_EQUAL, KEY_KP_ADD:
 				ui_module.increase_game_speed()
-			KEY_Q:
-				if not event.ctrl_pressed:
-					input_mode.enter_unit_production()
-			KEY_W:
-				if not event.ctrl_pressed:
-					input_mode.enter_building_placement()
-			KEY_A:
-				if not combat_ctrl.is_empty():
+			KEY_Q, KEY_W, KEY_E, KEY_R, KEY_A, KEY_S, KEY_D, KEY_F:
+				# QW 改造：QWER ASDF 是 QW 栏槽位键，仅在 QW 模式激活时造兵
+				# 默认模式下：A/S 仍下达部队命令（attack-move / stop），Q/W/E/R/D/F 默认无操作
+				# 切菜单的唯一入口是 Tab 键，Q/W 不再切菜单
+				if input_mode.is_unit_production() or input_mode.is_building_placement():
+					if not event.ctrl_pressed:
+						_handle_grid_key(key)
+				elif key == KEY_A and not combat_ctrl.is_empty():
 					combat_ctrl.set_attack_move_mode(true)
 					building_placer.cancel_place_mode()
 					cursor_manager.set_attack(true)
+				elif key == KEY_S:
+					combat_ctrl.stop_selected()
+				# Q/W/E/R/D/F 默认模式下不响应
+				# E/R/D/F 在默认模式下暂无绑定（保留）
 			KEY_Y:
 				input_mode.enter_rally_placement()
 				building_placer.cancel_place_mode()
 				combat_ctrl.set_attack_move_mode(false)
 				cursor_manager.set_attack(input_mode.is_rally_placement())
-			KEY_S:
-				combat_ctrl.stop_selected()
 			KEY_U:
 				# T2 PR-1: 时代升级触发/取消（升级中按 U = 取消，全额退款）
 				if age_upgrade_target > 0:
@@ -1452,8 +1457,6 @@ func _input(event: InputEvent) -> void:
 				var slot_index: int = SLOT_KEYS.find(key)
 				if slot_index >= 0 and slot_index < _available_skills.size():
 					_start_commander_skill(_available_skills[slot_index])
-			KEY_R:
-				get_tree().reload_current_scene()
 			KEY_G:
 				building_placer.show_grid = not building_placer.show_grid
 				if building_placer.grid_overlay:
@@ -1471,7 +1474,8 @@ func _input(event: InputEvent) -> void:
 			KEY_F4:
 				toggle_outpost_status_panels()
 			KEY_TAB:
-				combat_ctrl.cycle_subgroup(not event.shift_pressed)
+				# QW 改造：Tab 双语义 —— QW 模式激活时循环切菜单，默认时 cycle_subgroup
+				_handle_tab_key(event.shift_pressed)
 			KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0:
 				_handle_number_key(key, event)
 

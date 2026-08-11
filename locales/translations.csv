@@ -96,8 +96,18 @@ UI_MOUSE_SENSITIVITY,Mouse Sensitivity,鼠标灵敏度,マウス感度
 UI_VIEW_KEYBINDS,View Keybinds,查看按键绑定,キーバインド
 UI_KEYBINDS_TITLE,Keybindings,按键绑定,キーバインド
 UI_BACK_TO_SETTINGS,Back to Settings,返回设置,設定に戻る
-MODE_UNIT_PRODUCTION,Unit Mode [Q]  Press 1-4 to place,造兵模式 [Q]  按 1-4 放置,ユニットモード [Q]  1-4で配置
-MODE_BUILDING_PLACEMENT,Build Mode [W]  Press 1-6 to place,建筑模式 [W]  按 1-6 放置,建築モード [W]  1-6で配置
+UI_KEYBINDS_CONTROL_GROUP,Select Control Group (1-9),选择编队 (1-9),編隊を選択 (1-9)
+UI_KEYBINDS_QW_SLOTS,QW Bar Slots (QW mode active),QW 栏槽位 (QW 模式激活时),QW スロット (QW モード時)
+UI_KEYBINDS_CYCLE_TAB,Cycle QW Tab,QW 栏切菜单,QW タブ切替
+UI_KEYBINDS_UNIT_COMMANDS,Attack-Move / Stop / Hold / Patrol,攻击移动 / 停止 / 驻守 / 巡逻,アタック移動 / 停止 / 保持 / パトロール
+UI_KEYBINDS_COMMANDER_SKILLS,Commander Skill Slots 1-4,指挥官技能槽 1-4,指揮官スキル 1-4
+UI_KEYBINDS_RALLY,Set Rally Point,设置集结点,ラリーポイント設定
+UI_KEYBINDS_AGE_UPGRADE,Age Upgrade / Cancel,时代升级 / 取消,時代アップグレード / キャンセル
+UI_KEYBINDS_JUMP_BASE,Jump to Base,跳回主基地,ベースへジャンプ
+UI_KEYBINDS_TOGGLE_GRID,Toggle Build Grid,切换建造网格显示,建築グリッド表示切替
+UI_KEYBINDS_CANCEL,Cancel / Exit Mode,取消 / 退出模式,キャンセル / モード終了
+MODE_UNIT_PRODUCTION,Unit Mode  Press QWER ASDF to place,造兵模式  按 QWER ASDF 放置,ユニットモード  QWER ASDFで配置
+MODE_BUILDING_PLACEMENT,Build Mode  Press QWER ASDF to place,建筑模式  按 QWER ASDF 放置,建築モード  QWER ASDFで配置
 FEEDBACK_ALL_ARMY,All Army Selected (%d),全选军队 (%d),全軍選択 (%d)
 SKILL_ORBITAL_STRIKE,Orbital Strike,轨道打击,軌道爆撃
 SKILL_ORBITAL_STRIKE_DESC,Deal area damage to target location,对目标区域造成范围伤害,目標地点に範囲ダメージを与える

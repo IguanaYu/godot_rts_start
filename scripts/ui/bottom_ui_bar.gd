@@ -34,22 +34,22 @@ func initialize(main_node: Node2D) -> void:
 	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(hbox)
 
-	# === 左段 ~30%：QW 建造栏区 ===
+	# === 左段 ~35%：QW 建造栏区（QW 改造：30→35 容纳 4×2 Grid）===
 	_qw_section = Control.new()
 	_qw_section.name = "QWSection"
 	_qw_section.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_qw_section.size_flags_stretch_ratio = 0.30
+	_qw_section.size_flags_stretch_ratio = 0.35
 	_qw_section.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hbox.add_child(_qw_section)
 
 	# 段间分割线 1（QW | 详情）
 	hbox.add_child(_make_divider())
 
-	# === 中段 ~40%：详情面板 ===
+	# === 中段 ~49%：详情面板（QW 改造：40→49，更宽敞）===
 	_detail_section = Control.new()
 	_detail_section.name = "DetailSection"
 	_detail_section.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_detail_section.size_flags_stretch_ratio = 0.40
+	_detail_section.size_flags_stretch_ratio = 0.49
 	_detail_section.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hbox.add_child(_detail_section)
 
@@ -61,11 +61,11 @@ func initialize(main_node: Node2D) -> void:
 	# 段间分割线 2（详情 | 小地图）
 	hbox.add_child(_make_divider())
 
-	# === 右段 ~20%：小地图区（CenterContainer 让固定尺寸小地图居中，不拉伸） ===
+	# === 右段 ~16%：小地图区（QW 改造：20→16，原 20% 浪费 ~35px×2）===
 	_minimap_section = CenterContainer.new()
 	_minimap_section.name = "MinimapSection"
 	_minimap_section.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_minimap_section.size_flags_stretch_ratio = 0.20
+	_minimap_section.size_flags_stretch_ratio = 0.16
 	_minimap_section.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hbox.add_child(_minimap_section)
 

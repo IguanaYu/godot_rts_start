@@ -155,6 +155,8 @@ const DISPLAY_ORDER := [
 ]
 
 # --- 固定快捷键映射（每种物品始终对应同一个按键） ---
+# 注意：MODE_HOTKEYS 现仅用于「预战配置 UI 显示历史标签」，运行时不再读取。
+# QW 栏运行时快捷键改用 GRID_KEYS（位置 = 槽位 0-7）。
 const MODE_HOTKEYS := {
 	PlaceMode.SOLDIER:       KEY_1,
 	PlaceMode.ARCHER:        KEY_2,
@@ -167,6 +169,13 @@ const MODE_HOTKEYS := {
 	PlaceMode.MONASTERY:     KEY_9,
 	PlaceMode.CASTLE:        KEY_0,
 }
+
+# --- QW 栏 4×2 Grid 位置快捷键（QW 模式激活时按下造对应槽位的单位/建筑）---
+const GRID_KEYS := [
+	KEY_Q, KEY_W, KEY_E, KEY_R,
+	KEY_A, KEY_S, KEY_D, KEY_F,
+]
+const GRID_MAX_SLOTS := 8
 
 # --- 按钮图标纹理路径 ---
 const MODE_ICONS := {

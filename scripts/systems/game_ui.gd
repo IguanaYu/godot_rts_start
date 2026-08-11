@@ -44,9 +44,10 @@ var _prev_era_locked: Dictionary = {}
 # 标签页
 var active_tab: int = 0  # T2 PR-3: 0=单位, 1=建筑, 2=据点（已移除 INFO tab）
 var tab_buttons: Array[Button] = []
-var unit_container: HBoxContainer
-var building_container: HBoxContainer
-var outpost_container: HBoxContainer  # PR-4 据点建筑容器
+var unit_container: VBoxContainer  # QW 改造：VBox 包 2 行 HBox，模拟 4×2 Grid
+var building_container: VBoxContainer
+var outpost_container: VBoxContainer  # PR-4 据点建筑容器
+var _grid_rows: Dictionary = {}  # container → [HBox row0, HBox row1]
 var unit_modes_ordered: Array = []      # 玩家选中的单位，按显示顺序
 var building_modes_ordered: Array = []  # 玩家选中的建筑，按显示顺序
 
@@ -319,35 +320,31 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	tab_row.add_child(outpost_tab)
 	tab_buttons.append(outpost_tab)
 
-	# --- 单位图标容器 ---
-	unit_container = HBoxContainer.new()
-	unit_container.add_theme_constant_override("separation", 10)
-	unit_container.alignment = BoxContainer.ALIGNMENT_CENTER
-	unit_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# --- 单位图标容器（4×2 Grid：VBox 包 2 HBox，槽位 = QWER ASDF）---
+	unit_container = _make_grid_4x2()
 	content.add_child(unit_container)
 
 	# --- 建筑图标容器 ---
-	building_container = HBoxContainer.new()
-	building_container.add_theme_constant_override("separation", 10)
-	building_container.alignment = BoxContainer.ALIGNMENT_CENTER
-	building_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	building_container = _make_grid_4x2()
 	content.add_child(building_container)
 
 	# --- PR-4 据点建筑容器（占领前隐藏）---
-	outpost_container = HBoxContainer.new()
-	outpost_container.add_theme_constant_override("separation", 10)
-	outpost_container.alignment = BoxContainer.ALIGNMENT_CENTER
-	outpost_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	outpost_container = _make_grid_4x2()
 	outpost_container.visible = false
 	content.add_child(outpost_container)
 
-	# --- 生成按钮（按槽位分配 1,2,3... 连续键）---
-	for i in range(unit_modes.size()):
-		_add_icon_button(unit_modes[i], unit_container, KEY_1 + i)
-	for i in range(building_modes.size()):
-		_add_icon_button(building_modes[i], building_container, KEY_1 + i)
+	# --- 生成按钮（按槽位 0-7 分配 GRID_KEYS: Q W E R / A S D F）---
+	# 硬上限：每个 Tab 同时显示 ≤ 8 个，超出裁掉并警告（设计约束）
+	if unit_modes.size() > D.GRID_MAX_SLOTS:
+		push_warning("QW 单位栏超过 %d 个槽位（%d 个），多余将被裁掉" % [D.GRID_MAX_SLOTS, unit_modes.size()])
+	if building_modes.size() > D.GRID_MAX_SLOTS:
+		push_warning("QW 建筑栏超过 %d 个槽位（%d 个），多余将被裁掉" % [D.GRID_MAX_SLOTS, building_modes.size()])
+	for i in range(min(unit_modes.size(), D.GRID_MAX_SLOTS)):
+		_add_icon_button(unit_modes[i], unit_container, D.GRID_KEYS[i], i)
+	for i in range(min(building_modes.size(), D.GRID_MAX_SLOTS)):
+		_add_icon_button(building_modes[i], building_container, D.GRID_KEYS[i], i)
 	# PR-4：据点分类的 ALTAR_ARCHER 按钮（占领后才能切到此 tab）
-	_add_icon_button(D.PlaceMode.ALTAR_ARCHER, outpost_container, KEY_1)
+	_add_icon_button(D.PlaceMode.ALTAR_ARCHER, outpost_container, D.GRID_KEYS[0], 0)
 
 	# 默认显示单位页
 	_switch_tab(0)
@@ -628,21 +625,60 @@ func _make_trimmed_icon(tex: Texture2D) -> AtlasTexture:
 # ============================================================
 # 图标按钮工厂
 # ============================================================
-func _add_icon_button(mode: int, container: HBoxContainer, slot_key: Key) -> void:
+
+# QW 改造：构造 4×2 网格容器（VBox 包 2 个 HBox，避免 GridContainer 拉伸子节点到 90×94 撑破 QW 段）
+func _make_grid_4x2() -> VBoxContainer:
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 8)
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var row0 := HBoxContainer.new()
+	row0.add_theme_constant_override("separation", 8)
+	row0.alignment = BoxContainer.ALIGNMENT_CENTER
+	row0.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var row1 := HBoxContainer.new()
+	row1.add_theme_constant_override("separation", 8)
+	row1.alignment = BoxContainer.ALIGNMENT_CENTER
+	row1.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(row0)
+	vbox.add_child(row1)
+	_grid_rows[vbox] = [row0, row1]
+	return vbox
+
+
+# QW 改造：把按钮加到 4×2 网格的对应槽位（0-3 = row0，4-7 = row1）
+func _add_to_grid(grid: Container, slot_index: int, child: Control) -> void:
+	if not _grid_rows.has(grid):
+		grid.add_child(child)
+		return
+	var rows: Array = _grid_rows[grid]
+	var target_row: HBoxContainer = rows[1] if slot_index >= 4 else rows[0]
+	target_row.add_child(child)
+
+
+func _add_icon_button(mode: int, container: Container, slot_key: Key, slot_index: int = 0) -> void:
 	var hotkey: Key = slot_key
-	var hotkey_index: int = (hotkey - KEY_1 + 1) if hotkey != KEY_0 else 0
+	var hotkey_label: String = OS.get_keycode_string(hotkey) if hotkey != KEY_0 else ""
 	var cost: int = D.COSTS.get(mode, 0)
 	var mode_name: String = tr(D.MODE_NAMES.get(mode, "ENTITY_UNIT"))
 	var icon_tex: Texture2D = D.ICON_TEXTURES.get(mode, null) as Texture2D
-
-	key_to_mode[hotkey] = mode
+	# QW 改造：key_to_mode 改为切 Tab 时动态重建（_rebuild_key_to_mode_for_tab），不在按钮工厂填
 
 	var wrapper := Control.new()
-	wrapper.custom_minimum_size = Vector2(72, 72)
+	# QW 改造：56×56（4×2 总高 = 2×56+8=120，加 Tab 28+sep 4=160 ≤ QW 段可用 163）
+	wrapper.custom_minimum_size = Vector2(56, 56)
+	wrapper.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	wrapper.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
 	var bg := _make_ninepatch(np_btn_blue)
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	bg.name = "ButtonBG"
+	# QW 改造：覆盖 patch_margin，避免 NinePatchRect 自报 minimum_size = 94×94 撑大 wrapper
+	# 56×56 按钮只需 ~10px 边框 patch，边框照样能画完整
+	bg.patch_margin_left = 10
+	bg.patch_margin_right = 10
+	bg.patch_margin_top = 10
+	bg.patch_margin_bottom = 10
 	wrapper.add_child(bg)
 
 	if icon_tex != null:
@@ -660,7 +696,7 @@ func _add_icon_button(mode: int, container: HBoxContainer, slot_key: Key) -> voi
 		wrapper.add_child(icon)
 
 	var key_label := Label.new()
-	key_label.text = str(hotkey_index)
+	key_label.text = hotkey_label
 	key_label.add_theme_font_size_override("font_size", 14)
 	key_label.add_theme_color_override("font_color", Color(1, 1, 1))
 	key_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
@@ -721,7 +757,11 @@ func _add_icon_button(mode: int, container: HBoxContainer, slot_key: Key) -> voi
 	cost_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	wrapper.add_child(cost_label)
 
-	container.add_child(wrapper)
+	# QW 改造：加到 4×2 网格的对应 row（0-3 row0，4-7 row1）
+	if container is VBoxContainer and _grid_rows.has(container):
+		_add_to_grid(container, slot_index, wrapper)
+	else:
+		container.add_child(wrapper)
 	ui_buttons[mode] = wrapper
 
 
@@ -742,6 +782,42 @@ func _switch_tab(tab_index: int) -> void:
 		btn.scale = Vector2(1.2, 1.2)
 		var tween := btn.create_tween()
 		tween.tween_property(btn, "scale", Vector2(1.0, 1.0), 0.25).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	# QW 改造：切 Tab 时重建 key_to_mode，让 QWER ASDF 对应当前 Tab 的前 8 个槽位
+	_rebuild_key_to_mode_for_tab(tab_index)
+	# QW 改造：切 Tab 时自动进入对应 QW 模式（让 QWER ASDF 立刻可用）
+	# 注意：避免与 main._on_input_mode_changed 形成循环 —— 仅在模式不一致时切换
+	var im: Node = _main_node.get("input_mode") if _main_node else null
+	if im != null:
+		match tab_index:
+			0:
+				if not im.is_unit_production():
+					im.enter_unit_production()
+			1, 2:
+				# 建筑/据点 tab 都进 building_placement（据点生产路径特殊复用此模式）
+				if not im.is_building_placement():
+					im.enter_building_placement()
+
+
+# QW 改造：根据当前 Tab 重建 GRID_KEYS → PlaceMode 映射
+# 单位 Tab：QWER ASDF → unit_modes_ordered[0..7]
+# 建筑 Tab：QWER ASDF → building_modes_ordered[0..7]
+# 据点 Tab：Q → ALTAR_ARCHER（只 1 个），其他键无映射
+func _rebuild_key_to_mode_for_tab(tab_index: int) -> void:
+	key_to_mode.clear()
+	var modes: Array = []
+	match tab_index:
+		0:
+			modes = unit_modes_ordered
+		1:
+			modes = building_modes_ordered
+		2:
+			# PR-4 据点：只一个 ALTAR_ARCHER，绑定到 Q（GRID_KEYS[0]）
+			key_to_mode[D.GRID_KEYS[0]] = D.PlaceMode.ALTAR_ARCHER
+			return
+		_:
+			return
+	for i in range(min(modes.size(), D.GRID_MAX_SLOTS)):
+		key_to_mode[D.GRID_KEYS[i]] = modes[i]
 
 
 func switch_tab_for_mode(mode: int) -> void:
@@ -755,6 +831,17 @@ func switch_tab_for_mode(mode: int) -> void:
 
 func switch_tab(tab_index: int) -> void:
 	_switch_tab(tab_index)
+
+
+# QW 改造：Tab 键循环切换菜单（单位 → 建筑 → 据点[可见时] → 单位）
+func cycle_tab() -> void:
+	var next_tab: int = active_tab + 1
+	# 跳过不可见的 tab（据点 tab 默认隐藏）
+	while next_tab < tab_buttons.size() and not tab_buttons[next_tab].visible:
+		next_tab += 1
+	if next_tab >= tab_buttons.size():
+		next_tab = 0
+	_switch_tab(next_tab)
 
 
 # ============================================================
@@ -861,11 +948,15 @@ func _show_tooltip() -> void:
 	var mode_name: String = tr(D.MODE_NAMES.get(mode, "?"))
 	# T1: 动态造价（农场递增）—— 通过 building_placer.get_current_cost 取
 	var cost: int = _main_node.building_placer.get_current_cost(mode) if _main_node.get("building_placer") else D.COSTS.get(mode, 0)
-	var hotkey: Key = D.MODE_HOTKEYS.get(mode, KEY_0)
-	var hotkey_index: int = (hotkey - KEY_1 + 1) if hotkey != KEY_0 else 0
+	# QW 改造：键 → mode 映射在 key_to_mode（动态），反查 mode → 键
+	var hotkey_label: String = ""
+	for k in key_to_mode.keys():
+		if key_to_mode[k] == mode:
+			hotkey_label = OS.get_keycode_string(k)
+			break
 	var type_str: String = tr("TAB_UNITS") if D.is_unit_mode(mode) else tr("TAB_BUILDINGS")
 
-	tooltip_label.text = "%s (%s)\n$%d  [%d]" % [mode_name, type_str, cost, hotkey_index]
+	tooltip_label.text = "%s (%s)\n$%d  [%s]" % [mode_name, type_str, cost, hotkey_label]
 	tooltip_panel.visible = true
 
 	var mouse_pos := _main_node.get_viewport().get_mouse_position()
@@ -1691,25 +1782,32 @@ func _open_keybinds_page() -> void:
 	spacer.custom_minimum_size = Vector2(0, 8)
 	vbox.add_child(spacer)
 
-	# 展示所有快捷键
-	var hotkeys: Dictionary = D.MODE_HOTKEYS
-	var names: Dictionary = D.MODE_NAMES
-	var sorted_modes: Array = D.DISPLAY_ORDER
-	for mode in sorted_modes:
-		if not hotkeys.has(mode):
-			continue
+	# QW 改造：展示快捷键总览（1-9=编队 / QWER ASDF=QW 栏槽位 / Tab=切菜单）
+	var keybind_rows: Array = [
+		["1-9", "UI_KEYBINDS_CONTROL_GROUP"],
+		["Q W E R / A S D F", "UI_KEYBINDS_QW_SLOTS"],
+		["Tab", "UI_KEYBINDS_CYCLE_TAB"],
+		["A / S / H / P", "UI_KEYBINDS_UNIT_COMMANDS"],
+		["Z X C V", "UI_KEYBINDS_COMMANDER_SKILLS"],
+		["Y", "UI_KEYBINDS_RALLY"],
+		["U", "UI_KEYBINDS_AGE_UPGRADE"],
+		["Space", "UI_KEYBINDS_JUMP_BASE"],
+		["G", "UI_KEYBINDS_TOGGLE_GRID"],
+		["ESC", "UI_KEYBINDS_CANCEL"],
+	]
+	for row_data in keybind_rows:
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 12)
 		row.alignment = BoxContainer.ALIGNMENT_CENTER
 
 		var name_label := Label.new()
-		name_label.text = names.get(mode, "?")
+		name_label.text = tr(row_data[1])
 		name_label.add_theme_font_size_override("font_size", 16)
 		name_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
 		name_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.4))
 		name_label.add_theme_constant_override("shadow_offset_x", 1)
 		name_label.add_theme_constant_override("shadow_offset_y", 1)
-		name_label.custom_minimum_size = Vector2(120, 0)
+		name_label.custom_minimum_size = Vector2(280, 0)
 		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		row.add_child(name_label)
 
@@ -1719,16 +1817,14 @@ func _open_keybinds_page() -> void:
 		arrow.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
 		row.add_child(arrow)
 
-		var key: Key = hotkeys[mode]
-		var key_index: int = (key - KEY_1 + 1) if key != KEY_0 else 0
 		var key_label := Label.new()
-		key_label.text = str(key_index)
+		key_label.text = row_data[0]
 		key_label.add_theme_font_size_override("font_size", 16)
 		key_label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
 		key_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.4))
 		key_label.add_theme_constant_override("shadow_offset_x", 1)
 		key_label.add_theme_constant_override("shadow_offset_y", 1)
-		key_label.custom_minimum_size = Vector2(40, 0)
+		key_label.custom_minimum_size = Vector2(180, 0)
 		key_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		row.add_child(key_label)
 
