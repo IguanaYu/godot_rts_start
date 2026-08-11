@@ -41,7 +41,11 @@
     完成: 2026-08-11
 
 - **[P0] T3 阶段实施 - 按 PR 顺序写代码** #设计 #t3 #技术设计
-  T3 各模块决策稿已聊完，技术设计文档已落地为 4 个 PR（PR-1 解锁调整 / PR-2 T3 学院+N 选 1 升级 / PR-3 终局机制 / PR-4 塔数值）。决策稿与代码冲突已和用户对齐（标签系统、场景替换、敌方城堡=据点、扩展 7 项统计等）。下一步可以交给执行代理按 PR 顺序写代码。
+  T3 各模块决策稿已聊完，技术设计文档已落地为 4 个 PR。当前进度：
+  - ✅ **PR-1** 解锁调整（僧侣/修道院 T2，长矛兵 T3）— 已完成
+  - 🔧 **PR-2** T3 学院 + N 选 1 升级 — **代码骨架已提交**（commit `ef53e3e`），32 个新文件 + 12 个改动文件。**待解决**：变体替换后视觉不区分（都像红色近战兵），需排查 variant_tint 应用或给不同兵种换基础贴图。冲突记录见 PR-2 文档第十三节
+  - 📋 **PR-3** 终局机制 — 待开始
+  - 📋 **PR-4** 塔数值 — 待开始
   关联:
     - 总览：[T3技术设计_00_总览.md](docs/active/T3技术设计_00_总览.md)
     - PR-1：[T3技术设计_01_PR1解锁调整.md](docs/active/T3技术设计_01_PR1解锁调整.md)
@@ -50,9 +54,14 @@
     - PR-4：[T3技术设计_04_PR4塔数值.md](docs/active/T3技术设计_04_PR4塔数值.md)
     - 决策稿原件：[A](docs/active/T3阶段设计_A模块经济推演.md) / [C](docs/active/T3阶段设计_C模块决策稿.md) / [C 候选库](docs/active/T3阶段设计_C模块设计候选库.md) / [E](docs/active/T3阶段设计_E模块决策稿.md) / [F](docs/active/T3阶段设计_F模块决策稿.md) / [G](docs/active/T3阶段设计_G模块决策稿.md) / [H](docs/active/T3阶段设计_H模块决策稿.md) / [I](docs/active/T3阶段设计_I模块决策稿.md)
   创建: 2026-08-11
-  后续: 按 PR-1 → PR-2 → PR-3 → PR-4 顺序执行；PR-2 最大（含 32 个新文件 + 多处代码改动），可考虑拆分多次提交
+  后续: PR-2 修完变体视觉 bug → PR-3 → PR-4
 
 ### Bug
+
+- **[P0] T3 变体替换后视觉不区分** #bug #t3 #视觉
+  所有兵种的 T3 升级替换后，场上单位看起来都是"红色近战兵"。根因方向：所有变体 .tscn 都继承 unit.tscn，BodySprite 贴图都是 Warrior_Idle.png（步兵贴图），只靠 variant_tint 染色区分。可能染色未在替换路径正确应用，或需要给不同兵种变体换各自基础贴图（Archer_Idle.png / monk Idle.png / Lancer_Idle.png）。
+  关联: [scripts/systems/t3_unit_replacer.gd](scripts/systems/t3_unit_replacer.gd), [scenes/units/t3_*.tscn](scenes/units/), [PR-2 文档第十三节](docs/active/T3技术设计_02_PR2_T3学院与升级.md)
+  创建: 2026-08-11
 
 - **[P0] 跳字提示层级错误** #bug #ui
   一些反馈跳字（如金币不足、无法建造、队列已满、NO_BARRACKS 等）现在显示在底部 UI 条的**下一层**，被底部 UI 遮挡。
@@ -69,6 +78,11 @@
 
   关联: [scripts/effects/floating_text.gd](scripts/effects/floating_text.gd), [scripts/systems/game_spawner.gd](scripts/systems/game_spawner.gd)（L624-628 是 show_floating_text 入口）, [scripts/systems/game_ui.gd](scripts/systems/game_ui.gd)
   创建: 2026-08-10
+
+- **[P1] Q/W 生产栏图标溢出** #bug #ui
+  建筑生产栏（Q/W/E/R... 快捷键）单位种类超过 5 个时，后面的图标在 UI 上排不下、显示不全。需要做自适应布局（横向滚动 / 多行 / 折叠）或者重新设计这个栏的容量。
+  关联: [scripts/systems/game_ui.gd](scripts/systems/game_ui.gd)
+  创建: 2026-08-11
 
 ## 🔧 计划中
 
