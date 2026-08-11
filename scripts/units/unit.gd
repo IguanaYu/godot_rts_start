@@ -1184,6 +1184,10 @@ func take_damage(amount: int, attacker = null) -> void:
 	if atk_stats:
 		if atk_stats.bonus_vs_multiplier > 1.0 and unit_type in atk_stats.bonus_vs_unit_types:
 			final_amount = int(final_amount * atk_stats.bonus_vs_multiplier)
+		# T3 PR-2a 新增：按标签加成
+		if atk_stats.bonus_vs_tag_multiplier > 1.0 and not atk_stats.bonus_vs_tags.is_empty():
+			if _has_any_tag(atk_stats.bonus_vs_tags):
+				final_amount = int(final_amount * atk_stats.bonus_vs_tag_multiplier)
 		# 减伤计算（穿甲单位无视减伤）
 		if not atk_stats.ignores_damage_reduction:
 			var reduction = stat_set.get_value(StatSetClass.DAMAGE_REDUCTION)
@@ -1228,6 +1232,15 @@ func take_damage(amount: int, attacker = null) -> void:
 		AllyDistressSignal.report(global_position, self)
 	if health.hp <= 0:
 		die()
+
+# T3 PR-2a: 检查本单位是否拥有给定标签列表中的任一标签
+func _has_any_tag(tags: Array[StringName]) -> bool:
+	if stats_data == null or stats_data.unit_tags.is_empty():
+		return false
+	for t in tags:
+		if t in stats_data.unit_tags:
+			return true
+	return false
 
 func _player_retaliate(attacker) -> void:
 	if attack_disabled:

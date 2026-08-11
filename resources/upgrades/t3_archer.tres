@@ -1,0 +1,44 @@
+[gd_resource type="Resource" script_class="T3UpgradeData" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/upgrade/t3_upgrade_data.gd" id="data"]
+[ext_resource type="Script" path="res://scripts/upgrade/t3_upgrade_choice.gd" id="choice"]
+[ext_resource type="PackedScene" path="res://scenes/units/t3_archer_marksman.tscn" id="marksman_scene"]
+[ext_resource type="PackedScene" path="res://scenes/units/t3_archer_slayer.tscn" id="slayer_scene"]
+[ext_resource type="PackedScene" path="res://scenes/units/t3_archer_slow.tscn" id="slow_scene"]
+
+[sub_resource type="Resource" id="choice_marksman"]
+script = ExtResource("choice")
+choice_id = &"t3_archer_marksman"
+display_name = "神射手"
+description = "DMG +30% / 射程 +20%"
+variant_stats_id = &"t3_archer_marksman"
+variant_scene = ExtResource("marksman_scene")
+tint = Color(0.25, 0.75, 0.35, 1.0)
+positioning = "远程压制"
+
+[sub_resource type="Resource" id="choice_slayer"]
+script = ExtResource("choice")
+choice_id = &"t3_archer_slayer"
+display_name = "近战杀手"
+description = "对重甲单位 2 倍伤害"
+variant_stats_id = &"t3_archer_slayer"
+variant_scene = ExtResource("slayer_scene")
+tint = Color(0.85, 0.55, 0.15, 1.0)
+positioning = "反重甲"
+
+[sub_resource type="Resource" id="choice_slow"]
+script = ExtResource("choice")
+choice_id = &"t3_archer_slow"
+display_name = "减速射手"
+description = "DMG -20% / 射击附带减速"
+variant_stats_id = &"t3_archer_slow"
+variant_scene = ExtResource("slow_scene")
+tint = Color(0.65, 0.35, 0.75, 1.0)
+positioning = "控场"
+
+[resource]
+script = ExtResource("data")
+unit_type = 1
+unit_class_label = "弓兵"
+cost = 1000
+choices = Array[Resource]([SubResource("choice_marksman"), SubResource("choice_slayer"), SubResource("choice_slow")])

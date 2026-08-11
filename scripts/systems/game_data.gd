@@ -16,6 +16,8 @@ enum PlaceMode { NONE, WALL, TOWER, CASTLE, BARRACKS, SOLDIER, ARCHER, MONASTERY
 	STORMCALLER, SALAMANDER, SHADOWBLADE, BLINKER, WARDEN, STONEGUARD, VENOMBLADE, INQUISITOR, NECROMANCER, ENCHANTER,
 		# --- T1 新增建筑（值接末尾，零回归）---
 		FARM,
+		# --- T3 PR-2c: T3 学院 ---
+		ACADEMY,
 		# --- PR-4 据点建筑（占领后解锁）---
 		ALTAR_ARCHER }
 
@@ -59,6 +61,7 @@ const COSTS := {
 	PlaceMode.NECROMANCER: 160,
 	PlaceMode.ENCHANTER: 150,
 	PlaceMode.FARM: 100,
+	PlaceMode.ACADEMY: 300,
 	PlaceMode.ALTAR_ARCHER: 350,
 }
 
@@ -108,12 +111,13 @@ const MODE_NAMES := {
 	PlaceMode.NECROMANCER: "ENTITY_NECROMANCER",
 	PlaceMode.ENCHANTER: "ENTITY_ENCHANTER",
 	PlaceMode.FARM: "ENTITY_FARM",
+	PlaceMode.ACADEMY: "ENTITY_ACADEMY",
 	PlaceMode.ALTAR_ARCHER: "ENTITY_ALTAR_ARCHER",
 }
 
 # --- 默认全部物品 ---
 const ALL_ITEMS := [
-	PlaceMode.WALL, PlaceMode.FARM, PlaceMode.TOWER, PlaceMode.SOLDIER, PlaceMode.ARCHER,
+	PlaceMode.WALL, PlaceMode.FARM, PlaceMode.ACADEMY, PlaceMode.TOWER, PlaceMode.SOLDIER, PlaceMode.ARCHER,
 	PlaceMode.CASTLE, PlaceMode.BARRACKS, PlaceMode.MONASTERY,
 	PlaceMode.ARCHERY_RANGE, PlaceMode.LANCER, PlaceMode.MONK_UNIT,
 	PlaceMode.SHIELDBEARER, PlaceMode.BERSERKER, PlaceMode.CROSSBOWMAN,
@@ -147,7 +151,7 @@ const DISPLAY_ORDER := [
 	PlaceMode.NECROMANCER,
 	PlaceMode.ENCHANTER,
 	PlaceMode.FARM, PlaceMode.WALL, PlaceMode.TOWER, PlaceMode.BARRACKS,
-	PlaceMode.ARCHERY_RANGE, PlaceMode.MONASTERY, PlaceMode.CASTLE,
+	PlaceMode.ARCHERY_RANGE, PlaceMode.MONASTERY, PlaceMode.ACADEMY, PlaceMode.CASTLE,
 ]
 
 # --- 固定快捷键映射（每种物品始终对应同一个按键） ---
@@ -209,6 +213,7 @@ const MODE_ICONS := {
 const ICON_TEXTURES := {
 	PlaceMode.WALL:          preload("res://assets/buildings/blue_house/House1.png"),
 	PlaceMode.FARM:          preload("res://assets/buildings/blue_house/House1.png"),
+	PlaceMode.ACADEMY:       preload("res://assets/buildings/blue_monastery/Monastery.png"),
 	PlaceMode.TOWER:         preload("res://assets/buildings/blue_tower/Tower.png"),
 	PlaceMode.CASTLE:        preload("res://assets/buildings/blue_castle/Castle.png"),
 	PlaceMode.BARRACKS:      preload("res://assets/buildings/blue_barracks/Barracks.png"),
@@ -273,6 +278,7 @@ const BUILDING_SCENES := {
 	BuildingScript.BuildingType.ARCHERY: "res://scenes/buildings/archery_building.tscn",
 	BuildingScript.BuildingType.FARM: "res://scenes/buildings/farm.tscn",
 	BuildingScript.BuildingType.ALTAR_ARCHER: "res://scenes/buildings/altar_archer.tscn",
+	BuildingScript.BuildingType.ACADEMY: "res://scenes/buildings/academy.tscn",
 }
 
 # --- 建筑网格尺寸 ---
@@ -284,6 +290,7 @@ const BUILDING_GRID_SIZES := {
 	BuildingScript.BuildingType.MONASTERY: Vector2i(2, 2),
 	BuildingScript.BuildingType.ARCHERY: Vector2i(2, 2),
 	BuildingScript.BuildingType.FARM: Vector2i(1, 1),
+	BuildingScript.BuildingType.ACADEMY: Vector2i(2, 2),
 }
 
 # --- 单位场景路径 ---
@@ -339,6 +346,7 @@ const PLACE_MODE_TO_BUILDING := {
 	PlaceMode.ARCHERY_RANGE: BuildingScript.BuildingType.ARCHERY,
 	PlaceMode.FARM: BuildingScript.BuildingType.FARM,
 	PlaceMode.ALTAR_ARCHER: BuildingScript.BuildingType.ALTAR_ARCHER,
+	PlaceMode.ACADEMY: BuildingScript.BuildingType.ACADEMY,
 }
 
 # --- PlaceMode → UnitType 映射 ---

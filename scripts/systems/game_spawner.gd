@@ -14,6 +14,7 @@ var _buildings_node: Node2D
 var _diff_preset: Resource = null  # DifficultyPreset
 var _upgrade_manager: Node = null  # upgrade_manager, duck typing
 var _unit_upgrade_manager: Node = null  # unit_upgrade_manager, duck typing
+var _t3_upgrade_manager: Node = null  # T3 PR-2: t3_upgrade_manager, duck typing
 var _next_net_id: int = 1
 
 # Callbacks for building placement (grid module functions)
@@ -35,6 +36,10 @@ func set_upgrade_manager(mgr: Node) -> void:
 
 func set_unit_upgrade_manager(mgr: Node) -> void:
 	_unit_upgrade_manager = mgr
+
+# T3 PR-2: 设置 T3 升级管理器
+func set_t3_upgrade_manager(mgr: Node) -> void:
+	_t3_upgrade_manager = mgr
 
 ## 产兵统一入口：应用 token 升级 + 金币全局升级到新单位
 func _apply_global_upgrades(unit) -> void:
@@ -335,7 +340,24 @@ func _find_safe_spawn_pos(min_x: float, max_x: float, min_y: float, max_y: float
 # --- 放置时生成玩家单位 ---
 
 func place_player_unit(unit_type: int, click_pos: Vector2, stats_id: StringName = &"") -> void:
-	var unit := create_unit(unit_type, UnitScript.Team.PLAYER, click_pos, stats_id)
+	# T3 PR-2: 如果该兵种已选 T3 升级，直接生成变体
+	var scene_to_use: PackedScene = null
+	if _t3_upgrade_manager != null:
+		var choice_id = _t3_upgrade_manager.get_selected_choice(unit_type)
+		if choice_id != &"":
+			var data = _t3_upgrade_manager.get_upgrade_data(unit_type)
+			for c in data.choices:
+				if c.choice_id == choice_id:
+					scene_to_use = c.variant_scene
+					break
+	var unit: CharacterBody2D
+	if scene_to_use != null:
+		unit = scene_to_use.instantiate()
+		unit.position = click_pos
+		unit.set("alliance_id", UnitScript.Team.PLAYER)
+		unit.set("faction_color", Faction.ColorId.BLUE)
+	else:
+		unit = create_unit(unit_type, UnitScript.Team.PLAYER, click_pos, stats_id)
 	unit.net_id = _next_net_id
 	_next_net_id += 1
 	LockstepSync.register_unit(unit)
