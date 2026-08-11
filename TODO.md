@@ -136,7 +136,65 @@
   关联: [scripts/ui/detail_panel.gd](scripts/ui/detail_panel.gd), [scripts/systems/game_ui.gd](scripts/systems/game_ui.gd)
   创建: 2026-08-11
 
+- **[P1] 科技前置解锁提示显示英文 key** #bug #ui #翻译 #科技
+  点击未解锁科技的建筑按钮时，飘字提示显示的是英文翻译 key（如 "ERA_LOCKED"），而不是中文。
+
+  **根因**（已定位，待修）：[building_placer.gd:194](scripts/systems/building_placer.gd) `reason_to_translation_key` 会返回 `&"ERA_LOCKED"`，[main.gd:1490-1492](scripts/main.gd) 用 `tr(key)` 飘字。但 [translations.csv:277-283](locales/translations.csv) 里只有 `NO_BARRACKS / QUEUE_FULL / OUT_OF_RANGE / NEED_FARM / FARM_LIMIT / NO_GOLD`，**`ERA_LOCKED` 译项缺失**，Godot 的 tr() 找不到译项时直接回退成 key 本身。
+
+  另外 [main.gd:729-734](scripts/main.gd) `_show_era_locked_hint` 用的是 `ERA_LOCKED_HINT` 这个 key（**也缺失**），但这里代码层有中文兜底 `"需要升级到 T2 时代"`，所以这条路径不会显示英文；只有走 `reason_to_translation_key → tr("ERA_LOCKED")` 的路径（点击建造区/快捷键造兵）才会暴露英文。
+
+  **修复**：translations.csv 加两行：
+  - `ERA_LOCKED,Requires higher tier,需要升级到更高时代,より高い時代が必要です`
+  - `ERA_LOCKED_HINT,Requires higher tier,需要升级到更高时代,より高い時代が必要です`
+
+  注意路径 ② 也命中此 key（点击建造拦截），所以这个译项缺失会在 ② 修好后更明显。
+  关联: [scripts/systems/building_placer.gd](scripts/systems/building_placer.gd) (`reason_to_translation_key`), [scripts/main.gd](scripts/main.gd) (`_show_era_locked_hint` / `_quick_produce_unit` / `_do_place`), [locales/translations.csv](locales/translations.csv)
+  创建: 2026-08-11
+
+- **[P1] 进游戏初始时所有建筑按钮都显示为可点亮** #bug #ui #科技
+  刚进游戏（T1 时代，金币有限）时，建造栏所有建筑按钮看起来都是"亮"的，但实际上科技未解锁或金币不够，应该灰显。
+
+  **疑点**（待修前确认）：[game_ui.gd:1074-1118](scripts/systems/game_ui.gd) `_update_button_affordability` 本身逻辑没问题（按 reason 设 `modulate.a = 0.5` + `btn.disabled`），但这个函数似乎**只在金币变化/解锁事件时被调用**，进游戏初始化时漏调一次，所以首屏按钮全是默认状态（亮）。
+
+  **待确认**：
+  - game_ui.gd 哪里调 `_update_button_affordability`，初始化路径有没有走到
+  - 按钮节点初始 modulate.a 是否默认 1.0、btn.disabled 是否默认 false（写死在 .tscn）
+  - 修法：要么 game_ui `_ready` 末尾调一次，要么 main.gd 初始化金币后调一次
+
+  关联: [scripts/systems/game_ui.gd](scripts/systems/game_ui.gd) (`_update_button_affordability`), [scripts/main.gd](scripts/main.gd) (`_init` / 金币初始化), [scripts/ui/bottom_ui_bar.gd](scripts/ui/bottom_ui_bar.gd)
+  创建: 2026-08-11
+
+- **[P1] 科技已解锁但钱不够时仍可点击建造** #bug #ui #科技
+  现象：科技解锁了某建筑、但金币不够时，建造栏按钮看起来仍可点击，玩家点了之后兵营区照样能"建造"（应该被拦截）。
+
+  **疑点**：[game_ui.gd:1117-1118](scripts/systems/game_ui.gd) 写的是 `btn.disabled = not ok and not era_locked`——设计本意是让 ERA_LOCKED 状态保持 enable（这样点击能触发"需 T2 时代"飘字），但当 `reason == NO_GOLD` 时 `era_locked=false`、`ok=false`，公式算出来 disabled=true，**应该 disable**。所以现象的成因可能是：
+  1. 按钮 affordability 没及时刷新（跟上一条 bug ② 同根）
+  2. 或者点击穿透到 `_quick_produce_unit` / `_do_place`，而那里的拦截顺序不对
+  3. 或者建造区按钮的 click handler 没读 disabled 状态
+
+  **期望行为**：点击钱不够的建筑按钮 → 立即在鼠标位置/城堡头顶飘字"金币不足"，**不进入放置模式**。
+  关联: [scripts/systems/game_ui.gd](scripts/systems/game_ui.gd) (`_update_button_affordability`), [scripts/main.gd](scripts/main.gd) (`_on_place_mode_requested` / `_quick_produce_unit`), [scripts/systems/building_placer.gd](scripts/systems/building_placer.gd) (`check_build_block`)
+  创建: 2026-08-11
+
 ### UI 优化
+
+- **[P1] 建造预览视觉优化 - 半透明贴图 + 着色方块** #ui #视觉 #建造
+  现状：建造模式鼠标跟随预览只有绿色/红色方块（ColorRect），看不出将来造出来的建筑长什么样。期望：半透明建筑贴图 + 颜色方块叠加（valid=绿、invalid=红），让玩家在落点前就能预览建成效果。
+
+  **现状调研**（待实施前补全）：
+  - 预览节点生成在 [building_placer.gd](scripts/systems/building_placer.gd) 的 preview/ghost 相关代码（需读完整文件确认是 ColorRect 还是 Polygon2D）
+  - 建筑贴图来源：[D.ICON_TEXTURES](scripts/systems/game_data.gd) 是 spritesheet 切帧，但那是 icon 用的；建筑本体的落地贴图需要另找（scenes/buildings/*.tscn 里的 BodySprite 引用）
+
+  **设计要点**（待聊）：
+  1. **半透明度**：贴图 alpha 建议 0.5-0.6，既能看清建成效果又不喧宾夺主
+  2. **颜色叠加方式**：贴图下面垫 ColorRect（绿/红）还是用 sprite 的 modulate 染色？前者贴图原色保真，后者实现更简单但会让贴图偏色
+  3. **范围圈同步**：当前预览是否带建造范围圈（BUILD_RADIUS）？要不要在预览期间也显示该建筑自身的攻击范围/产出范围？
+  4. **invalid 反馈**：超出建造范围时除了变红，要不要加震动/叉号/禁止图标？
+  5. **贴图缩放**：预览贴图必须跟实际建造出来的 scale 完全一致（含 sprite_scale 三重乘积规则，见 [feedback_unit_scene_setup.md]）
+
+  **待调研**：同类 RTS（AoE2/SC2/C&C/BD）的建造预览怎么做的？是 ghost 贴图、线框、还是颜色块？valid/invalid 着色惯例？
+  关联: [scripts/systems/building_placer.gd](scripts/systems/building_placer.gd), [scenes/buildings/](scenes/buildings/), [scripts/systems/game_data.gd](scripts/systems/game_data.gd) (`ICON_TEXTURES`)
+  创建: 2026-08-11
 
 - **[P1] T3 精英兵种三选一弹窗 - UI 优化** #ui #t3 #视觉
   T3 三本后弹出的精英兵种 N 选 1 升级弹窗当前太简陋，配不上"终局精英升级"的仪式感，需要重做视觉。
