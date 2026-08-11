@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="T3UpgradeData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/upgrade/t3_upgrade_data.gd" id="data"]
+[ext_resource type="Script" path="res://scripts/upgrade/t3_upgrade_choice.gd" id="choice"]
+[ext_resource type="PackedScene" path="res://scenes/units/t3_champion_offense.tscn" id="offense_scene"]
+[ext_resource type="PackedScene" path="res://scenes/units/t3_champion_defense.tscn" id="defense_scene"]
+
+[sub_resource type="Resource" id="choice_offense"]
+script = ExtResource("choice")
+choice_id = &"t3_champion_offense"
+display_name = "狂战士"
+description = "HP -20% / DMG +50% / 攻速 +30% / 血怒"
+variant_stats_id = &"t3_champion_offense"
+variant_scene = ExtResource("offense_scene")
+tint = Color(0.85, 0.25, 0.25, 1.0)
+positioning = "高风险高输出"
+
+[sub_resource type="Resource" id="choice_defense"]
+script = ExtResource("choice")
+choice_id = &"t3_champion_defense"
+display_name = "盾卫"
+description = "HP +100% / DMG -20% / 攻速 -20% / 减伤30% / 嘲讽"
+variant_stats_id = &"t3_champion_defense"
+variant_scene = ExtResource("defense_scene")
+tint = Color(0.25, 0.45, 0.85, 1.0)
+positioning = "极致生存"
+
+[resource]
+script = ExtResource("data")
+unit_type = 0
+unit_class_label = "步兵"
+cost = 1000
+choices = Array[Resource]([SubResource("choice_offense"), SubResource("choice_defense")])

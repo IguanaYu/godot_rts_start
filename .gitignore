@@ -10,6 +10,10 @@ CLAUDE.md
 .mcp.json
 skills-lock.json
 
+# Codex / 其他 AI 工具
+.codex/
+AGENTS.md
+
 # Node
 server/node_modules/
 

@@ -4,21 +4,17 @@
 
 [resource]
 script = ExtResource("1")
-id = &"lancer"
+id = &"t3_lancer_elite"
 unit_type = 2
 category = "normal"
 unit_tags = Array[StringName]([&"heavy_armor"])
-parent_id = &""
-max_hp = 180
-attack_damage = 12
+parent_id = &"lancer"
+max_hp = 270
+attack_damage = 18
 attack_range = 45.0
 attack_cooldown = 1.0
-move_speed = 100.0
+move_speed = 110.0
 damage_reduction = 0.0
-heal_range = 0.0
-heal_amount = 0
-heal_cooldown = 0.0
-heal_scan_range = 0.0
 sprite_scale = 1.0
 upgrade_hp_per_level = 15
 upgrade_damage_per_level = 2

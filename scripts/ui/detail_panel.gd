@@ -220,6 +220,8 @@ func show_building(building, is_peek: bool = false) -> void:
 			_add_info_line("攻击: %d DMG / %.0f 射程" % [int(building.attack_damage), building.attack_range])
 		BuildingScript.BuildingType.WALL:
 			pass  # 只显示 HP
+		BuildingScript.BuildingType.ACADEMY:
+			_add_t3_research_buttons(building)
 
 	# PR-T2-4: 全局升级按钮（按建筑类型）
 	_show_unit_upgrade_section(btype, -1)
@@ -233,8 +235,36 @@ func _building_title(btype: int) -> String:
 		BuildingScript.BuildingType.FARM: return "农场"
 		BuildingScript.BuildingType.TOWER: return "箭塔"
 		BuildingScript.BuildingType.WALL: return "城墙"
+		BuildingScript.BuildingType.ACADEMY: return "学院"
 		_: return "建筑"
 
+
+# T3 PR-2: 学院研究按钮
+func _add_t3_research_buttons(building) -> void:
+	_add_info_line("T3 升级研究（每项 1000 金，不可更改）")
+	var t3_mgr = _main_node.t3_upgrade_manager
+	if t3_mgr == null:
+		return
+	for unit_type in [0, 1, 3, 2]:  # SOLDIER, ARCHER, MONK, LANCER
+		var data = t3_mgr.get_upgrade_data(unit_type)
+		if data == null:
+			continue
+		if t3_mgr.is_completed(unit_type):
+			var choice_id = t3_mgr.get_selected_choice(unit_type)
+			_add_info_line("%s: 已研究 [%s]" % [data.unit_class_label, choice_id])
+		else:
+			var btn := Button.new()
+			btn.text = "%s T3 升级（%d 金）" % [data.unit_class_label, data.cost]
+			btn.custom_minimum_size = Vector2(0, 32)
+			btn.disabled = _main_node.gold < data.cost
+			btn.pressed.connect(func():
+				_on_academy_research_clicked(unit_type, data))
+			_tech_vbox.add_child(btn)
+
+func _on_academy_research_clicked(unit_type: int, data: Resource) -> void:
+	var dialog = _main_node.get_node_or_null("T3ChoiceDialog")
+	if dialog != null:
+		dialog.show_for_unit(unit_type, data)
 
 func _add_production_progress(building) -> void:
 	if building.production_queue.is_empty():

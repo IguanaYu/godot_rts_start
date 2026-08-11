@@ -42,6 +42,7 @@ var commander_skill_panel: Node
 var upgrade_manager: Node
 var upgrade_panel: Node
 var unit_upgrade_manager: Node
+var t3_upgrade_manager: Node = null
 var tech_point_manager: Node = null
 var _available_skills: Array = []
 
@@ -261,6 +262,24 @@ func _run_init_steps() -> void:
 	add_child(unit_upgrade_manager)
 	unit_upgrade_manager.initialize(self)
 	spawner_module.set_unit_upgrade_manager(unit_upgrade_manager)
+	# T3 PR-2: T3 升级管理器
+	t3_upgrade_manager = Node.new()
+	t3_upgrade_manager.set_script(load("res://scripts/upgrade/t3_upgrade_manager.gd"))
+	t3_upgrade_manager.name = "T3UpgradeManager"
+	add_child(t3_upgrade_manager)
+	spawner_module.set_t3_upgrade_manager(t3_upgrade_manager)
+	# T3 PR-2: N 选 1 弹窗
+	var t3_dialog := CanvasLayer.new()
+	t3_dialog.set_script(load("res://scripts/ui/t3_choice_dialog.gd"))
+	t3_dialog.name = "T3ChoiceDialog"
+	add_child(t3_dialog)
+	t3_dialog.choice_confirmed.connect(_on_t3_choice_confirmed)
+	# T3 PR-2: 场景替换执行器
+	var t3_replacer := Node.new()
+	t3_replacer.set_script(load("res://scripts/systems/t3_unit_replacer.gd"))
+	t3_replacer.name = "T3UnitReplacer"
+	add_child(t3_replacer)
+	t3_replacer.initialize(self, t3_upgrade_manager, unit_upgrade_manager)
 	upgrade_panel = Node.new()
 	upgrade_panel.set_script(load("res://scripts/upgrade/upgrade_panel.gd"))
 	add_child(upgrade_panel)
@@ -1209,10 +1228,21 @@ func _on_age_upgrade_complete() -> void:
 
 
 # T2 PR-1: 解锁对应时代的 PlaceMode（追加到 unlocked_items）+ 触发建造栏灰显刷新
+# T3 PR-1: T2 加 MONASTERY+MONK_UNIT；T3 加 LANCER（沿用 BARRACKS 生产线）
 func _unlock_age_items(age: int) -> void:
 	var to_unlock: Array[int] = []
 	if age >= 2:
-		to_unlock = [D.PlaceMode.ARCHERY_RANGE, D.PlaceMode.ARCHER]
+		# T2 解锁：靶场 + 弓兵 + 修道院 + 僧侣
+		to_unlock = [
+			D.PlaceMode.ARCHERY_RANGE,
+			D.PlaceMode.ARCHER,
+			D.PlaceMode.MONASTERY,
+			D.PlaceMode.MONK_UNIT,
+		]
+	if age >= 3:
+		# T3 解锁：长矛兵（沿用 BARRACKS 生产线）+ 学院
+		to_unlock.append(D.PlaceMode.LANCER)
+		to_unlock.append(D.PlaceMode.ACADEMY)
 	for mode in to_unlock:
 		var m: int = int(mode)
 		if m not in unlocked_items:
@@ -1435,6 +1465,9 @@ func _input(event: InputEvent) -> void:
 			KEY_F2:
 				combat_ctrl.select_all_army()
 				ui_module.show_army_selected_feedback(combat_ctrl.selected_units.size())
+			KEY_F3:
+				add_gold(1000)
+				show_floating_text("Debug +1000G", Color(1.0, 0.85, 0.0), get_global_mouse_position())
 			KEY_F4:
 				toggle_outpost_status_panels()
 			KEY_TAB:
@@ -1548,6 +1581,13 @@ func _on_upgrade_button_pressed() -> void:
 		var tier: int = upgrade_manager.get_highest_tier_token()
 		upgrade_panel.show_selection(tier)
 
+# T3 PR-2: 玩家在弹窗确认 T3 升级选择
+func _on_t3_choice_confirmed(unit_type: int, choice_id: StringName) -> void:
+	var data = t3_upgrade_manager.get_upgrade_data(unit_type)
+	gold -= data.cost
+	ui_module.update_gold_display(gold)
+	t3_upgrade_manager.confirm_choice(unit_type, choice_id)
+
 
 func _start_commander_skill(skill_id: int) -> void:
 	if commander_skill_manager.start_cast(skill_id):
@@ -1639,6 +1679,7 @@ const DEFAULT_PLAYER_LOADOUT := [
 	D.PlaceMode.PYROMANCER, D.PlaceMode.CRYOMANCER,
 	D.PlaceMode.WALL, D.PlaceMode.TOWER, D.PlaceMode.BARRACKS,
 	D.PlaceMode.ARCHERY_RANGE, D.PlaceMode.MONASTERY, D.PlaceMode.CASTLE,
+	D.PlaceMode.FARM, D.PlaceMode.ACADEMY,
 ]
 
 
@@ -1676,6 +1717,9 @@ func _resolve_loadout() -> Array:
 			D.PlaceMode.SOLDIER, D.PlaceMode.ARCHER,
 			# T2 PR-1: 加入靶场，让玩家在 T1 就能看到锁定按钮（紫灰），升级后亮起
 			D.PlaceMode.ARCHERY_RANGE,
+			# T3 PR-2: 加入 T2/T3 解锁内容，让按钮在 QW 菜单可见（灰显→升级后亮起）
+			D.PlaceMode.MONASTERY, D.PlaceMode.MONK_UNIT,
+			D.PlaceMode.LANCER, D.PlaceMode.ACADEMY,
 		]
 	var player_picked: Array = load_player_loadout()
 	var result: Array = []
@@ -1705,16 +1749,27 @@ func _apply_loadout_filter() -> void:
 		map_config.available_items = typed
 
 
-# T2 PR-1: 初始化 unlocked_items（T1 阶段：available_items 去掉 ARCHERY_RANGE + ARCHER）
-# 注意：时代升级时 _unlock_age_items() 会往里追加 T2 内容
+# T3 PR-1: 初始化 unlocked_items（T1 阶段过滤掉所有非 T1 内容）
+# - ARCHERY_RANGE / ARCHER ：T2 解锁
+# - MONASTERY / MONK_UNIT  ：T2 解锁（T3 PR-1 调整）
+# - LANCER                  ：T3 解锁（T3 PR-1 调整）
+# 注意：时代升级时 _unlock_age_items() 会往里追加 T2/T3 内容
 func _init_unlocked_items() -> void:
 	unlocked_items.clear()
 	var source: Array = D.ALL_ITEMS
 	if map_config != null and not map_config.available_items.is_empty():
 		source = map_config.available_items
+	var t1_filtered := {
+		D.PlaceMode.ARCHERY_RANGE: true,
+		D.PlaceMode.ARCHER: true,
+		D.PlaceMode.MONASTERY: true,
+		D.PlaceMode.MONK_UNIT: true,
+		D.PlaceMode.LANCER: true,
+		D.PlaceMode.ACADEMY: true,
+	}
 	for mode in source:
 		var m: int = int(mode)
-		if m != D.PlaceMode.ARCHERY_RANGE and m != D.PlaceMode.ARCHER:
+		if not t1_filtered.has(m):
 			unlocked_items.append(m)
 
 

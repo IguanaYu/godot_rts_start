@@ -1,7 +1,7 @@
 @tool
 extends Node2D
 
-enum BuildingType { WALL, TOWER, CASTLE, BARRACKS, MONASTERY, ARCHERY, FARM, ALTAR_ARCHER }
+enum BuildingType { WALL, TOWER, CASTLE, BARRACKS, MONASTERY, ARCHERY, FARM, ALTAR_ARCHER, ACADEMY }
 enum Team { PLAYER, ENEMY }
 
 const UnitScript := preload("res://scripts/units/unit.gd")

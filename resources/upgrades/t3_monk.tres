@@ -1,0 +1,44 @@
+[gd_resource type="Resource" script_class="T3UpgradeData" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/upgrade/t3_upgrade_data.gd" id="data"]
+[ext_resource type="Script" path="res://scripts/upgrade/t3_upgrade_choice.gd" id="choice"]
+[ext_resource type="PackedScene" path="res://scenes/units/t3_monk_saint.tscn" id="saint_scene"]
+[ext_resource type="PackedScene" path="res://scenes/units/t3_monk_blesser.tscn" id="blesser_scene"]
+[ext_resource type="PackedScene" path="res://scenes/units/t3_monk_pyro.tscn" id="pyro_scene"]
+
+[sub_resource type="Resource" id="choice_saint"]
+script = ExtResource("choice")
+choice_id = &"t3_monk_saint"
+display_name = "圣光医者"
+description = "治疗量 3 倍 / 治疗范围 +50%"
+variant_stats_id = &"t3_monk_saint"
+variant_scene = ExtResource("saint_scene")
+tint = Color(0.95, 0.85, 0.35, 1.0)
+positioning = "极致治疗"
+
+[sub_resource type="Resource" id="choice_blesser"]
+script = ExtResource("choice")
+choice_id = &"t3_monk_blesser"
+display_name = "祝福者"
+description = "治疗量 -50% / 祝福 buff"
+variant_stats_id = &"t3_monk_blesser"
+variant_scene = ExtResource("blesser_scene")
+tint = Color(0.45, 0.65, 0.95, 1.0)
+positioning = "buff 支援"
+
+[sub_resource type="Resource" id="choice_pyro"]
+script = ExtResource("choice")
+choice_id = &"t3_monk_pyro"
+display_name = "烈焰僧侣"
+description = "治疗量 -80% / 火球攻击"
+variant_stats_id = &"t3_monk_pyro"
+variant_scene = ExtResource("pyro_scene")
+tint = Color(0.9, 0.4, 0.15, 1.0)
+positioning = "战斗法师"
+
+[resource]
+script = ExtResource("data")
+unit_type = 3
+unit_class_label = "僧侣"
+cost = 1000
+choices = Array[Resource]([SubResource("choice_saint"), SubResource("choice_blesser"), SubResource("choice_pyro")])

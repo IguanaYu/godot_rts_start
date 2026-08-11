@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="T3UpgradeData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/upgrade/t3_upgrade_data.gd" id="data"]
+[ext_resource type="Script" path="res://scripts/upgrade/t3_upgrade_choice.gd" id="choice"]
+[ext_resource type="PackedScene" path="res://scenes/units/t3_lancer_elite.tscn" id="elite_scene"]
+[ext_resource type="PackedScene" path="res://scenes/units/t3_lancer_bosskiller.tscn" id="bosskiller_scene"]
+
+[sub_resource type="Resource" id="choice_elite"]
+script = ExtResource("choice")
+choice_id = &"t3_lancer_elite"
+display_name = "精英长矛兵"
+description = "HP +50% / DMG +50% / 移速 +10%"
+variant_stats_id = &"t3_lancer_elite"
+variant_scene = ExtResource("elite_scene")
+tint = Color(0.75, 0.75, 0.85, 1.0)
+positioning = "数值强化"
+
+[sub_resource type="Resource" id="choice_bosskiller"]
+script = ExtResource("choice")
+choice_id = &"t3_lancer_bosskiller"
+display_name = "Boss 杀手"
+description = "对 Boss 单位 2.5 倍伤害"
+variant_stats_id = &"t3_lancer_bosskiller"
+variant_scene = ExtResource("bosskiller_scene")
+tint = Color(0.85, 0.2, 0.2, 1.0)
+positioning = "反 Boss"
+
+[resource]
+script = ExtResource("data")
+unit_type = 2
+unit_class_label = "长矛兵"
+cost = 1000
+choices = Array[Resource]([SubResource("choice_elite"), SubResource("choice_bosskiller")])

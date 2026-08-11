@@ -9,6 +9,12 @@ extends Resource
 @export var category: String = "normal"          # "normal" / "hero" / "boss" / "commander_variant"
 @export var parent_id: StringName = &""          # 父级 id，用于继承
 
+# --- T3 PR-2a: 单位标签系统（用于"对 X 类单位加成"识别） ---
+# 标签是字符串原子，约定值: &"boss" / &"heavy_armor" / &"light_armor"
+# 一个单位可同时拥有多个标签（如 boss 近战 = [boss, heavy_armor]）
+# 留空数组 = 无特殊标签（普通单位）
+@export var unit_tags: Array[StringName] = []
+
 # --- 基础属性 ---
 @export var max_hp: int = 100
 @export var attack_damage: int = 10
@@ -34,6 +40,12 @@ extends Resource
 @export var bonus_vs_multiplier: float = 1.0         # 倍率（2.5 = 2.5倍伤害）
 @export var bonus_vs_building_multiplier: float = 1.0 # 对建筑倍率
 @export var ignores_damage_reduction: bool = false    # 穿甲：无视目标减伤
+
+# --- T3 PR-2a: 反特化扩展（按标签加成，区别于现有 bonus_vs_unit_types） ---
+# 当攻击目标的 unit_tags 包含 bonus_vs_tags 中任一标签时，伤害乘以 bonus_vs_tag_multiplier
+# 例: 长矛兵 T3 变体 bonus_vs_tags=[&"boss"], bonus_vs_tag_multiplier=2.0 → 对 boss 单位 2 倍伤害
+@export var bonus_vs_tags: Array[StringName] = []
+@export var bonus_vs_tag_multiplier: float = 1.0
 
 # --- 续航系 ---
 @export var lifesteal_ratio: float = 0.0   # 吸血百分比（0.6 = 回复造成伤害的60%）
