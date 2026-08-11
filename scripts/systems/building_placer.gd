@@ -371,6 +371,20 @@ func _on_building_construction_finished(building: Node2D) -> void:
 	var bt2 = building.get("building_type")
 	if bt2 == D.BuildingScript.BuildingType.ALTAR_ARCHER:
 		promote_captured_to_activated(building.global_position)
+	# T3 PR-1：玩家生产建筑造好 → 解锁对应单位（之前 T2 升级时一次性解锁的 bug 修复）
+	if building.get("team") == BuildingScript.Team.PLAYER and main_node and main_node.get("unlocked_items") != null:
+		var unlocked: Array = main_node.get("unlocked_items")
+		var mode_to_unlock: int = -1
+		match bt2:
+			D.BuildingScript.BuildingType.ARCHERY:
+				mode_to_unlock = int(D.PlaceMode.ARCHER)
+			D.BuildingScript.BuildingType.MONASTERY:
+				mode_to_unlock = int(D.PlaceMode.MONK_UNIT)
+		if mode_to_unlock >= 0 and mode_to_unlock not in unlocked:
+			unlocked.append(mode_to_unlock)
+			# 触发按钮 affordability 刷新（按钮显示/启用取决于 unlocked_items）
+			if main_node.get("ui_module") != null:
+				main_node.ui_module.update_gold_display(main_node.gold)
 
 
 func _rebuild_navigation() -> void:

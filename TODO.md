@@ -40,6 +40,24 @@
     关联: [docs/design/建筑活动视觉设计方案.md](docs/design/建筑活动视觉设计方案.md)
     完成: 2026-08-11
 
+- **[P1] 升本扩展基地范围** #设计 #平衡 #基地
+  当前 [building_placer.gd:21](scripts/systems/building_placer.gd) 的 `BUILD_RADIUS := 6*64 = 384px` 是写死的常量，与时代/科技等级完全无关。想做：「升 T2/T3 时主基地建造范围随之扩大」，让玩家有更明显的成长反馈 + 中后期不至于被 6 格挤死。
+
+  **待调研（CLAUDE.md 强制）**：
+  - AoE/SC2/C&C 等是如何处理"基地建造区"随时代扩大的？是直接扩半径、还是用"行政中心/哨站"分阶段解锁区块？
+  - 与现有"据点光圈拓展区"机制（[building_placer.gd:144-154](scripts/systems/building_placer.gd)）会不会冲突 / 重叠？是不是该合并成同一套"区域源"系统？
+  - 扩大半径数值（T1=384 / T2=? / T3=?）配合单位射程、敌方进攻路径的平衡
+  - 视觉反馈：BUILD_RADIUS overlay 圈要不要随升级动画放大？是否需要"范围扩张"特效
+
+  **初步思路**（待聊）：
+  - 方案 A：直接动态 `BUILD_RADIUS = base + age * step`，最简单
+  - 方案 B：每次升本给主基地挂一个"新区块" ring（类似 activated outpost ring），可视化分阶段
+  - 方案 C：把"主基地范围 + 据点拓展区"统一抽象成 `BuildRegionSource` 列表，建造范围 = 所有 source 之并集
+
+  关联: [scripts/systems/building_placer.gd](scripts/systems/building_placer.gd) (`BUILD_RADIUS` / `is_in_buildable_area`), [scripts/main.gd](scripts/main.gd) (`_on_age_upgraded` 之类), [docs/active/T1_PR-4_实施计划.md](docs/active/T1_PR-4_实施计划.md)
+  创建: 2026-08-11
+  后续: 调研 → 决策方案 A/B/C → 配数值
+
 - **[P0] T3 阶段实施 - 按 PR 顺序写代码** #设计 #t3 #技术设计
   T3 各模块决策稿已聊完，技术设计文档已落地为 4 个 PR。当前进度：
   - ✅ **PR-1** 解锁调整（僧侣/修道院 T2，长矛兵 T3）— 已完成
@@ -58,6 +76,48 @@
 
 ### Bug
 
+- **[P1] 占领据点后普通建筑造不出来 + 据点圈用途不直观** #bug #据点 #建造 #需调研
+  玩家反馈：「占领据点之后某个建筑造不出来了」。**根因已基本定位**（不需要修，但需要聊扩展方向）：
+
+  **当前行为**（[building_placer.gd:125-141](scripts/systems/building_placer.gd) `is_in_buildable_area`）：
+  - 占领中据点圈（`_captured_outpost_rings`）**只允许造 ALTAR_ARCHER**（祭坛），其它建筑在圈内一律拒绝
+  - 必须等祭坛建完 → `promote_captured_to_activated()` 把圈升级为「拓展区」（`_activated_outpost_rings`）→ 才能在圈内造任意建筑
+  - 玩家大概率是占领后想直接圈里造农场/塔/兵营，结果发现「造不出来」，因为还卡在祭坛前置阶段
+
+  **可聊的扩展方向**（用户原话："感觉可以扩展功能，新增建筑过去了"）：
+  1. **占领即可造**：去掉祭坛前置，占领据点圈直接变拓展区（祭坛改成可选增益建筑）
+  2. **据点分类型**：不同据点解锁不同建筑（军营据点/资源据点/防御据点），玩家选哪个就拓展哪种建筑权
+  3. **祭坛作为加速器/特权**：祭坛建在据点圈里给周围单位 buff 或解锁精英兵，不再是"圈地"前置
+  4. **可视化引导**：玩家不知道"先造祭坛再解锁" → 加建造提示/圈颜色变化/施工引导
+
+  **关联系统**：[game_ui.gd:552](scripts/systems/game_ui.gd) `show_outpost_category()` 占领后弹据点 tab、[main.gd:678-694](scripts/main.gd) `_on_outpost_captured`。
+
+  关联: [scripts/systems/building_placer.gd](scripts/systems/building_placer.gd) (`is_in_buildable_area` / `add_captured_outpost_ring` / `promote_captured_to_activated`), [scripts/outpost/outpost_commander.gd](scripts/outpost/outpost_commander.gd), [scripts/main.gd](scripts/main.gd) (`_on_outpost_captured`), [scripts/systems/game_ui.gd](scripts/systems/game_ui.gd) (`show_outpost_category`)
+  创建: 2026-08-11
+  后续: 先调研同类游戏（AoE 哨站/SC2 蟑虫巢/C&C 矿场）据点 → 建造扩展设计 → 再决定扩展方向
+
+- **[P1] 底部 UI 遮挡地图下方 + 摄像头限位卡死** #bug #ui #摄像头
+  玩家反馈：「底部 UI 条挡住了地图下方一块区域，但摄像头被锁住了，无法下滚看到那块区域」。
+
+  **根因**：[game_camera.gd:88-107](scripts/systems/game_camera.gd) 的 `clamp_camera()` 完全按地图边界算 `max_y = map_bounds.end.y - half_h`，**没把 215px 底部 UI 条的遮挡算进去**。结果：摄像头能下移到地图边界，但屏幕下方 215px 区域被 UI 覆盖，玩家看到的世界坐标被 UI 吃掉一块。
+
+  **修复思路**（待调研同类游戏 + 选方案）：
+  1. **限位偏移法**（最简单）：`max_y -= bottom_ui_height / zoom`，把 UI 高度按当前 zoom 换算成世界坐标，从 max_y 里扣掉。UI 是 CanvasLayer 不动，所以一行 clamp 公式即可。
+  2. **UI 透传法**：让底部 UI 条半透明 + 鼠标点击透传到地图（F4 Pick 已有，但视觉遮挡还在）
+  3. **UI 收纳法**：摄像头下移到下方时自动隐藏/折叠底部 UI 条（动画过渡）
+  4. **设计上避开**：地图设计时刻意把下方 215px 留作"非关键内容"（如水/边缘装饰），玩家不需要看
+
+  **待调研**：SC2/AoE2/C&C 等带固定底部 UI 条的 RTS 怎么处理摄像头/地图关系？是 UI 缩进、地图留白、还是限位偏移？
+
+  **已知数据**：
+  - 底部 UI 条高度 215px（[bottom_ui_bar.gd:14-19](scripts/ui/bottom_ui_bar.gd)）
+  - 摄像头限位 [game_camera.gd:88-107](scripts/systems/game_camera.gd) `clamp_camera()`
+  - 地图边界 `map_bounds` 来自 main.gd
+
+  关联: [scripts/systems/game_camera.gd](scripts/systems/game_camera.gd) (`clamp_camera`), [scripts/ui/bottom_ui_bar.gd](scripts/ui/bottom_ui_bar.gd), [scripts/main.gd](scripts/main.gd)
+  创建: 2026-08-11
+  后续: 调研同类游戏做法 → 选方案 → 修 clamp 公式或改 UI 布局
+
 - **[P0] T3 变体替换后视觉不区分** #bug #t3 #视觉 ✅ 已修复
   所有兵种的 T3 升级替换后，场上单位看起来都是"红色近战兵"。根因：10 个变体 .tscn 漏设 `unit_type`，导致 _load_unit_textures 永远走 SOLDIER 分支加载 Warrior 贴图。同时发现兵营队列产兵路径（_spawn_unit_by_stats_id）漏接 T3 检测，玩家后续造兵仍是基础兵；T3 替换 free 旧单位时未通知 combat_controller 清选中列表，导致右键命令在死引用上崩溃。
   修复：10 个 t3_*.tscn 补 unit_type 字段；building.gd 兵营产兵路径加 T3 变体检测（仅玩家方）；t3_unit_replacer.gd 替换前 remove_dead_unit + 转移选中状态 + 继承 faction_color。
@@ -70,31 +130,10 @@
   关联: [scripts/systems/game_ui.gd](scripts/systems/game_ui.gd)
   创建: 2026-08-11
 
-- **[P0] 僧侣解锁条件错误** #bug #解锁 #t2
-  当前**升完二本（T2）就直接解锁僧侣**，可以凭空造僧侣。但设计意图（见 PR-1 文档）：T2 只解锁**修道院**建筑，**僧侣**必须等修道院造好后由修道院生产。
-  正确行为：
-  - T2 升级完成 → QW 网格里"修道院"按钮解锁（✅ 当前正常）
-  - 修道院建造完成 → 详情面板才有"造僧侣"按钮（❌ 当前没造修道院也能造僧侣）
-  根因方向：解锁系统只看 age（科技等级），没有把"对应生产建筑是否存在"作为前置条件。弓兵应该也有同样问题（造完靶场才能造弓兵），需要一起核对。
-  关联: [docs/active/T3技术设计_01_PR1解锁调整.md](docs/active/T3技术设计_01_PR1解锁调整.md), [scripts/systems/game_ui.gd](scripts/systems/game_ui.gd), [scripts/buildings/building_placer.gd](scripts/buildings/building_placer.gd)
-  创建: 2026-08-11
-
-- **[P1] 修道院生产队列不可见** #bug #ui
-  选中修道院时，详情面板看不到生产队列（正在造的僧侣 + 排队数量 + 进度）。其他生产建筑（兵营、靶场）的队列显示正常，修道院缺失。
-  根因方向：修道院详情面板的构建逻辑可能漏接了 production_queue 渲染部分，或修道院的 building type 没走到通用的队列 UI 分支。
-  关联: [scripts/ui/detail_panel.gd](scripts/ui/detail_panel.gd), [scripts/buildings/building.gd](scripts/buildings/building.gd), [scenes/buildings/monastery.tscn](scenes/buildings/monastery.tscn)
-  创建: 2026-08-11
-
 - **[P1] 长枪兵队列图标显示为步兵** #bug #ui
   在兵营排长枪兵时，详情面板的生产队列里**显示的是基础步兵的图标**，而不是长枪兵。实际造出来是长枪兵（数据正确），只是队列预览图标错了。
   根因方向：队列 UI 取图标时大概率写死了步兵 icon（building.type == BARRACKS 分支默认走步兵 sprite），没根据被造单位 type 切换对应图标。
   关联: [scripts/ui/detail_panel.gd](scripts/ui/detail_panel.gd), [scripts/systems/game_ui.gd](scripts/systems/game_ui.gd)
-  创建: 2026-08-11
-
-- **[P1] T3 变体单位选中后名称未替换** #bug #ui #t3
-  T3 升级后的变体单位（如 champion_offense、archer_marksman、monk_saint 等）选中后，详情面板标题仍然显示基础兵种名（"步兵"/"弓兵"/"僧侣"），没有换成变体名。
-  根因方向：[detail_panel.gd:330](scripts/ui/detail_panel.gd) 的 `_unit_title(utype)` 只 match 基础 `UnitType` 枚举（SOLDIER/ARCHER/LANCER/MONK），完全没读 T3 变体字段（variant_id / t3_variant / upgrade_state 之类）。修复时需要让标题根据"基础类型 + 变体 id"查出变体本地化名（如 `ENTITY_T3_CHAMPION_OFFENSE`）。同类问题可能在多选标题、建筑标题（学院变体）也存在。
-  关联: [scripts/ui/detail_panel.gd](scripts/ui/detail_panel.gd)（`_unit_title` / `_building_title`）, [scripts/upgrade/t3_upgrade_data.gd](scripts/upgrade/t3_upgrade_data.gd), [locales/translations.csv](locales/translations.csv)
   创建: 2026-08-11
 
 ### UI 优化
@@ -155,6 +194,24 @@
 _（暂无）_
 
 ## ✅ 已完成
+
+- [x] **僧侣解锁条件错误** #bug #解锁 #t2
+  升完 T2 直接解锁僧侣/弓兵可凭空造。修复：T2 升级只解锁生产建筑（靶场、修道院），单位（弓兵、僧侣）改由 `building_placer._on_building_construction_finished` 事件触发解锁——玩家方对应生产建筑造好瞬间 append 进 `unlocked_items`，并刷新按钮 affordability。
+  关联: [scripts/main.gd](scripts/main.gd) (`_unlock_age_items`), [scripts/systems/building_placer.gd](scripts/systems/building_placer.gd) (`_on_building_construction_finished`), [docs/active/T3技术设计_01_PR1解锁调整.md](docs/active/T3技术设计_01_PR1解锁调整.md)
+  创建: 2026-08-11
+  完成: 2026-08-11
+
+- [x] **修道院生产队列不可见** #bug #ui
+  选中修道院详情面板没有任何生产按钮/队列 UI。根因：[detail_panel.gd](scripts/ui/detail_panel.gd) 的 `match btype` 缺 `MONASTERY` 分支。修复：补上分支调用 `_add_production_progress` + `_add_produce_button(D.PlaceMode.MONK_UNIT)`。
+  关联: [scripts/ui/detail_panel.gd](scripts/ui/detail_panel.gd), [scenes/buildings/monastery.tscn](scenes/buildings/monastery.tscn)
+  创建: 2026-08-11
+  完成: 2026-08-11
+
+- [x] **T3 变体单位选中后名称未替换** #bug #ui #t3
+  T3 升级后的变体单位选中时，详情面板标题仍显示基础兵种名。修复：`UnitStats` 加 `display_name` 字段，10 个变体 .tres 填入中文名（狂战士/盾卫/神射手/近战杀手/减速射手/精英长矛兵/Boss 杀手/圣光医者/祝福者/烈焰僧侣）；`detail_panel._unit_title` 改签名接 unit 实例，优先返回 `stats_data.display_name`，fallback 基础枚举名。多选分组同步按 `stats_data.id` 区分变体。
+  关联: [scripts/stats/unit_stats.gd](scripts/stats/unit_stats.gd), [scripts/ui/detail_panel.gd](scripts/ui/detail_panel.gd), [resources/stats/t3_*_stats.tres](resources/stats/)
+  创建: 2026-08-11
+  完成: 2026-08-11
 
 - [x] **跳字提示层级错误** #bug #ui
   反馈跳字（金币不足、无法建造、队列已满、NO_BARRACKS 等）原本是 Node2D(z_index=20) 挂在世界坐标系，被 CanvasLayer(layer=10) 的底部 UI 条整个遮挡。

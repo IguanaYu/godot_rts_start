@@ -8,6 +8,7 @@ extends Resource
 @export var unit_type: int = 0                   # 对应 Unit.UnitType 枚举
 @export var category: String = "normal"          # "normal" / "hero" / "boss" / "commander_variant"
 @export var parent_id: StringName = &""          # 父级 id，用于继承
+@export var display_name: String = ""            # 显示名（基础单位可空，变体必须填，如"狂战士"）
 
 # --- T3 PR-2a: 单位标签系统（用于"对 X 类单位加成"识别） ---
 # 标签是字符串原子，约定值: &"boss" / &"heavy_armor" / &"light_armor"

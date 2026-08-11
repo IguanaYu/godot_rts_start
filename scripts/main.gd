@@ -1229,16 +1229,15 @@ func _on_age_upgrade_complete() -> void:
 
 
 # T2 PR-1: 解锁对应时代的 PlaceMode（追加到 unlocked_items）+ 触发建造栏灰显刷新
-# T3 PR-1: T2 加 MONASTERY+MONK_UNIT；T3 加 LANCER（沿用 BARRACKS 生产线）
+# T2 只解锁生产建筑；单位（ARCHER/MONK_UNIT）由 building_placer 的 construction_finished 事件解锁
+# T3 PR-1: T3 加 LANCER（沿用 BARRACKS 生产线）
 func _unlock_age_items(age: int) -> void:
 	var to_unlock: Array[int] = []
 	if age >= 2:
-		# T2 解锁：靶场 + 弓兵 + 修道院 + 僧侣
+		# T2 解锁：靶场 + 修道院（建筑）。弓兵/僧侣等对应建筑造好后再解锁
 		to_unlock = [
 			D.PlaceMode.ARCHERY_RANGE,
-			D.PlaceMode.ARCHER,
 			D.PlaceMode.MONASTERY,
-			D.PlaceMode.MONK_UNIT,
 		]
 	if age >= 3:
 		# T3 解锁：长矛兵（沿用 BARRACKS 生产线）+ 学院

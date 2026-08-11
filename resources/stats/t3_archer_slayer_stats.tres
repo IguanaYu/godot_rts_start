@@ -9,6 +9,7 @@ unit_type = 1
 category = "normal"
 unit_tags = Array[StringName]([&"light_armor"])
 parent_id = &"archer"
+display_name = "近战杀手"
 max_hp = 60
 attack_damage = 15
 attack_range = 200.0

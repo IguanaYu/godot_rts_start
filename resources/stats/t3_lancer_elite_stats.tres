@@ -9,6 +9,7 @@ unit_type = 2
 category = "normal"
 unit_tags = Array[StringName]([&"heavy_armor"])
 parent_id = &"lancer"
+display_name = "精英长矛兵"
 max_hp = 270
 attack_damage = 18
 attack_range = 45.0

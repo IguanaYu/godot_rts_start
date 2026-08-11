@@ -213,6 +213,11 @@ func show_building(building, is_peek: bool = false) -> void:
 			_add_production_progress(building)
 			_add_info_line("完成反还: 1 archer")
 			_add_produce_button(D.PlaceMode.ARCHER)
+		BuildingScript.BuildingType.MONASTERY:
+			# T3 PR-1: 修道院生产僧侣（之前缺这个分支，详情面板没有生产按钮）
+			_add_production_progress(building)
+			_add_info_line("完成反还: 1 monk")
+			_add_produce_button(D.PlaceMode.MONK_UNIT)
 		BuildingScript.BuildingType.FARM:
 			_add_info_line("产能: 20 金 / 10s")
 			_add_info_line("完成反还: 100 金")
@@ -310,7 +315,7 @@ func show_unit(unit) -> void:
 		show_default()
 		return
 
-	_title_label.text = _unit_title(unit.unit_type)
+	_title_label.text = _unit_title(unit)
 
 	# HP
 	_add_info_line("血量: %d / %d" % [unit.health.hp, unit.health.max_hp])
@@ -327,13 +332,19 @@ func show_unit(unit) -> void:
 	_show_unit_upgrade_section(-1, unit.unit_type)
 
 
-func _unit_title(utype: int) -> String:
-	match utype:
-		UnitScript.UnitType.SOLDIER: return "步兵"
-		UnitScript.UnitType.ARCHER: return "弓兵"
-		UnitScript.UnitType.LANCER: return "枪兵"
-		UnitScript.UnitType.MONK: return "僧侣"
-		_: return "单位"
+func _unit_title(unit) -> String:
+	# T3 变体优先用 stats_data.display_name（如 "狂战士"/"神射手"），fallback 基础枚举名
+	if unit != null and is_instance_valid(unit):
+		if unit.get("stats_data") != null:
+			var dn: String = unit.stats_data.get("display_name")
+			if dn != "":
+				return dn
+		match unit.unit_type:
+			UnitScript.UnitType.SOLDIER: return "步兵"
+			UnitScript.UnitType.ARCHER: return "弓兵"
+			UnitScript.UnitType.LANCER: return "枪兵"
+			UnitScript.UnitType.MONK: return "僧侣"
+	return "单位"
 
 
 # ============================================================
@@ -391,17 +402,22 @@ func show_units_multi(units: Array) -> void:
 		show_default()
 		return
 
-	# 按单位类型分组（保序），每类累计 HP/DMG，记录最后一次出现位置（主类型并列取最新选中）
+	# 按单位变体分组（同基础兵种但 T3 变体不同 = 不同组），保序累计 HP/DMG
+	# group_key 优先 stats_data.id（如 &"soldier" / &"t3_champion_offense"），fallback "__ut_<type>"
 	var groups: Array = []
-	var group_by_type := {}
+	var group_by_key := {}
 	for i in range(valid_units.size()):
 		var u = valid_units[i]
-		var ut: int = u.unit_type
-		if not group_by_type.has(ut):
-			var g := {"utype": ut, "name": _unit_title(ut), "count": 0, "hp": 0, "dmg": 0, "last_idx": i}
-			group_by_type[ut] = g
+		var gkey
+		if u.get("stats_data") != null and u.stats_data.get("id") != null:
+			gkey = u.stats_data.id
+		else:
+			gkey = "__ut_%d" % u.unit_type
+		if not group_by_key.has(gkey):
+			var g := {"utype": u.unit_type, "name": _unit_title(u), "count": 0, "hp": 0, "dmg": 0, "last_idx": i}
+			group_by_key[gkey] = g
 			groups.append(g)
-		var g: Dictionary = group_by_type[ut]
+		var g: Dictionary = group_by_key[gkey]
 		g["count"] += 1
 		g["last_idx"] = i
 		if u.health:
