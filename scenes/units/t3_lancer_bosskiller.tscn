@@ -5,6 +5,7 @@
 
 [node name="T3LancerBosskiller" instance=ExtResource("base")]
 stats_data = ExtResource("stats")
+unit_type = 2
 sprite_scale_x = 0.63
 sprite_scale_y = 0.63
 sprite_offset_y = 9.0

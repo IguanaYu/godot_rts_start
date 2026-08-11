@@ -47,6 +47,9 @@ func _replace_one(old_unit: Node2D, choice: Resource) -> void:
 	var attack_target = old_unit.attack_target if old_unit.attack_target else null
 	var hp_ratio := float(old_unit.health.hp) / float(old_unit.health.max_hp) if old_unit.health.max_hp > 0 else 1.0
 	var alliance_id = old_unit.alliance_id
+	var faction_color = old_unit.faction_color
+	var was_selected: bool = old_unit.selected
+	var combat_ctrl = _main_node.combat_ctrl if _main_node.get("combat_ctrl") else null
 
 	# 2. 播放闪光特效
 	var FX := preload("res://scenes/effects/t3_transform_flash.tscn")
@@ -54,14 +57,20 @@ func _replace_one(old_unit: Node2D, choice: Resource) -> void:
 	fx.global_position = pos
 	_main_node.add_child(fx)
 
-	# 3. 释放旧单位
+	# 3. 从选中列表移除（避免 queue_free 后留下死引用，右键命令崩溃）
+	if combat_ctrl:
+		combat_ctrl.remove_dead_unit(old_unit)
+	old_unit.set_selected(false)
+
+	# 4. 释放旧单位
 	old_unit.queue_free()
 
-	# 4. 实例化新单位
+	# 5. 实例化新单位
 	var new_unit: CharacterBody2D = choice.variant_scene.instantiate()
 	_main_node.get_node("PlayerUnits").add_child(new_unit)
 	new_unit.global_position = pos
 	new_unit.alliance_id = alliance_id
+	new_unit.faction_color = faction_color
 	new_unit.add_to_group("player_units")
 
 	# 5. HP 按比例继承
@@ -79,3 +88,8 @@ func _replace_one(old_unit: Node2D, choice: Resource) -> void:
 		new_unit.set("move_target", move_target)
 	if attack_target != null and is_instance_valid(attack_target):
 		new_unit.attack_target = attack_target
+
+	# 8. 转移选中状态：旧单位被选中则新单位也选中
+	if was_selected and combat_ctrl:
+		new_unit.set_selected(true)
+		combat_ctrl.selected_units.append(new_unit)

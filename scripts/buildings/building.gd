@@ -646,20 +646,35 @@ func _spawn_unit_by_stats_id(stats_id: StringName) -> void:
 	var unit_type: int = production_unit_type
 	if unit_type < 0:
 		return
-	# 场景路由：变体 stats_id 优先，否则用基础 UNIT_SCENES
+	# T3 PR-2: 玩家方且该兵种已选 T3 升级时，直接用变体场景，跳过 stats_id 路由
+	var t3_scene: PackedScene = null
+	if team == Team.PLAYER:
+		var main := get_tree().current_scene
+		if main and main.get("t3_upgrade_manager"):
+			var mgr = main.t3_upgrade_manager
+			var choice_id: StringName = mgr.get_selected_choice(unit_type)
+			if choice_id != &"":
+				var data = mgr.get_upgrade_data(unit_type)
+				for c in data.choices:
+					if c.choice_id == choice_id:
+						t3_scene = c.variant_scene
+						break
+	# 场景路由：T3 变体 > 指挥官变体 stats_id > 基础 UNIT_SCENES
 	var scene_path: String = ""
-	if stats_id != &"":
-		scene_path = D.ENEMY_VARIANT_SCENES.get(stats_id, "")
-	if scene_path == "":
-		scene_path = D.UNIT_SCENES.get(unit_type, "")
-	if scene_path == "":
-		return
-	var unit_scene := load(scene_path)
+	if t3_scene == null:
+		if stats_id != &"":
+			scene_path = D.ENEMY_VARIANT_SCENES.get(stats_id, "")
+		if scene_path == "":
+			scene_path = D.UNIT_SCENES.get(unit_type, "")
+		if scene_path == "":
+			return
+	var unit_scene: PackedScene = t3_scene if t3_scene != null else load(scene_path)
 	if unit_scene == null:
 		return
 	var unit: CharacterBody2D = unit_scene.instantiate()
 	# 按 stats_id 替换 stats_data（指挥官变体复用基础兵种场景，靠 stats_data 区分属性）
-	if stats_id != &"" and UnitStatsRegistry.has_id(stats_id):
+	# T3 变体场景：stats_data 已经在 .tscn 里指定，不要覆盖
+	if t3_scene == null and stats_id != &"" and UnitStatsRegistry.has_id(stats_id):
 		unit.set("stats_data", UnitStatsRegistry.get_by_id(stats_id))
 	# 继承建筑的所有势力字段（alliance_id setter 同步 team）
 	unit.set("alliance_id", alliance_id)

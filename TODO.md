@@ -43,7 +43,7 @@
 - **[P0] T3 阶段实施 - 按 PR 顺序写代码** #设计 #t3 #技术设计
   T3 各模块决策稿已聊完，技术设计文档已落地为 4 个 PR。当前进度：
   - ✅ **PR-1** 解锁调整（僧侣/修道院 T2，长矛兵 T3）— 已完成
-  - 🔧 **PR-2** T3 学院 + N 选 1 升级 — **代码骨架已提交**（commit `ef53e3e`），32 个新文件 + 12 个改动文件。**待解决**：变体替换后视觉不区分（都像红色近战兵），需排查 variant_tint 应用或给不同兵种换基础贴图。冲突记录见 PR-2 文档第十三节
+  - ✅ **PR-2** T3 学院 + N 选 1 升级 — **代码骨架已提交**（commit `ef53e3e`）。**变体视觉 bug 已修**（commit 待提交）：变体 .tscn 补 unit_type / building.gd 兵营产兵路径补 T3 检测 / t3_unit_replacer.gd 修选中列表死引用。剩余 T3 UI 小 bug 见 Bug 区（变体名称/选中图标等）
   - 📋 **PR-3** 终局机制 — 待开始
   - 📋 **PR-4** 塔数值 — 待开始
   关联:
@@ -58,10 +58,12 @@
 
 ### Bug
 
-- **[P0] T3 变体替换后视觉不区分** #bug #t3 #视觉
-  所有兵种的 T3 升级替换后，场上单位看起来都是"红色近战兵"。根因方向：所有变体 .tscn 都继承 unit.tscn，BodySprite 贴图都是 Warrior_Idle.png（步兵贴图），只靠 variant_tint 染色区分。可能染色未在替换路径正确应用，或需要给不同兵种变体换各自基础贴图（Archer_Idle.png / monk Idle.png / Lancer_Idle.png）。
-  关联: [scripts/systems/t3_unit_replacer.gd](scripts/systems/t3_unit_replacer.gd), [scenes/units/t3_*.tscn](scenes/units/), [PR-2 文档第十三节](docs/active/T3技术设计_02_PR2_T3学院与升级.md)
+- **[P0] T3 变体替换后视觉不区分** #bug #t3 #视觉 ✅ 已修复
+  所有兵种的 T3 升级替换后，场上单位看起来都是"红色近战兵"。根因：10 个变体 .tscn 漏设 `unit_type`，导致 _load_unit_textures 永远走 SOLDIER 分支加载 Warrior 贴图。同时发现兵营队列产兵路径（_spawn_unit_by_stats_id）漏接 T3 检测，玩家后续造兵仍是基础兵；T3 替换 free 旧单位时未通知 combat_controller 清选中列表，导致右键命令在死引用上崩溃。
+  修复：10 个 t3_*.tscn 补 unit_type 字段；building.gd 兵营产兵路径加 T3 变体检测（仅玩家方）；t3_unit_replacer.gd 替换前 remove_dead_unit + 转移选中状态 + 继承 faction_color。
+  关联: [scripts/systems/t3_unit_replacer.gd](scripts/systems/t3_unit_replacer.gd), [scripts/buildings/building.gd](scripts/buildings/building.gd), [scenes/units/t3_*.tscn](scenes/units/), [PR-2 文档第十三节](docs/active/T3技术设计_02_PR2_T3学院与升级.md)
   创建: 2026-08-11
+  完成: 2026-08-11
 
 - **[P1] Q/W 生产栏图标溢出** #bug #ui
   建筑生产栏（Q/W/E/R... 快捷键）单位种类超过 5 个时，后面的图标在 UI 上排不下、显示不全。需要做自适应布局（横向滚动 / 多行 / 折叠）或者重新设计这个栏的容量。
