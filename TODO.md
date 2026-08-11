@@ -10,6 +10,10 @@
 
 ### 调研后续
 
+- **[P2] Debug 快捷键 - 测试用加金币** #debug #测试
+  按某个键（如 F1 或 G）给玩家加 1000 金币，方便测试时不用等经济。
+  创建: 2026-08-11
+
 - **[P1] 音效系统 - 收集音效素材** #音效 #资源
   调研已完成，方案落地。现在需要自己去收集合适的音效文件（BGM、UI 反馈、单位语音、技能音效等）。
   关联: [docs/research/audio_06_research_summary.md](docs/research/audio_06_research_summary.md), [docs/research/audio_05_sound_inventory.md](docs/research/audio_05_sound_inventory.md), [docs/research/audio_01_free_resources.md](docs/research/audio_01_free_resources.md)
