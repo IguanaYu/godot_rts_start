@@ -348,6 +348,7 @@ func _run_init_steps() -> void:
 	_initialized = true
 	LoadRouter.report_init_progress(1.0)
 	LoadRouter.finish_init()
+	ui_module.update_gold_display(gold)
 	# T3 PR-3: 记录开始时间 + 显示开局一次性提示
 	_game_start_time = _game_time
 	var intro_hint := CanvasLayer.new()
