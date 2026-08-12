@@ -5,6 +5,10 @@ extends RefCounted
 const UnitScript := preload("res://scripts/units/unit.gd")
 const BuildingScript := preload("res://scripts/buildings/building.gd")
 
+# --- UI / 摄像头尺寸常量（被 bottom_ui_bar / game_ui / game_camera / main 共用）---
+const BOTTOM_UI_PX := 215.0   # 底部 UI 条像素高度（与 bottom_ui_bar.gd 的 offset_top 一致）
+const BOTTOM_SKIRT_H := 64.0  # 底部装饰水带高度（世界单位，=1 tile；纯视觉，软化地图底边局促感）
+
 # --- 放置模式 ---
 enum PlaceMode { NONE, WALL, TOWER, CASTLE, BARRACKS, SOLDIER, ARCHER, MONASTERY, ARCHERY_RANGE, LANCER, MONK_UNIT,
 	SHIELDBEARER, BERSERKER, CROSSBOWMAN, PYROMANCER, CRYOMANCER,

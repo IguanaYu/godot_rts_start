@@ -2,6 +2,8 @@ extends Control
 ## T2 PR-3: 底部横排 UI 条 — 三段式（QW 建造栏 + 详情面板 + 小地图）
 ## UI Revamp P1: 三段视觉合并为统一 WoodTable 背景，段间细分割线
 
+const D := preload("res://scripts/systems/game_data.gd")
+
 var detail_panel: Control
 var _qw_section: Control
 var _detail_section: Control
@@ -12,11 +14,12 @@ var _unified_bg: NinePatchRect  # 统一背景，供 game_ui 高亮动画访问
 
 func initialize(main_node: Node2D) -> void:
 	# 锚点：屏幕底部全宽，固定高度 215px（720p 下 29.9%，符合 SC2/Dota2 顶+底 ~30% 基准）
+	# 高度用 D.BOTTOM_UI_PX，与 game_camera 限位、main.gd 边缘滚动豁免共用同一常量
 	anchor_left = 0.0
 	anchor_right = 1.0
 	anchor_top = 1.0
 	anchor_bottom = 1.0
-	offset_top = -215
+	offset_top = -D.BOTTOM_UI_PX
 	offset_bottom = 0
 	offset_left = 0
 	offset_right = 0

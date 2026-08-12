@@ -92,9 +92,6 @@ const RESOLUTION_KEYS: Array[String] = [
 # 外部引用
 var _main_node: Node2D
 
-# 面板矩形（用于相机豁免）
-var panel_rect: Rect2
-
 # CanvasLayer 引用（用于 tooltip）
 var _ui_canvas: CanvasLayer
 
@@ -476,12 +473,9 @@ func _create_ui(map_config: Resource, current_gold: int) -> void:
 	AllyCommander.attack_order_issued.connect(_on_attack_ping.bind(minimap))
 	AllyCommander.defend_order_issued.connect(_on_defend_ping.bind(minimap))
 
-	# T2 PR-3: 相机豁免区改为底部 UI 条
-	var vp := _main_node.get_viewport().get_visible_rect().size
-	if _main_node.camera_module != null:
-		_main_node.camera_module.ui_exclusion_rects.append(
-			Rect2(0, vp.y - 228, vp.x, 228)
-		)
+	# NOTE: 相机豁免矩形已移至 main.gd Step 4（camera_module 创建后），
+	# 使用 D.BOTTOM_UI_PX。原在此处（ui_module.initialize 阶段 camera_module 尚为 null）的
+	# 228px 豁免块从未生效，已删除。
 	# --- 倍速按钮（右上角，独立 canvas 确保不被遮挡）---
 	var speed_canvas := CanvasLayer.new()
 	speed_canvas.layer = 50
@@ -1144,20 +1138,6 @@ func set_place_mode_text(text: String) -> void:
 func hide_place_mode_label() -> void:
 	if place_mode_label:
 		place_mode_label.visible = false
-
-
-func get_panel_screen_rect() -> Rect2:
-	return panel_rect
-
-
-func update_panel_rect() -> void:
-	var vp_size: Vector2 = _main_node.get_viewport().get_visible_rect().size
-	panel_rect = Rect2(
-		vp_size.x * 0.1,
-		vp_size.y - 132.0,
-		vp_size.x * 0.8,
-		132.0
-	)
 
 
 # ============================================================

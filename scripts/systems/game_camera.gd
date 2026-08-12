@@ -1,6 +1,8 @@
 extends Node
 ## 相机模块：边缘滚动、方向键、缩放、中键拖拽、边界约束
 
+const D := preload("res://scripts/systems/game_data.gd")
+
 signal jump_to_base_requested
 
 var camera: Camera2D
@@ -90,18 +92,24 @@ func clamp_camera() -> void:
 	var current_zoom := camera.zoom.x
 	var half_w := viewport_size.x / 2.0 / current_zoom
 	var half_h := viewport_size.y / 2.0 / current_zoom
+	# 底部 UI 条换算成世界坐标。注意是 + ：让相机往下多滚，使地图底抬到 UI 条上方，
+	# 否则 UI 会遮住地图底。数值验证：窗高1000/zoom1/地图底y1000 → max_y=1000-500+215=715
+	var bottom_ui_world := D.BOTTOM_UI_PX / current_zoom
 
 	var min_x := map_bounds.position.x + half_w
 	var max_x := map_bounds.end.x - half_w
 	var min_y := map_bounds.position.y + half_h
-	var max_y := map_bounds.end.y - half_h
+	var max_y := map_bounds.end.y - half_h + bottom_ui_world
 
 	if min_x > max_x:
 		min_x = (map_bounds.position.x + map_bounds.end.x) / 2.0
 		max_x = min_x
 	if min_y > max_y:
-		min_y = (map_bounds.position.y + map_bounds.end.y) / 2.0
-		max_y = min_y
+		# 地图比视图还矮：居中到【可见区】（扣除底部 UI 后的中心），而非视口几何中心。
+		# 纯几何中心会让地图底被 UI 遮；往下偏 bottom_ui_world/2 使地图落在可见区中央。
+		var center_y := (map_bounds.position.y + map_bounds.end.y) / 2.0 + bottom_ui_world / 2.0
+		min_y = center_y
+		max_y = center_y
 
 	camera.position.x = clampf(camera.position.x, min_x, max_x)
 	camera.position.y = clampf(camera.position.y, min_y, max_y)

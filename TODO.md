@@ -126,28 +126,6 @@
   创建: 2026-08-11
   后续: 先调研同类游戏（AoE 哨站/SC2 蟑虫巢/C&C 矿场）据点 → 建造扩展设计 → 再决定扩展方向
 
-- **[P1] 底部 UI 遮挡地图下方 + 摄像头限位卡死** #bug #ui #摄像头
-  玩家反馈：「底部 UI 条挡住了地图下方一块区域，但摄像头被锁住了，无法下滚看到那块区域」。
-
-  **根因**：[game_camera.gd:88-107](scripts/systems/game_camera.gd) 的 `clamp_camera()` 完全按地图边界算 `max_y = map_bounds.end.y - half_h`，**没把 215px 底部 UI 条的遮挡算进去**。结果：摄像头能下移到地图边界，但屏幕下方 215px 区域被 UI 覆盖，玩家看到的世界坐标被 UI 吃掉一块。
-
-  **修复思路**（待调研同类游戏 + 选方案）：
-  1. **限位偏移法**（最简单）：`max_y -= bottom_ui_height / zoom`，把 UI 高度按当前 zoom 换算成世界坐标，从 max_y 里扣掉。UI 是 CanvasLayer 不动，所以一行 clamp 公式即可。
-  2. **UI 透传法**：让底部 UI 条半透明 + 鼠标点击透传到地图（F4 Pick 已有，但视觉遮挡还在）
-  3. **UI 收纳法**：摄像头下移到下方时自动隐藏/折叠底部 UI 条（动画过渡）
-  4. **设计上避开**：地图设计时刻意把下方 215px 留作"非关键内容"（如水/边缘装饰），玩家不需要看
-
-  **待调研**：SC2/AoE2/C&C 等带固定底部 UI 条的 RTS 怎么处理摄像头/地图关系？是 UI 缩进、地图留白、还是限位偏移？
-
-  **已知数据**：
-  - 底部 UI 条高度 215px（[bottom_ui_bar.gd:14-19](scripts/ui/bottom_ui_bar.gd)）
-  - 摄像头限位 [game_camera.gd:88-107](scripts/systems/game_camera.gd) `clamp_camera()`
-  - 地图边界 `map_bounds` 来自 main.gd
-
-  关联: [scripts/systems/game_camera.gd](scripts/systems/game_camera.gd) (`clamp_camera`), [scripts/ui/bottom_ui_bar.gd](scripts/ui/bottom_ui_bar.gd), [scripts/main.gd](scripts/main.gd)
-  创建: 2026-08-11
-  后续: 调研同类游戏做法 → 选方案 → 修 clamp 公式或改 UI 布局
-
 - **[P0] T3 变体替换后视觉不区分** #bug #t3 #视觉 ✅ 已修复
   所有兵种的 T3 升级替换后，场上单位看起来都是"红色近战兵"。根因：10 个变体 .tscn 漏设 `unit_type`，导致 _load_unit_textures 永远走 SOLDIER 分支加载 Warrior 贴图。同时发现兵营队列产兵路径（_spawn_unit_by_stats_id）漏接 T3 检测，玩家后续造兵仍是基础兵；T3 替换 free 旧单位时未通知 combat_controller 清选中列表，导致右键命令在死引用上崩溃。
   修复：10 个 t3_*.tscn 补 unit_type 字段；building.gd 兵营产兵路径加 T3 变体检测（仅玩家方）；t3_unit_replacer.gd 替换前 remove_dead_unit + 转移选中状态 + 继承 faction_color。
@@ -207,6 +185,26 @@
   创建: 2026-08-11
 
 ### UI 优化
+
+- **[P2] 底部装饰水带视觉美化** #ui #视觉 #地形 #摄像头
+  现状：为修"底部 UI 遮挡地图下方"（见 ✅ 已完成的摄像头限位修复），在地图正下方加了一条 64 世界单位（≈1 tile）高的装饰水带（`BOTTOM_SKIRT_H`，由 `_replace_ground_with_terrain` 往 `water_areas` 追加一条底部 Rect2 实现）。功能上生效了——相机滚到底时地图底落在 UI 条上方、单位不贴 UI——但**水带目前就是一条平铺的纯水 tile，很突兀、很丑**（玩家原话："水带好丑"），跟上方草地硬切，没有过渡。
+
+  **可聊的美化方向**：
+  1. **岸边过渡 tile**：草地→水之间用沙滩/浅滩边缘 tile 做渐变（需要 atlas 里有过渡 tile，或程序化混合）
+  2. **深浅渐变**：水带本身用 shader/顶点色做近岸浅→远岸深的渐变，避免纯色平铺
+  3. **波纹/反光细节**：低成本粒子或 shader 动画（水面微微流动/光斑），呼应 [程序化动画/特效调研](docs/...) 的低成本视觉方案
+  4. **换装饰类型**：水带是不是最佳选择？也可以是"沼泽/碎石/暗色不可走区"，或干脆用 vignette/暗角让边缘自然淡出，不用具体 tile
+  5. **厚度自适应**：当前固定 64，矮图（如 map1 600 高）占比 ~10% 明显；可按地图高度比例或按 zoom 动态调
+
+  **已知数据**：
+  - 水带高度常量 [D.BOTTOM_SKIRT_H = 64.0](scripts/systems/game_data.gd)（=1 tile）
+  - 生成位置 [main.gd `_replace_ground_with_terrain`](scripts/main.gd)（追加底部 Rect2 到 water_areas）
+  - 铺水逻辑 [terrain_layer.gd](scripts/terrain_layer.gd)（`water_areas` 循环 set_cell，现仅纯色水 tile）
+  - 不影响寻路：`nav_bounds` 未扩，单位仍锁原可玩区，水带纯视觉
+
+  关联: [scripts/systems/game_data.gd](scripts/systems/game_data.gd) (`BOTTOM_SKIRT_H`), [scripts/main.gd](scripts/main.gd) (`_replace_ground_with_terrain`), [scripts/terrain_layer.gd](scripts/terrain_layer.gd)
+  创建: 2026-08-13
+  后续: 先聊方向（过渡 tile vs shader 渐变 vs 换装饰类型），再决定要不要动 terrain_layer 核心铺水逻辑
 
 - **[P1] 建造预览视觉优化 - 半透明贴图 + 着色方块** #ui #视觉 #建造
   现状：建造模式鼠标跟随预览只有绿色/红色方块（ColorRect），看不出将来造出来的建筑长什么样。期望：半透明建筑贴图 + 颜色方块叠加（valid=绿、invalid=红），让玩家在落点前就能预览建成效果。
@@ -282,6 +280,15 @@
 _（暂无）_
 
 ## ✅ 已完成
+
+- [x] **底部 UI 遮挡地图下方 + 摄像头限位卡死** #bug #ui #摄像头
+  底部 215px UI 条遮住地图下方，`clamp_camera()` 没把 UI 高度算进限位，玩家滚不到被遮区。
+  **方案 A+B**：A 限位偏移（`max_y = end.y - half_h + BOTTOM_UI_PX/zoom`）+ B 底部装饰水带（`map_bounds` 向下扩 64 单位铺水，`nav_bounds` 不变 → 单位仍锁原区，水带软化地图底边）。
+  **⚠️ 符号纠正**：原 TODO/初版调研写的是 `max_y -= bottom_ui_height/zoom`（减号），**错的**。推导验证（窗高 1000/zoom 1/地图底 y 1000）：当前 max_y=500 时屏幕底=地图底，但 UI 遮 [785,1000]，玩家只见 [0,785]；正解是相机往下多滚到 715（`1000-500+215`）让地图底抬到 UI 顶——**符号是 +**。减号会让相机滚得更少、遮更多。
+  另顺带修：① 边缘滚动豁免矩形有两个都坏（228 块因时序 camera_module 为 null 从未生效；132 块高度错且无消费者）→ 统一为 `D.BOTTOM_UI_PX` 矩形在 Step 4 注入；② 215/228/132 三个魔法数统一到 `game_data.gd` 的 `BOTTOM_UI_PX`/`BOTTOM_SKIRT_H`；③ 兜底分支（地图比视图矮）改为居中到【可见区】而非视口几何中心，避免居中后底仍被遮。
+  关联: [scripts/systems/game_camera.gd](scripts/systems/game_camera.gd) (`clamp_camera`), [scripts/systems/game_data.gd](scripts/systems/game_data.gd) (`BOTTOM_UI_PX`/`BOTTOM_SKIRT_H`), [scripts/main.gd](scripts/main.gd) (`_load_from_config`/`_replace_ground_with_terrain`/豁免矩形), [scripts/systems/game_ui.gd](scripts/systems/game_ui.gd) (删 panel_rect), [scripts/ui/bottom_ui_bar.gd](scripts/ui/bottom_ui_bar.gd)
+  创建: 2026-08-11
+  完成: 2026-08-13
 
 - [x] **僧侣解锁条件错误** #bug #解锁 #t2
   升完 T2 直接解锁僧侣/弓兵可凭空造。修复：T2 升级只解锁生产建筑（靶场、修道院），单位（弓兵、僧侣）改由 `building_placer._on_building_construction_finished` 事件触发解锁——玩家方对应生产建筑造好瞬间 append 进 `unlocked_items`，并刷新按钮 affordability。

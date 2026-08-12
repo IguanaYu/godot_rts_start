@@ -155,15 +155,17 @@ func _run_init_steps() -> void:
 	key_to_mode = ui_module.key_to_mode
 	await get_tree().process_frame
 
-	# Step 4: 相机模块（依赖 ui_module 的 panel_rect）
+	# Step 4: 相机模块（camera_module 在此创建，豁免矩形必须在此之后注入）
 	LoadRouter.report_init_progress(0.40)
 	camera_module = Node.new()
 	camera_module.set_script(load("res://scripts/systems/game_camera.gd"))
 	add_child(camera_module)
 	camera_module.initialize(camera, map_bounds)
 	camera_module.speed_multiplier = _load_gameplay_settings()
-	ui_module.update_panel_rect()
-	camera_module.ui_exclusion_rects.append(ui_module.get_panel_screen_rect())
+	# 底部 UI 条遮屏区：鼠标在此矩形内不触发边缘滚动。高度用 D.BOTTOM_UI_PX 统一管理。
+	var _vp_size := get_viewport().get_visible_rect().size
+	camera_module.ui_exclusion_rects.append(
+		Rect2(0, _vp_size.y - D.BOTTOM_UI_PX, _vp_size.x, D.BOTTOM_UI_PX))
 	await get_tree().process_frame
 
 	# Step 5: 生成模块 + 建筑放置（依赖 ui_module）
@@ -320,7 +322,12 @@ func _run_init_steps() -> void:
 		if RelayManager._game_seed != 0:
 			LockstepSync._start_game(RelayManager._game_seed)
 	building_placer.create_grid()
-	spawner_module.spawn_environment(map_config, map_bounds)
+	# 装饰物刷新范围用【可玩区】（扣除底部装饰水带 BOTTOM_SKIRT_H），避免在水带上刷树/石。
+	# 仅当 map_config 存在时扣除（与 _load_from_config 里扩 map_bounds 的条件一致）。
+	var _spawn_bounds := map_bounds
+	if map_config != null:
+		_spawn_bounds.size.y -= D.BOTTOM_SKIRT_H
+	spawner_module.spawn_environment(map_config, _spawn_bounds)
 	_setup_victory_condition()
 	_setup_capture_points()
 	_setup_ambush_triggers()
@@ -396,6 +403,8 @@ func _load_from_config() -> void:
 		return
 	NAV_BOUNDS = map_config.nav_bounds
 	map_bounds = map_config.map_bounds
+	# 底部装饰水带：仅扩 map_bounds（地形+相机+小地图），nav_bounds 不变 → 单位仍锁原可玩区
+	map_bounds.size.y += D.BOTTOM_SKIRT_H
 	gold = map_config.initial_gold
 	# 加载难度预设并应用金币乘数
 	var diff_level := DifficultyClass.load_from_config()
@@ -419,8 +428,12 @@ func _replace_ground_with_terrain() -> void:
 	var border_w := 1
 	if map_config != null:
 		theme = map_config.terrain_theme
-		water_areas = map_config.water_areas
+		water_areas = map_config.water_areas.duplicate()  # duplicate 避免 append 污染 .tres 资源数组
 		border_w = map_config.border_width
+		# 底部装饰水带（map_bounds 已在 _load_from_config 扩过 BOTTOM_SKIRT_H，仅地形+相机+小地图可见）
+		water_areas.append(Rect2(map_bounds.position.x,
+			map_bounds.end.y - D.BOTTOM_SKIRT_H,
+			map_bounds.size.x, D.BOTTOM_SKIRT_H))
 	terrain_layer.setup(map_bounds, theme, water_areas, border_w)
 
 func _setup_victory_condition() -> void:
