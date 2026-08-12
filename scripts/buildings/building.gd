@@ -162,7 +162,7 @@ func _setup_stats() -> void:
 			max_hp = 300
 			grid_size = Vector2i(1, 1)
 		BuildingType.TOWER:
-			max_hp = 150
+			max_hp = 180
 			grid_size = Vector2i(1, 1)
 		BuildingType.CASTLE:
 			max_hp = 500

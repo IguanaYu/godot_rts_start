@@ -11,7 +11,7 @@ extends Resource
 # --- 基础属性 ---
 @export var max_hp: int = 100
 @export var grid_size: Vector2i = Vector2i(1, 1)
-@export var cost_override: int = -1              # -1 = 用默认 COSTS 表
+@export var cost_override: int = -1              # ⚠️ 当前未生效：造价统一走 game_data.gd COSTS 表（见 building_placer.get_current_cost）；保留字段供未来按变体定价
 @export var build_time: float = 5.0
 
 # --- 箭塔攻击（TOWER 用） ---

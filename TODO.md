@@ -58,12 +58,12 @@
   创建: 2026-08-11
   后续: 调研 → 决策方案 A/B/C → 配数值
 
-- **[P0] T3 阶段实施 - 按 PR 顺序写代码** #设计 #t3 #技术设计
+- **[P0] T3 阶段实施 - 按 PR 顺序写代码** #设计 #t3 #技术设计 ✅ 4/4 PR 全部完成
   T3 各模块决策稿已聊完，技术设计文档已落地为 4 个 PR。当前进度：
   - ✅ **PR-1** 解锁调整（僧侣/修道院 T2，长矛兵 T3）— 已完成
-  - ✅ **PR-2** T3 学院 + N 选 1 升级 — **代码骨架已提交**（commit `ef53e3e`）。**变体视觉 bug 已修**（commit 待提交）：变体 .tscn 补 unit_type / building.gd 兵营产兵路径补 T3 检测 / t3_unit_replacer.gd 修选中列表死引用。剩余 T3 UI 小 bug 见 Bug 区（变体名称/选中图标等）
-  - 📋 **PR-3** 终局机制 — 待开始
-  - 📋 **PR-4** 塔数值 — 待开始
+  - ✅ **PR-2** T3 学院 + N 选 1 升级 — 代码骨架已提交（commit `ef53e3e`），变体视觉 bug 已修（commit `9c4fe2c`）。剩余 T3 UI 小 bug 见 Bug 区（变体名称/选中图标等）
+  - ✅ **PR-3** 终局机制 — 已完成（commit `876694b`）：5 项战斗统计埋点 + 胜利/失败面板 + 开局一次性提示 + 目标面板接入 + 修 `ERA_LOCKED` 译项。注：开局提示组件实际命名为 `intro_hint_dialog.gd`，与设计文档的 `opening_hint.gd` 不一致
+  - ✅ **PR-4** 塔数值 — 已完成：HP180 / DMG14 / 射程220 / 递增+50 防塔海。修两个文档漏写的致命冲突（tower_standard 才是正常对局真源 / get_by_type 歧义用三卡同写 cost_increment 绕过），顺手清理 cost_override 死字段 + detail_panel 悬停动态价 + building.gd 兜底。详见 [PR-4 文档第六节](docs/active/T3技术设计_04_PR4塔数值.md)
   关联:
     - 总览：[T3技术设计_00_总览.md](docs/active/T3技术设计_00_总览.md)
     - PR-1：[T3技术设计_01_PR1解锁调整.md](docs/active/T3技术设计_01_PR1解锁调整.md)
@@ -72,7 +72,7 @@
     - PR-4：[T3技术设计_04_PR4塔数值.md](docs/active/T3技术设计_04_PR4塔数值.md)
     - 决策稿原件：[A](docs/active/T3阶段设计_A模块经济推演.md) / [C](docs/active/T3阶段设计_C模块决策稿.md) / [C 候选库](docs/active/T3阶段设计_C模块设计候选库.md) / [E](docs/active/T3阶段设计_E模块决策稿.md) / [F](docs/active/T3阶段设计_F模块决策稿.md) / [G](docs/active/T3阶段设计_G模块决策稿.md) / [H](docs/active/T3阶段设计_H模块决策稿.md) / [I](docs/active/T3阶段设计_I模块决策稿.md)
   创建: 2026-08-11
-  后续: PR-2 修完变体视觉 bug → PR-3 → PR-4
+  后续: 无（T3 四个 PR 全部完成）
 
 - **[P1] 中立装饰优化 - 聊功能定位** #装饰 #地图 #设计
   树木/草丛/石头等中立装饰现在只是视觉摆放，需要重新讨论它们在玩法中的角色。背景：现有 [scenes/environment/](scenes/environment/) 下有 tree/rock/bush 三个 .tscn，[scenes/terrain/](scenes/terrain/) 下有 terrain_rock/terrain_forest，但功能定义不清晰。
@@ -85,9 +85,9 @@
   5. **性能与批量**：地图上装饰数量上限、是否需要 MultiMesh/instance 化批量绘制
   6. **可破坏性**：装饰能否被单位/技能打掉？打掉后碰撞和视野怎么更新？
 
-  关联: [scenes/environment/](scenes/environment/) (tree/rock/bush.tscn), [scenes/terrain/](scenes/terrain/) (terrain_rock/terrain_forest.tscn), [scripts/terrain_obstacle.gd](scripts/terrain_obstacle.gd)
+  关联: [scenes/environment/](scenes/environment/) (tree/rock/bush.tscn), [scenes/terrain/](scenes/terrain/) (terrain_rock/terrain_forest.tscn), [scripts/terrain_obstacle.gd](scripts/terrain_obstacle.gd), [docs/brainstorming/中立物设计_PVE视角调研.md](docs/brainstorming/中立物设计_PVE视角调研.md)
   创建: 2026-08-12
-  后续: 先聊功能定位（碰撞/视野/战术角色），再聊资源现状与配置流程
+  后续: 调研已完成（PVE 视角意义重估 + 现状盘点），待勾选机制候选（A 可破坏物 / B 资源点 / C creeps / D 驻扎 / E 草丛）→ 进入功能定位
 
 - **[P1] 地形视觉优化 - 多色地形与绘制流程** #地形 #视觉 #设计
   现状：[terrain_layer.gd](scripts/terrain_layer.gd) 只用 `TILE_TEXTURES[theme_index]` 一张纯色草地铺满全图，但素材里实际有 `Tilemap_color1.png` 到 `Tilemap_color5.png` 五种色调（含深绿），还有 `Water Background color.png`。当前地图整体是单一浅绿色，缺乏层次。
@@ -105,6 +105,13 @@
   后续: 先盘素材（开 5 张贴图 + atlas 看可用 tile），再聊"自动 vs 手动"方向
 
 ### Bug
+
+- **[P1] 箭矢命中已死目标刷 SCRIPT ERROR（arrow.gd:62 use-after-free）** #bug #箭矢 #塔
+  箭矢（塔/弓箭手射出）命中目标时，若目标在箭飞行途中死亡被回收，[arrow.gd:62](scripts/effects/arrow.gd) 的 `effect.apply(self, hit_target)` 拿到 freed 对象，刷 `SCRIPT ERROR: ...previously freed...`。根因：L55 的 `take_damage` 有 `is_instance_valid` 守卫，但 L60-62 给目标施加 effects 的循环漏了守卫。
+  **与 PR-4 关系**：根因预先存在，但 PR-4 把塔射程 150→220 后箭飞行时间变长，目标途中死亡概率上升，触发更频繁（实测日志刷 2 次）。
+  **修复**（极简）：L62 effect 循环前复用 L55 有效性判断，目标无效时跳过施加 effects。
+  关联: [scripts/effects/arrow.gd](scripts/effects/arrow.gd) (`_on_hit` L48-62), [scripts/buildings/building.gd](scripts/buildings/building.gd) (`_spawn_arrow` L532)
+  创建: 2026-08-13
 
 - **[P1] 占领据点后普通建筑造不出来 + 据点圈用途不直观** #bug #据点 #建造 #需调研
   玩家反馈：「占领据点之后某个建筑造不出来了」。**根因已基本定位**（不需要修，但需要聊扩展方向）：
@@ -179,19 +186,6 @@
 
   注意路径 ② 也命中此 key（点击建造拦截），所以这个译项缺失会在 ② 修好后更明显。
   关联: [scripts/systems/building_placer.gd](scripts/systems/building_placer.gd) (`reason_to_translation_key`), [scripts/main.gd](scripts/main.gd) (`_show_era_locked_hint` / `_quick_produce_unit` / `_do_place`), [locales/translations.csv](locales/translations.csv)
-  创建: 2026-08-11
-
-- **[P1] 进游戏初始时所有建筑按钮都显示为可点亮** #bug #ui #科技
-  刚进游戏（T1 时代，金币有限）时，建造栏所有建筑按钮看起来都是"亮"的，但实际上科技未解锁或金币不够，应该灰显。
-
-  **疑点**（待修前确认）：[game_ui.gd:1074-1118](scripts/systems/game_ui.gd) `_update_button_affordability` 本身逻辑没问题（按 reason 设 `modulate.a = 0.5` + `btn.disabled`），但这个函数似乎**只在金币变化/解锁事件时被调用**，进游戏初始化时漏调一次，所以首屏按钮全是默认状态（亮）。
-
-  **待确认**：
-  - game_ui.gd 哪里调 `_update_button_affordability`，初始化路径有没有走到
-  - 按钮节点初始 modulate.a 是否默认 1.0、btn.disabled 是否默认 false（写死在 .tscn）
-  - 修法：要么 game_ui `_ready` 末尾调一次，要么 main.gd 初始化金币后调一次
-
-  关联: [scripts/systems/game_ui.gd](scripts/systems/game_ui.gd) (`_update_button_affordability`), [scripts/main.gd](scripts/main.gd) (`_init` / 金币初始化), [scripts/ui/bottom_ui_bar.gd](scripts/ui/bottom_ui_bar.gd)
   创建: 2026-08-11
 
 - **[P1] 科技已解锁但钱不够时仍可点击建造** #bug #ui #科技
@@ -319,6 +313,14 @@ _（暂无）_
   关联: [T3阶段设计_终局与扩展.md](docs/active/T3阶段设计_终局与扩展.md), [T3阶段设计_详细分析.md](docs/active/T3阶段设计_详细分析.md)
   创建: 2026-08-10
   完成: 2026-08-11
+
+- [x] **进游戏初始时所有建筑按钮都显示为可点亮** #bug #ui #科技
+  刚进游戏（T1 时代，金币有限）时，建造栏所有建筑按钮看起来都是"亮"的，但科技未解锁或金币不够，应该灰显。
+  根因：[game_ui.gd](scripts/systems/game_ui.gd) `_update_button_affordability` 只在金币变化/解锁事件时被调用，进游戏初始化路径漏调一次，首屏按钮全是默认状态（亮）。
+  修复：[main.gd](scripts/main.gd) `_run_init_steps` Step 10 末尾补一次 `update_gold_display(gold)`，确保所有系统就绪后按钮首次刷新灰显/锁图标/价格颜色（commit `5f55c86`）。
+  关联: [scripts/systems/game_ui.gd](scripts/systems/game_ui.gd) (`_update_button_affordability`), [scripts/main.gd](scripts/main.gd) (`_run_init_steps`), [scripts/ui/bottom_ui_bar.gd](scripts/ui/bottom_ui_bar.gd)
+  创建: 2026-08-11
+  完成: 2026-08-12
 
 ## 💡 灵感
 

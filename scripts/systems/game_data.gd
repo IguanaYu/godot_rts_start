@@ -24,7 +24,7 @@ enum PlaceMode { NONE, WALL, TOWER, CASTLE, BARRACKS, SOLDIER, ARCHER, MONASTERY
 # --- 费用 ---
 const COSTS := {
 	PlaceMode.WALL: 50,
-	PlaceMode.TOWER: 150,
+	PlaceMode.TOWER: 180,
 	PlaceMode.SOLDIER: 50,
 	PlaceMode.ARCHER: 100,
 	PlaceMode.CASTLE: 500,

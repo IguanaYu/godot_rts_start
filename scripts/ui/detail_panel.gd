@@ -521,6 +521,8 @@ func show_temporary_mode(mode: int) -> void:
 	_title_label.text = name_str + "（预览）"
 
 	var cost: int = D.COSTS.get(mode, 0)
+	if _main_node and _main_node.get("building_placer"):
+		cost = _main_node.building_placer.get_current_cost(mode)
 	_add_info_line("造价: %d 金" % cost, Color(0.6, 0.6, 0.6))
 	if D.is_unit_mode(mode):
 		_add_info_line("类型: 单位", Color(0.6, 0.6, 0.6))
