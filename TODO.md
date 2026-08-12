@@ -74,6 +74,36 @@
   创建: 2026-08-11
   后续: PR-2 修完变体视觉 bug → PR-3 → PR-4
 
+- **[P1] 中立装饰优化 - 聊功能定位** #装饰 #地图 #设计
+  树木/草丛/石头等中立装饰现在只是视觉摆放，需要重新讨论它们在玩法中的角色。背景：现有 [scenes/environment/](scenes/environment/) 下有 tree/rock/bush 三个 .tscn，[scenes/terrain/](scenes/terrain/) 下有 terrain_rock/terrain_forest，但功能定义不清晰。
+
+  **待讨论要点**：
+  1. **碰撞体积**：哪些装饰挡单位走位（树?石头?草?）、哪些纯视觉可穿过？现有 [terrain_obstacle.gd](scripts/terrain_obstacle.gd) 是否覆盖所有需要碰撞的装饰？
+  2. **遮蔽视野**：装饰是否要挡单位选中/点击命中？是否影响 aggro/射程判定？
+  3. **视觉层次**：装饰与单位/建筑重叠时的 z_index 规则，单位走到树后面应该被遮挡还是覆盖树？
+  4. **对战术的影响**：是否有意用装饰做"天然掩体/卡点位"？还是纯粹美观、不参与玩法？
+  5. **性能与批量**：地图上装饰数量上限、是否需要 MultiMesh/instance 化批量绘制
+  6. **可破坏性**：装饰能否被单位/技能打掉？打掉后碰撞和视野怎么更新？
+
+  关联: [scenes/environment/](scenes/environment/) (tree/rock/bush.tscn), [scenes/terrain/](scenes/terrain/) (terrain_rock/terrain_forest.tscn), [scripts/terrain_obstacle.gd](scripts/terrain_obstacle.gd)
+  创建: 2026-08-12
+  后续: 先聊功能定位（碰撞/视野/战术角色），再聊资源现状与配置流程
+
+- **[P1] 地形视觉优化 - 多色地形与绘制流程** #地形 #视觉 #设计
+  现状：[terrain_layer.gd](scripts/terrain_layer.gd) 只用 `TILE_TEXTURES[theme_index]` 一张纯色草地铺满全图，但素材里实际有 `Tilemap_color1.png` 到 `Tilemap_color5.png` 五种色调（含深绿），还有 `Water Background color.png`。当前地图整体是单一浅绿色，缺乏层次。
+
+  **待讨论要点**：
+  1. **现有素材盘点**：5 张 color 贴图分别是什么色调？atlas 里还有哪些 tile 可用（路径/边缘/过渡 tile）？water 之外有没有沙地/雪地/泥地？
+  2. **自动地形算法**：按 biome 分块上色？噪声扰动？按高度/距离水源渐变？是否需要规则驱动的"自动生成地形外观"工具
+  3. **手动绘制流程**：是否引入 TileMap 编辑器手绘？地图作者怎么标记"这片是深绿、这片是浅绿"？配置存在哪（map_config / .tscn / .tres）
+  4. **信息密度**：颜色要不要承担功能含义（如危险区/资源区/双方出生点用不同底色），还是纯视觉？
+  5. **与装饰/建筑搭配**：颜色变化与中立装饰（树/石/草丛）的分布要不要联动（如深绿区多树、浅绿区开阔）？
+  6. **过渡效果**：颜色块之间要不要平滑过渡（边缘 tile / shader 混合），还是硬切？
+
+  关联: [scripts/terrain_layer.gd](scripts/terrain_layer.gd) (`TILE_TEXTURES` / `_build_tileset` / `set_cell`), [scripts/map_config.gd](scripts/map_config.gd), [scenes/maps/](scenes/maps/)
+  创建: 2026-08-12
+  后续: 先盘素材（开 5 张贴图 + atlas 看可用 tile），再聊"自动 vs 手动"方向
+
 ### Bug
 
 - **[P1] 占领据点后普通建筑造不出来 + 据点圈用途不直观** #bug #据点 #建造 #需调研

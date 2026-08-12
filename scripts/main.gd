@@ -76,6 +76,12 @@ var show_fps: bool = false
 var show_collisions: bool = false
 var canvas_modulate: CanvasModulate = null
 var _units_lost: int = 0  # 星级评价用：玩家损失单位数
+# T3 PR-3 战斗统计
+var _enemies_killed: int = 0  # 玩家击杀敌方单位数
+var _units_trained: int = 0  # 玩家建造单位数（面板+兵营）
+var _buildings_constructed: int = 0  # 玩家建造建筑数
+var _gold_earned: int = 0  # 玩家累计获得金币（只算正向收入）
+var _game_start_time: float = 0.0  # 本局开始时间（_game_time 起点，一般为 0）
 var _initialized: bool = false  # _run_init_steps 跑完前 _process/_input 直接 return
 # AI 队友求救感叹号列表（main 实例化，distress_cleared 时清除）
 var _distress_markers: Array[Node2D] = []
@@ -342,6 +348,12 @@ func _run_init_steps() -> void:
 	_initialized = true
 	LoadRouter.report_init_progress(1.0)
 	LoadRouter.finish_init()
+	# T3 PR-3: 记录开始时间 + 显示开局一次性提示
+	_game_start_time = _game_time
+	var intro_hint := CanvasLayer.new()
+	intro_hint.set_script(load("res://scripts/ui/intro_hint_dialog.gd"))
+	intro_hint.name = "IntroHintDialog"
+	add_child(intro_hint)
 
 func _has_preplaced_entities() -> bool:
 	for child in player_units_node.get_children():
@@ -446,8 +458,7 @@ func _on_game_ended(result: String) -> void:
 	if result == "victory":
 		_show_victory_panel(sm)
 	else:
-		result_label.text = tr("RESULT_DEFEAT")
-		result_label.visible = true
+		_show_defeat_panel(sm)
 
 
 func _show_mp_result(result: String):
@@ -499,61 +510,52 @@ func _show_victory_panel(sm: Node) -> void:
 
 	var overlay := ColorRect.new()
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	overlay.color = Color(0, 0, 0, 0.5)
+	overlay.color = Color(0, 0, 0, 0.6)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	canvas.add_child(overlay)
 
-	var panel := Control.new()
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(480, 520)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	panel.offset_left = -180
-	panel.offset_right = 180
-	panel.offset_top = -140
-	panel.offset_bottom = 140
 	canvas.add_child(panel)
 
 	var vbox := VBoxContainer.new()
-	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	vbox.offset_left = 24
-	vbox.offset_right = -24
-	vbox.offset_top = 20
-	vbox.offset_bottom = -20
 	vbox.add_theme_constant_override("separation", 12)
-	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	panel.add_child(vbox)
 
 	var title := Label.new()
-	title.text = tr("RESULT_VICTORY")
+	title.text = "胜  利"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 32)
+	title.add_theme_font_size_override("font_size", 36)
 	title.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
 	title.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
 	title.add_theme_constant_override("shadow_offset_x", 2)
 	title.add_theme_constant_override("shadow_offset_y", 2)
 	vbox.add_child(title)
 
+	# SaveManager 历史数据（最佳用时 + 总分，沿用现有 UX）
 	if sm:
 		var elapsed: float = sm.get_last_session_time()
-		var time_label := Label.new()
-		time_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		time_label.add_theme_font_size_override("font_size", 22)
-		time_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
-		time_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.5))
-		time_label.add_theme_constant_override("shadow_offset_x", 1)
-		time_label.add_theme_constant_override("shadow_offset_y", 1)
-		time_label.text = tr("SAVE_BEST_TIME") % sm.format_time(elapsed)
-		vbox.add_child(time_label)
-
 		var save_data: Dictionary = sm.get_current_data()
 		var total: int = sm.calc_total_score(save_data)
+		var sm_box := VBoxContainer.new()
+		sm_box.add_theme_constant_override("separation", 4)
+		var best_label := Label.new()
+		best_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		best_label.add_theme_font_size_override("font_size", 18)
+		best_label.add_theme_color_override("font_color", Color(0.9, 0.85, 0.5))
+		best_label.text = tr("SAVE_BEST_TIME") % sm.format_time(elapsed)
+		sm_box.add_child(best_label)
 		var score_label := Label.new()
 		score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		score_label.add_theme_font_size_override("font_size", 22)
+		score_label.add_theme_font_size_override("font_size", 18)
 		score_label.add_theme_color_override("font_color", Color(1, 0.85, 0.0))
-		score_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.5))
-		score_label.add_theme_constant_override("shadow_offset_x", 1)
-		score_label.add_theme_constant_override("shadow_offset_y", 1)
 		score_label.text = tr("SAVE_TOTAL_SCORE") % [total, 100]
-		vbox.add_child(score_label)
+		sm_box.add_child(score_label)
+		vbox.add_child(sm_box)
+
+	# T3 PR-3: 本局统计区
+	_add_stats_section(vbox, true)
 
 	var btn := Button.new()
 	btn.text = tr("SAVE_CONTINUE")
@@ -566,6 +568,92 @@ func _show_victory_panel(sm: Node) -> void:
 	var BF := preload("res://scripts/ui/button_factory.gd")
 	BF.add_hover_anim_button(btn)
 	vbox.add_child(btn)
+
+
+# T3 PR-3: 失败面板（与胜利对称，红色调）
+func _show_defeat_panel(_sm: Node) -> void:
+	result_label.visible = false
+
+	var canvas := CanvasLayer.new()
+	canvas.layer = 100
+	canvas.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(canvas)
+
+	var overlay := ColorRect.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.color = Color(0.2, 0, 0, 0.6)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	canvas.add_child(overlay)
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(480, 520)
+	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	canvas.add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 12)
+	panel.add_child(vbox)
+
+	var title := Label.new()
+	title.text = "失  败"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 36)
+	title.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
+	title.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	title.add_theme_constant_override("shadow_offset_x", 2)
+	title.add_theme_constant_override("shadow_offset_y", 2)
+	vbox.add_child(title)
+
+	# T3 PR-3: 本局统计区
+	_add_stats_section(vbox, false)
+
+	var btn := Button.new()
+	btn.text = tr("SAVE_CONTINUE")
+	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	btn.custom_minimum_size = Vector2(160, 44)
+	btn.add_theme_font_size_override("font_size", 16)
+	btn.add_theme_color_override("font_color", Color(1, 1, 1))
+	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	btn.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/level_select.tscn"))
+	var BF := preload("res://scripts/ui/button_factory.gd")
+	BF.add_hover_anim_button(btn)
+	vbox.add_child(btn)
+
+
+# T3 PR-3: 统计区构建（胜利/失败共用）
+func _add_stats_section(parent: Container, _is_victory: bool) -> void:
+	var stats_data := _collect_game_stats()
+	for item in stats_data:
+		var row := HBoxContainer.new()
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
+		row.add_theme_constant_override("separation", 8)
+		var label := Label.new()
+		label.text = item.label + ":"
+		label.add_theme_font_size_override("font_size", 14)
+		row.add_child(label)
+		var value := Label.new()
+		value.text = str(item.value)
+		value.add_theme_font_size_override("font_size", 14)
+		value.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
+		row.add_child(value)
+		parent.add_child(row)
+
+
+# T3 PR-3: 收集本局统计（7 项）
+func _collect_game_stats() -> Array:
+	var time_used := _game_time - _game_start_time
+	var minutes := int(time_used) / 60
+	var seconds := int(time_used) % 60
+	var time_str := "%d:%02d" % [minutes, seconds]
+	return [
+		{"label": "用时", "value": time_str},
+		{"label": "剩余金币", "value": gold},
+		{"label": "获得金币总数", "value": _gold_earned},
+		{"label": "击杀敌方单位", "value": _enemies_killed},
+		{"label": "损失单位", "value": _units_lost},
+		{"label": "建造单位数", "value": _units_trained},
+		{"label": "建造建筑数", "value": _buildings_constructed},
+	]
 
 func _setup_capture_points() -> void:
 	for child in get_children():
@@ -730,7 +818,7 @@ func _show_era_locked_hint(mode: int) -> void:
 	var msg := tr("ERA_LOCKED_HINT")
 	if msg == "" or msg == "ERA_LOCKED_HINT":
 		msg = "需要升级到 T2 时代"
-	var pos := _castle_head_pos()
+	var pos := get_global_mouse_position()
 	show_floating_text(msg, Color(1.0, 0.6, 0.6), pos)
 
 
@@ -1055,6 +1143,7 @@ func _on_unit_died(unit: CharacterBody2D) -> void:
 	if tech_point_manager:
 		var TPD := preload("res://scripts/tech/tech_point_data.gd")
 		if unit.is_in_group("enemy_units"):
+			_enemies_killed += 1  # T3 PR-3 战斗统计
 			tech_point_manager.add_points(TPD.BASE_POINTS.get("kill_unit", 1), TPD.CATEGORY_KILL_ENEMY_UNIT)
 		elif unit.is_in_group("player_units"):
 			tech_point_manager.add_points(TPD.BASE_POINTS.get("own_unit_died", 2), TPD.CATEGORY_OWN_UNIT_DIED)
@@ -1569,6 +1658,8 @@ func spawn_enemy_unit(type: int, pos: Vector2, wave_attack: bool = false, wave_t
 
 func add_gold(amount: int) -> void:
 	gold += amount
+	if amount > 0:
+		_gold_earned += amount  # T3 PR-3: 累计正向收入
 	ui_module.update_gold_display(gold)
 
 

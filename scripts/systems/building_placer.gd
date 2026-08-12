@@ -258,6 +258,9 @@ func place_building(type: int, team: int, gpos: Vector2i, owner_id: int = -1, fa
 	_buildings_node.add_child(building)
 	building.add_to_group("buildings")
 	building.add_to_group("player_buildings" if team == BuildingScript.Team.PLAYER else "enemy_buildings")
+	# T3 PR-3: 战斗统计（玩家手动建造建筑；地图预置走 register_preplaced_buildings 不经此处）
+	if team == BuildingScript.Team.PLAYER:
+		get_parent()._buildings_constructed += 1
 	building.connect("died", _on_building_died)
 	for dx in range(gsize.x):
 		for dy in range(gsize.y):

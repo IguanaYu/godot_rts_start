@@ -368,6 +368,9 @@ func place_player_unit(unit_type: int, click_pos: Vector2, stats_id: StringName 
 	LockstepSync.register_unit(unit)
 	_player_units_node.add_child(unit)
 	unit.add_to_group("player_units")
+	# T3 PR-3: 战斗统计（面板造兵）
+	if _main_node != null:
+		_main_node._units_trained += 1
 	# T1: spawn 后如果仍在建筑内，触发逃生（与 building._spawn_produced_unit 行为对齐）
 	if unit.has_method("_start_escape") and unit.has_method("_is_inside_any_building"):
 		if unit._is_inside_any_building():

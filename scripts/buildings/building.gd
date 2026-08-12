@@ -710,6 +710,9 @@ func _spawn_unit_by_stats_id(stats_id: StringName) -> void:
 	# 添加到对应的组
 	var group_name := "player_units" if team == Team.PLAYER else "enemy_units"
 	unit.add_to_group(group_name)
+	# T3 PR-3: 战斗统计（兵营造兵，仅玩家方）
+	if team == Team.PLAYER and main_node != null:
+		main_node._units_trained += 1
 	# 连接死亡信号
 	if main_node.has_method("_on_unit_died"):
 		unit.connect("died", Callable(main_node, "_on_unit_died"))
