@@ -13,6 +13,7 @@ skills-lock.json
 # Codex / 其他 AI 工具
 .codex/
 AGENTS.md
+.zcode/
 
 # Node
 server/node_modules/
