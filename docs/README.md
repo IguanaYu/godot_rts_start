@@ -54,8 +54,12 @@ RTS 项目的所有文档都在 `docs/` 下，本文件是唯一入口（人和 
 - [victory-defeat-conditions-catalog.md](standards/victory-defeat-conditions-catalog.md) — 胜负条件目录（配合 scripts/victory/ 的 15 种实现）
 - [大战术释放_设计要点与避坑指南.md](standards/大战术释放_设计要点与避坑指南.md) — 精英敌人设计 6 条经验 + 反模式
 - [游戏视觉设计准则.md](standards/游戏视觉设计准则.md) — 做新地图/贴图/单位/特效/UI 前的视觉标准：视觉能量分层、可读性、验收清单
+- [动效锚点设计清单与生成图指导.md](standards/动效锚点设计清单与生成图指导.md) — 出图前必过：全品类动效锚点大清单 + AI 提示词模板与负面约束
 - [玩法设计讨论方法论.md](standards/玩法设计讨论方法论.md) — 和 AI 聊设计的方法
 - [游戏开发skill.md](standards/游戏开发skill.md) — 谢尔方法设计顾问 prompt，压测游戏创意用
+- [策划工作流方法论.md](standards/策划工作流方法论.md) — 从想法到 PR 的五阶段流水线 + 第 0 步目的澄清，开新阶段/新系统前读
+- [调研工作方法.md](standards/调研工作方法.md) — 调研五层结构（目的/现状/横向/纵向/结论）+ 准则 + 禁止事项，接调研任务前读
+- [机制好坏判据.md](standards/机制好坏判据.md) — 实证 12 条判据（坏 8 好 4，各带边界），评审/砍功能/新机制自查时逐条过
 
 ## research/product/ — 竞品调研（查"别的游戏怎么做"）
 
@@ -76,6 +80,7 @@ RTS 项目的所有文档都在 `docs/` 下，本文件是唯一入口（人和 
 - [亿万僵尸 数值与节奏调研](research/product/亿万僵尸_数值与节奏调研.md)
 - [红警2/3 任务模式调研](research/product/红警2_3_任务模式调研.md)
 - [植物大战僵尸 引导与教学设计调研](research/product/植物大战僵尸_引导与教学设计调研.md)
+- [游戏引导系统 跨游戏与设计原则调研](research/product/游戏引导系统_跨游戏与设计原则调研.md) — 引导的目的/原则 + RTS 案例盘点 + "RTS 教龟缩"关键发现，做引导前读
 - [大战术释放 跨游戏机制调研](research/product/大战术释放_跨游戏机制调研.md) — 高 HP 引导型精英敌人的跨游戏 archetype
 - [近战兵修复完整调研报告](research/product/近战兵修复完整调研报告.md)
 - [RTS 小地图功能调研](research/product/RTS小地图功能调研_星际2_魔兽3_亿万僵尸.md)
@@ -90,6 +95,8 @@ UI / 特效专题：
 - [RTS特效分类与作用调研](research/product/RTS特效分类与作用调研.md)
 - [伤害法术特效 跨游戏调研](research/product/伤害法术特效_跨游戏调研.md)
 - [单单位环绕特效 跨游戏调研](research/product/单单位环绕特效_跨游戏调研.md)
+- [建筑环境动效 跨游戏与锚点系统调研](research/product/建筑环境动效_跨游戏与锚点系统调研.md) — 建筑"活着"感：锚点/演员/状态/随机四支柱 + AmbientVisual 组件方案
+- [动效友好美术设计 跨游戏调研](research/product/动效友好美术设计_跨游戏调研.md) — 术语表 + 五品类案例（含角色特效携带物）+ 设计规律九条
 
 玩法设计与资源转化：
 - [RTS_玩法设计建议](research/product/RTS_玩法设计建议.md)
