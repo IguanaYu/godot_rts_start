@@ -53,6 +53,7 @@ RTS 项目的所有文档都在 `docs/` 下，本文件是唯一入口（人和 
 - [rts-level-design-reference.md](standards/rts-level-design-reference.md) — 关卡设计通用参考
 - [victory-defeat-conditions-catalog.md](standards/victory-defeat-conditions-catalog.md) — 胜负条件目录（配合 scripts/victory/ 的 15 种实现）
 - [大战术释放_设计要点与避坑指南.md](standards/大战术释放_设计要点与避坑指南.md) — 精英敌人设计 6 条经验 + 反模式
+- [游戏视觉设计准则.md](standards/游戏视觉设计准则.md) — 做新地图/贴图/单位/特效/UI 前的视觉标准：视觉能量分层、可读性、验收清单
 - [玩法设计讨论方法论.md](standards/玩法设计讨论方法论.md) — 和 AI 聊设计的方法
 - [游戏开发skill.md](standards/游戏开发skill.md) — 谢尔方法设计顾问 prompt，压测游戏创意用
 
