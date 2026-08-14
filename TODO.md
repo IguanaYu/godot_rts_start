@@ -10,6 +10,51 @@
 
 ### 调研后续
 
+- **[P0] T4 阶段定义 - 确定做什么** #设计 #t4 #规划
+  T3 四个 PR 已全部完成（解锁调整 / T3 学院 + N 选 1 升级 / 终局机制 / 塔数值），需要进入下一阶段：**定义 T4 要做什么**。
+
+  **待讨论要点**：
+  1. **T4 的玩法定位**：T3 已经做了"终局机制"（胜利/失败条件 + 统计），T4 是往哪个方向走？继续加深战斗深度 / 新经济维度 / 新地图机制 / 英雄系统（呼应 RPG 模式灵感）/ 还是别的？
+  2. **与现有系统的关系**：T4 是在 T3 终局框架上加内容（新单位/新建筑/新科技），还是要引入全新系统（如英雄、技能树、天气）？
+  3. **范围边界**：T4 是一个大版本还是拆成多个子模块（像 T3 那样分 A-I 模块决策稿）？先定大方向再拆模块？
+  4. **优先级排序**：现有 TODO 里几条调研后续（RPG 模式 / RTS 核心补全 / 中立装饰 / 地形优化 / 升本扩展基地）哪些应该纳入 T4，哪些独立推进？
+  5. **技术约束**：T3 实施中暴露的问题（如箭矢 use-after-free、据点建造前置不直观）要不要在 T4 开工前先清掉？
+
+  **建议产出**：一份 T4 阶段总览文档（类似 [T3技术设计_00_总览.md](docs/active/T3技术设计_00_总览.md)），列出 T4 的核心目标、模块拆分、优先级、与现有 TODO 的关系。
+  创建: 2026-08-13
+  后续: 先聊大方向（T4 玩什么）→ 再拆模块 → 落地技术设计文档
+
+- **[P1] 游戏引导系统 - 调研** #设计 #引导 #新玩家
+  目前游戏没有新手引导/教程，玩家进来直接面对完整 UI，不知道先做什么、怎么造建筑、怎么出兵、怎么赢。需要调研同类 RTS（AoE/SC2/WC3/They Are Billions/Diplomacy is Not an Option）的引导设计，看看哪些模式适合本项目。
+  
+  **待调研方向**：
+  1. **引导形式**：弹出文字提示框 / 高亮按钮 / 箭头指向 / 强制分步操作 / 自由探索+可选提示 / 可跳过
+  2. **引导内容**：第一局核心流程（造第一个建筑→造第一个兵→占领第一个据点→升级时代→推掉敌方基地）
+  3. **引导时机**：开局一次性 / 触发式（玩家首次做某操作时弹出）/ 持续可查的帮助面板
+  4. **复用性**：引导系统能不能做成数据驱动（配置表驱动步骤），方便后续加新引导
+  5. **同类游戏参考**：每个游戏的引导模式、优缺点、适合本项目程度的评估
+  
+  创建: 2026-08-13
+  后续: 调研 → 聊引导模式 → 决定要不要做、做哪种
+
+- **[P1] 操作优化 - Tab 建造栏与快捷键体验** #设计 #ux #操作
+  当前底部 UI 的建造栏（建筑/兵种）切换体验不够直观，经常出现"所见非所得"的问题。
+
+  **现状问题**：
+  - 玩家选中建筑后，底部栏常停留在"造建筑"tab，但此时按 Tab 会切换到"造兵"tab，视觉上不直观
+  - 理想情况是"不建造时显示框选部队信息"，建造时按 QWERASDF 直接造，但 QWERASDF 和造兵快捷键冲突
+  - 建造栏的显示/隐藏逻辑与玩家当前选中状态（建筑/单位/空地）之间的关联不够清晰
+
+  **待决策方向**：
+  1. **Tab 行为**：方案 A — 第一按激活当前菜单（直接可造），再按才切换；方案 B — 通过点击或 Esc 解锁 Tab 建造时，自动退回造兵栏
+  2. **显示规则**：不建造时底部栏显示什么？框选部队详情 / 建造栏隐藏 / 只显示快捷键提示
+  3. **快捷键冲突**：QWERASDF 在"建造模式"和"造兵模式"下复用同一组键，怎么区分？需要明确模式切换机制
+  4. **同类 RTS 参考**：AoE2/SC2/WC3/They Are Billions 的建造栏快捷键是怎么处理的？模式切换 vs 直接快捷键
+
+  关联: [scripts/systems/game_ui.gd](scripts/systems/game_ui.gd), [scripts/ui/bottom_ui_bar.gd](scripts/ui/bottom_ui_bar.gd)
+  创建: 2026-08-13
+  后续: 先调研同类 RTS 的快捷键模式 → 聊决策方案 → 落地
+
 - **[P1] 音效系统 - 收集音效素材** #音效 #资源
   调研已完成，方案落地。现在需要自己去收集合适的音效文件（BGM、UI 反馈、单位语音、技能音效等）。
   关联: [docs/research/audio_06_research_summary.md](docs/research/audio_06_research_summary.md), [docs/research/audio_05_sound_inventory.md](docs/research/audio_05_sound_inventory.md), [docs/research/audio_01_free_resources.md](docs/research/audio_01_free_resources.md)
@@ -39,6 +84,14 @@
   - [x] **建筑活动视觉设计方案** ✅ 设计完成，待实施
     关联: [docs/design/建筑活动视觉设计方案.md](docs/design/建筑活动视觉设计方案.md)
     完成: 2026-08-11
+  - [x] **程序化动画与特效调研报告** ✅ 调研完成
+    覆盖 shader 6 项（顶点位移/Dissolve/轮廓发光/波纹/伪3D/色差）+ 同类游戏案例 + 粒子方案
+    关联: [docs/design/程序化动画与特效调研报告.md](docs/design/程序化动画与特效调研报告.md)
+    完成: 2026-08-13
+  - [x] **程序化特效落地总方案** ✅ 设计完成
+    实体×状态→特效对照表（单位/建筑/投射物/技能）+ 基础能力升级前置 + 配置说明
+    关联: [docs/design/程序化特效落地总方案.md](docs/design/程序化特效落地总方案.md)
+    完成: 2026-08-13
 
 - **[P1] 升本扩展基地范围** #设计 #平衡 #基地
   当前 [building_placer.gd:21](scripts/systems/building_placer.gd) 的 `BUILD_RADIUS := 6*64 = 384px` 是写死的常量，与时代/科技等级完全无关。想做：「升 T2/T3 时主基地建造范围随之扩大」，让玩家有更明显的成长反馈 + 中后期不至于被 6 格挤死。
@@ -104,6 +157,11 @@
   创建: 2026-08-12
   后续: 先盘素材（开 5 张贴图 + atlas 看可用 tile），再聊"自动 vs 手动"方向
 
+- **[P1] 整理文档 - 生成游戏现状描述文档** #文档 #现状
+  项目文档已经积累了不少（设计/调研/技术方案/PR 文档），但缺少一份**统一的游戏现状描述文档**，让新读者（或自己隔段时间回来）能快速了解：当前游戏是什么样、有哪些系统、到什么阶段、还有哪些已知问题。
+  产出：一份 `docs/active/游戏现状描述.md`，覆盖玩法概述 / 已实现系统清单 / 单位与建筑一览 / 经济与科技树 / 地图与视觉 / 已知问题与限制 / 下一步计划。
+  创建: 2026-08-13
+
 ### Bug
 
 - **[P1] 箭矢命中已死目标刷 SCRIPT ERROR（arrow.gd:62 use-after-free）** #bug #箭矢 #塔
@@ -140,30 +198,10 @@
   创建: 2026-08-11
   完成: 2026-08-11
 
-- **[P1] Q/W 生产栏图标溢出** #bug #ui
-  建筑生产栏（Q/W/E/R... 快捷键）单位种类超过 5 个时，后面的图标在 UI 上排不下、显示不全。需要做自适应布局（横向滚动 / 多行 / 折叠）或者重新设计这个栏的容量。
-  关联: [scripts/systems/game_ui.gd](scripts/systems/game_ui.gd)
-  创建: 2026-08-11
-
 - **[P1] 长枪兵队列图标显示为步兵** #bug #ui
   在兵营排长枪兵时，详情面板的生产队列里**显示的是基础步兵的图标**，而不是长枪兵。实际造出来是长枪兵（数据正确），只是队列预览图标错了。
   根因方向：队列 UI 取图标时大概率写死了步兵 icon（building.type == BARRACKS 分支默认走步兵 sprite），没根据被造单位 type 切换对应图标。
   关联: [scripts/ui/detail_panel.gd](scripts/ui/detail_panel.gd), [scripts/systems/game_ui.gd](scripts/systems/game_ui.gd)
-  创建: 2026-08-11
-
-- **[P1] 科技前置解锁提示显示英文 key** #bug #ui #翻译 #科技
-  点击未解锁科技的建筑按钮时，飘字提示显示的是英文翻译 key（如 "ERA_LOCKED"），而不是中文。
-
-  **根因**（已定位，待修）：[building_placer.gd:194](scripts/systems/building_placer.gd) `reason_to_translation_key` 会返回 `&"ERA_LOCKED"`，[main.gd:1490-1492](scripts/main.gd) 用 `tr(key)` 飘字。但 [translations.csv:277-283](locales/translations.csv) 里只有 `NO_BARRACKS / QUEUE_FULL / OUT_OF_RANGE / NEED_FARM / FARM_LIMIT / NO_GOLD`，**`ERA_LOCKED` 译项缺失**，Godot 的 tr() 找不到译项时直接回退成 key 本身。
-
-  另外 [main.gd:729-734](scripts/main.gd) `_show_era_locked_hint` 用的是 `ERA_LOCKED_HINT` 这个 key（**也缺失**），但这里代码层有中文兜底 `"需要升级到 T2 时代"`，所以这条路径不会显示英文；只有走 `reason_to_translation_key → tr("ERA_LOCKED")` 的路径（点击建造区/快捷键造兵）才会暴露英文。
-
-  **修复**：translations.csv 加两行：
-  - `ERA_LOCKED,Requires higher tier,需要升级到更高时代,より高い時代が必要です`
-  - `ERA_LOCKED_HINT,Requires higher tier,需要升级到更高时代,より高い時代が必要です`
-
-  注意路径 ② 也命中此 key（点击建造拦截），所以这个译项缺失会在 ② 修好后更明显。
-  关联: [scripts/systems/building_placer.gd](scripts/systems/building_placer.gd) (`reason_to_translation_key`), [scripts/main.gd](scripts/main.gd) (`_show_era_locked_hint` / `_quick_produce_unit` / `_do_place`), [locales/translations.csv](locales/translations.csv)
   创建: 2026-08-11
 
 - **[P1] 科技已解锁但钱不够时仍可点击建造** #bug #ui #科技
@@ -271,9 +309,38 @@
 
 ## 🔧 计划中
 
-_（暂无）_
+### 程序化特效落地（按 ROADMAP 推进）
+
+- **[P1] 程序化特效落地 - 7 个 PR 按基础优先顺序推进** #特效 #实施
+  设计已完成（[落地总方案](docs/design/程序化特效落地总方案.md)），ROADMAP 拆为 7 个 PR + 测试沙盒。每个 PR 在沙盒里独立验证。
+
+  **PR 列表**：
+  - 📋 **PR-0** 测试沙盒场景（极简版）— spawn 单位/木桩 + 时间控制 + 详情面板
+  - 📋 **PR-1** Shader 接入 + Dissolve — 5 个 uniform 接入 + 单位死亡消散
+  - 📋 **PR-2** 粒子对象池 + 配方库 — ParticlePool Autoload + 6 种基础配方
+  - 📋 **PR-3** UnitVisualFeedback 组件 — 受击/攻击冲量/护盾环/持续状态
+  - 📋 **PR-4** BuildingActivityVisual 组件 — 9 种建筑活动反馈
+  - 📋 **PR-5** 命中粒子 + 屏幕后处理 — hit_spark + 冲击波/色差
+  - 📋 **PR-6** 指挥官技能视觉升级 — 8 个技能释放瞬间 + 持续效果
+  - ⏸ **PR-7** T3 变体专属视觉（可延后）— 等玩家真解锁 T3 再说
+
+  关联: [docs/active/程序化特效落地_ROADMAP.md](docs/active/程序化特效落地_ROADMAP.md)
+  创建: 2026-08-13
+  后续: 从 PR-0 开始，按顺序推进
 
 ## ✅ 已完成
+
+- [x] **Q/W 生产栏图标溢出** #bug #ui
+  建筑生产栏（Q/W/E/R... 快捷键）单位种类超过 5 个时，后面的图标在 UI 上排不下、显示不全。修复：自适应横向滚动。
+  关联: [scripts/systems/game_ui.gd](scripts/systems/game_ui.gd)
+  创建: 2026-08-11
+  完成: 2026-08-13
+
+- [x] **科技前置解锁提示显示英文 key** #bug #ui #翻译 #科技
+  点击未解锁科技的建筑按钮时，飘字提示显示英文翻译 key（如 "ERA_LOCKED"）。根因：translations.csv 缺 `ERA_LOCKED` / `ERA_LOCKED_HINT` 译项，Godot tr() 回退成 key 本身。修复：translations.csv 补两行译项。
+  关联: [scripts/systems/building_placer.gd](scripts/systems/building_placer.gd) (`reason_to_translation_key`), [scripts/main.gd](scripts/main.gd) (`_show_era_locked_hint` / `_quick_produce_unit` / `_do_place`), [locales/translations.csv](locales/translations.csv)
+  创建: 2026-08-11
+  完成: 2026-08-13
 
 - [x] **底部 UI 遮挡地图下方 + 摄像头限位卡死** #bug #ui #摄像头
   底部 215px UI 条遮住地图下方，`clamp_camera()` 没把 UI 高度算进限位，玩家滚不到被遮区。
