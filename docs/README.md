@@ -54,6 +54,7 @@ RTS 项目的所有文档都在 `docs/` 下，本文件是唯一入口（人和 
 - [victory-defeat-conditions-catalog.md](standards/victory-defeat-conditions-catalog.md) — 胜负条件目录（配合 scripts/victory/ 的 15 种实现）
 - [大战术释放_设计要点与避坑指南.md](standards/大战术释放_设计要点与避坑指南.md) — 精英敌人设计 6 条经验 + 反模式
 - [游戏视觉设计准则.md](standards/游戏视觉设计准则.md) — 做新地图/贴图/单位/特效/UI 前的视觉标准：视觉能量分层、可读性、验收清单
+- [UI设计规范.md](standards/UI设计规范.md) — 改任何 UI 前必读：布局分区/字号间距 token/交互五态/tooltip 300ms/动效三档/组件卡片，T4 A.2 产出
 - [动效锚点设计清单与生成图指导.md](standards/动效锚点设计清单与生成图指导.md) — 出图前必过：全品类动效锚点大清单 + AI 提示词模板与负面约束
 - [玩法设计讨论方法论.md](standards/玩法设计讨论方法论.md) — 和 AI 聊设计的方法
 - [游戏开发skill.md](standards/游戏开发skill.md) — 谢尔方法设计顾问 prompt，压测游戏创意用
@@ -89,6 +90,7 @@ RTS 项目的所有文档都在 `docs/` 下，本文件是唯一入口（人和 
 
 UI / 特效专题：
 - [游戏UI设计定式_跨游戏与设计系统调研](research/product/游戏UI设计定式_跨游戏与设计系统调研.md) / [调研评估与补强](research/product/游戏UI设计定式_调研评估与补强.md)
+- [游戏UI规范_业界标准与交互反馈数值调研](research/product/游戏UI规范_业界标准与交互反馈数值调研.md) — 规范六层结构 + 交互态/tooltip/报错/动效四面标准数值（18 项数值包），写 UI 规范前读
 - [资源面板UI 跨游戏调研](research/product/资源面板UI_跨游戏调研.md)
 - [任务事件UI 跨游戏调研](research/product/任务事件UI_跨游戏调研.md)
 - [AI写UI安全_越界检测与视觉反馈调研](research/product/AI写UI安全_越界检测与视觉反馈调研.md)
