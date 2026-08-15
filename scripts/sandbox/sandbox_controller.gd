@@ -86,6 +86,14 @@ func _build_ui() -> void:
 	top_bar.add_child(_make_top_button("2x", _set_time_scale.bind(2.0)))
 	top_bar.add_child(_make_top_button("重置", _reset))
 	top_bar.add_child(_make_top_button("池", _toggle_pool_stats))
+	# PR-3 调试按钮：对选中单位施加状态/事件，验证 UnitVisualFeedback
+	top_bar.add_child(_make_top_button("减速", _apply_debug.bind(&"slow")))
+	top_bar.add_child(_make_top_button("中毒", _apply_debug.bind(&"poison")))
+	top_bar.add_child(_make_top_button("护盾", _apply_debug.bind(&"shield")))
+	top_bar.add_child(_make_top_button("受击", _apply_debug.bind(&"hit")))
+	top_bar.add_child(_make_top_button("治疗", _apply_debug.bind(&"heal")))
+	top_bar.add_child(_make_top_button("狂暴", _apply_debug.bind(&"enrage")))
+	top_bar.add_child(_make_top_button("祝福", _apply_debug.bind(&"bless")))
 
 	# === 左面板：阵营 + 数量 + 单位按钮 ===
 	var left_panel := PanelContainer.new()
@@ -311,6 +319,44 @@ func _on_spawn_died(unit) -> void:
 	_selected_units.erase(unit)
 	# 沙盒专属：死亡时用池放爆炸演示（正式对局里爆炸只在建筑死亡时触发）
 	ParticlePool.spawn("explosion", unit.global_position, {"scale": Vector2(0.8, 0.8)})
+
+
+# ============================================================
+# PR-3 调试：对选中单位施加状态/事件（验证 UnitVisualFeedback）
+# ============================================================
+func _apply_debug(action: StringName) -> void:
+	var targets: Array = _selected_units.filter(func(u): return u != null and is_instance_valid(u) and not u.is_dead())
+	if targets.is_empty():
+		return
+	for u in targets:
+		match action:
+			&"slow":
+				u.apply_slow(0.6, 5.0)
+			&"poison":
+				u.apply_poison(8.0, 6.0)
+			&"shield":
+				u.set_shield_hp(60)
+			&"hit":
+				u.take_damage(8)  # 无 attacker：验证向上小跳兜底
+			&"heal":
+				u.heal(10)
+			&"enrage":
+				_toggle_unit_tint(u, "enrage")
+			&"bless":
+				_toggle_unit_tint(u, "bless")
+
+
+var _tint_on := {}
+func _toggle_unit_tint(unit, kind: String) -> void:
+	var key := str(unit.get_instance_id()) + kind
+	var on: bool = not _tint_on.get(key, false)
+	_tint_on[key] = on
+	var fb: Node = unit.get_node_or_null("UnitVisualFeedback")
+	if fb:
+		if kind == "enrage":
+			fb.set_enraged(on)
+		else:
+			fb.set_blessed(on)
 
 
 # ============================================================
