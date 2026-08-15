@@ -279,8 +279,18 @@ func _add_production_progress(building) -> void:
 	var progress: float = 0.0
 	if state.total > 0:
 		progress = 1.0 - state.remaining / state.total
-	_add_info_line("在造: %s (%d%%)" % [state.current, int(progress * 100)])
+	_add_info_line("在造: %s (%d%%)" % [_stats_id_display_name(state.current), int(progress * 100)])
 	_add_info_line("队列: %d / %d" % [building.production_queue.size(), building.queue_max])
+
+
+# 队列项 stats_id → 友好显示名（变体优先 display_name，基础兵种走 stats.display_name）
+func _stats_id_display_name(stats_id: StringName) -> String:
+	if stats_id == &"":
+		return "基础兵种"
+	var stats = UnitStatsRegistry.get_by_id(stats_id)
+	if stats != null and stats.get("display_name") != null and stats.display_name != "":
+		return String(stats.display_name)
+	return String(stats_id)
 
 
 func _add_produce_button(mode: int) -> void:

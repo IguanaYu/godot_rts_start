@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1")
 id = &"lancer"
+display_name = "枪兵"
 unit_type = 2
 category = "normal"
 unit_tags = Array[StringName]([&"heavy_armor"])

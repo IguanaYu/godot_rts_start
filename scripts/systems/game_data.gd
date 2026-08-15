@@ -314,8 +314,12 @@ const UNIT_SCENES := {
 	UnitScript.UnitType.MONK: "res://scenes/units/monk.tscn",
 }
 
-# --- 变体单位场景（按 stats id 查找，优先于 UNIT_SCENES） ---
+# --- 单位场景（按 stats id 查找，含基础兵种，优先于 UNIT_SCENES） ---
 const ENEMY_VARIANT_SCENES := {
+	&"soldier": "res://scenes/units/soldier.tscn",
+	&"archer": "res://scenes/units/archer.tscn",
+	&"lancer": "res://scenes/units/lancer.tscn",
+	&"monk": "res://scenes/units/monk.tscn",
 	&"elite_archer": "res://scenes/units/elite_archer.tscn",
 	&"outpost_archer": "res://scenes/units/elite_archer.tscn",
 	&"shieldbearer": "res://scenes/units/shieldbearer.tscn",
@@ -405,8 +409,12 @@ const UNIT_TO_PRODUCER_TYPE := {
 	PlaceMode.MONK_UNIT: BuildingScript.BuildingType.MONASTERY,
 }
 
-# --- PlaceMode → stats_id 映射（变体单位） ---
+# --- PlaceMode → stats_id 映射（基础兵种 + 变体单位） ---
 const PLACE_MODE_TO_STATS_ID := {
+	PlaceMode.SOLDIER: &"soldier",
+	PlaceMode.ARCHER: &"archer",
+	PlaceMode.LANCER: &"lancer",
+	PlaceMode.MONK_UNIT: &"monk",
 	PlaceMode.SHIELDBEARER: &"shieldbearer",
 	PlaceMode.BERSERKER: &"berserker",
 	PlaceMode.CROSSBOWMAN: &"crossbowman",

@@ -6,6 +6,7 @@
 [resource]
 script = ExtResource("1")
 id = &"monk"
+display_name = "僧侣"
 unit_type = 3
 category = "normal"
 unit_tags = Array[StringName]([&"light_armor"])
