@@ -1,15 +1,25 @@
 extends "res://scripts/skills/skill_component.gd"
 ## 劝化：引导转化敌方单位
 ## 特殊：覆盖基类的 _skill_process 实现引导逻辑
+## PR-6 视觉：引导期间金光柱连接 caster→target（beam 跟随移动）+
+## 目标 blessed tint 随进度渐变；成功瞬间金色波纹 + 蓄力环收尾
+
+const BeamScript := preload("res://scripts/effects/beam_effect.gd")
 
 var _channel_target = null
 var _channel_time: float = 0.0
 var _scan_timer: float = 0.0
+var _beam: Node2D = null
+var _charge_handle: Dictionary = {}
 
 
 func _ready() -> void:
 	super._ready()
 	uses_custom_process = true
+
+
+func _exit_tree() -> void:
+	_cleanup_channel_visual()
 
 
 func _skill_process(delta: float) -> void:
@@ -28,6 +38,7 @@ func _skill_process(delta: float) -> void:
 		if _channel_target.has_method("is_dead") and _channel_target.is_dead():
 			target_dead = true
 	if _channel_target == null or not is_instance_valid(_channel_target) or target_dead:
+		_stop_channel_visual()
 		_channel_target = null
 		_channel_time = 0.0
 		_scan_timer += delta
@@ -40,6 +51,7 @@ func _skill_process(delta: float) -> void:
 	var dist: float = u.global_position.distance_to(_channel_target.global_position)
 	var max_range: float = skill_resource.cast_range if skill_resource.cast_range > 0.0 else 200.0
 	if dist > max_range:
+		_stop_channel_visual()
 		_channel_target = null
 		_channel_time = 0.0
 		return
@@ -49,13 +61,57 @@ func _skill_process(delta: float) -> void:
 	if u.stats_data and u.stats_data.convert_channel_time > 0.0:
 		channel_needed = u.stats_data.convert_channel_time
 	_channel_time += delta
+	# PR-6：引导视觉（beam + 蓄力环 + blessed 渐变）
+	_update_channel_visual(u, _channel_target, _channel_time / channel_needed)
 	if _channel_time >= channel_needed:
 		var saved_target = _channel_target
 		_do_convert(u, saved_target)
 		# 统一入口：扣蓝(mana_cost=0 不扣) + 设冷却(cooldown=0) + 文字 + 信号
 		activate(saved_target)
+		_stop_channel_visual()
+		# 成功瞬间：金色波纹 + 光柱
+		SkillVisualController.play_release_ripple(
+			saved_target.global_position, SkillVisualController.COLOR_CONVERT, 70.0)
+		SkillVisualController.play_light_pillar(
+			saved_target.global_position, SkillVisualController.COLOR_CONVERT, 0.5)
+		SkillVisualController.play_screen_impact(saved_target.global_position, 4.0)
 		_channel_target = null
 		_channel_time = 0.0
+
+
+## 引导视觉三件套：确保 beam 存在、进度环推进、blessed 渐变
+func _update_channel_visual(caster, target, progress: float) -> void:
+	if _beam == null or not is_instance_valid(_beam):
+		_beam = Node2D.new()
+		_beam.set_script(BeamScript)
+		_beam.effect_id = &"heal_beam"
+		_beam.color_override = SkillVisualController.COLOR_CONVERT
+		_beam.duration_sec = 0.0  # 永续，由 _stop_channel_visual 回收
+		_beam.follow_source = caster
+		_beam.follow_target = target
+		caster.get_tree().current_scene.add_child(_beam)
+		_charge_handle = SkillVisualController.play_charging_circle(
+			target.global_position, SkillVisualController.COLOR_CONVERT)
+	if not _charge_handle.is_empty():
+		_charge_handle.progress = progress
+	# blessed tint 随进度渐变（转化完成后由 clear/转化流程接管）
+	var fb = target.get_node_or_null("UnitVisualFeedback")
+	if fb:
+		fb.set_blessed(true, progress)
+
+
+func _stop_channel_visual() -> void:
+	_cleanup_channel_visual()
+	_channel_time = 0.0
+
+
+func _cleanup_channel_visual() -> void:
+	if _beam != null and is_instance_valid(_beam):
+		_beam.duration_sec = _beam._elapsed + 0.3  # 尾部渐隐 0.3s
+	if not _charge_handle.is_empty():
+		SkillVisualController.finish_charging_circle(_charge_handle)
+		_charge_handle = {}
+	_beam = null
 
 
 func _find_convert_target():

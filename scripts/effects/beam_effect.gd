@@ -6,6 +6,9 @@ var effect_id: StringName = &"heal_beam"
 var source_pos: Vector2 = Vector2.ZERO
 var target_pos: Vector2 = Vector2.ZERO
 var duration_sec: float = 3.0
+var color_override: Color = Color(0, 0, 0)  # PR-6：非零则覆盖 effect_id 默认色
+var follow_source: Node2D = null   # 每帧跟随两端节点（劝化引导用）
+var follow_target: Node2D = null
 var _elapsed: float = 0.0
 
 const EFFECT_INFO := {
@@ -23,8 +26,14 @@ func _ready() -> void:
 	var info = EFFECT_INFO.get(effect_id, EFFECT_INFO[&"heal_beam"])
 	_color = info.color
 	_width = info.width
+	if color_override != Color(0, 0, 0):
+		_color = color_override
 
 func _process(delta: float) -> void:
+	if follow_source != null and is_instance_valid(follow_source):
+		source_pos = follow_source.global_position
+	if follow_target != null and is_instance_valid(follow_target):
+		target_pos = follow_target.global_position
 	_elapsed += delta
 	if duration_sec > 0.0 and _elapsed >= duration_sec:
 		queue_free()

@@ -152,6 +152,10 @@ var _cached_scan_wounded = null
 # 缓存上次画 aggro_line 时的目标，避免每帧 clear+add 触发完全重画
 var _aggro_target = null
 
+const AGGRO_COLOR_NORMAL := Color(1, 0.3, 0.3, 0.7)
+const AGGRO_COLOR_TAUNTED := Color(1.0, 0.15, 0.1, 0.9)
+var _dissolve_tween: Tween = null
+
 # 动画
 var _anim_state: String = ""
 var _anim_frame: int = 0
@@ -1549,6 +1553,10 @@ func _update_state_indicator() -> void:
 func _update_aggro_line() -> void:
 	if state == UnitState.DEAD or aggro_line == null:
 		return
+	# 被嘲讽期间连线加粗变亮红（PR-6）
+	var taunted := _taunt_expire_timer > 0.0
+	aggro_line.default_color = AGGRO_COLOR_TAUNTED if taunted else AGGRO_COLOR_NORMAL
+	aggro_line.width = 3.0 if taunted else 2.0
 	if attack_target != null and not attack_target.is_dead():
 		if _aggro_target != attack_target:
 			_aggro_target = attack_target
@@ -1739,6 +1747,11 @@ func _try_summon_minion() -> void:
 		)
 		if minion == null:
 			return
+		# PR-6：召唤物紫色光柱 + 出生 dissolve
+		spawner.spawn_spawn_effect(minion.global_position, team, minion,
+			Color(0.75, 0.45, 1.0))
+		if minion.has_method("play_dissolve_in"):
+			minion.play_dissolve_in(0.4)
 		minion.connect("died", Callable(self, "_on_minion_died"))
 		_summoned_minions.append(minion)
 		if stats_data.summon_lifetime > 0.0:
@@ -1831,6 +1844,28 @@ func get_shield_hp() -> int:
 ## 设置护盾值（供 ShieldSkill 调用）
 func set_shield_hp(amount: int) -> void:
 	_shield_hp = max(_shield_hp, amount)
+
+
+## 出生溶解：dissolve_amount 1→0（PR-6 召唤/闪现用）
+func play_dissolve_in(dur: float = 0.4) -> void:
+	_play_dissolve_to(0.0, dur)
+
+
+## 闪现消散：dissolve_amount 0→1，不释放节点（PR-6 闪现用，之后瞬移 + play_dissolve_in）
+func play_dissolve_out(dur: float = 0.3) -> void:
+	_play_dissolve_to(1.0, dur)
+
+
+func _play_dissolve_to(target_amount: float, dur: float) -> void:
+	if _effects_material == null:
+		return
+	if _dissolve_tween and _dissolve_tween.is_valid():
+		_dissolve_tween.kill()
+	_effects_material.set_shader_parameter("dissolve_noise", DissolveNoise)
+	# Tween 需要属性已存在初值，否则静默失效
+	_effects_material.set_shader_parameter("dissolve_amount", 1.0 - target_amount)
+	_dissolve_tween = create_tween()
+	_dissolve_tween.tween_property(_effects_material, "shader_parameter/dissolve_amount", target_amount, dur)
 
 
 ## 嘲讽者：周期性扫描范围内敌方单位，强制其攻击自己

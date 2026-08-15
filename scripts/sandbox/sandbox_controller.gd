@@ -14,6 +14,28 @@ const D := preload("res://scripts/systems/game_data.gd")
 const SPAWN_SPACING := 35.0
 const DRAG_THRESHOLD := 8.0
 
+# PR-6: 技能脚本（沙盒直接实例化组件挂到施法者，绕过蓝耗/冷却）
+const SKILL_SCRIPTS := {
+	&"taunt": preload("res://scripts/skills/skill_effects/taunt_effect.gd"),
+	&"blink": preload("res://scripts/skills/skill_effects/blink_effect.gd"),
+	&"stealth": preload("res://scripts/skills/skill_effects/stealth_effect.gd"),
+	&"convert": preload("res://scripts/skills/skill_effects/convert_effect.gd"),
+	&"shield": preload("res://scripts/skills/skill_effects/shield_effect.gd"),
+	&"summon": preload("res://scripts/skills/skill_effects/summon_effect.gd"),
+	&"heal": preload("res://scripts/skills/skill_effects/heal_effect.gd"),
+	&"dispel": preload("res://scripts/skills/skill_effects/dispel_effect.gd"),
+}
+const SKILL_RESOURCES := {
+	&"taunt": preload("res://resources/skills/taunt.tres"),
+	&"blink": preload("res://resources/skills/blink.tres"),
+	&"stealth": preload("res://resources/skills/stealth.tres"),
+	&"convert": preload("res://resources/skills/convert.tres"),
+	&"shield": preload("res://resources/skills/shield.tres"),
+	&"summon": preload("res://resources/skills/summon.tres"),
+	&"heal": preload("res://resources/skills/heal.tres"),
+	&"dispel": preload("res://resources/skills/dispel.tres"),
+}
+
 var show_damage_numbers: bool = true
 ## unit.gd::_spawn_arrow 经 current_scene.spawner_module 发射弹道，沙盒挂一个最小实例
 var spawner_module: Node
@@ -57,6 +79,10 @@ func _ready() -> void:
 	_enemy_units = $EnemyUnits
 	_targets = $Targets
 	_buildings = $Buildings
+	# PR-6: 技能视觉控制器（技能脚本经 static instance 调用）
+	var skill_visual: SkillVisualController = SkillVisualController.new()
+	skill_visual.name = "SkillVisualController"
+	add_child(skill_visual)
 	spawner_module = Node.new()
 	spawner_module.name = "SandboxSpawnerModule"
 	spawner_module.set_script(SpawnerScript)
@@ -175,6 +201,14 @@ func _build_ui() -> void:
 	left_vbox.add_child(bld_label)
 	for entry in Cfg.SPAWNABLE_BUILDINGS:
 		left_vbox.add_child(_make_spawn_button(entry))
+
+	# PR-6: 技能按钮（对选中友军单位释放，绕过蓝耗/冷却）
+	var skill_label := Label.new()
+	skill_label.text = "技能（先选友军单位）"
+	skill_label.add_theme_font_size_override("font_size", 14)
+	left_vbox.add_child(skill_label)
+	for skill_id in SKILL_SCRIPTS:
+		left_vbox.add_child(_make_top_button(str(skill_id), _cast_skill.bind(skill_id)))
 
 
 func _make_top_button(text: String, cb: Callable) -> Button:
@@ -489,6 +523,54 @@ func _apply_debug(action: StringName) -> void:
 
 
 var _tint_on := {}
+
+# ============================================================
+# PR-6: 技能释放（选中友军为施法者，临时挂组件）
+# ============================================================
+
+func _cast_skill(skill_id: StringName) -> void:
+	var casters: Array = _selected_units.filter(func(u):
+		return u != null and is_instance_valid(u) and not u.is_dead() and u.team == 0)
+	if casters.is_empty():
+		print("[Sandbox] 未选中友军单位，技能 %s 需要：先点选/框选一个玩家方单位" % skill_id)
+		return
+	var caster = casters[0]
+	var script: GDScript = SKILL_SCRIPTS[skill_id]
+	var res: Resource = SKILL_RESOURCES[skill_id]
+	# 瞬发技能：临时挂组件 → activate → 回收
+	# 持续技能（隐身/劝化/治疗）：组件留在树上维持 _skill_process 驱动
+	var persistent := skill_id in [&"stealth", &"convert", &"heal"]
+	var comp := Node.new()
+	comp.set_script(script)
+	comp.skill_resource = res
+	caster.add_child(comp)
+	var target = _resolve_skill_target(caster, skill_id)
+	match skill_id:
+		&"stealth":
+			if comp.has_method("reveal_temporarily"):
+				comp.reveal_temporarily()  # 切换到显形（触发退出波纹），闲置后自动回隐身
+		_:
+			comp.activate(target)
+	if not persistent:
+		comp.queue_free()
+
+
+## 技能目标解析：敌方指向技能找最近敌人，自身/友军技能回 caster
+func _resolve_skill_target(caster, skill_id: StringName):
+	if skill_id in [&"blink", &"taunt", &"convert", &"dispel"]:
+		var best = null
+		var best_dist := INF
+		for c in _enemy_units.get_children():
+			if not is_instance_valid(c) or c.is_dead():
+				continue
+			var d: float = caster.global_position.distance_to(c.global_position)
+			if d < best_dist:
+				best_dist = d
+				best = c
+		return best
+	return caster
+
+
 func _toggle_unit_tint(unit, kind: String) -> void:
 	var key := str(unit.get_instance_id()) + kind
 	var on: bool = not _tint_on.get(key, false)
