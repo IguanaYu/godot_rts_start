@@ -425,12 +425,12 @@
   - ✅ **PR-3** UnitVisualFeedback 组件 — 攻击前探/后坐冲量 + 受击位移 + 护盾/中毒/减速地面环；零 Tween（_process 插值 + 冲量曲线）；沙盒新增 7 个状态调试按钮（2026-08-15 完成）
   - ✅ **PR-4** BuildingActivityVisual 组件 — 生产脉冲/施工尘土/升级转动金环 + 入队下沉/完成回弹/产金金环/升级双环/受击震动红闪；状态优先级仲裁（constructing > age_upgrading > producing > idle）；箭塔 JellyEffect 替换（消除 tween 争写 scale）；die 加 debris；沙盒加建筑面板（7 建筑 + 64px 占格）+ 6 个建筑调试按钮（2026-08-15 完成，commit `fe3dccf`）
   - ✅ **PR-5** 命中粒子 + 屏幕后处理 — PostProcessController Autoload（layer=5 CanvasLayer + 全屏 ColorRect shader）：screen shake 走 Camera2D.offset（不碰 position，clamp/平滑不受影响，game_camera.gd 零改动）、色差（SCREEN_TEXTURE 径向 RGB 分裂）、冲击波扩散环（≤4 并发，世界坐标自动转 UV）；hit_spark 命中粒子按伤害量分级 scale（<20/≤50/>50 → 0.8/1.1/1.4），>60 伤害加 shake；Boss 死亡 big_impact 三件套（shake10+色差+冲击波）；建筑爆炸 shake8 + 尺寸缩放冲击波（无色差）；沙盒加 4 个后处理调试按钮（冲击波为两段式：点按钮武装→点地图触发）；顺手修 PR-2 潜伏 bug：ParticlePool float scale 走 `Vector2.ONE * x`（原 `Vector2(float)` 非法构造会崩 spawn）（2026-08-15 完成）
-  - 📋 **PR-6** 指挥官技能视觉升级 — 8 个技能释放瞬间 + 持续效果（释放瞬间调 `PostProcessController.big_impact()`）
+  - ✅ **PR-6** 指挥官技能视觉升级 — 新增 SkillVisualController（Node2D + static instance，main/沙盒各挂一份，不走 Autoload）：play_release_ripple 波纹环 / play_light_pillar 光柱（pillar+cross）/ play_charging_circle 蓄力进度环 / play_screen_impact 转发 PR-5 shake。8 技能逐个接入：嘲讽（红波纹 + 被嘲讽目标 aggro_line 自动加粗亮红，`_taunt_expire_timer` 驱动）、闪现（起点 dissolve 消散 + 双端紫波纹 + 紫色 life_leech 光迹，unit.gd 新增 `play_dissolve_in/out`）、隐身（进入/退出瞬间紫波纹，状态沿检测）、劝化（金色 beam 跟随双方 + 目标金色蓄力环 + blessed tint 渐变，shader 新增 `blessed_amount` uniform；完成/中断均回收视觉）、护盾（目标蓝白波纹，持续环复用 PR-3 轮询）、召唤（施法者紫波纹 + minion 紫色光柱（spawn_effect 新增 `custom_tint`）+ 出生 dissolve）、治疗（金十字光柱 + heal_orb 粒子）、驱散（白波纹 + 白闪 + energy_fog + 停 slow/poison/enraged/blessed 视觉）。beam_effect 新增 `color_override` + `follow_source/follow_target`。沙盒左面板新增"技能"区 8 按钮（选中友军为施法者，绕过蓝耗/冷却；stealth 按钮点一次=切显形再自动回隐身，方便看双向波纹）（2026-08-16 完成，commit `711bf44`）
   - ⏸ **PR-7** T3 变体专属视觉（可延后）— 等玩家真解锁 T3 再说
 
   关联: [docs/active/程序化特效落地_ROADMAP.md](docs/active/程序化特效落地_ROADMAP.md)
   创建: 2026-08-13
-  后续: PR-0~PR-5 已完成（特效地基齐了），PR-6/PR-7 是锦上添花可并行。沙盒 F6 运行 `scenes/sandbox/effect_sandbox.tscn`；加单位/建筑改 [scripts/sandbox/sandbox_config.gd](scripts/sandbox/sandbox_config.gd) 一行即可（单位支持 `"stats"` 键覆盖，建筑走 `SPAWNABLE_BUILDINGS`）。沙盒建筑调试按钮：选中建筑后顶栏 入队/产金/受击/施工/升级/摧毁。已知坑：地面环类特效 z_index 必须 >0（否则被 Ground 盖住）；`addons/ui_safety` 是 submodule，worktree 需 `git submodule update --init` 否则 UID 解析失败；ParticlePool 的 scale opts 传 float 或 Vector2 均可。
+  后续: PR-0~PR-6 已完成，PR-7 可延后。沙盒 F6 运行 `scenes/sandbox/effect_sandbox.tscn`；加单位/建筑改 [scripts/sandbox/sandbox_config.gd](scripts/sandbox/sandbox_config.gd) 一行即可（单位支持 `"stats"` 键覆盖，建筑走 `SPAWNABLE_BUILDINGS`）。沙盒建筑调试按钮：选中建筑后顶栏 入队/产金/受击/施工/升级/摧毁；技能按钮：先选友军单位再点左面板"技能"区。已知坑：地面环类特效 z_index 必须 >0（否则被 Ground 盖住）；`addons/ui_safety` 是 submodule，worktree 需 `git submodule update --init` 否则 UID 解析失败；ParticlePool 的 scale opts 传 float 或 Vector2 均可；worktree 首跑前必须 `--headless --import` 刷新 class_name 缓存否则场景脚本解析失败白屏。
 
 ## ✅ 已完成
 
