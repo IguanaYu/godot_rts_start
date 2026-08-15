@@ -183,7 +183,7 @@
   **子任务清单（16 项）**：
 
   **P0 必做**（最小可玩核心）：
-  - **A. 沉淀与规范**（4 份文档）：A.1 玩法数值 / A.2 UI 规范 / A.3 美术规范（✅ 主体已完成 → [游戏视觉设计准则](docs/standards/游戏视觉设计准则.md)；待补：全局色板 v1、建筑动效锚点是否并入）/ A.4 文档整理
+  - **A. 沉淀与规范**（4 份文档）：A.1 玩法数值 / A.2 UI 规范（✅ 2026-08-15 完成 → [UI设计规范](docs/standards/UI设计规范.md)，7 章 + 17 项 gap 清单 + 音效需求清单交付 C.2；实施动作拆至下方「UI 规范落地实施」条目）/ A.3 美术规范（✅ 主体已完成 → [游戏视觉设计准则](docs/standards/游戏视觉设计准则.md)；待补：全局色板 v1、建筑动效锚点是否并入）/ A.4 文档整理
   - **B. 节奏落地**（T4 灵魂）：B.1 3 段曲线+波次分钟表 / B.2 科技门槛公式（AoE2 比例 1:1.6:2 参考）/ B.3 据点扩散机制
   - **C. 缺口补全**：C.1 新手引导 60 秒上手（当前零存在）/ C.2 音效落地（零代码 纯实施）/ C.3 终局面板加"重开"按钮
   - **D. 反思**：D.1 暂停新功能、多玩多感受
@@ -291,19 +291,36 @@
 
 ### UI 优化
 
-- **[P1] UI 规范落地实施 - 字体/图标/色板/token 四项工程动作** #ui #t4 #a2 #规范
-  A.2 UI 规范第 3 章视觉基础问答时专业审查发现：Godot 4 项目运行时默认字体是 Open Sans SemiBold（**无中文字形**，中文运行时回退系统字体，Windows 雅黑 / macOS 苹方跨平台不一致）。规范已定稿，以下工程动作待排期实施。
+- **[P1] UI 规范落地实施 - 规范附录 A 全部 17 项 gap** #ui #t4 #a2 #规范
+  A.2 UI 规范已于 2026-08-15 定稿（[UI设计规范.md](docs/standards/UI设计规范.md)，7 章问答拍板）。规范附录 A 列出 17 项现有代码 gap，本条为统一实施入口。背景：专业审查发现 Godot 4 运行时默认字体是 Open Sans SemiBold（**无中文字形**，中文回退系统字体跨平台不一致）。
 
-  **待实施清单**（依据 [A2_UI规范_章节问答草稿区.md](docs/plans/A2_UI规范_章节问答草稿区.md) 第 3 章决策）：
-  1. **内嵌思源黑体**（= Noto Sans CJK 同字型双品牌，OFL 免费商用）：下载入 `assets/fonts/`，配项目 theme default font，禁用系统回退；字重选 ≤3（自带 7 真字重）
-  2. **tnum 等宽数字**：资源栏金币 / 造价 / 倒计时等数字 Label 挂 FontVariation `opentype_features = {"tnum": 1}`，防数字跳动抖动；思源黑体 CJK tnum 支持未实测，抖则数字 fallback Noto Sans Mono
-  3. **语义色 token 建库**：error/success/warning/info 四语义深底专用值（收编现有三档红 0.3/0.4/0.75、两档绿、黄为唯一值），存 UI 侧 semantic token，禁止组件直接写美术色值；对比度按 XAG 102 验收（4.5:1 正文 / 3:1 图标）
-  4. **12px 中文行高**：现有 micro 档（12px）多行场景行高 16 → 20（中文需 1.4-1.6 倍行距）
-  5. **禁用态三套写法收敛**（0.6 灰 / 0.4 灰 / alpha 0.5 → 统一值，具体值在 UI 规范第 4 章拍板后执行）
+  **高优先（影响正确性/一致性）**：
+  1. **内嵌思源黑体**（= Noto Sans CJK 同字型双品牌，OFL 免费商用）：下载入 `assets/fonts/`，配 theme default font，禁系统回退；≤3 字重
+  2. **tnum 等宽数字**：金币/造价/倒计时 Label 挂 `opentype_features = {"tnum": 1}`；思源黑体 tnum 未实测，抖则数字 fallback Noto Sans Mono
+  3. **语义色 token 建库**：error/success/warning/info/locked 深底专用值（收编三档红/两档绿/一档黄为唯一值），禁组件直写色值；XAG 102 验收（4.5:1 正文 / 3:1 图标）
+  4. **禁用态双轨制收敛**（规范 4.1）：真禁用 0.4 不可点 / 假禁用压暗可点触发报错——收编 0.6 灰 / 0.4 灰 / alpha 0.5 三套写法
+  5. **tooltip 600/800 → 300ms**（规范 4.2）：统一两套实现 + 消失延迟 200ms + 100ms 淡入
+  6. **硬编码中文飘字 → translations.csv**（规范 4.4）：main.gd 若干处
 
-  关联: [docs/plans/A2_UI规范_章节问答草稿区.md](docs/plans/A2_UI规范_章节问答草稿区.md), [docs/research/product/游戏UI规范_业界标准与交互反馈数值调研.md](docs/research/product/游戏UI规范_业界标准与交互反馈数值调研.md)（追加审查节）
+  **中优先（体验补强）**：
+  7. bottom_ui_bar 220 → 215（旧决策已拍未执行）
+  8. 消耗数字闪红 200ms（规范 4.3 报错视觉通道）
+  9. 无效放置 ghost 补一行原因（规范 4.3）
+  10. QW 当前 tab 选中高亮（规范 4.1，现状待查）
+  11. 12px 档多行行高 16 → 20（规范 3.1）
+  12. button_factory 0.12 → 0.1s（规范 5.1 motion-fast）
+  13. 时代解锁闪 0.5 → 0.4s（规范 5.4）
+  14. boss/精英头顶血条新组件（规范 2.3，L1 世界空间）
+  15. T3 弹窗运行中模态 Red Routes 热键审计（规范 2.3）
+
+  **低优先 / 绑待定项**：
+  16. QW 16+ 按钮溢出 → A4 职能分组，绑 #12 待定项一起做
+  17. 飘字系统重设计（规范 5.4 豁免条款届时再审）
+
+  规范使用要求：查阅/应用规范须在对话中提及供验证；调研与创意设计阶段豁免（见规范文档头 ⚠️ 节）。
+  关联: [UI设计规范](docs/standards/UI设计规范.md)（附录 A）, [A2_UI规范_章节问答草稿区](docs/plans/A2_UI规范_章节问答草稿区.md), [调研报告](docs/research/product/游戏UI规范_业界标准与交互反馈数值调研.md)
   创建: 2026-08-15
-  后续: UI 规范全 7 章问答完成后，按规范实施清单统一排期（A.2 → C 组过渡期）
+  后续: 可拆 PR 实施（建议 1-3 一个 PR、4-6 一个、7-15 按需）；C.2 音效需求清单已随规范交付（规范 4.5）
 
 - **[P2] 底部装饰水带视觉美化** #ui #视觉 #地形 #摄像头
   现状：为修"底部 UI 遮挡地图下方"（见 ✅ 已完成的摄像头限位修复），在地图正下方加了一条 64 世界单位（≈1 tile）高的装饰水带（`BOTTOM_SKIRT_H`，由 `_replace_ground_with_terrain` 往 `water_areas` 追加一条底部 Rect2 实现）。功能上生效了——相机滚到底时地图底落在 UI 条上方、单位不贴 UI——但**水带目前就是一条平铺的纯水 tile，很突兀、很丑**（玩家原话："水带好丑"），跟上方草地硬切，没有过渡。
@@ -404,16 +421,16 @@
   **PR 列表**：
   - ✅ **PR-0** 测试沙盒场景（极简版）— spawn 单位/木桩 + 阵营切换 + 框选/attack-move + 时间控制 + 详情面板 + 弹道（2026-08-15 完成）
   - ✅ **PR-1** Shader 接入 + Dissolve — 受击白闪（0.12s，护盾全吸收/闪避不闪）+ Boss 紫光（`category=="boss"` 数据驱动）+ 骷髅死亡 dissolve 消散（`dissolve_on_death` 字段）；hit_flash 移到状态染色之后（受击优先）；沙盒新增 Boss 按钮 + stats 覆盖机制（2026-08-15 完成）
-  - 📋 **PR-2** 粒子对象池 + 配方库 — ParticlePool Autoload + 6 种基础配方
-  - 📋 **PR-3** UnitVisualFeedback 组件 — 受击/攻击冲量/护盾环/持续状态
-  - 📋 **PR-4** BuildingActivityVisual 组件 — 9 种建筑活动反馈
+  - ✅ **PR-2** 粒子对象池 + 配方库 — ParticlePool Autoload（自动预热 + finished/超时双路回收）+ 9 种配方（dust/explosion/hit_spark/debris/energy_fog/heal_orb/blood_mist/dust_gpu），迁移 game_spawner/building/building_garrison 高频 instantiate（2026-08-15 完成）
+  - ✅ **PR-3** UnitVisualFeedback 组件 — 攻击前探/后坐冲量 + 受击位移 + 护盾/中毒/减速地面环；零 Tween（_process 插值 + 冲量曲线）；沙盒新增 7 个状态调试按钮（2026-08-15 完成）
+  - ✅ **PR-4** BuildingActivityVisual 组件 — 生产脉冲/施工尘土/升级转动金环 + 入队下沉/完成回弹/产金金环/升级双环/受击震动红闪；状态优先级仲裁（constructing > age_upgrading > producing > idle）；箭塔 JellyEffect 替换（消除 tween 争写 scale）；die 加 debris；沙盒加建筑面板（7 建筑 + 64px 占格）+ 6 个建筑调试按钮（2026-08-15 完成，commit `fe3dccf`）
   - 📋 **PR-5** 命中粒子 + 屏幕后处理 — hit_spark + 冲击波/色差
   - 📋 **PR-6** 指挥官技能视觉升级 — 8 个技能释放瞬间 + 持续效果
   - ⏸ **PR-7** T3 变体专属视觉（可延后）— 等玩家真解锁 T3 再说
 
   关联: [docs/active/程序化特效落地_ROADMAP.md](docs/active/程序化特效落地_ROADMAP.md)
   创建: 2026-08-13
-  后续: PR-0/PR-1 已完成，从 PR-2 开始继续。沙盒 F6 运行 `scenes/sandbox/effect_sandbox.tscn`；加单位改 [scripts/sandbox/sandbox_config.gd](scripts/sandbox/sandbox_config.gd) 一行即可（支持 `"stats"` 键覆盖 stats，Boss/变体验证用）。沙盒关键依赖：伤害飘字走 `current_scene.show_damage_number()`、弹道走 `current_scene.spawner_module`，均已由 [sandbox_controller.gd](scripts/sandbox/sandbox_controller.gd) 提供。
+  后续: PR-0~PR-4 已完成，从 PR-5 开始继续。沙盒 F6 运行 `scenes/sandbox/effect_sandbox.tscn`；加单位/建筑改 [scripts/sandbox/sandbox_config.gd](scripts/sandbox/sandbox_config.gd) 一行即可（单位支持 `"stats"` 键覆盖，建筑走 `SPAWNABLE_BUILDINGS`）。沙盒建筑调试按钮：选中建筑后顶栏 入队/产金/受击/施工/升级/摧毁。已知坑：地面环类特效 z_index 必须 >0（否则被 Ground 盖住）；`addons/ui_safety` 是 submodule，worktree 需 `git submodule update --init` 否则 UID 解析失败。
 
 ## ✅ 已完成
 
