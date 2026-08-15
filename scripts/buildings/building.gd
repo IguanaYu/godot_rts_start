@@ -983,6 +983,9 @@ func die() -> void:
 	var max_dim := maxf(float(grid_size.x), float(grid_size.y))
 	ParticlePool.spawn("explosion", global_position, {"scale": Vector2(max_dim, max_dim)})
 	ParticlePool.spawn("debris", global_position, {"scale": Vector2(max_dim, max_dim)})
+	# PR-5：爆炸屏幕级反馈（不加色差，色差留给 Boss 死亡/技能级事件）
+	PostProcessController.shake_screen(PostProcessController.SHAKE_LARGE, 0.2)
+	PostProcessController.shockwave(global_position, 120.0 * max_dim, 0.4)
 	# 缩小+删除动画
 	var tween := create_tween()
 	tween.tween_property(self, "scale", Vector2.ZERO, 0.3)

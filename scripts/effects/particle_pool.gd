@@ -82,7 +82,7 @@ func spawn(key: String, pos: Vector2, opts: Dictionary = {}) -> Node2D:
 	node.visible = true
 	node.global_position = pos
 	if opts.has("scale"):
-		node.scale = Vector2(opts["scale"]) if opts["scale"] is float else opts["scale"]
+		node.scale = Vector2.ONE * opts["scale"] if opts["scale"] is float else opts["scale"]
 	if opts.has("rotation"):
 		node.rotation = opts["rotation"]
 	if opts.has("modulate"):

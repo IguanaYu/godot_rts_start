@@ -132,6 +132,11 @@ static var show_path_lines: bool = true
 # 阶段 2.1：AI 扫描分帧。每单位每 SCAN_THROTTLE_FRAMES 帧才执行一次邻居扫描，
 # 把扫描频率从 60Hz → 10Hz，CPU 直接砍 6 倍。玩家感知差异 ≈ 0（≤100ms 反应延迟）。
 const SCAN_THROTTLE_FRAMES: int = 6
+# PR-5 命中粒子分级阈值（对照 SLOW 数值方案：普通兵 DMG ~15-25）
+const HIT_SPARK_SCALE_LIGHT: float = 0.8
+const HIT_SPARK_SCALE_MID: float = 1.1
+const HIT_SPARK_SCALE_HEAVY: float = 1.4
+const HIT_SPARK_SHAKE_THRESHOLD: int = 60
 var _scan_phase: int = 0
 var _cached_scan_enemy = null
 var _cached_scan_wounded = null
@@ -1229,6 +1234,10 @@ func take_damage(amount: int, attacker = null) -> void:
 	# 受击白闪（闪避已提前 return；护盾全吸收 final_amount==0 不闪）
 	if final_amount > 0:
 		_play_hit_flash()
+		# PR-5 命中粒子：按伤害量分级 scale；大伤害追加 screen shake
+		ParticlePool.spawn("hit_spark", global_position, {"scale": _hit_spark_scale(final_amount)})
+		if final_amount > HIT_SPARK_SHAKE_THRESHOLD:
+			PostProcessController.shake_screen(PostProcessController.SHAKE_SMALL, 0.15)
 		if _visual_feedback:
 			_visual_feedback.play_hit(_hit_dir(attacker), false)
 	elif shield_absorbed and _visual_feedback:
@@ -1259,6 +1268,14 @@ func take_damage(amount: int, attacker = null) -> void:
 		AllyDistressSignal.report(global_position, self)
 	if health.hp <= 0:
 		die()
+
+## PR-5：命中粒子按伤害量分级
+func _hit_spark_scale(amount: int) -> float:
+	if amount < 20:
+		return HIT_SPARK_SCALE_LIGHT
+	if amount <= 50:
+		return HIT_SPARK_SCALE_MID
+	return HIT_SPARK_SCALE_HEAVY
 
 ## 受击白闪：瞬间拉满再衰减 0.12 秒；连续受击时 kill 旧 Tween 重置
 func _play_hit_flash() -> void:
@@ -1339,6 +1356,9 @@ func _alert_enemy_response(attacker) -> void:
 func die() -> void:
 	state = UnitState.DEAD
 	died.emit(self)
+	# PR-5：Boss 死亡触发屏幕级冲击（shake 10 + 色差 + 冲击波）
+	if stats_data and stats_data.category == "boss":
+		PostProcessController.big_impact(global_position)
 	if _visual_feedback:
 		_visual_feedback.stop_all()
 	# 自爆：死亡时对周围敌人造成范围伤害
