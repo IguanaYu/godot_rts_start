@@ -118,6 +118,11 @@ func _ready() -> void:
 
 # 分帧初始化：每个段落之间 await process_frame 让 LoadRouter 进度条有机会刷新
 func _run_init_steps() -> void:
+	# Step -1: 技能视觉控制器（PR-6，技能脚本经 static instance 调用）
+	var skill_visual := SkillVisualController.new()
+	skill_visual.name = "SkillVisualController"
+	add_child(skill_visual)
+
 	# Step 0: 光标管理器
 	LoadRouter.report_init_progress(0.05)
 	var CursorManagerScene := preload("res://scenes/cursor_manager.tscn")

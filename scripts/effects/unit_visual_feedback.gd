@@ -140,9 +140,11 @@ func set_enraged(active: bool) -> void:
 		_mat.set_shader_parameter("enraged_enabled", active)
 
 
-func set_blessed(active: bool) -> void:
+func set_blessed(active: bool, amount: float = 1.0) -> void:
 	if _mat != null:
 		_mat.set_shader_parameter("blessed_enabled", active)
+		if active:
+			_mat.set_shader_parameter("blessed_amount", clampf(amount, 0.0, 1.0))
 
 
 func stop_all() -> void:

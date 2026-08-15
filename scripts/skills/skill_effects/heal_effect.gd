@@ -1,6 +1,7 @@
 extends "res://scripts/skills/skill_component.gd"
 ## 治疗：周期性给最近受伤友军加血
 ## 替换原来的 HEAL 状态机
+## PR-6 视觉：施法者头顶金色十字光环（大技能感），目标保留 HealEffect 帧动画
 
 var _heal_target = null
 var _target_timer: float = 0.0
@@ -64,3 +65,7 @@ func _apply_effect(caster, target) -> void:
 	# 审判官：治疗时清除友军 debuff
 	if caster.stats_data and caster.stats_data.cleanse_on_heal and target.has_method("cleanse_debuffs"):
 		target.cleanse_debuffs()
+	# PR-6：施法者头顶金十字光环 + heal_orb 粒子（治疗走低强度，不屏震）
+	SkillVisualController.play_light_pillar(
+		caster.global_position + Vector2(0, -30), SkillVisualController.COLOR_HEAL, 0.5, "cross")
+	ParticlePool.spawn("heal_orb", target.global_position)

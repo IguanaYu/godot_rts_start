@@ -639,11 +639,12 @@ func spawn_click_effect(scene: PackedScene, pos: Vector2) -> void:
 	effect.global_position = pos
 
 
-func spawn_spawn_effect(pos: Vector2, team: int, reveal_target: Node2D = null) -> void:
+func spawn_spawn_effect(pos: Vector2, team: int, reveal_target: Node2D = null, custom_tint: Color = Color(0, 0, 0)) -> void:
 	var effect: Node2D = D.SpawnEffectScene.instantiate()
 	effect.global_position = pos
 	effect.team_color = 0 if team == UnitScript.Team.PLAYER else 1
 	effect.reveal_target = reveal_target
+	effect.custom_tint = custom_tint
 	_main_node.get_tree().current_scene.add_child(effect)
 
 func spawn_dust_effect(pos: Vector2) -> void:

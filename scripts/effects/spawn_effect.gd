@@ -5,6 +5,8 @@ extends Node2D
 
 var team_color: int = 0
 var reveal_target: Node2D = null
+## PR-6：自定义 tint（Color(0,0,0) = 不覆盖走 team_color 默认）
+var custom_tint: Color = Color(0, 0, 0)
 
 const HFRAMES := 5
 const VFRAMES := 2
@@ -23,6 +25,8 @@ func _ready() -> void:
 	var color_name := "blue" if team_color == 0 else "purple"
 	var base := "res://assets/effects/spawn/spawn_%s" % color_name
 	var tint := Color.WHITE if team_color == 0 else Color(1.0, 0.35, 0.3)
+	if custom_tint != Color(0, 0, 0):
+		tint = custom_tint
 
 	_back = _make_sprite("%s_back.png" % base, -1, tint)
 	_main = _make_sprite("%s.png" % base, 0, tint)

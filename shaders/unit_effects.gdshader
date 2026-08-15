@@ -20,6 +20,7 @@ uniform vec4 enraged_tint : source_color = vec4(1.0, 0.15, 0.0, 1.0);  // 狂暴
 
 uniform bool blessed_enabled = false;
 uniform vec4 blessed_tint : source_color = vec4(1.0, 0.84, 0.25, 1.0);  // 神圣金
+uniform float blessed_amount : hint_range(0.0, 1.0) = 1.0;  // PR-6 劝化渐进
 
 // === Boss 发光（Phase 0 新增，shader fake 版）===
 uniform bool boss_glow_enabled = false;
@@ -52,7 +53,7 @@ void fragment() {
 
 	// 神圣金 tint
 	if (blessed_enabled) {
-		col.rgb = mix(col.rgb, blessed_tint.rgb, 0.40);
+		col.rgb = mix(col.rgb, blessed_tint.rgb, 0.40 * blessed_amount);
 	}
 
 	// 受击白闪：放在持续状态染色之后，受击反馈优先级最高
