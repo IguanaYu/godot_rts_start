@@ -105,6 +105,11 @@ func _build_ui() -> void:
 	top_bar.add_child(_make_top_button("治疗", _apply_debug.bind(&"heal")))
 	top_bar.add_child(_make_top_button("狂暴", _apply_debug.bind(&"enrage")))
 	top_bar.add_child(_make_top_button("祝福", _apply_debug.bind(&"bless")))
+	# PR-5 调试按钮：单独验证屏幕后处理三件套
+	top_bar.add_child(_make_top_button("冲击波", _debug_postfx.bind(&"shockwave")))
+	top_bar.add_child(_make_top_button("色差", _debug_postfx.bind(&"chromatic")))
+	top_bar.add_child(_make_top_button("震小", _debug_postfx.bind(&"shake_s")))
+	top_bar.add_child(_make_top_button("震大", _debug_postfx.bind(&"shake_l")))
 	# PR-4 建筑调试按钮：对选中建筑触发事件（未选建筑时忽略）
 	top_bar.add_child(_make_top_button("入队", _apply_building_debug.bind(&"queue")))
 	top_bar.add_child(_make_top_button("产金", _apply_building_debug.bind(&"gold")))
@@ -232,6 +237,7 @@ func _finish_drag_or_click() -> void:
 
 
 func battlefield_click(world_pos: Vector2) -> void:
+	_try_armored_shockwave(world_pos)
 	var picked: Node = _pick_unit(world_pos)
 	if picked != null:
 		_clear_selection()
@@ -496,6 +502,30 @@ func _toggle_unit_tint(unit, kind: String) -> void:
 
 
 # ============================================================
+# PR-5 调试：单独验证屏幕后处理
+# ============================================================
+var _shockwave_armed := false  # 点「冲击波」后，下一次地图点击在该处触发
+
+func _debug_postfx(action: StringName) -> void:
+	match action:
+		&"shockwave":
+			_shockwave_armed = true
+		&"chromatic":
+			PostProcessController.chromatic_aberration(0.012, 0.5)
+		&"shake_s":
+			PostProcessController.shake_screen(3.0, 0.2)
+		&"shake_l":
+			PostProcessController.shake_screen(10.0, 0.3)
+
+
+func _try_armored_shockwave(world_pos: Vector2) -> void:
+	if not _shockwave_armed:
+		return
+	_shockwave_armed = false
+	PostProcessController.shockwave(world_pos, 240.0, 0.45)
+
+
+# ============================================================
 # 时间控制
 # ============================================================
 func _toggle_pause() -> void:
@@ -548,6 +578,7 @@ func _reset() -> void:
 	_clear_selection()
 	_show_detail([])
 	ParticlePool.recall_all()
+	PostProcessController.reset()
 	_sim_upgrades.clear()
 	_occupied.clear()
 	for container in [_player_units, _enemy_units, _targets, _buildings]:
