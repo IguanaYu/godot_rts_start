@@ -242,9 +242,7 @@ func _spawn_garrison_unit(data: Dictionary) -> void:
 		if unit._is_inside_any_building():
 			unit._start_escape()
 	# 召唤特效
-	var dust := D.DustEffectScene.instantiate()
-	main_node.add_child(dust)
-	dust.global_position = unit.global_position
+	ParticlePool.spawn("dust", unit.global_position)
 	# 加入组
 	unit.add_to_group("enemy_units")
 	# 连接死亡信号

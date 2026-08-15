@@ -1,0 +1,40 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/effects/gpu_particle_effect.gd" id="1_script"]
+
+[sub_resource type="Curve" id="curve_hit"]
+_data = [Vector2(0, 0.8), 0.0, -2.0, 0, 0, Vector2(1, 0.05), -2.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="Gradient" id="grad_hit"]
+offsets = PackedFloat32Array(0, 0.4, 1)
+colors = PackedColorArray(1, 0.95, 0.6, 1, 1, 0.6, 0.2, 1, 1, 0.3, 0.1, 0)
+
+[sub_resource type="ParticleProcessMaterial" id="pp_hit"]
+direction = Vector3(0, 1, 0)
+spread = 45.0
+gravity = Vector3(0, 200, 0)
+initial_velocity_min = 60.0
+initial_velocity_max = 100.0
+scale_min = 0.4
+scale_max = 0.8
+scale_curve = SubResource("curve_hit")
+color_ramp = SubResource("grad_hit")
+
+[sub_resource type="CanvasItemMaterial" id="mat_add_hit"]
+blend_mode = 1
+
+[node name="HitSpark" type="GPUParticles2D"]
+material = SubResource("mat_add_hit")
+z_index = 7
+emitting = false
+amount = 15
+lifetime = 0.3
+visibility_rect = Rect2(-150, -150, 300, 300)
+explosiveness = 0.8
+interpolate = false
+fixed_fps = 60
+one_shot = true
+process_material = SubResource("pp_hit")
+script = ExtResource("1_script")
+texture_kind = 1

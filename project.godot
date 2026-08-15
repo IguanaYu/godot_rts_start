@@ -35,7 +35,8 @@ CommanderRegistry="*res://scripts/commander/commander_registry.gd"
 CommanderContext="*res://scripts/commander/commander_context.gd"
 PassiveSkillManager="*res://scripts/commander/passive_skill_manager.gd"
 CommanderChoice="*res://scripts/commander/commander_choice.gd"
-UIBoundsValidator="*res://addons/ui_safety/runtime/ui_bounds_validator.gd"
+UIBoundsValidator="*uid://37tmppfb0ryh"
+ParticlePool="*res://scripts/effects/particle_pool.gd"
 
 [display]
 

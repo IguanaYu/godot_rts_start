@@ -38,6 +38,8 @@ var _spawn_count: int = 5
 var _spawn_team: int = 0
 var _drag_start: Vector2 = Vector2(INF, INF)
 var _detail_refresh_accum: float = 0.0
+var _pool_stats_label: Label
+var _pool_stats_accum: float = 0.0
 
 
 func _ready() -> void:
@@ -83,6 +85,7 @@ func _build_ui() -> void:
 	top_bar.add_child(_make_top_button("0.5x", _set_time_scale.bind(0.5)))
 	top_bar.add_child(_make_top_button("2x", _set_time_scale.bind(2.0)))
 	top_bar.add_child(_make_top_button("重置", _reset))
+	top_bar.add_child(_make_top_button("池", _toggle_pool_stats))
 
 	# === 左面板：阵营 + 数量 + 单位按钮 ===
 	var left_panel := PanelContainer.new()
@@ -289,6 +292,7 @@ func _spawn_formation(center: Vector2) -> void:
 			ai.name = "EnemyAI"
 			ai.set_script(EnemyAIScript)
 			unit.add_child(ai)
+		ParticlePool.spawn("dust", pos)
 
 
 func _spawn_dummy(center: Vector2) -> void:
@@ -300,10 +304,13 @@ func _spawn_dummy(center: Vector2) -> void:
 	dummy.global_position = center
 	dummy.add_to_group("player_units" if _spawn_team == 0 else "enemy_units")
 	dummy.connect("died", _on_spawn_died)
+	ParticlePool.spawn("dust", center)
 
 
 func _on_spawn_died(unit) -> void:
 	_selected_units.erase(unit)
+	# 沙盒专属：死亡时用池放爆炸演示（正式对局里爆炸只在建筑死亡时触发）
+	ParticlePool.spawn("explosion", unit.global_position, {"scale": Vector2(0.8, 0.8)})
 
 
 # ============================================================
@@ -319,12 +326,46 @@ func _set_time_scale(scale: float) -> void:
 	Engine.time_scale = scale
 
 
+# ============================================================
+# 粒子池统计面板（PR-2）：顶栏「池」toggle，节流刷新
+# ============================================================
+func _toggle_pool_stats() -> void:
+	if _pool_stats_label != null:
+		_pool_stats_label.queue_free()
+		_pool_stats_label = null
+		return
+	var ui := get_node("SandboxUI")
+	_pool_stats_label = Label.new()
+	_pool_stats_label.name = "PoolStatsLabel"
+	_pool_stats_label.position = Vector2(8, 40)
+	_pool_stats_label.add_theme_font_size_override("font_size", 13)
+	_pool_stats_label.add_theme_color_override("font_color", Color(0.6, 1.0, 0.7))
+	ui.add_child(_pool_stats_label)
+	_pool_stats_accum = 0.3  # 立即刷一次
+
+
+func _refresh_pool_stats() -> void:
+	if _pool_stats_label == null:
+		return
+	_pool_stats_accum += get_process_delta_time()
+	if _pool_stats_accum < 0.3:
+		return
+	_pool_stats_accum = 0.0
+	var lines: Array = []
+	var stats: Dictionary = ParticlePool.get_stats()
+	for key in stats:
+		var s: Dictionary = stats[key]
+		lines.append("%s 闲%d/活%d/峰%d/扩%d" % [key, s.idle, s.active, s.peak, s.extra])
+	_pool_stats_label.text = "\n".join(lines)
+
+
 func _reset() -> void:
 	get_tree().paused = false
 	_pause_btn.text = "暂停"
 	Engine.time_scale = 1.0
 	_clear_selection()
 	_show_detail([])
+	ParticlePool.recall_all()
 	for container in [_player_units, _enemy_units, _targets]:
 		for c in container.get_children():
 			c.queue_free()
@@ -450,3 +491,5 @@ func _process(delta: float) -> void:
 		if not _selected_units.is_empty():
 			_selected_units = _selected_units.filter(func(u): return u != null and is_instance_valid(u) and not u.is_dead())
 			_show_detail(_selected_units)
+
+	_refresh_pool_stats()

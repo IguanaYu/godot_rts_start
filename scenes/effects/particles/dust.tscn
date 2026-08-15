@@ -1,0 +1,35 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/effects/gpu_particle_effect.gd" id="1_script"]
+
+[sub_resource type="Curve" id="curve_dust"]
+_data = [Vector2(0, 1.2), 0.0, -1.0, 0, 0, Vector2(1, 0.1), -1.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="Gradient" id="grad_dust"]
+offsets = PackedFloat32Array(0, 1)
+colors = PackedColorArray(0.8, 0.78, 0.72, 0.9, 0.8, 0.78, 0.72, 0)
+
+[sub_resource type="ParticleProcessMaterial" id="pp_dust"]
+direction = Vector3(0, -1, 0)
+spread = 30.0
+gravity = Vector3(0, -15, 0)
+initial_velocity_min = 10.0
+initial_velocity_max = 20.0
+scale_min = 0.8
+scale_max = 1.2
+scale_curve = SubResource("curve_dust")
+color_ramp = SubResource("grad_dust")
+
+[node name="Dust" type="GPUParticles2D"]
+z_index = 5
+emitting = false
+amount = 8
+lifetime = 0.5
+visibility_rect = Rect2(-150, -150, 300, 300)
+explosiveness = 0.5
+interpolate = false
+fixed_fps = 60
+one_shot = true
+process_material = SubResource("pp_dust")
+script = ExtResource("1_script")

@@ -647,9 +647,7 @@ func spawn_spawn_effect(pos: Vector2, team: int, reveal_target: Node2D = null) -
 	_main_node.get_tree().current_scene.add_child(effect)
 
 func spawn_dust_effect(pos: Vector2) -> void:
-	var effect: Node2D = D.DustEffectScene.instantiate()
-	_main_node.get_tree().current_scene.add_child(effect)
-	effect.global_position = pos
+	ParticlePool.spawn("dust", pos)
 
 func show_floating_text(text: String, color: Color, world_pos: Vector2, duration_mult: float = 1.0) -> void:
 	var ft := Node2D.new()

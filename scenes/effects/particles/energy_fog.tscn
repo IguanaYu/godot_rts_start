@@ -1,0 +1,39 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/effects/gpu_particle_effect.gd" id="1_script"]
+
+[sub_resource type="Curve" id="curve_fog"]
+_data = [Vector2(0, 0.3), 1.2, 0.0, 0, 0, Vector2(0.5, 1), 0.0, -2.0, 0, 0, Vector2(1, 0.1), -2.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="Gradient" id="grad_fog"]
+offsets = PackedFloat32Array(0, 0.6, 1)
+colors = PackedColorArray(0.6, 0.35, 0.9, 0.7, 0.5, 0.3, 0.85, 0.4, 0.5, 0.3, 0.85, 0)
+
+[sub_resource type="ParticleProcessMaterial" id="pp_fog"]
+direction = Vector3(0, -1, 0)
+spread = 60.0
+gravity = Vector3(0, -5, 0)
+initial_velocity_min = 6.0
+initial_velocity_max = 14.0
+scale_min = 1.5
+scale_max = 2.5
+scale_curve = SubResource("curve_fog")
+color_ramp = SubResource("grad_fog")
+
+[sub_resource type="CanvasItemMaterial" id="mat_add_fog"]
+blend_mode = 1
+
+[node name="EnergyFog" type="GPUParticles2D"]
+material = SubResource("mat_add_fog")
+z_index = 5
+emitting = false
+amount = 20
+lifetime = 1.0
+visibility_rect = Rect2(-200, -200, 400, 400)
+explosiveness = 0.2
+interpolate = false
+fixed_fps = 60
+one_shot = true
+process_material = SubResource("pp_fog")
+script = ExtResource("1_script")

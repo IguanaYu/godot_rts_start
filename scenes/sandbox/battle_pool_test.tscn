@@ -1,0 +1,49 @@
+[gd_scene load_steps=4 format=3 uid="uid://fxbattlepool1"]
+
+[ext_resource type="Script" path="res://scripts/sandbox/sandbox_controller.gd" id="sandbox_script"]
+[ext_resource type="Script" path="res://scripts/systems/stress_test_spawner.gd" id="stress_spawner"]
+
+[sub_resource type="NavigationPolygon" id="NavPoly_1"]
+vertices = PackedVector2Array(-32, -32, 1952, -32, 1952, 672, -32, 672)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
+
+[node name="BattlePoolTest" type="Node2D"]
+script = ExtResource("sandbox_script")
+
+[node name="Ground" type="ColorRect" parent="."]
+offset_left = -32.0
+offset_top = -32.0
+offset_right = 1952.0
+offset_bottom = 672.0
+color = Color(0.35, 0.55, 0.25, 1)
+mouse_filter = 2
+
+[node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
+navigation_polygon = SubResource("NavPoly_1")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(960, 320)
+
+[node name="PlayerUnits" type="Node2D" parent="."]
+
+[node name="EnemyUnits" type="Node2D" parent="."]
+
+[node name="Targets" type="Node2D" parent="."]
+
+[node name="SpawnerPlayer" type="Node" parent="."]
+script = ExtResource("stress_spawner")
+team = 0
+rows = 5
+cols = 10
+origin = Vector2(400, 150)
+auto_attack_move = true
+attack_move_target = Vector2(1400, 320)
+
+[node name="SpawnerEnemy" type="Node" parent="."]
+script = ExtResource("stress_spawner")
+team = 1
+rows = 5
+cols = 10
+origin = Vector2(1400, 150)
+auto_attack_move = true
+attack_move_target = Vector2(500, 320)

@@ -704,9 +704,7 @@ func _spawn_unit_by_stats_id(stats_id: StringName) -> void:
 		if unit._is_inside_any_building():
 			unit._start_escape()
 	# 召唤特效
-	var dust := D.DustEffectScene.instantiate()
-	get_tree().current_scene.add_child(dust)
-	dust.global_position = unit.global_position
+	ParticlePool.spawn("dust", unit.global_position)
 	# 添加到对应的组
 	var group_name := "player_units" if team == Team.PLAYER else "enemy_units"
 	unit.add_to_group(group_name)
@@ -933,12 +931,8 @@ func die() -> void:
 	if building_type == BuildingType.WALL:
 		_update_neighbor_walls()
 	# 生成爆炸特效
-	var explosion_scene := load("res://scenes/effects/explosion.tscn")
-	var explosion: Node2D = explosion_scene.instantiate()
-	get_tree().current_scene.add_child(explosion)
-	explosion.global_position = global_position
 	var max_dim := maxf(float(grid_size.x), float(grid_size.y))
-	explosion.scale = Vector2(max_dim, max_dim)
+	ParticlePool.spawn("explosion", global_position, {"scale": Vector2(max_dim, max_dim)})
 	# 缩小+删除动画
 	var tween := create_tween()
 	tween.tween_property(self, "scale", Vector2.ZERO, 0.3)
