@@ -8,15 +8,15 @@ point_count = 2
 
 [sub_resource type="Gradient" id="grad_blood"]
 offsets = PackedFloat32Array(0, 0.7, 1)
-colors = PackedColorArray(0.55, 0.08, 0.08, 0.95, 0.5, 0.06, 0.06, 0.7, 0.5, 0.06, 0.06, 0)
+colors = PackedColorArray(0.62, 0.05, 0.05, 1, 0.55, 0.04, 0.04, 0.85, 0.5, 0.03, 0.03, 0)
 
 [sub_resource type="ParticleProcessMaterial" id="pp_blood"]
 spread = 180.0
-gravity = Vector3(0, 300, 0)
-initial_velocity_min = 25.0
-initial_velocity_max = 55.0
-scale_min = 0.5
-scale_max = 0.9
+gravity = Vector3(0, 40, 0)
+initial_velocity_min = 30.0
+initial_velocity_max = 60.0
+scale_min = 0.7
+scale_max = 1.2
 scale_curve = SubResource("curve_blood")
 color_ramp = SubResource("grad_blood")
 

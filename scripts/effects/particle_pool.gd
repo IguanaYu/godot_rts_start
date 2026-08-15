@@ -41,6 +41,11 @@ const RECIPES := {
 		"prewarm": 10,
 		"timeout": 0.8,
 	},
+	"heal": {
+		"scene": preload("res://scenes/effects/heal_effect.tscn"),
+		"prewarm": 10,
+		"timeout": 0.5,
+	},
 	"dust_gpu": {
 		"scene": preload("res://scenes/effects/particles/dust.tscn"),
 		"prewarm": 5,

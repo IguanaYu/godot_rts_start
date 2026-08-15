@@ -386,8 +386,6 @@ func _spawn_dummy(center: Vector2) -> void:
 
 func _on_spawn_died(unit) -> void:
 	_selected_units.erase(unit)
-	# 沙盒专属：死亡时用池放爆炸演示（正式对局里爆炸只在建筑死亡时触发）
-	ParticlePool.spawn("explosion", unit.global_position, {"scale": Vector2(0.8, 0.8)})
 
 
 # ============================================================

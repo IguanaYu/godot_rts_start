@@ -7,7 +7,6 @@ enum UnitType { SOLDIER, ARCHER, LANCER, MONK }
 enum Team { PLAYER, ENEMY }
 enum CommandSource { NONE, PLAYER, AUTO }
 
-const HealEffectScene := preload("res://scenes/effects/heal_effect.tscn")
 const UnitEffectsShader := preload("res://shaders/unit_effects.gdshader")
 const AggroComp := preload("res://scripts/core/aggro_component.gd")
 const DissolveNoise := preload("res://assets/effects/dissolve_noise.tres")
@@ -1239,7 +1238,9 @@ func take_damage(amount: int, attacker = null) -> void:
 	if final_amount > 0:
 		_play_hit_flash()
 		# PR-5 命中粒子：按伤害量分级 scale；大伤害追加 screen shake
-		ParticlePool.spawn("hit_spark", global_position, {"scale": _hit_spark_scale(final_amount)})
+		# 致死一击跳过 hit_spark——die() 的 blood_mist 单独接管死亡瞬间，避免白色火花抢戏
+		if health.hp - final_amount > 0:
+			ParticlePool.spawn("hit_spark", global_position, {"scale": _hit_spark_scale(final_amount)})
 		if final_amount > HIT_SPARK_SHAKE_THRESHOLD:
 			PostProcessController.shake_screen(PostProcessController.SHAKE_SMALL, 0.15)
 		if _visual_feedback:
@@ -1363,6 +1364,7 @@ func die() -> void:
 	# PR-5：Boss 死亡触发屏幕级冲击（shake 10 + 色差 + 冲击波）
 	if stats_data and stats_data.category == "boss":
 		PostProcessController.big_impact(global_position)
+	ParticlePool.spawn("blood_mist", global_position)
 	if _visual_feedback:
 		_visual_feedback.stop_all()
 	# 自爆：死亡时对周围敌人造成范围伤害
@@ -1601,9 +1603,7 @@ func heal(amount: int) -> void:
 	health.heal(amount)
 	if _visual_feedback:
 		_visual_feedback.play_heal()
-	var effect: Node2D = HealEffectScene.instantiate()
-	get_tree().current_scene.add_child(effect)
-	effect.global_position = global_position
+	ParticlePool.spawn("heal", global_position)
 
 
 ## PR-3：受击位移方向——有 attacker 朝远离方向，无 attacker 返回 ZERO（组件内走向上小跳兜底）

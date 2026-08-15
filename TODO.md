@@ -411,6 +411,83 @@
   创建: 2026-08-11
   后续: 先调研（参考 [feedback_design_research_format.md] 四段式 + [feedback_research_methodology_case_first.md] 案例优先）
 
+- **[P1] 特效展示/配置界面 - 预览画廊辅助决策** #特效 #沙盒 #工具 #视觉
+  目标：一个专门**展示和配置特效**的界面，覆盖光环、状态环、粒子、后处理、技能特效等全部特效资产。核心诉求是**预览图级别的浏览体验**——快速看每个特效长什么样、有哪些可调参数（颜色/尺寸/时长/强度），方便决策某个单位/特效的选留与去留。实际给单位接线配置仍由 AI 做，此界面是给玩家（决策者）看的选型工具。
+
+  **理想形态**：
+  - 特效目录列表（按类别分组：地面环/粒子/光柱/波纹/全屏后处理/技能组合…），点击即在预览单位上播放
+  - 关键参数实时调节（sliders / 取色器），改动立即反映到预览
+  - 多特效叠加预览（如光环 + 受击 + 护盾同时挂在一个单位上，看组合效果）
+  - 若能导出配置（.tres / json）更好——玩家调完 AI 直接照抄数值落地
+
+  **实现路径候选**（待聊，不限定游戏内）：
+  1. **扩展现有沙盒**：[effect_sandbox](scenes/sandbox/effect_sandbox.tscn) 已有 8 技能按钮 + 状态/建筑/后处理调试按钮，加一个"特效画廊"侧栏（目录 + 参数面板）成本最低
+  2. **独立预览场景**：脱离游戏主场景的纯展示场景，一屏多卡片（类似技能图鉴/Art Book 界面），每卡片一个小单位在循环播放特效
+  3. **批量截图 contact sheet**：工具脚本自动逐个触发特效并截图，拼成一张总览图——最快得到"预览图"，但无实时调参
+  4. **游戏外方案**：如 Godot 编辑器插件 / web 预览页（预计成本更高，待评估必要性）
+
+  关联: [scenes/sandbox/effect_sandbox.tscn](scenes/sandbox/effect_sandbox.tscn), [scripts/sandbox/sandbox_controller.gd](scripts/sandbox/sandbox_controller.gd), [scripts/sandbox/sandbox_config.gd](scripts/sandbox/sandbox_config.gd), [scripts/skills/skill_visual_controller.gd](scripts/skills/skill_visual_controller.gd), [scripts/effects/](scripts/effects/)
+  创建: 2026-08-16
+  后续: 先聊实现路径（1 扩展沙盒 vs 2 独立画廊 vs 3 截图总览），再排期；与 T4 E.4 特效库天然衔接
+
+- **[P1] 近战命中特效改版 - 剑士白点下坠不好看** #特效 #视觉 #需讨论
+  现状：剑士（近战通用）命中特效是 [hit_spark.tscn](scenes/effects/particles/hit_spark.tscn)——15 个黄白小点、发射方向朝下（spread 45°）+ 向下重力 200，看起来是"一串白点下坠"，不像砍中人。它是 PR-5 的通用命中粒子，**近战/远程共用**，由被打者在 [unit.gd](scripts/units/unit.gd) `take_damage`（`ParticlePool.spawn("hit_spark", ...)`）触发；且不带方向参数，与攻击方向无关。
+
+  **候选方案（待讨论）**：
+  1. **刀光弧线**（slash arc）：攻击方向上的弧形扫过（Line2D/Polygon2D 画弧 + 快速淡出，或代码生成月牙纹理），方向感最强
+  2. **定向散落粒子**：保留粒子但按攻击方向斜向喷溅（去掉下坠感，需 ParticlePool.spawn 传 rotation）
+  3. **粒子刀光**：1+2 组合——短弧光 + 少量定向火花
+  4. 其他：Tiny Swords 素材包 `Particle FX/Particle FX.aseprite` 可能有现成帧动画可用（待查）
+  注：远程（弓箭）的命中粒子可以保留 hit_spark 或一并调整，待定。
+
+  **实现要点**：
+  - 近战/远程需分流（unit.gd `take_damage` 目前只知道 attacker，可由 attacker.is_ranged 判断或攻击者在 `_perform_attack` 里自己 spawn 方向特效）
+  - ParticlePool 已支持 spawn opts 传 rotation（[particle_pool.gd](scripts/effects/particle_pool.gd)），定向粒子改动小
+  - 刀光类需新增配方 + 可能新增弧形纹理（ParticleTextures 目前只有 DISC/SPARK/SQUARE）
+
+  关联: [hit_spark.tscn](scenes/effects/particles/hit_spark.tscn), [particle_pool.gd](scripts/effects/particle_pool.gd), [particle_textures.gd](scripts/effects/particle_textures.gd), [unit.gd](scripts/units/unit.gd) (`take_damage`/`_perform_attack`)
+  创建: 2026-08-16
+  后续: 讨论定方案（1 刀光 / 2 定向粒子 / 3 组合）→ 沙盒验证 → 近战远程分流落地
+
+- **[P1] 部位发光标记 - buff 局部视觉反馈（剑士案例）** #特效 #视觉 #buff #需讨论
+  想法：给单位 sprite 标记具体部位（头/手/武器），buff 或技能触发时只在标记部位亮光。例：攻速 buff → 手部亮红光；剑士开"神圣状态" → 剑上的十字亮起。业内调研已完成（2026-08-16，对话内调研），三个通用叫法：
+  - **Emissive mask / 自发光遮罩**（Unity 2D Secondary Textures、Spine、Godot ShaderMaterial 传 mask sampler）— mask 贴图与 sprite 同 UV，`color += mask × glow_color`
+  - **Palette swap / 调色板替换**（魔兽 2 队伍色 208-223 索引段、Dead Cells gradient map、Dota 特效携带物）— 保留色/索引运行时重映射，零额外贴图
+  - **Item transform**（暗黑 2 enchant：武器 sprite 火色调色板 remap + overlay 光照半径，states.txt 的 `colorpri` 列解决多 buff 变色冲突）
+
+  **实现谱系（按精度/成本）**：
+  - A. 逐帧 mask sheet（RGBA 四通道打包 4 部位：R=手 G=头 B=剑 A=十字），光逐帧跟剑走，美术量 ×2
+  - B. 保留色 keying（十字直接用保留色画进原 sprite，shader 检测替换成呼吸发光色），Dead Cells 路线，像素风最省
+  - C. Overlay 粒子/PointLight2D 挂部位，最快但不跟动画、会飘
+
+  **项目现状适配**：无全局 bloom → 用 shader fake（复用 boss_glow 参数化思路）；[unit.gd](scripts/units/unit.gd) `body_sprite` 是 hframes sprite sheet，方案 A 只需 mask 同布局；Tiny Swords 像素小 sprite → 倾向 B 起步。
+
+  **待讨论要点**：
+  1. 方案 A（mask sheet）vs B（保留色）：精度 vs 美术零额外量
+  2. 多 buff 同部位冲突：要不要学 D2 `colorpri` 优先级
+  3. 纯自发光 vs 加 PointLight2D 照亮地面（白天场景收益存疑）
+  4. 与 [游戏视觉设计准则](docs/standards/游戏视觉设计准则.md) 响度预算/颜色语义表的衔接（发光色是否走语义色表）
+
+  关联: [scripts/units/unit.gd](scripts/units/unit.gd) (`body_sprite`), [docs/standards/游戏视觉设计准则.md](docs/standards/游戏视觉设计准则.md), [docs/design/程序化动画与特效调研报告.md](docs/design/程序化动画与特效调研报告.md)
+  创建: 2026-08-16
+  后续: 讨论定方案（A/B/C）→ 可先做方案 B shader 原型在沙盒验证剑士效果；与 T4 E.4 特效库、特效展示界面衔接
+
+### Bug
+
+- **[P1] GPU 粒子 color_ramp 不生效 — 血雾/hit_spark 都显示纯白** #bug #特效 #粒子
+  现象：blood_mist 配方 color_ramp 配的是暗红渐变（0.62,0.05,0.05 → 透明淡出），实际渲染却是**纯白色软圆盘颗粒**；hit_spark 同理——渐变配的黄橙暖色（1,0.95,0.6 → 1,0.3,0.1），玩家看到的是"白色光点下坠"。治疗颜色正常（heal_effect 是帧动画 sprite，非 GPU 粒子，不受影响）。
+
+  **根因方向（未验证）**：项目跑 Compatibility (OpenGL) 渲染器，怀疑 `ParticleProcessMaterial.color_ramp` 在该渲染器下被忽略（Godot 4.x 已知类问题）。线索：两个 GPU 粒子配方同时"变白"、都依赖 color_ramp 配色、[particle_textures.gd](scripts/effects/particle_textures.gd) 生成的 DISC/SPARK 纹理本身是纯白——指向渲染管线而非单个配方配置。energy_fog / debris / heal_orb 同样依赖 color_ramp，大概率同病。
+
+  **修复候选**：
+  1. RECIPES 加默认 modulate（[particle_pool.gd](scripts/effects/particle_pool.gd) spawn opts 已支持 `"modulate"`，CanvasItem.modulate 全渲染器有效）——改动最小
+  2. particle_textures.gd 直接生成带色纹理（颜色烘进纹理，不靠 ramp）
+  3. 升级 Forward+ 渲染器（影响面大，需单独评估性能/兼容）
+
+  关联: [blood_mist.tscn](scenes/effects/particles/blood_mist.tscn), [hit_spark.tscn](scenes/effects/particles/hit_spark.tscn), [particle_textures.gd](scripts/effects/particle_textures.gd), [particle_pool.gd](scripts/effects/particle_pool.gd)
+  创建: 2026-08-16
+  后续: 先小规模验证（方案 1 给 blood_mist 单配方配暗红 modulate，沙盒看是否变红）→ 确认根因再决定是否全配方推广
+
 ## 🔧 计划中
 
 ### 程序化特效落地（按 ROADMAP 推进）
@@ -421,7 +498,7 @@
   **PR 列表**：
   - ✅ **PR-0** 测试沙盒场景（极简版）— spawn 单位/木桩 + 阵营切换 + 框选/attack-move + 时间控制 + 详情面板 + 弹道（2026-08-15 完成）
   - ✅ **PR-1** Shader 接入 + Dissolve — 受击白闪（0.12s，护盾全吸收/闪避不闪）+ Boss 紫光（`category=="boss"` 数据驱动）+ 骷髅死亡 dissolve 消散（`dissolve_on_death` 字段）；hit_flash 移到状态染色之后（受击优先）；沙盒新增 Boss 按钮 + stats 覆盖机制（2026-08-15 完成）
-  - ✅ **PR-2** 粒子对象池 + 配方库 — ParticlePool Autoload（自动预热 + finished/超时双路回收）+ 9 种配方（dust/explosion/hit_spark/debris/energy_fog/heal_orb/blood_mist/dust_gpu），迁移 game_spawner/building/building_garrison 高频 instantiate（2026-08-15 完成）
+  - ✅ **PR-2** 粒子对象池 + 配方库 — ParticlePool Autoload（自动预热 + finished/超时双路回收）+ 9 种配方（dust/explosion/hit_spark/debris/energy_fog/heal_orb/blood_mist/dust_gpu），迁移 game_spawner/building/building_garrison 高频 instantiate（2026-08-15 完成）；2026-08-16 收尾：blood_mist 接入全单位死亡路径（die() 在 dissolve/scale-to-zero 分支前统一 spawn）、heal_effect 迁池（新增 "heal" 配方）、清理 game_data.gd 死常量 DustEffectScene
   - ✅ **PR-3** UnitVisualFeedback 组件 — 攻击前探/后坐冲量 + 受击位移 + 护盾/中毒/减速地面环；零 Tween（_process 插值 + 冲量曲线）；沙盒新增 7 个状态调试按钮（2026-08-15 完成）
   - ✅ **PR-4** BuildingActivityVisual 组件 — 生产脉冲/施工尘土/升级转动金环 + 入队下沉/完成回弹/产金金环/升级双环/受击震动红闪；状态优先级仲裁（constructing > age_upgrading > producing > idle）；箭塔 JellyEffect 替换（消除 tween 争写 scale）；die 加 debris；沙盒加建筑面板（7 建筑 + 64px 占格）+ 6 个建筑调试按钮（2026-08-15 完成，commit `fe3dccf`）
   - ✅ **PR-5** 命中粒子 + 屏幕后处理 — PostProcessController Autoload（layer=5 CanvasLayer + 全屏 ColorRect shader）：screen shake 走 Camera2D.offset（不碰 position，clamp/平滑不受影响，game_camera.gd 零改动）、色差（SCREEN_TEXTURE 径向 RGB 分裂）、冲击波扩散环（≤4 并发，世界坐标自动转 UV）；hit_spark 命中粒子按伤害量分级 scale（<20/≤50/>50 → 0.8/1.1/1.4），>60 伤害加 shake；Boss 死亡 big_impact 三件套（shake10+色差+冲击波）；建筑爆炸 shake8 + 尺寸缩放冲击波（无色差）；沙盒加 4 个后处理调试按钮（冲击波为两段式：点按钮武装→点地图触发）；顺手修 PR-2 潜伏 bug：ParticlePool float scale 走 `Vector2.ONE * x`（原 `Vector2(float)` 非法构造会崩 spawn）（2026-08-15 完成）
