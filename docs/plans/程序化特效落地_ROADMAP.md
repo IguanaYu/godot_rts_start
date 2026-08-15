@@ -15,15 +15,15 @@
 ## PR 依赖图
 
 ```
-PR-0  测试沙盒（极简版）
+PR-0  测试沙盒（极简版）          ✅ 完成
   ↓
-PR-1  Shader 接入 + Dissolve
+PR-1  Shader 接入 + Dissolve      ✅ 完成
   ↓
-PR-2  粒子对象池 + 配方库
+PR-2  粒子对象池 + 配方库         ✅ 完成
   ↓
-PR-3  UnitVisualFeedback 组件
+PR-3  UnitVisualFeedback 组件     ✅ 完成
   ↓
-PR-4  BuildingActivityVisual 组件
+PR-4  BuildingActivityVisual 组件 ✅ 完成（沙盒加建筑 spawn 面板 + 调试按钮）
   ↓
 PR-5  命中粒子 + 屏幕后处理
   ↓

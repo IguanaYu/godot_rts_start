@@ -1337,6 +1337,8 @@ func _on_age_upgrade_complete() -> void:
 	# T2 PR-3: 隐藏城堡头顶进度条
 	if player_castle != null and is_instance_valid(player_castle):
 		player_castle.set_age_upgrade_progress(0.0)
+		# PR-4: 升级完成大反馈（转动环收尾 + 双环扩散 + 脉冲）
+		player_castle.notify_age_upgrade_completed()
 	_unlock_age_items(completed)
 	show_floating_text("升级到 T%d 完成！" % completed, Color(0.4, 1.0, 0.4), _castle_head_pos())
 

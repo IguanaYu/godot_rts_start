@@ -111,6 +111,13 @@ signal construction_finished(building)
 @onready var body_sprite: Sprite2D = $BodySprite
 @onready var hp_bar: ProgressBar = $HPBar
 @onready var aggro_line: Line2D = $AggroLine
+# PR-4: 建筑活动视觉组件（生产脉冲/施工尘土/升级环/受击震动）
+var _activity_visual = null
+
+
+## PR-4: 活动视觉便捷调用（组件缺失/编辑器态安全兜底）
+func _av() -> Node:
+	return _activity_visual if _activity_visual != null and is_instance_valid(_activity_visual) else null
 
 func _ready() -> void:
 	# @export team 在 .tscn 中可保存，但 alliance_id 是 var 不会自动同步。
@@ -122,6 +129,10 @@ func _ready() -> void:
 		_setup_editor_visuals()
 	else:
 		_setup_visuals()
+		# PR-4: 活动视觉组件配置（必须在 _setup_visuals 之后——sprite scale/position 已是最终值）
+		_activity_visual = get_node_or_null("BuildingActivityVisual")
+		if _activity_visual:
+			_activity_visual.configure(int(building_type), body_sprite, grid_size, randi())
 		_update_hp_bar()
 		# 注册到分组（确保 VictoryCondition 在 _ready 时就能找到）
 		add_to_group("buildings")
@@ -477,6 +488,8 @@ func _process(delta: float) -> void:
 		build_progress += delta
 		if build_bar:
 			build_bar.value = build_progress
+		if _av():
+			_av().set_construction(true, build_progress / maxf(build_time, 0.01))
 		if build_progress >= build_time:
 			_finish_construction()
 		return
@@ -530,7 +543,11 @@ func _tower_process(delta: float) -> void:
 		attack_timer = attack_cooldown
 
 func _spawn_arrow(target) -> void:
-	JellyEffect.play(body_sprite, Vector2(sprite_scale_x, sprite_scale_y))
+	# PR-4: 开火回弹改走 BuildingActivityVisual（JellyEffect tween 会与组件 _process 争写 scale）
+	if _av():
+		_av().play_fire_recoil()
+	else:
+		JellyEffect.play(body_sprite, Vector2(sprite_scale_x, sprite_scale_y))
 	var spawner = get_tree().current_scene.get("spawner_module")
 	if spawner:
 		var data: Resource = null
@@ -562,6 +579,8 @@ func _production_process(delta: float) -> void:
 	if NetworkManager.is_online:
 		if _production_circle:
 			_production_circle.update_progress(production_timer / production_cooldown)
+		if _av():
+			_av().set_production(production_timer > 0.0, production_timer / production_cooldown)
 		return
 	# T1 PR-2: BARRACKS 走队列 —— 队列空时归零 timer，不推进
 	# T2 PR-1: 扩展到 ARCHERY/MONASTERY（之前埋的 bug——只 BARRACKS 走队列，靶场入队后无人处理）
@@ -570,10 +589,14 @@ func _production_process(delta: float) -> void:
 			production_timer = 0.0
 			if _production_circle:
 				_production_circle.update_progress(0.0)
+			if _av():
+				_av().set_production(false, 0.0)
 			return
 		production_timer += delta
 		if _production_circle:
 			_production_circle.update_progress(production_timer / production_cooldown)
+		if _av():
+			_av().set_production(true, production_timer / production_cooldown)
 		if production_timer >= production_cooldown:
 			production_timer = 0.0
 			_spawn_next_unit()
@@ -582,6 +605,8 @@ func _production_process(delta: float) -> void:
 	# 更新圆圈进度
 	if _production_circle:
 		_production_circle.update_progress(production_timer / production_cooldown)
+	if _av():
+		_av().set_production(true, production_timer / production_cooldown)
 	if production_timer >= production_cooldown:
 		production_timer = 0.0
 		# T1: CASTLE 与 FARM 都自动产金（读 stats.gold_production_amount）
@@ -604,6 +629,8 @@ func queue_unit(stats_id: StringName) -> bool:
 	if not queue_has_space():
 		return false
 	production_queue.append(stats_id)
+	if _av():
+		_av().play_order_received()
 	queue_changed.emit(self)
 	return true
 
@@ -613,6 +640,8 @@ func _spawn_next_unit() -> void:
 	if production_queue.is_empty():
 		return
 	var stats_id: StringName = production_queue.pop_front()
+	if _av():
+		_av().play_production_completed()
 	queue_changed.emit(self)
 	_spawn_unit_by_stats_id(stats_id)
 
@@ -744,6 +773,8 @@ func _produce_gold() -> void:
 		ft.set_script(load("res://scripts/effects/floating_text.gd"))
 		get_tree().current_scene.add_child(ft)
 		ft.setup("+" + str(amount), Color(1.0, 0.85, 0.0), global_position + Vector2(0, -40))
+		if _av():
+			_av().play_resource_tick()
 
 # ============================================================
 # 光环系统
@@ -807,6 +838,8 @@ func _check_wall_connections() -> void:
 		if health.hp > new_max:
 			health.hp = new_max
 		health._update_hp_bar()
+	if _av():
+		_av().set_wall_link(bonus > 0)
 
 func _update_neighbor_walls() -> void:
 	for b in get_tree().get_nodes_in_group("buildings"):
@@ -885,11 +918,20 @@ func set_age_upgrade_progress(ratio: float) -> void:
 	if _age_upgrade_bar == null or not is_instance_valid(_age_upgrade_bar):
 		return
 	var r := clampf(ratio, 0.0, 1.0)
+	if _av():
+		_av().set_age_upgrade(r > 0.0, r)
 	if r <= 0.0:
 		_age_upgrade_bar.visible = false
 		return
 	_age_upgrade_bar.visible = true
 	_age_upgrade_bar.value = r
+
+
+## PR-4: 时代升级完成大反馈（转动金环收尾 + 双环扩散 + 大脉冲）。
+## 由 main.gd::_on_age_upgrade_complete / 沙盒调试调用（取消升级不发）。
+func notify_age_upgrade_completed() -> void:
+	if _av():
+		_av().play_age_upgrade_completed()
 
 func take_damage(amount: int, attacker = null) -> void:
 	if Engine.is_editor_hint():
@@ -903,6 +945,11 @@ func take_damage(amount: int, attacker = null) -> void:
 		final_amount = int(final_amount * atk_stats.bonus_vs_building_multiplier)
 	health.take_damage(final_amount)
 	damaged.emit(final_amount, attacker)
+	if _av():
+		var dir := Vector2.ZERO
+		if is_instance_valid(attacker) and attacker is Node2D:
+			dir = (global_position - attacker.global_position).normalized()
+		_av().play_hit(dir)
 	# 伤害飘字
 	if final_amount > 0:
 		var main_node := get_tree().current_scene
@@ -930,9 +977,12 @@ func die() -> void:
 	# 更新相邻城墙的连结加成
 	if building_type == BuildingType.WALL:
 		_update_neighbor_walls()
-	# 生成爆炸特效
+	if _av():
+		_av().stop_all()
+	# 生成爆炸特效 + 碎片
 	var max_dim := maxf(float(grid_size.x), float(grid_size.y))
 	ParticlePool.spawn("explosion", global_position, {"scale": Vector2(max_dim, max_dim)})
+	ParticlePool.spawn("debris", global_position, {"scale": Vector2(max_dim, max_dim)})
 	# 缩小+删除动画
 	var tween := create_tween()
 	tween.tween_property(self, "scale", Vector2.ZERO, 0.3)
@@ -947,6 +997,8 @@ func start_construction(duration: float = 5.0) -> void:
 	build_progress = 0.0
 	is_constructed = false
 	body_sprite.modulate.a = 0.5
+	if _av():
+		_av().set_construction(true, 0.0)
 	_create_build_bar()
 
 func _create_build_bar() -> void:
@@ -976,6 +1028,9 @@ func _create_build_bar() -> void:
 func _finish_construction() -> void:
 	is_constructed = true
 	body_sprite.modulate.a = 1.0
+	if _av():
+		_av().set_construction(false, 0.0)
+		_av().play_construction_completed()
 	# 城墙连结检测
 	_check_wall_connections()
 	# 创建生产圆圈

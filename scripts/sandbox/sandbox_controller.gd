@@ -10,6 +10,7 @@ const DummyScript := preload("res://scripts/sandbox/dummy.gd")
 
 const DAMAGE_NUMBER_SCRIPT := preload("res://scripts/effects/damage_number.gd")
 const SpawnerScript := preload("res://scripts/systems/game_spawner.gd")
+const D := preload("res://scripts/systems/game_data.gd")
 const SPAWN_SPACING := 35.0
 const DRAG_THRESHOLD := 8.0
 
@@ -17,9 +18,14 @@ var show_damage_numbers: bool = true
 ## unit.gd::_spawn_arrow 经 current_scene.spawner_module 发射弹道，沙盒挂一个最小实例
 var spawner_module: Node
 
+# PR-4 建筑沙盒兼容：building.gd 直接读写 current_scene 的这些字段/方法
+var _units_trained := 0
+var gold := 1000
+
 var _player_units: Node2D
 var _enemy_units: Node2D
 var _targets: Node2D
+var _buildings: Node2D
 
 # UI
 var _unit_buttons_box: VBoxContainer
@@ -40,12 +46,17 @@ var _drag_start: Vector2 = Vector2(INF, INF)
 var _detail_refresh_accum: float = 0.0
 var _pool_stats_label: Label
 var _pool_stats_accum: float = 0.0
+# PR-4: 建筑占格 + 模拟升级
+var _occupied: Dictionary = {}          # Vector2i -> true
+var _sim_upgrades: Array = []           # {building, t, dur}
+var _building_debug_box: VBoxContainer = null
 
 
 func _ready() -> void:
 	_player_units = $PlayerUnits
 	_enemy_units = $EnemyUnits
 	_targets = $Targets
+	_buildings = $Buildings
 	spawner_module = Node.new()
 	spawner_module.name = "SandboxSpawnerModule"
 	spawner_module.set_script(SpawnerScript)
@@ -94,6 +105,13 @@ func _build_ui() -> void:
 	top_bar.add_child(_make_top_button("治疗", _apply_debug.bind(&"heal")))
 	top_bar.add_child(_make_top_button("狂暴", _apply_debug.bind(&"enrage")))
 	top_bar.add_child(_make_top_button("祝福", _apply_debug.bind(&"bless")))
+	# PR-4 建筑调试按钮：对选中建筑触发事件（未选建筑时忽略）
+	top_bar.add_child(_make_top_button("入队", _apply_building_debug.bind(&"queue")))
+	top_bar.add_child(_make_top_button("产金", _apply_building_debug.bind(&"gold")))
+	top_bar.add_child(_make_top_button("受击50", _apply_building_debug.bind(&"hit")))
+	top_bar.add_child(_make_top_button("施工3s", _apply_building_debug.bind(&"build")))
+	top_bar.add_child(_make_top_button("升级5s", _apply_building_debug.bind(&"upgrade")))
+	top_bar.add_child(_make_top_button("摧毁", _apply_building_debug.bind(&"destroy")))
 
 	# === 左面板：阵营 + 数量 + 单位按钮 ===
 	var left_panel := PanelContainer.new()
@@ -144,6 +162,14 @@ func _build_ui() -> void:
 	for d in Cfg.SPAWNABLE_DUMMIES:
 		var dummy_entry := { "name": "木桩 HP%d" % d.hp, "hp": d.hp }
 		left_vbox.add_child(_make_spawn_button(dummy_entry))
+
+	# PR-4: 建筑按钮（同一套 toggle/点击放置交互）
+	var bld_label := Label.new()
+	bld_label.text = "建筑"
+	bld_label.add_theme_font_size_override("font_size", 14)
+	left_vbox.add_child(bld_label)
+	for entry in Cfg.SPAWNABLE_BUILDINGS:
+		left_vbox.add_child(_make_spawn_button(entry))
 
 
 func _make_top_button(text: String, cb: Callable) -> Button:
@@ -215,7 +241,10 @@ func battlefield_click(world_pos: Vector2) -> void:
 		_refresh_button_states()
 		_show_detail(_selected_units)
 	elif not _selected_entry.is_empty():
-		_spawn_formation(world_pos)
+		if _selected_entry.has("building_type"):
+			_spawn_building(world_pos)
+		else:
+			_spawn_formation(world_pos)
 
 
 func _pick_unit(world_pos: Vector2):
@@ -322,6 +351,113 @@ func _on_spawn_died(unit) -> void:
 
 
 # ============================================================
+# PR-4: 建筑 spawn + 占格 + 调试事件
+# ============================================================
+
+func _spawn_building(world_pos: Vector2) -> void:
+	var btype: int = _selected_entry.building_type
+	var grid: Vector2i = D.get_building_grid_size(btype)
+	# snap 到 64px 网格（建筑中心 = footprint 中心）
+	var gpos := Vector2i(floori(world_pos.x / D.GRID_SIZE), floori(world_pos.y / D.GRID_SIZE))
+	var offset := Vector2((grid.x - 1) * 32.0, (grid.y - 1) * 32.0)
+	var world := Vector2(gpos.x * 64.0 + 32.0 + offset.x, gpos.y * 64.0 + 32.0 + offset.y)
+	# 占格检查（左上角为基准，覆盖整个 footprint）
+	var origin := gpos - Vector2i((grid.x - 1) / 2, (grid.y - 1) / 2)
+	for dy in range(grid.y):
+		for dx in range(grid.x):
+			if _occupied.has(origin + Vector2i(dx, dy)):
+				_show_sandbox_tip("该格已被占用")
+				return
+	var scene: PackedScene = load(D.BUILDING_SCENES[btype])
+	var b := scene.instantiate()
+	b.team = _spawn_team
+	b.alliance_id = _spawn_team
+	b.faction_color = FactionClass.ColorId.BLUE if _spawn_team == 0 else FactionClass.ColorId.RED
+	_buildings.add_child(b)
+	b.global_position = world
+	b.grid_pos = origin
+	# 登记占格（死亡时释放）
+	for dy in range(grid.y):
+		for dx in range(grid.x):
+			_occupied[origin + Vector2i(dx, dy)] = b
+	b.connect("died", _on_building_died)
+	var dim := maxf(float(grid.x), float(grid.y))
+	ParticlePool.spawn("dust", world, {"scale": Vector2(dim * 0.8, dim * 0.8)})
+
+
+func _on_building_died(building) -> void:
+	_selected_units.erase(building)
+	# 释放占格
+	var keys_to_remove: Array = []
+	for k in _occupied.keys():
+		if _occupied[k] == building:
+			keys_to_remove.append(k)
+	for k in keys_to_remove:
+		_occupied.erase(k)
+
+
+func _apply_building_debug(action: StringName) -> void:
+	var targets: Array = _selected_units.filter(func(u):
+		return u != null and is_instance_valid(u) and not u.is_dead() and "building_type" in u)
+	if targets.is_empty():
+		return
+	for b in targets:
+		match action:
+			&"queue":
+				# 按建筑类型选默认兵种 stats_id
+				var sid: StringName = &"soldier"
+				match int(b.building_type):
+					5: sid = &"archer"      # ARCHERY
+					4: sid = &"monk"        # MONASTERY
+				b.queue_unit(sid)
+			&"gold":
+				b._produce_gold()
+			&"hit":
+				b.take_damage(50)
+			&"build":
+				b.start_construction(3.0)
+			&"upgrade":
+				_sim_upgrades.append({"building": b, "t": 0.0, "dur": 5.0})
+			&"destroy":
+				b.die()
+
+
+func _advance_sim_upgrades(delta: float) -> void:
+	for i in range(_sim_upgrades.size() - 1, -1, -1):
+		var s: Dictionary = _sim_upgrades[i]
+		var b = s.building
+		if not is_instance_valid(b) or b.is_dead():
+			_sim_upgrades.remove_at(i)
+			continue
+		s.t += delta
+		var ratio: float = clampf(s.t / s.dur, 0.0, 1.0)
+		b.set_age_upgrade_progress(ratio)
+		if ratio >= 1.0:
+			if b.has_method("notify_age_upgrade_completed"):
+				b.notify_age_upgrade_completed()
+			else:
+				b.set_age_upgrade_progress(0.0)
+			_sim_upgrades.remove_at(i)
+
+
+## building.gd::_produce_gold / _refund_gold_on_completion 经 has_method("add_gold") 回调
+func add_gold(amount: int) -> void:
+	gold += amount
+
+
+## building.gd::_spawn_unit_by_stats_id 经 has_method("_on_unit_died") 连接单位死亡信号
+func _on_unit_died(unit) -> void:
+	pass
+
+
+func _show_sandbox_tip(text: String) -> void:
+	var ft := Node2D.new()
+	ft.set_script(preload("res://scripts/effects/floating_text.gd"))
+	add_child(ft)
+	ft.setup(text, Color(1.0, 0.4, 0.3), get_global_mouse_position())
+
+
+# ============================================================
 # PR-3 调试：对选中单位施加状态/事件（验证 UnitVisualFeedback）
 # ============================================================
 func _apply_debug(action: StringName) -> void:
@@ -412,7 +548,9 @@ func _reset() -> void:
 	_clear_selection()
 	_show_detail([])
 	ParticlePool.recall_all()
-	for container in [_player_units, _enemy_units, _targets]:
+	_sim_upgrades.clear()
+	_occupied.clear()
+	for container in [_player_units, _enemy_units, _targets, _buildings]:
 		for c in container.get_children():
 			c.queue_free()
 
@@ -472,6 +610,9 @@ func _show_detail(units: Array) -> void:
 		var unit = valid[0]
 		_detail_title.text = _unit_title(unit)
 		_add_detail_line("血量: %d / %d" % [unit.health.hp, unit.health.max_hp])
+		if "building_type" in unit:
+			_add_detail_line("状态: %s" % ("施工中" if not unit.is_constructed else "已建成"))
+			return
 		if unit.get("stat_set") != null:
 			var dmg = unit.stat_set.get_int(StatSetClass.ATTACK_DAMAGE)
 			var rng = unit.stat_set.get_value(StatSetClass.ATTACK_RANGE)
@@ -509,6 +650,18 @@ func _add_detail_line(text: String, color: Color = Color(0.9, 0.9, 0.9)) -> void
 func _unit_title(unit) -> String:
 	if unit.get_script() == DummyScript:
 		return "木桩"
+	if "building_type" in unit:
+		match int(unit.building_type):
+			0: return "城墙"
+			1: return "箭塔"
+			2: return "城堡"
+			3: return "兵营"
+			4: return "修道院"
+			5: return "靶场"
+			6: return "农场"
+			7: return "弓兵祭坛"
+			8: return "学院"
+		return "建筑"
 	if unit.get("stats_data") != null and unit.stats_data != null:
 		var dn: String = unit.stats_data.get("display_name")
 		if dn != "":
@@ -538,4 +691,5 @@ func _process(delta: float) -> void:
 			_selected_units = _selected_units.filter(func(u): return u != null and is_instance_valid(u) and not u.is_dead())
 			_show_detail(_selected_units)
 
+	_advance_sim_upgrades(delta)
 	_refresh_pool_stats()
