@@ -389,7 +389,7 @@
   设计已完成（[落地总方案](docs/design/程序化特效落地总方案.md)），ROADMAP 拆为 7 个 PR + 测试沙盒。每个 PR 在沙盒里独立验证。
 
   **PR 列表**：
-  - 📋 **PR-0** 测试沙盒场景（极简版）— spawn 单位/木桩 + 时间控制 + 详情面板
+  - ✅ **PR-0** 测试沙盒场景（极简版）— spawn 单位/木桩 + 阵营切换 + 框选/attack-move + 时间控制 + 详情面板 + 弹道（2026-08-15 完成）
   - 📋 **PR-1** Shader 接入 + Dissolve — 5 个 uniform 接入 + 单位死亡消散
   - 📋 **PR-2** 粒子对象池 + 配方库 — ParticlePool Autoload + 6 种基础配方
   - 📋 **PR-3** UnitVisualFeedback 组件 — 受击/攻击冲量/护盾环/持续状态
@@ -400,7 +400,7 @@
 
   关联: [docs/active/程序化特效落地_ROADMAP.md](docs/active/程序化特效落地_ROADMAP.md)
   创建: 2026-08-13
-  后续: 从 PR-0 开始，按顺序推进
+  后续: PR-0 已完成，从 PR-1 开始继续。沙盒 F6 运行 `scenes/sandbox/effect_sandbox.tscn`；加单位改 [scripts/sandbox/sandbox_config.gd](scripts/sandbox/sandbox_config.gd) 一行即可。沙盒关键依赖：伤害飘字走 `current_scene.show_damage_number()`、弹道走 `current_scene.spawner_module`，均已由 [sandbox_controller.gd](scripts/sandbox/sandbox_controller.gd) 提供。
 
 ## ✅ 已完成
 
