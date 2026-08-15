@@ -272,11 +272,12 @@
   创建: 2026-08-11
   完成: 2026-08-11
 
-- **[P1] 长枪兵队列图标显示为步兵** #bug #ui
-  在兵营排长枪兵时，详情面板的生产队列里**显示的是基础步兵的图标**，而不是长枪兵。实际造出来是长枪兵（数据正确），只是队列预览图标错了。
-  根因方向：队列 UI 取图标时大概率写死了步兵 icon（building.type == BARRACKS 分支默认走步兵 sprite），没根据被造单位 type 切换对应图标。
-  关联: [scripts/ui/detail_panel.gd](scripts/ui/detail_panel.gd), [scripts/systems/game_ui.gd](scripts/systems/game_ui.gd)
+- **[P1] 长枪兵队列图标显示为步兵** #bug #ui ✅ 已修复
+  在兵营排长枪兵时，生产队列显示的是基础步兵的图标。原记录"实际造出来是长枪兵（数据正确）"**系误判**：4 个基础兵种（SOLDIER/ARCHER/LANCER/MONK_UNIT）都不在 `PLACE_MODE_TO_STATS_ID`，入队存空 stats_id → 队列 icon 兜底成步兵；spawn 也按 `production_unit_type` 兜底，未选 T3 升级时排枪兵**实际产出的也是步兵**（此前观察到"产出正确"是因为恰好选了 T3 升级走了变体分支）。
+  修复（commit `8073e49`）：`PLACE_MODE_TO_STATS_ID` + `ENEMY_VARIANT_SCENES` 补 4 个基础兵种条目（icon 与产出一起修好）；detail_panel 队列"在造"由裸 stats_id 改为 display_name；4 个基础 stats .tres 补 display_name（士兵/弓箭手/枪兵/僧侣）。ICON/MONK_UNIT 等其余基础兵种同步受益。
+  关联: [scripts/systems/game_data.gd](scripts/systems/game_data.gd) (`PLACE_MODE_TO_STATS_ID`/`ENEMY_VARIANT_SCENES`), [scripts/ui/detail_panel.gd](scripts/ui/detail_panel.gd), [scripts/ui/barracks_queue_indicator.gd](scripts/ui/barracks_queue_indicator.gd), [resources/stats/](resources/stats/)
   创建: 2026-08-11
+  完成: 2026-08-15
 
 - **[P1] 科技已解锁但钱不够时仍可点击建造** #bug #ui #科技
   现象：科技解锁了某建筑、但金币不够时，建造栏按钮看起来仍可点击，玩家点了之后兵营区照样能"建造"（应该被拦截）。
