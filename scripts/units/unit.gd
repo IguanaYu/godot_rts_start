@@ -142,6 +142,7 @@ var _cached_scan_wounded = null
 @onready var body_sprite: Sprite2D = $BodySprite
 @onready var aggro_line: Line2D = $AggroLine
 @onready var path_line: Line2D = $PathLine
+@onready var _visual_feedback: UnitVisualFeedback = $UnitVisualFeedback
 
 # 缓存上次画 aggro_line 时的目标，避免每帧 clear+add 触发完全重画
 var _aggro_target = null
@@ -183,6 +184,9 @@ func _ready() -> void:
 		_setup_editor_visuals()
 	else:
 		_setup_visuals()
+		# PR-3：必须在 _setup_visuals() 之后（_apply_sprite_position 才写完 BodySprite base 值）
+		if _visual_feedback:
+			_visual_feedback.configure(body_sprite, _effects_material, unit_type, get_instance_id())
 		_update_selection_ring()
 		_update_hp_bar()
 	# 用 instance_id 把单位均匀分到 6 个 scan_phase，避免同帧扎堆扫描
@@ -1012,6 +1016,11 @@ func _perform_attack() -> void:
 		_set_anim("attack")
 		# 隐身单位攻击时显形
 		_reveal_stealth_temporarily()
+		# PR-3：攻击冲量（放在 split/cone/chain 分支之前，覆盖全部攻击形态）
+		if _visual_feedback:
+			var aim_dir := global_position.direction_to(attack_target.global_position)
+			var is_ranged := unit_type == UnitType.ARCHER or (stats_data and stats_data.projectile_data != null)
+			_visual_feedback.play_attack(aim_dir, is_ranged)
 		var damage = stat_set.get_int(StatSetClass.ATTACK_DAMAGE)
 		var pd = stats_data.projectile_data if stats_data else null
 		# PR-4 分裂攻击：同时射 N 支箭到不同目标（优先级最高，覆盖 cone/chain）
@@ -1207,10 +1216,12 @@ func take_damage(amount: int, attacker = null) -> void:
 		if reduction > 0.0:
 			final_amount = int(final_amount * (1.0 - reduction))
 	# 护盾抵扣：先扣护盾，剩余伤害才进血量
+	var shield_absorbed := false
 	if _shield_hp > 0 and final_amount > 0:
 		if _shield_hp >= final_amount:
 			_shield_hp -= final_amount
 			final_amount = 0
+			shield_absorbed = true
 		else:
 			final_amount -= _shield_hp
 			_shield_hp = 0
@@ -1218,6 +1229,10 @@ func take_damage(amount: int, attacker = null) -> void:
 	# 受击白闪（闪避已提前 return；护盾全吸收 final_amount==0 不闪）
 	if final_amount > 0:
 		_play_hit_flash()
+		if _visual_feedback:
+			_visual_feedback.play_hit(_hit_dir(attacker), false)
+	elif shield_absorbed and _visual_feedback:
+		_visual_feedback.play_hit(_hit_dir(attacker), true)
 	# 受击时显形
 	_reveal_stealth_temporarily()
 	# 吸血：attacker 根据造成伤害回血
@@ -1324,6 +1339,8 @@ func _alert_enemy_response(attacker) -> void:
 func die() -> void:
 	state = UnitState.DEAD
 	died.emit(self)
+	if _visual_feedback:
+		_visual_feedback.stop_all()
 	# 自爆：死亡时对周围敌人造成范围伤害
 	if stats_data and stats_data.explode_damage > 0 and stats_data.explode_radius > 0:
 		for u in UnitGrid.query_neighbors(global_position, stats_data.explode_radius):
@@ -1554,9 +1571,18 @@ func heal(amount: int) -> void:
 	if health.is_dead():
 		return
 	health.heal(amount)
+	if _visual_feedback:
+		_visual_feedback.play_heal()
 	var effect: Node2D = HealEffectScene.instantiate()
 	get_tree().current_scene.add_child(effect)
 	effect.global_position = global_position
+
+
+## PR-3：受击位移方向——有 attacker 朝远离方向，无 attacker 返回 ZERO（组件内走向上小跳兜底）
+func _hit_dir(attacker) -> Vector2:
+	if attacker is Node2D and is_instance_valid(attacker):
+		return (global_position - attacker.global_position).normalized()
+	return Vector2.ZERO
 
 # ============================================================
 # Buff 系统
