@@ -281,14 +281,12 @@
 - **[P1] 科技已解锁但钱不够时仍可点击建造** #bug #ui #科技
   现象：科技解锁了某建筑、但金币不够时，建造栏按钮看起来仍可点击，玩家点了之后兵营区照样能"建造"（应该被拦截）。
 
-  **疑点**：[game_ui.gd:1117-1118](scripts/systems/game_ui.gd) 写的是 `btn.disabled = not ok and not era_locked`——设计本意是让 ERA_LOCKED 状态保持 enable（这样点击能触发"需 T2 时代"飘字），但当 `reason == NO_GOLD` 时 `era_locked=false`、`ok=false`，公式算出来 disabled=true，**应该 disable**。所以现象的成因可能是：
-  1. 按钮 affordability 没及时刷新（跟上一条 bug ② 同根）
-  2. 或者点击穿透到 `_quick_produce_unit` / `_do_place`，而那里的拦截顺序不对
-  3. 或者建造区按钮的 click handler 没读 disabled 状态
+  原始疑点已排除：按钮 disabled 逻辑（`btn.disabled = not ok and not era_locked`）本身正确，NO_GOLD 时 disabled=true；根因是 8-12 修复的"初始按钮全亮"bug 同源（affordability 漏刷新，commit `5f55c86` 已修）。
 
-  **期望行为**：点击钱不够的建筑按钮 → 立即在鼠标位置/城堡头顶飘字"金币不足"，**不进入放置模式**。
-  关联: [scripts/systems/game_ui.gd](scripts/systems/game_ui.gd) (`_update_button_affordability`), [scripts/main.gd](scripts/main.gd) (`_on_place_mode_requested` / `_quick_produce_unit`), [scripts/systems/building_placer.gd](scripts/systems/building_placer.gd) (`check_build_block`)
+  **残留问题（2026-08-15 修复）**：金币不足时按 QWERASDF 建造快捷键仍进入放置模式（出 ghost），点地落地才报错。修复：`_on_place_mode_requested` 在时代锁定检查后加 `check_build_block` 统一拦截，非 OK 即在鼠标位置飘字（红）并 return，不进放置模式。顺带覆盖 FARM_LIMIT / NEED_FARM 等其他 reason 的提前拦截。UI 按钮路径保持灰显（点击无反馈，用户确认可接受）。
+  关联: [scripts/main.gd](scripts/main.gd) (`_on_place_mode_requested`), [scripts/systems/building_placer.gd](scripts/systems/building_placer.gd) (`check_build_block`)
   创建: 2026-08-11
+  完成: 2026-08-15
 
 ### UI 优化
 

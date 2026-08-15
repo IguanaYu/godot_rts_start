@@ -823,6 +823,13 @@ func _on_place_mode_requested(mode: int) -> void:
 	if int(mode) not in unlocked_items:
 		_show_era_locked_hint(mode)
 		return
+	# 金币/农场上限等前置拦截：进入放置模式前就提示，避免 ghost 拖到落地才报错
+	var reason: int = building_placer.check_build_block(mode)
+	if reason != BuildingPlacer.BuildBlockReason.OK:
+		var key := BuildingPlacer.reason_to_translation_key(reason)
+		if key != &"":
+			show_floating_text(tr(key), Color(1, 0.3, 0.3), get_global_mouse_position())
+		return
 	building_placer.enter_place_mode(mode)
 	combat_ctrl.set_attack_move_mode(false)
 
