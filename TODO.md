@@ -424,13 +424,13 @@
   - ✅ **PR-2** 粒子对象池 + 配方库 — ParticlePool Autoload（自动预热 + finished/超时双路回收）+ 9 种配方（dust/explosion/hit_spark/debris/energy_fog/heal_orb/blood_mist/dust_gpu），迁移 game_spawner/building/building_garrison 高频 instantiate（2026-08-15 完成）
   - ✅ **PR-3** UnitVisualFeedback 组件 — 攻击前探/后坐冲量 + 受击位移 + 护盾/中毒/减速地面环；零 Tween（_process 插值 + 冲量曲线）；沙盒新增 7 个状态调试按钮（2026-08-15 完成）
   - ✅ **PR-4** BuildingActivityVisual 组件 — 生产脉冲/施工尘土/升级转动金环 + 入队下沉/完成回弹/产金金环/升级双环/受击震动红闪；状态优先级仲裁（constructing > age_upgrading > producing > idle）；箭塔 JellyEffect 替换（消除 tween 争写 scale）；die 加 debris；沙盒加建筑面板（7 建筑 + 64px 占格）+ 6 个建筑调试按钮（2026-08-15 完成，commit `fe3dccf`）
-  - 📋 **PR-5** 命中粒子 + 屏幕后处理 — hit_spark + 冲击波/色差
-  - 📋 **PR-6** 指挥官技能视觉升级 — 8 个技能释放瞬间 + 持续效果
+  - ✅ **PR-5** 命中粒子 + 屏幕后处理 — PostProcessController Autoload（layer=5 CanvasLayer + 全屏 ColorRect shader）：screen shake 走 Camera2D.offset（不碰 position，clamp/平滑不受影响，game_camera.gd 零改动）、色差（SCREEN_TEXTURE 径向 RGB 分裂）、冲击波扩散环（≤4 并发，世界坐标自动转 UV）；hit_spark 命中粒子按伤害量分级 scale（<20/≤50/>50 → 0.8/1.1/1.4），>60 伤害加 shake；Boss 死亡 big_impact 三件套（shake10+色差+冲击波）；建筑爆炸 shake8 + 尺寸缩放冲击波（无色差）；沙盒加 4 个后处理调试按钮（冲击波为两段式：点按钮武装→点地图触发）；顺手修 PR-2 潜伏 bug：ParticlePool float scale 走 `Vector2.ONE * x`（原 `Vector2(float)` 非法构造会崩 spawn）（2026-08-15 完成）
+  - 📋 **PR-6** 指挥官技能视觉升级 — 8 个技能释放瞬间 + 持续效果（释放瞬间调 `PostProcessController.big_impact()`）
   - ⏸ **PR-7** T3 变体专属视觉（可延后）— 等玩家真解锁 T3 再说
 
   关联: [docs/active/程序化特效落地_ROADMAP.md](docs/active/程序化特效落地_ROADMAP.md)
   创建: 2026-08-13
-  后续: PR-0~PR-4 已完成，从 PR-5 开始继续。沙盒 F6 运行 `scenes/sandbox/effect_sandbox.tscn`；加单位/建筑改 [scripts/sandbox/sandbox_config.gd](scripts/sandbox/sandbox_config.gd) 一行即可（单位支持 `"stats"` 键覆盖，建筑走 `SPAWNABLE_BUILDINGS`）。沙盒建筑调试按钮：选中建筑后顶栏 入队/产金/受击/施工/升级/摧毁。已知坑：地面环类特效 z_index 必须 >0（否则被 Ground 盖住）；`addons/ui_safety` 是 submodule，worktree 需 `git submodule update --init` 否则 UID 解析失败。
+  后续: PR-0~PR-5 已完成（特效地基齐了），PR-6/PR-7 是锦上添花可并行。沙盒 F6 运行 `scenes/sandbox/effect_sandbox.tscn`；加单位/建筑改 [scripts/sandbox/sandbox_config.gd](scripts/sandbox/sandbox_config.gd) 一行即可（单位支持 `"stats"` 键覆盖，建筑走 `SPAWNABLE_BUILDINGS`）。沙盒建筑调试按钮：选中建筑后顶栏 入队/产金/受击/施工/升级/摧毁。已知坑：地面环类特效 z_index 必须 >0（否则被 Ground 盖住）；`addons/ui_safety` 是 submodule，worktree 需 `git submodule update --init` 否则 UID 解析失败；ParticlePool 的 scale opts 传 float 或 Vector2 均可。
 
 ## ✅ 已完成
 
