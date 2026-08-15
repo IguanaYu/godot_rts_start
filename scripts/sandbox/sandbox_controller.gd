@@ -274,6 +274,9 @@ func _spawn_formation(center: Vector2) -> void:
 		var offset := Vector2(i % cols, i / cols) - Vector2(cols - 1, cols - 1) / 2.0
 		var pos := center + offset * SPAWN_SPACING
 		var unit := scene.instantiate()
+		# stats 覆盖：必须在 add_child 前赋（_ready 里 _setup_stats 读取）
+		if _selected_entry.has("stats"):
+			unit.stats_data = _selected_entry.stats
 		unit.team = _spawn_team
 		unit.alliance_id = _spawn_team
 		unit.faction_color = faction_color

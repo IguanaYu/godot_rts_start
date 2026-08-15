@@ -290,6 +290,20 @@
 
 ### UI 优化
 
+- **[P1] UI 规范落地实施 - 字体/图标/色板/token 四项工程动作** #ui #t4 #a2 #规范
+  A.2 UI 规范第 3 章视觉基础问答时专业审查发现：Godot 4 项目运行时默认字体是 Open Sans SemiBold（**无中文字形**，中文运行时回退系统字体，Windows 雅黑 / macOS 苹方跨平台不一致）。规范已定稿，以下工程动作待排期实施。
+
+  **待实施清单**（依据 [A2_UI规范_章节问答草稿区.md](docs/plans/A2_UI规范_章节问答草稿区.md) 第 3 章决策）：
+  1. **内嵌思源黑体**（= Noto Sans CJK 同字型双品牌，OFL 免费商用）：下载入 `assets/fonts/`，配项目 theme default font，禁用系统回退；字重选 ≤3（自带 7 真字重）
+  2. **tnum 等宽数字**：资源栏金币 / 造价 / 倒计时等数字 Label 挂 FontVariation `opentype_features = {"tnum": 1}`，防数字跳动抖动；思源黑体 CJK tnum 支持未实测，抖则数字 fallback Noto Sans Mono
+  3. **语义色 token 建库**：error/success/warning/info 四语义深底专用值（收编现有三档红 0.3/0.4/0.75、两档绿、黄为唯一值），存 UI 侧 semantic token，禁止组件直接写美术色值；对比度按 XAG 102 验收（4.5:1 正文 / 3:1 图标）
+  4. **12px 中文行高**：现有 micro 档（12px）多行场景行高 16 → 20（中文需 1.4-1.6 倍行距）
+  5. **禁用态三套写法收敛**（0.6 灰 / 0.4 灰 / alpha 0.5 → 统一值，具体值在 UI 规范第 4 章拍板后执行）
+
+  关联: [docs/plans/A2_UI规范_章节问答草稿区.md](docs/plans/A2_UI规范_章节问答草稿区.md), [docs/research/product/游戏UI规范_业界标准与交互反馈数值调研.md](docs/research/product/游戏UI规范_业界标准与交互反馈数值调研.md)（追加审查节）
+  创建: 2026-08-15
+  后续: UI 规范全 7 章问答完成后，按规范实施清单统一排期（A.2 → C 组过渡期）
+
 - **[P2] 底部装饰水带视觉美化** #ui #视觉 #地形 #摄像头
   现状：为修"底部 UI 遮挡地图下方"（见 ✅ 已完成的摄像头限位修复），在地图正下方加了一条 64 世界单位（≈1 tile）高的装饰水带（`BOTTOM_SKIRT_H`，由 `_replace_ground_with_terrain` 往 `water_areas` 追加一条底部 Rect2 实现）。功能上生效了——相机滚到底时地图底落在 UI 条上方、单位不贴 UI——但**水带目前就是一条平铺的纯水 tile，很突兀、很丑**（玩家原话："水带好丑"），跟上方草地硬切，没有过渡。
 
@@ -388,7 +402,7 @@
 
   **PR 列表**：
   - ✅ **PR-0** 测试沙盒场景（极简版）— spawn 单位/木桩 + 阵营切换 + 框选/attack-move + 时间控制 + 详情面板 + 弹道（2026-08-15 完成）
-  - 📋 **PR-1** Shader 接入 + Dissolve — 5 个 uniform 接入 + 单位死亡消散
+  - ✅ **PR-1** Shader 接入 + Dissolve — 受击白闪（0.12s，护盾全吸收/闪避不闪）+ Boss 紫光（`category=="boss"` 数据驱动）+ 骷髅死亡 dissolve 消散（`dissolve_on_death` 字段）；hit_flash 移到状态染色之后（受击优先）；沙盒新增 Boss 按钮 + stats 覆盖机制（2026-08-15 完成）
   - 📋 **PR-2** 粒子对象池 + 配方库 — ParticlePool Autoload + 6 种基础配方
   - 📋 **PR-3** UnitVisualFeedback 组件 — 受击/攻击冲量/护盾环/持续状态
   - 📋 **PR-4** BuildingActivityVisual 组件 — 9 种建筑活动反馈
@@ -398,7 +412,7 @@
 
   关联: [docs/active/程序化特效落地_ROADMAP.md](docs/active/程序化特效落地_ROADMAP.md)
   创建: 2026-08-13
-  后续: PR-0 已完成，从 PR-1 开始继续。沙盒 F6 运行 `scenes/sandbox/effect_sandbox.tscn`；加单位改 [scripts/sandbox/sandbox_config.gd](scripts/sandbox/sandbox_config.gd) 一行即可。沙盒关键依赖：伤害飘字走 `current_scene.show_damage_number()`、弹道走 `current_scene.spawner_module`，均已由 [sandbox_controller.gd](scripts/sandbox/sandbox_controller.gd) 提供。
+  后续: PR-0/PR-1 已完成，从 PR-2 开始继续。沙盒 F6 运行 `scenes/sandbox/effect_sandbox.tscn`；加单位改 [scripts/sandbox/sandbox_config.gd](scripts/sandbox/sandbox_config.gd) 一行即可（支持 `"stats"` 键覆盖 stats，Boss/变体验证用）。沙盒关键依赖：伤害飘字走 `current_scene.show_damage_number()`、弹道走 `current_scene.spawner_module`，均已由 [sandbox_controller.gd](scripts/sandbox/sandbox_controller.gd) 提供。
 
 ## ✅ 已完成
 

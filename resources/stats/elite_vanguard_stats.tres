@@ -24,3 +24,5 @@ upgrade_damage_per_level = 2
 upgrade_speed_per_level = 5.0
 max_upgrade_level = 3
 upgrade_cost = 200
+boss_glow = true
+boss_glow_color_override = Color(1.0, 0.25, 0.15, 1)

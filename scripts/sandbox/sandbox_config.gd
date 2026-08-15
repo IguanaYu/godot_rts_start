@@ -9,6 +9,7 @@ const SPAWNABLE_UNITS := [
 	{ "scene": preload("res://scenes/units/pyromancer.tscn"), "name": "火焰法师", "team": 1 },
 	{ "scene": preload("res://scenes/units/troll.tscn"), "name": "巨魔", "team": 1 },
 	{ "scene": preload("res://scenes/units/skeleton.tscn"), "name": "骷髅", "team": 1 },
+	{ "scene": preload("res://scenes/units/soldier.tscn"), "stats": preload("res://resources/stats/boss_soldier_stats.tres"), "name": "Boss剑士", "team": 1 },
 ]
 
 const SPAWNABLE_DUMMIES := [

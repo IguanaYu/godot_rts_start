@@ -131,3 +131,8 @@ extends Resource
 @export var mana_type: int = 0                  # 0=NONE, 1=MAGE, 2=ARCHER
 @export var max_mana: float = 0.0               # 最大蓝量
 @export var mana_regen: float = 0.0             # 每秒回蓝
+
+# --- 程序化特效（PR-1） ---
+@export var dissolve_on_death: bool = false     # 死亡时 dissolve 消散，false=保留 scale-to-zero
+@export var boss_glow: bool = false             # 呼吸外发光（与 category 解耦，纯视觉开关）
+@export var boss_glow_color_override: Color = Color(0.60, 0.20, 0.90, 1.0)  # boss_glow 颜色，默认紫

@@ -10,8 +10,10 @@ enum CommandSource { NONE, PLAYER, AUTO }
 const HealEffectScene := preload("res://scenes/effects/heal_effect.tscn")
 const UnitEffectsShader := preload("res://shaders/unit_effects.gdshader")
 const AggroComp := preload("res://scripts/core/aggro_component.gd")
+const DissolveNoise := preload("res://assets/effects/dissolve_noise.tres")
 
 var _effects_material: ShaderMaterial = null
+var _hit_flash_tween: Tween = null
 
 @export var unit_type: UnitType = UnitType.SOLDIER:
 	set(v): unit_type = v; _refresh_editor()
@@ -215,6 +217,13 @@ func _init_outline_materials() -> void:
 	if use_tint:
 		_effects_material.set_shader_parameter("tint_color", variant_tint)
 		_effects_material.set_shader_parameter("tint_amount", variant_tint_amount)
+	# 受击白闪：enabled 常开，只动 amount
+	_effects_material.set_shader_parameter("hit_flash_enabled", true)
+	_effects_material.set_shader_parameter("hit_flash_amount", 0.0)
+	# Boss 呼吸发光：category = "boss" 自动开，或 stats 显式勾 boss_glow（纯视觉，不影响掉落）
+	if stats_data and (stats_data.category == "boss" or stats_data.boss_glow):
+		_effects_material.set_shader_parameter("boss_glow_enabled", true)
+		_effects_material.set_shader_parameter("boss_glow_color", stats_data.boss_glow_color_override)
 	if body_sprite:
 		body_sprite.material = _effects_material
 
@@ -1206,6 +1215,9 @@ func take_damage(amount: int, attacker = null) -> void:
 			final_amount -= _shield_hp
 			_shield_hp = 0
 	health.take_damage(final_amount)
+	# 受击白闪（闪避已提前 return；护盾全吸收 final_amount==0 不闪）
+	if final_amount > 0:
+		_play_hit_flash()
 	# 受击时显形
 	_reveal_stealth_temporarily()
 	# 吸血：attacker 根据造成伤害回血
@@ -1232,6 +1244,16 @@ func take_damage(amount: int, attacker = null) -> void:
 		AllyDistressSignal.report(global_position, self)
 	if health.hp <= 0:
 		die()
+
+## 受击白闪：瞬间拉满再衰减 0.12 秒；连续受击时 kill 旧 Tween 重置
+func _play_hit_flash() -> void:
+	if _effects_material == null:
+		return
+	if _hit_flash_tween and _hit_flash_tween.is_valid():
+		_hit_flash_tween.kill()
+	_effects_material.set_shader_parameter("hit_flash_amount", 0.85)
+	_hit_flash_tween = create_tween()
+	_hit_flash_tween.tween_property(_effects_material, "shader_parameter/hit_flash_amount", 0.0, 0.12)
 
 # T3 PR-2a: 检查本单位是否拥有给定标签列表中的任一标签
 func _has_any_tag(tags: Array[StringName]) -> bool:
@@ -1312,9 +1334,24 @@ func die() -> void:
 					var dmg = max(1, int(stats_data.explode_damage * ratio))
 					u.take_damage(dmg, self)
 	health._is_dead = true
-	var tween := create_tween()
-	tween.tween_property(self, "scale", Vector2.ZERO, 0.3)
-	tween.tween_callback(queue_free)
+	# 清掉进行中的白闪，避免与消散边缘色打架
+	if _hit_flash_tween and _hit_flash_tween.is_valid():
+		_hit_flash_tween.kill()
+	if _effects_material and stats_data and stats_data.dissolve_on_death:
+		_effects_material.set_shader_parameter("dissolve_noise", DissolveNoise)
+		# Tween 需要属性已存在，先显式 set 初值
+		_effects_material.set_shader_parameter("dissolve_amount", 0.0)
+		_effects_material.set_shader_parameter("outline_enabled", false)
+		var target_scale := scale * 0.7
+		var tween := create_tween()
+		tween.set_parallel(true)
+		tween.tween_property(_effects_material, "shader_parameter/dissolve_amount", 1.0, 0.4)
+		tween.tween_property(self, "scale", target_scale, 0.4).set_ease(Tween.EASE_IN)
+		tween.chain().tween_callback(queue_free)
+	else:
+		var tween := create_tween()
+		tween.tween_property(self, "scale", Vector2.ZERO, 0.3)
+		tween.tween_callback(queue_free)
 
 func _reset_movement_state() -> void:
 	_is_blocked = false

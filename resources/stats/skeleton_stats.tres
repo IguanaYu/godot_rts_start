@@ -64,3 +64,4 @@ upgrade_damage_per_level = 0
 upgrade_speed_per_level = 0.0
 max_upgrade_level = 0
 upgrade_cost = 0
+dissolve_on_death = true

@@ -57,6 +57,6 @@ func _on_hit() -> void:
 	# 驱散：射击者命中时清除目标增益（Inquisitor）
 	if shooter != null and is_instance_valid(shooter) and shooter.has_method("dispel_target"):
 		shooter.dispel_target(hit_target)
-	if data:
+	if data and hit_target != null and is_instance_valid(hit_target):
 		for effect: Resource in data.effects:
 			effect.apply(self, hit_target)

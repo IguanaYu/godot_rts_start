@@ -26,6 +26,12 @@ uniform bool boss_glow_enabled = false;
 uniform vec4 boss_glow_color : source_color = vec4(0.60, 0.20, 0.90, 1.0);  // 紫
 uniform float boss_pulse_speed = 3.0;
 
+// === Dissolve 死亡消散（PR-1）===
+uniform float dissolve_amount : hint_range(0.0, 1.0) = 0.0;
+uniform sampler2D dissolve_noise;
+uniform vec4 dissolve_edge_color : source_color = vec4(0.55, 0.15, 0.95, 1.0);  // 紫黑边缘
+uniform float dissolve_edge_width : hint_range(0.02, 0.30) = 0.12;
+
 void fragment() {
 	vec4 col = texture(TEXTURE, UV);
 
@@ -39,11 +45,6 @@ void fragment() {
 		col.rgb = mix(col.rgb, tint_color.rgb, tint_amount);
 	}
 
-	// 受击白闪：tint 整体偏白，覆盖慢 tint
-	if (hit_flash_enabled) {
-		col.rgb = mix(col.rgb, hit_flash_color.rgb, hit_flash_amount);
-	}
-
 	// 狂暴红 tint
 	if (enraged_enabled) {
 		col.rgb = mix(col.rgb, enraged_tint.rgb, 0.45);
@@ -52,6 +53,11 @@ void fragment() {
 	// 神圣金 tint
 	if (blessed_enabled) {
 		col.rgb = mix(col.rgb, blessed_tint.rgb, 0.40);
+	}
+
+	// 受击白闪：放在持续状态染色之后，受击反馈优先级最高
+	if (hit_flash_enabled && hit_flash_amount > 0.0) {
+		col.rgb = mix(col.rgb, hit_flash_color.rgb, hit_flash_amount);
 	}
 
 	// Boss 发光（shader fake）：紫色呼吸外发光 + 整体提亮
@@ -123,6 +129,19 @@ void fragment() {
 		float glow_alpha = max(inner_mask, outer_mask * 0.7);
 
 		col = col + vec4(final_glow, glow_alpha) * (1.0 - col.a);
+	}
+
+	// Dissolve 消散：amount > 0 才采样 noise（平时 noise 为 null 不触发）
+	if (dissolve_amount > 0.0) {
+		float n = texture(dissolve_noise, UV).r;
+		float t = dissolve_amount;
+		if (n <= t) {
+			discard;
+		}
+		// 边缘带：t < n < t+edge_width 内混入发光色并渐隐 alpha
+		float edge = smoothstep(t, t + dissolve_edge_width, n);
+		col.rgb = mix(dissolve_edge_color.rgb * 1.5, col.rgb, edge);
+		col.a *= edge;
 	}
 
 	COLOR = col;
