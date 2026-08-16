@@ -27,19 +27,11 @@ func _on_unit_died(manager: Node, ctx: Dictionary) -> void:
 		var StatSetClass := preload("res://scripts/stats/stat_set.gd")
 		base_damage = unit.stat_set.get_int(StatSetClass.ATTACK_DAMAGE)
 	var damage: int = int(base_damage * DAMAGE_MULTIPLIER)
-	# 创建爆炸特效（复用 commander_skill 的 explosion 场景）
+	# 爆炸特效走池（自动播放+回收；scale 换算保持与 EXPLOSION_RADIUS/40 一致的渲染尺寸）
 	var main_node := manager.get_tree().current_scene
 	if main_node == null:
 		return
-	var explosion_scene := load("res://scenes/effects/explosion.tscn")
-	if explosion_scene != null:
-		var fx: Node2D = explosion_scene.instantiate()
-		fx.global_position = pos
-		main_node.add_child(fx)
-		if fx.has_node("Sprite"):
-			var sprite: Sprite2D = fx.get_node("Sprite")
-			var sf := EXPLOSION_RADIUS / 40.0
-			sprite.scale = Vector2(sf, sf)
+	ParticlePool.spawn("explosion", pos, {"scale": EXPLOSION_RADIUS / 32.0})
 	# 对范围内敌方造成伤害
 	for enemy in main_node.get_tree().get_nodes_in_group("enemy_units"):
 		if is_instance_valid(enemy) and enemy is CharacterBody2D:

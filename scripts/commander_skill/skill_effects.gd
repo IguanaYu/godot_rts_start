@@ -9,16 +9,8 @@ static func orbital_strike(main_node: Node2D, spawner_module: Node, target_pos: 
 	var radius: float = config.get("radius", 80.0)
 	var damage: int = config.get("damage", 150)
 
-	# 创建爆炸特效
-	var explosion_scene := load("res://scenes/effects/explosion.tscn")
-	var effect: Node2D = explosion_scene.instantiate()
-	effect.global_position = target_pos
-	main_node.add_child(effect)
-	# 放大特效以匹配范围
-	if effect.has_node("Sprite"):
-		var sprite: Sprite2D = effect.get_node("Sprite")
-		var scale_factor := radius / 40.0
-		sprite.scale = Vector2(scale_factor, scale_factor)
+	# 创建爆炸特效（走池，自动播放+回收；scale 换算保持与 radius/40 一致的渲染尺寸）
+	ParticlePool.spawn("explosion", target_pos, {"scale": radius / 32.0})
 
 	# 播放灰尘特效
 	spawner_module.spawn_dust_effect(target_pos)
@@ -291,7 +283,6 @@ static func cluster_bomb(main_node: Node2D, spawner_module: Node, target_pos: Ve
 	var radius: float = config.get("radius", 140.0)
 	var damage: int = config.get("damage", 50)
 	var sub_explosions: int = config.get("sub_explosions", 6)
-	var explosion_scene := load("res://scenes/effects/explosion.tscn")
 
 	_show_area_indicator(main_node, target_pos, radius, Color(1.0, 0.5, 0.1, 0.3))
 	spawner_module.show_floating_text("Cluster Bomb", Color(1.0, 0.5, 0.1), target_pos)
@@ -303,18 +294,14 @@ static func cluster_bomb(main_node: Node2D, spawner_module: Node, target_pos: Ve
 		var delay: float = float(i) * 0.12 + randf() * 0.15
 		var tree: SceneTree = main_node.get_tree()
 		var timer: SceneTreeTimer = tree.create_timer(delay)
-		timer.timeout.connect(_detonate_cluster.bind(main_node, spawner_module, pos, damage, explosion_scene))
+		timer.timeout.connect(_detonate_cluster.bind(main_node, spawner_module, pos, damage))
 
 
-static func _detonate_cluster(main_node: Node2D, spawner_module: Node, pos: Vector2, damage: int, explosion_scene) -> void:
+static func _detonate_cluster(main_node: Node2D, spawner_module: Node, pos: Vector2, damage: int) -> void:
 	if not is_instance_valid(main_node):
 		return
-	var effect: Node2D = explosion_scene.instantiate()
-	effect.global_position = pos
-	main_node.add_child(effect)
-	if effect.has_node("Sprite"):
-		var sprite: Sprite2D = effect.get_node("Sprite")
-		sprite.scale = Vector2(0.75, 0.75)
+	# 爆炸特效走池（自动播放+回收；scale 0.9375 ≈ 原 sprite 0.75 的渲染尺寸）
+	ParticlePool.spawn("explosion", pos, {"scale": 0.9375})
 
 	spawner_module.spawn_dust_effect(pos)
 
@@ -365,10 +352,8 @@ static func sniper_mark(main_node: Node2D, spawner_module: Node, target_pos: Vec
 			return
 		if is_instance_valid(marker):
 			marker.queue_free()
-		var exp_scene := load("res://scenes/effects/explosion.tscn")
-		var exp: Node2D = exp_scene.instantiate()
-		exp.global_position = target_pos
-		main_node.add_child(exp)
+		# 爆炸特效走池（不传 scale，node.scale=1.0 × sprite 0.8 = 与现状一致）
+		ParticlePool.spawn("explosion", target_pos)
 		if closest and is_instance_valid(closest) and not closest.health.is_dead():
 			closest.take_damage(damage)
 			spawner_module.show_floating_text("-%d" % damage, Color(1.0, 0.3, 0.1), closest.global_position)
