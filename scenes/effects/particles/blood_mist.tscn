@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/effects/gpu_particle_effect.gd" id="1_script"]
 
@@ -10,6 +10,9 @@ point_count = 2
 offsets = PackedFloat32Array(0, 0.7, 1)
 colors = PackedColorArray(0.62, 0.05, 0.05, 1, 0.55, 0.04, 0.04, 0.85, 0.5, 0.03, 0.03, 0)
 
+[sub_resource type="GradientTexture1D" id="tex_blood"]
+gradient = SubResource("grad_blood")
+
 [sub_resource type="ParticleProcessMaterial" id="pp_blood"]
 spread = 180.0
 gravity = Vector3(0, 40, 0)
@@ -18,7 +21,7 @@ initial_velocity_max = 60.0
 scale_min = 0.7
 scale_max = 1.2
 scale_curve = SubResource("curve_blood")
-color_ramp = SubResource("grad_blood")
+color_ramp = SubResource("tex_blood")
 
 [node name="BloodMist" type="GPUParticles2D"]
 z_index = 7

@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/effects/gpu_particle_effect.gd" id="1_script"]
 
@@ -10,6 +10,9 @@ point_count = 2
 offsets = PackedFloat32Array(0, 0.4, 1)
 colors = PackedColorArray(1, 0.95, 0.6, 1, 1, 0.6, 0.2, 1, 1, 0.3, 0.1, 0)
 
+[sub_resource type="GradientTexture1D" id="tex_hit"]
+gradient = SubResource("grad_hit")
+
 [sub_resource type="ParticleProcessMaterial" id="pp_hit"]
 direction = Vector3(0, 1, 0)
 spread = 45.0
@@ -19,7 +22,7 @@ initial_velocity_max = 100.0
 scale_min = 0.4
 scale_max = 0.8
 scale_curve = SubResource("curve_hit")
-color_ramp = SubResource("grad_hit")
+color_ramp = SubResource("tex_hit")
 
 [sub_resource type="CanvasItemMaterial" id="mat_add_hit"]
 blend_mode = 1
