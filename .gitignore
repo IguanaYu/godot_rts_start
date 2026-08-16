@@ -18,6 +18,9 @@ AGENTS.md
 # Node
 server/node_modules/
 
+# pixel-forge 生成脚本工作区（产物进 assets/，脚本不入库）
+tmp/
+
 # Self
 .gitignore
 *.translation

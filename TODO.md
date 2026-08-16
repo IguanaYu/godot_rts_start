@@ -432,7 +432,10 @@
 
   关联: [scenes/sandbox/effect_sandbox.tscn](scenes/sandbox/effect_sandbox.tscn), [scripts/sandbox/sandbox_controller.gd](scripts/sandbox/sandbox_controller.gd), [scripts/sandbox/sandbox_config.gd](scripts/sandbox/sandbox_config.gd), [scripts/skills/skill_visual_controller.gd](scripts/skills/skill_visual_controller.gd), [scripts/effects/](scripts/effects/)
   创建: 2026-08-16
-  后续: 先聊实现路径（1 扩展沙盒 vs 2 独立画廊 vs 3 截图总览），再排期；与 T4 E.4 特效库天然衔接
+  - [x] **跨引擎与产品调研** ✅ 2026-08-16 完成
+    案例：Unity Scene 视图 Particle Effect 浮动面板（Playback Speed/Time/Count + Pause/Stop，免运行游戏预览）/ Niagara 独立预览视口（网格背景+旋转缩放+F 聚焦+帧率显示+Timeline 播放，业界标杆）/ TimelineFX 特效库编辑器 / AE FXConsole 快照图库 / 游戏内技能展示 = hover tooltip 式几乎不做动态预览。结论：Godot 无引擎级画廊需自造；预览必须走真实渲染（color_ramp 全白教训）；推荐「方案 A 单预览台画廊（Niagara 式）+ C/D 作为导出子功能」，B 独立图鉴场景后置。6 项待决策点（挂载位置/目录数据源/预览台背景/参数暴露范围/后处理全屏预览/配置导出）。
+    报告: [docs/research/product/特效展示配置界面_跨引擎与产品调研.md](docs/research/product/特效展示配置界面_跨引擎与产品调研.md)
+  后续: 逐条拍板待决策思考点（先定方案 A 的挂载位置与目录数据源）→ 出技术设计草案；与 T4 E.4 特效库天然衔接
 
 - **[P1] 近战命中特效改版 - 剑士白点下坠不好看** #特效 #视觉 #需讨论
   现状：剑士（近战通用）命中特效是 [hit_spark.tscn](scenes/effects/particles/hit_spark.tscn)——15 个黄白小点、发射方向朝下（spread 45°）+ 向下重力 200，看起来是"一串白点下坠"，不像砍中人。它是 PR-5 的通用命中粒子，**近战/远程共用**，由被打者在 [unit.gd](scripts/units/unit.gd) `take_damage`（`ParticlePool.spawn("hit_spark", ...)`）触发；且不带方向参数，与攻击方向无关。
