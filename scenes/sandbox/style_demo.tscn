@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/sandbox/style_demo.gd" id="demo_script"]
+
+[node name="StyleDemo" type="Node2D"]
+script = ExtResource("demo_script")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(640, 360)

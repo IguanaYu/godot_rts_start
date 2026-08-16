@@ -1,0 +1,107 @@
+{
+  "canvas": [
+    128,
+    144
+  ],
+  "drawn": true,
+  "anchors": {
+    "anchor_hip": [
+      64,
+      78
+    ],
+    "anchor_neck": [
+      64,
+      44
+    ],
+    "anchor_shoulder_f": [
+      76,
+      50
+    ],
+    "anchor_shoulder_b": [
+      45,
+      50
+    ],
+    "anchor_hand": [
+      83,
+      71
+    ],
+    "feet": [
+      64,
+      102
+    ]
+  },
+  "origins": {
+    "head": [
+      46,
+      6
+    ],
+    "torso": [
+      47,
+      42
+    ],
+    "arm_b": [
+      45,
+      50
+    ],
+    "arm_f": [
+      76,
+      50
+    ],
+    "weapon": [
+      77,
+      45
+    ]
+  },
+  "parts": {
+    "head": {
+      "origin": [
+        46,
+        6
+      ],
+      "size": [
+        39,
+        44
+      ]
+    },
+    "torso": {
+      "origin": [
+        47,
+        42
+      ],
+      "size": [
+        36,
+        63
+      ]
+    },
+    "arm_b": {
+      "origin": [
+        45,
+        50
+      ],
+      "size": [
+        15,
+        29
+      ]
+    },
+    "arm_f": {
+      "origin": [
+        76,
+        50
+      ],
+      "size": [
+        15,
+        29
+      ]
+    },
+    "weapon": {
+      "origin": [
+        77,
+        51
+      ],
+      "size": [
+        25,
+        27
+      ]
+    }
+  }
+}
