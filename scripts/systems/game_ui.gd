@@ -546,6 +546,14 @@ func show_outpost_category() -> void:
 		tab_buttons[2].visible = true
 
 
+## PR-4 修复：祭坛建完后据点 tab 无剩余内容 → 隐藏；若正停在该 tab 则退回建筑 tab
+func hide_outpost_category() -> void:
+	if tab_buttons.size() > 2:
+		tab_buttons[2].visible = false
+	if active_tab == 2:
+		_switch_tab(1)
+
+
 
 
 func _on_attack_ping(world_pos: Vector2, minimap: Control) -> void:

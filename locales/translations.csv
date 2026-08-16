@@ -11,6 +11,7 @@ ENTITY_CASTLE,Castle,城堡,城
 ENTITY_BARRACKS,Barracks,兵营,兵舎
 ENTITY_MONASTERY,Monastery,修道院,修道院
 ENTITY_ARCHERY,Archery,靶场,弓道場
+ENTITY_ALTAR_ARCHER,Altar,祭坛,祭壇
 ENTITY_LANCER,Lancer,枪兵,ランサー
 ENTITY_MONK,Monk,僧侣,モンク
 ENTITY_SHIELDBEARER,Shieldbearer,盾卫,盾衛
@@ -67,6 +68,7 @@ DIFFICULTY_NORMAL,Normal,普通,ノーマル
 DIFFICULTY_HARD,Hard,困难,ハード
 TAB_UNITS,Units,单位,ユニット
 TAB_BUILDINGS,Buildings,建筑,建物
+TAB_OUTPOST,Outpost,据点,拠点
 TAB_INFO,Info,信息,情報
 UI_INFO_ATK,ATK: %d,攻击: %d,攻撃: %d
 UI_INFO_SPD,SPD: %.0f,速度: %.0f,速度: %.0f

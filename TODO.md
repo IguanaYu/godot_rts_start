@@ -238,32 +238,36 @@
 
 ### Bug
 
-- **[P1] 箭矢命中已死目标刷 SCRIPT ERROR（arrow.gd:62 use-after-free）** #bug #箭矢 #塔
+- **[P1] 箭矢命中已死目标刷 SCRIPT ERROR（arrow.gd:62 use-after-free）** #bug #箭矢 #塔 ✅ 已修复
   箭矢（塔/弓箭手射出）命中目标时，若目标在箭飞行途中死亡被回收，[arrow.gd:62](scripts/effects/arrow.gd) 的 `effect.apply(self, hit_target)` 拿到 freed 对象，刷 `SCRIPT ERROR: ...previously freed...`。根因：L55 的 `take_damage` 有 `is_instance_valid` 守卫，但 L60-62 给目标施加 effects 的循环漏了守卫。
   **与 PR-4 关系**：根因预先存在，但 PR-4 把塔射程 150→220 后箭飞行时间变长，目标途中死亡概率上升，触发更频繁（实测日志刷 2 次）。
-  **修复**（极简）：L62 effect 循环前复用 L55 有效性判断，目标无效时跳过施加 effects。
+  **修复**（已落地，PR-1 commit `fde2323` 顺手修）：L62 effect 循环条件复用有效性判断（`data and hit_target != null and is_instance_valid(hit_target)`），目标无效时跳过施加 effects。
   关联: [scripts/effects/arrow.gd](scripts/effects/arrow.gd) (`_on_hit` L48-62), [scripts/buildings/building.gd](scripts/buildings/building.gd) (`_spawn_arrow` L532)
   创建: 2026-08-13
+  完成: 2026-08-15
 
-- **[P1] 占领据点后普通建筑造不出来 + 据点圈用途不直观** #bug #据点 #建造 #需调研
-  玩家反馈：「占领据点之后某个建筑造不出来了」。**根因已基本定位**（不需要修，但需要聊扩展方向）：
+- **[P1] 占领据点后普通建筑造不出来 + 据点圈用途不直观** #bug #据点 #建造 ✅ 已修复
+  玩家反馈：「占领据点之后某个建筑造不出来了」。
 
-  **当前行为**（[building_placer.gd:125-141](scripts/systems/building_placer.gd) `is_in_buildable_area`）：
-  - 占领中据点圈（`_captured_outpost_rings`）**只允许造 ALTAR_ARCHER**（祭坛），其它建筑在圈内一律拒绝
-  - 必须等祭坛建完 → `promote_captured_to_activated()` 把圈升级为「拓展区」（`_activated_outpost_rings`）→ 才能在圈内造任意建筑
-  - 玩家大概率是占领后想直接圈里造农场/塔/兵营，结果发现「造不出来」，因为还卡在祭坛前置阶段
+  **根因（2026-08-16 定位，双重闸死锁）**：
+  1. **祭坛 ALTAR_ARCHER 永远无法建造**（死锁源头）：祭坛不在 `D.ALL_ITEMS` 也不在战前编制，故不在 `unlocked_items`；[main.gd:828](scripts/main.gd) `_on_place_mode_requested` 与 `check_build_block` 都返回 ERA_LOCKED，点祭坛飘"需要升级到 T2 时代" → 光圈永远无法靠祭坛拓展
+  2. **占领光圈只认祭坛**：`is_in_buildable_area` 源 3 仅对 ALTAR_ARCHER 返回 true，建筑 Tab 常规建筑在圈内一律 OUT_OF_RANGE
 
-  **可聊的扩展方向**（用户原话："感觉可以扩展功能，新增建筑过去了"）：
-  1. **占领即可造**：去掉祭坛前置，占领据点圈直接变拓展区（祭坛改成可选增益建筑）
-  2. **据点分类型**：不同据点解锁不同建筑（军营据点/资源据点/防御据点），玩家选哪个就拓展哪种建筑权
-  3. **祭坛作为加速器/特权**：祭坛建在据点圈里给周围单位 buff 或解锁精英兵，不再是"圈地"前置
-  4. **可视化引导**：玩家不知道"先造祭坛再解锁" → 加建造提示/圈颜色变化/施工引导
+  **修复**（= TODO 扩展方向 1"占领即可造"，用户明确不聊扩展只修 bug）：
+  - [building_placer.gd](scripts/systems/building_placer.gd) `is_in_buildable_area`：去掉 `place_mode == ALTAR_ARCHER` 闸门，占领光圈与已激活光圈一视同仁（可造任意建筑）
+  - [main.gd](scripts/main.gd) `_init_unlocked_items`：追加 ALTAR_ARCHER 始终解锁（只加这一个点，其余判定全走 unlocked_items 自动放行；不加进 ALL_ITEMS 以免顶爆建筑 Tab 8 槽）
+  - `promote_captured_to_activated` 保留（祭坛建成仍触发，行为等价后为无害 no-op）
+  - 祭坛仍是据点 Tab 里的正常建筑，可正常建造；"据点圈用途不直观"（先造祭坛再解锁）随闸门移除自然消失
 
-  **关联系统**：[game_ui.gd:552](scripts/systems/game_ui.gd) `show_outpost_category()` 占领后弹据点 tab、[main.gd:678-694](scripts/main.gd) `_on_outpost_captured`。
+  **跟进修复**（玩家反馈两个小问题，同批落地）：
+  - 据点 Tab 标签显示英文 `TAB_OUTPOST`：translations.csv 缺该译项 → 补 `TAB_OUTPOST,Outpost,据点,拠点`；顺带补 `ENTITY_ALTAR_ARCHER,Altar,祭坛,祭壇`（祭坛建造模式提示同病）
+  - 祭坛建完据点 Tab 不消失：`game_ui.hide_outpost_category()`（隐藏 tab 按钮 + 正停在该 tab 时退回建筑 tab），在 `building_placer._on_building_construction_finished` 祭坛分支触发
+  - detail_panel `_building_title` 补 ALTAR_ARCHER → "祭坛"（此前选中显示笼统"建筑"）
 
-  关联: [scripts/systems/building_placer.gd](scripts/systems/building_placer.gd) (`is_in_buildable_area` / `add_captured_outpost_ring` / `promote_captured_to_activated`), [scripts/outpost/outpost_commander.gd](scripts/outpost/outpost_commander.gd), [scripts/main.gd](scripts/main.gd) (`_on_outpost_captured`), [scripts/systems/game_ui.gd](scripts/systems/game_ui.gd) (`show_outpost_category`)
+  关联: [scripts/systems/building_placer.gd](scripts/systems/building_placer.gd) (`is_in_buildable_area` / `add_captured_outpost_ring` / `promote_captured_to_activated` / `_on_building_construction_finished`), [scripts/outpost/outpost_commander.gd](scripts/outpost/outpost_commander.gd), [scripts/main.gd](scripts/main.gd) (`_on_outpost_captured` / `_init_unlocked_items`), [scripts/systems/game_ui.gd](scripts/systems/game_ui.gd) (`show_outpost_category` / `hide_outpost_category`), [scripts/ui/detail_panel.gd](scripts/ui/detail_panel.gd), [locales/translations.csv](locales/translations.csv)
   创建: 2026-08-11
-  后续: 先调研同类游戏（AoE 哨站/SC2 蟑虫巢/C&C 矿场）据点 → 建造扩展设计 → 再决定扩展方向
+  完成: 2026-08-16
+  后续: 无（据点圈扩展方向已按"占领即可造"落地；其余方向见 T4 讨论时再议）
 
 - **[P0] T3 变体替换后视觉不区分** #bug #t3 #视觉 ✅ 已修复
   所有兵种的 T3 升级替换后，场上单位看起来都是"红色近战兵"。根因：10 个变体 .tscn 漏设 `unit_type`，导致 _load_unit_textures 永远走 SOLDIER 分支加载 Warrior 贴图。同时发现兵营队列产兵路径（_spawn_unit_by_stats_id）漏接 T3 检测，玩家后续造兵仍是基础兵；T3 替换 free 旧单位时未通知 combat_controller 清选中列表，导致右键命令在死引用上崩溃。
@@ -279,7 +283,7 @@
   创建: 2026-08-11
   完成: 2026-08-15
 
-- **[P1] 科技已解锁但钱不够时仍可点击建造** #bug #ui #科技
+- **[P1] 科技已解锁但钱不够时仍可点击建造** #bug #ui #科技 ✅ 已修复
   现象：科技解锁了某建筑、但金币不够时，建造栏按钮看起来仍可点击，玩家点了之后兵营区照样能"建造"（应该被拦截）。
 
   原始疑点已排除：按钮 disabled 逻辑（`btn.disabled = not ok and not era_locked`）本身正确，NO_GOLD 时 disabled=true；根因是 8-12 修复的"初始按钮全亮"bug 同源（affordability 漏刷新，commit `5f55c86` 已修）。
@@ -472,27 +476,11 @@
   创建: 2026-08-16
   后续: 讨论定方案（A/B/C）→ 可先做方案 B shader 原型在沙盒验证剑士效果；与 T4 E.4 特效库、特效展示界面衔接
 
-### Bug
-
-- **[P1] GPU 粒子 color_ramp 不生效 — 血雾/hit_spark 都显示纯白** #bug #特效 #粒子
-  现象：blood_mist 配方 color_ramp 配的是暗红渐变（0.62,0.05,0.05 → 透明淡出），实际渲染却是**纯白色软圆盘颗粒**；hit_spark 同理——渐变配的黄橙暖色（1,0.95,0.6 → 1,0.3,0.1），玩家看到的是"白色光点下坠"。治疗颜色正常（heal_effect 是帧动画 sprite，非 GPU 粒子，不受影响）。
-
-  **根因方向（未验证）**：项目跑 Compatibility (OpenGL) 渲染器，怀疑 `ParticleProcessMaterial.color_ramp` 在该渲染器下被忽略（Godot 4.x 已知类问题）。线索：两个 GPU 粒子配方同时"变白"、都依赖 color_ramp 配色、[particle_textures.gd](scripts/effects/particle_textures.gd) 生成的 DISC/SPARK 纹理本身是纯白——指向渲染管线而非单个配方配置。energy_fog / debris / heal_orb 同样依赖 color_ramp，大概率同病。
-
-  **修复候选**：
-  1. RECIPES 加默认 modulate（[particle_pool.gd](scripts/effects/particle_pool.gd) spawn opts 已支持 `"modulate"`，CanvasItem.modulate 全渲染器有效）——改动最小
-  2. particle_textures.gd 直接生成带色纹理（颜色烘进纹理，不靠 ramp）
-  3. 升级 Forward+ 渲染器（影响面大，需单独评估性能/兼容）
-
-  关联: [blood_mist.tscn](scenes/effects/particles/blood_mist.tscn), [hit_spark.tscn](scenes/effects/particles/hit_spark.tscn), [particle_textures.gd](scripts/effects/particle_textures.gd), [particle_pool.gd](scripts/effects/particle_pool.gd)
-  创建: 2026-08-16
-  后续: 先小规模验证（方案 1 给 blood_mist 单配方配暗红 modulate，沙盒看是否变红）→ 确认根因再决定是否全配方推广
-
 ## 🔧 计划中
 
 ### 程序化特效落地（按 ROADMAP 推进）
 
-- **[P1] 程序化特效落地 - 7 个 PR 按基础优先顺序推进** #特效 #实施
+- **[P1] 程序化特效落地 - 7 个 PR 按基础优先顺序推进** #特效 #实施 ✅ PR-0~6 完成（PR-7 延后）
   设计已完成（[落地总方案](docs/design/程序化特效落地总方案.md)），ROADMAP 拆为 7 个 PR + 测试沙盒。每个 PR 在沙盒里独立验证。
 
   **PR 列表**：
@@ -510,6 +498,17 @@
   后续: PR-0~PR-6 已完成，PR-7 可延后。沙盒 F6 运行 `scenes/sandbox/effect_sandbox.tscn`；加单位/建筑改 [scripts/sandbox/sandbox_config.gd](scripts/sandbox/sandbox_config.gd) 一行即可（单位支持 `"stats"` 键覆盖，建筑走 `SPAWNABLE_BUILDINGS`）。沙盒建筑调试按钮：选中建筑后顶栏 入队/产金/受击/施工/升级/摧毁；技能按钮：先选友军单位再点左面板"技能"区。已知坑：地面环类特效 z_index 必须 >0（否则被 Ground 盖住）；`addons/ui_safety` 是 submodule，worktree 需 `git submodule update --init` 否则 UID 解析失败；ParticlePool 的 scale opts 传 float 或 Vector2 均可；worktree 首跑前必须 `--headless --import` 刷新 class_name 缓存否则场景脚本解析失败白屏。
 
 ## ✅ 已完成
+
+- [x] **GPU 粒子 color_ramp 不生效 — 血雾/hit_spark 都显示纯白** #bug #特效 #粒子
+  现象：blood_mist 配方 color_ramp 配的是暗红渐变，实际渲染却是**纯白色软圆盘颗粒**；hit_spark 同理——玩家看到的是"白色光点下坠"。治疗正常（帧动画 sprite，不受影响）。
+
+  **根因（headless 诊断确认，非渲染器问题）**：6 个 GPU 粒子 .tscn 是 PR-2 手写（commit `c3654fb`），把**裸 Gradient 子资源直接赋给 Texture2D 类型的 `color_ramp` 属性**（没包 GradientTexture1D），运行时 `set_color_ramp(Ref<Texture2D>)` 类型检查拒绝 → color_ramp 实为 **null** → 白色纹理 × 默认白色粒子色 = 纯白。原 TODO 猜的"Compatibility 渲染器忽略 color_ramp"不成立。
+
+  **修复**：6 个 .tscn（blood_mist/hit_spark/heal_orb/energy_fog/dust/debris）每个 Gradient 包一层 GradientTexture1D 外壳（`[sub_resource type="GradientTexture1D"] gradient = SubResource(...)`），color_ramp 改指外壳。纯资源改动不动脚本；修复后诊断打印 color_ramp 全为有效 GradientTexture1D 且颜色正确；沙盒实测 Compatibility 下 6 种粒子颜色全部正确（受击=黄橙 / 血雾=暗红 / 碎石=灰 / 治疗=金 / 驱散=紫 / 尘=灰白）。
+
+  关联: [blood_mist.tscn](scenes/effects/particles/blood_mist.tscn), [hit_spark.tscn](scenes/effects/particles/hit_spark.tscn), [particle_textures.gd](scripts/effects/particle_textures.gd), [particle_pool.gd](scripts/effects/particle_pool.gd)
+  创建: 2026-08-16
+  完成: 2026-08-16
 
 - [x] **游戏视觉设计准则 - 深度调研 + 准则落盘** #视觉 #标准 #t4
   背景：后续做新地图/贴图/单位/特效/UI 时缺少统一的视觉判断标准，只有零散感觉（树细节太抢戏 / 单位不显眼 / 地面太亮太花 / 特效太花 / 单位与世界观违和）。

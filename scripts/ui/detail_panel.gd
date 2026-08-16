@@ -241,6 +241,7 @@ func _building_title(btype: int) -> String:
 		BuildingScript.BuildingType.TOWER: return "箭塔"
 		BuildingScript.BuildingType.WALL: return "城墙"
 		BuildingScript.BuildingType.ACADEMY: return "学院"
+		BuildingScript.BuildingType.ALTAR_ARCHER: return "祭坛"
 		_: return "建筑"
 
 

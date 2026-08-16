@@ -29,7 +29,7 @@ var _preview_rect: ColorRect
 var _ui_module: Node
 
 # PR-4：据点光圈多源可建区
-# _captured_outpost_rings：占领后但未造特殊建筑的光圈（仅 ALTAR_ARCHER 可造）
+# _captured_outpost_rings：占领后光圈（占领即可造任意建筑）
 # _activated_outpost_rings：已造特殊建筑的光圈（拓展区，可造任意建筑）
 var _captured_outpost_rings: Array = []  # [{position: Vector2, radius: float}]
 var _activated_outpost_rings: Array = []
@@ -120,8 +120,8 @@ func get_current_cost(mode: int) -> int:
 
 ## T1 D3 + PR-4: 多源可建区判定
 ## 源 1：主基地圆（PR-1）
-## 源 2：已激活据点光圈（造了特殊建筑 → 拓展区，可造任意建筑）
-## 源 3：占领中据点光圈（仅 ALTAR_ARCHER 可造）
+## 源 2：已激活据点光圈（拓展区，可造任意建筑）
+## 源 3：占领中据点光圈（占领即可造任意建筑，不再要求先造祭坛）
 func is_in_buildable_area(world_pos: Vector2, place_mode: int = -1) -> bool:
 	# 源 1：主基地圆
 	var main_node := get_parent()  # main.gd
@@ -133,11 +133,10 @@ func is_in_buildable_area(world_pos: Vector2, place_mode: int = -1) -> bool:
 	for ring in _activated_outpost_rings:
 		if world_pos.distance_to(ring.position) <= ring.radius:
 			return true
-	# 源 3：占领中据点光圈（仅 ALTAR_ARCHER 可造）
-	if place_mode == D.PlaceMode.ALTAR_ARCHER:
-		for ring in _captured_outpost_rings:
-			if world_pos.distance_to(ring.position) <= ring.radius:
-				return true
+	# 源 3：占领中据点光圈（占领即可造任意建筑）
+	for ring in _captured_outpost_rings:
+		if world_pos.distance_to(ring.position) <= ring.radius:
+			return true
 	return false
 
 
@@ -374,6 +373,9 @@ func _on_building_construction_finished(building: Node2D) -> void:
 	var bt2 = building.get("building_type")
 	if bt2 == D.BuildingScript.BuildingType.ALTAR_ARCHER:
 		promote_captured_to_activated(building.global_position)
+		# PR-4 修复：祭坛是据点 tab 唯一内容，建完即隐藏该 tab
+		if main_node and main_node.get("ui_module"):
+			main_node.ui_module.hide_outpost_category()
 	# T3 PR-1：玩家生产建筑造好 → 解锁对应单位（之前 T2 升级时一次性解锁的 bug 修复）
 	if building.get("team") == BuildingScript.Team.PLAYER and main_node and main_node.get("unlocked_items") != null:
 		var unlocked: Array = main_node.get("unlocked_items")

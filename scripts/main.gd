@@ -1894,6 +1894,9 @@ func _init_unlocked_items() -> void:
 		var m: int = int(mode)
 		if not t1_filtered.has(m):
 			unlocked_items.append(m)
+	# 据点祭坛：不在 ALL_ITEMS/编制里，但占领据点后应可建造 → 始终解锁
+	if int(D.PlaceMode.ALTAR_ARCHER) not in unlocked_items:
+		unlocked_items.append(int(D.PlaceMode.ALTAR_ARCHER))
 
 
 # T1 D10: 缓存玩家主基地（建造范围圆心；找不到则置 null，is_in_buildable_area 会返回 true 不阻拦）
